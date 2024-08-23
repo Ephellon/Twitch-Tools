@@ -190,7 +190,7 @@ function RemoveTab(tab, duplicateTab = false, forced = true) {
 
         console.warn(`Duplicating tab #${ tab.id }... [forced=${ forced }] ${ tab.url }`);
 
-        Container.tabs.create({ active:false, index: tab.index, url: tab.url, windowId: tab.windowId }, _ => {
+        Container.tabs.create({ active: tab.active, index: tab.index, url: tab.url, windowId: tab.windowId }, _ => {
             if(tab.groupId > -1)
                 Container.tabs.group({ groupId: tab.groupId, tabIds: [_.id] });
         });
@@ -402,17 +402,6 @@ function TabWatcher(records) {
         }
 }
 
-let TabWatcherInterval;
-
-try {
-    TabWatcherInterval = new PressureObserver(TabWatcher);
-    TabWatcherInterval.observe("cpu", {
-        sampleInterval: 10e3,
-    });
-} catch(error) {
-    TabWatcherInterval = setInterval(TabWatcher, 2500);
-}
-
 // Update the badge text when there's an update available
 Container.action.setBadgeBackgroundColor({ color: '#9147ff' });
 
@@ -440,6 +429,10 @@ Storage.onChanged.addListener(changes => {
         }
     }
 });
+
+// Stuff that may be used globally...
+let IGNORE_REPORTS = false;
+let TabWatcherInterval;
 
 // Listen for messages from the content page(s)
 Runtime.onMessage.addListener((request, sender, respond) => {
@@ -593,9 +586,26 @@ Runtime.onMessage.addListener((request, sender, respond) => {
 
         case 'BEGIN_REPORT': {
             let { tab } = sender;
+            IGNORE_REPORTS = false;
 
             console.warn(`Beginning report for tab #${ tab.id }`);
             REPORTS.set(tab.id, +new Date);
+
+            try {
+                TabWatcherInterval = new PressureObserver(TabWatcher);
+                TabWatcherInterval.observe("cpu", {
+                    sampleInterval: 10e3,
+                });
+            } catch(error) {
+                TabWatcherInterval = setInterval(TabWatcher, 2500);
+            }
+        } break;
+
+        case 'WAIVE_REPORT': {
+            let { tab } = sender;
+            IGNORE_REPORTS = true;
+
+            console.warn(`Ignoring reports for tab #${ tab.id }`);
         } break;
 
         case 'FETCH_SHARED_DATA': {
@@ -625,6 +635,9 @@ let REPORTS = new Map,
     MAX_TIME_ALLOWED = 35_000;
 
 let LAG_REPORTER = setInterval(() => {
+    if(IGNORE_REPORTS)
+        return;
+
     for(let [ID, createdAt] of REPORTS) {
         HANG_UP_CHECKER.set(ID,
             setTimeout((id = ID) => {

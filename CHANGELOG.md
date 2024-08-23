@@ -79,6 +79,12 @@
 ----
 
 # DONE &mdash; Notable Changes
+> [`5.33.4.7`](https://github.com/Ephellon/Twitch-Tools/releases/tag/5.33.4.7)
+- Modified `GetQuality` logic
+- Modified `get STREAMER.rank` logic
+- Added `Automatic Tab Reloads` setting (as suggested in #24)
+- Fixed issue where the Twitch.tv tab may not be active after reloading
+
 > [`5.33.4.6`](https://github.com/Ephellon/Twitch-Tools/releases/tag/5.33.4.6)
 - Fixed issue when hovering titles on the home page
 

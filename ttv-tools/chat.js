@@ -3455,7 +3455,6 @@ let Chat__Initialize_Safe_Mode = async({ banned = false, hidden = false }) => {
      *
      */
     let pointWatcherCounter = 0,
-        balanceButton = $.last('[data-test-selector="balance-string"i]')?.closest('button'),
         hasPointsEnabled = false,
         ALL_CHANNEL_POINT_REWARDS;
 
@@ -3508,15 +3507,21 @@ let Chat__Initialize_Safe_Mode = async({ banned = false, hidden = false }) => {
 
     __PointWatcherHelper__:
     if(parseBool(Settings.point_watcher_placement)) {
-        RegisterJob('point_watcher_helper');
+        when.defined(() => $.last('[data-test-selector*="balance-string"i]')?.closest('button')).then(async balanceButton => {
+            RegisterJob('point_watcher_helper');
 
-        if(defined(balanceButton)) {
+            let jump = (STREAMER.jump?.[STREAMER.name?.toLowerCase?.()]?.stream?.points);
+
+            // $notice('[secondary] How many channel points does the user have?', jump?.balance | 0);
+            if(defined(jump?.balance))
+                return;
+
             balanceButton.click();
 
             ALL_CHANNEL_POINT_REWARDS = $.all('[data-test-selector="cost"i]').map(e => ({ innerText: e.innerText, innerHTML: e.innerHTML, outerHTML: e.outerHTML }));
 
-            wait(300).then(() => balanceButton.click());
-        }
+            wait(30).then(() => balanceButton.click());
+        });
     }
 
     /*** Video Recovery

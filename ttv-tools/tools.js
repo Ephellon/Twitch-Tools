@@ -2097,18 +2097,19 @@ function parseCoin(amount = '') {
 // Get the video quality
     // GetQuality() → string<{ auto:boolean, high:boolean, low:boolean, source:boolean }>
 async function GetQuality() {
-    let detected = $('[class*="player"i][class*="controls"i]')?.getElementByText(/\d+p/i)?.textContent;
+    const lock = { configurable: false, enumerable: true, writable: false };
 
-    if(detected?.length) {
-        let quality = new String(detected),
-            value = parseInt(quality);
+    let { videoHeight } = $('[data-a-target="video-player"i] video') ?? ({ videoHeight: $('[class*="player"i][class*="controls"i]')?.getElementByText(/\d+p/i)?.textContent });
+    if((parseInt(videoHeight) | 0) > 0) {
+        let value = parseInt(videoHeight),
+            quality = new String(`${ value }p`);
 
         Object.defineProperties(quality, {
-            auto:   { value: true },
-            high:   { value: (value > 720) },
-            mid:    { value: (value < 721 && value > 360) },
-            low:    { value: (value < 361) },
-            source: { value: quality.toLowerCase().contains('source') },
+            auto:   { value: true, ...lock },
+            high:   { value: (value > 720), ...lock },
+            mid:    { value: (value < 721 && value > 360), ...lock },
+            low:    { value: (value < 361), ...lock },
+            source: { value: quality.toLowerCase().contains('source'), ...lock },
         });
 
         return quality;
@@ -2159,8 +2160,7 @@ async function GetQuality() {
     let source = current.uuid == qualities.find(({ label }) => /source/i.test(textOf(label)))?.uuid,
         auto   = current.uuid == qualities.find(({ label }) => /auto/i.test(textOf(label)))?.uuid,
         high   = current.uuid == qualities.find(({ label }) => !/auto|source/i.test(textOf(label)))?.uuid,
-        low    = current.uuid == qualities[qualities.length - 1]?.uuid,
-        lock   = { configurable: false, enumerable: true, writable: false };
+        low    = current.uuid == qualities[qualities.length - 1]?.uuid;
 
     Object.defineProperties(quality, {
         auto:   { value: auto, ...lock },
@@ -4490,7 +4490,7 @@ let Initialize = async(START_OVER = false) => {
 
             start = epoch.max(start || epoch);
 
-            let intervals = ((STREAMER.data.dailyBroadcastTime / 900_000) * (((now - start) / 86_400_000) * (STREAMER.data.activeDaysPerWeek / 7))), // How long the channel has been streaming (15min segments)
+            let intervals = (((STREAMER.data?.dailyBroadcastTime ?? 16_200_000) / 900_000) * (((now - start) / 86_400_000) * ((STREAMER.data?.activeDaysPerWeek ?? 5) / 7))), // How long the channel has been streaming (15min segments)
                 followers = (STREAMER.data.followers ?? STREAMER.cult), // The number of followers the channel has
                 watchers = (STREAMER.poll || followers).ceilToNearest(1000), // The current number of people watching
                 pointsPerInterval = 80, // The user normally gets 80 points per 15mins
@@ -4543,6 +4543,7 @@ let Initialize = async(START_OVER = false) => {
                 });
             }
 
+            // Add any missing items...
             for(let __item__ of STREAMER.__shop__)
                 if(inventory.missing(item => item.title.equals(__item__.title) && item.cost == __item__.cost))
                     inventory.push(__item__);
@@ -4917,372 +4918,266 @@ let Initialize = async(START_OVER = false) => {
         })
         .catch($warn)
         .finally(async() => {
-            if(defined(STREAMER)) {
-                let element = $(`a[href$="${ NORMALIZED_PATHNAME }"i]`),
-                    { href, icon, live, name } = STREAMER;
+            if(nullish(STREAMER))
+                return;
 
-                element.setAttribute('draggable', true);
-                element.ondragstart ??= event => {
-                    event.dataTransfer.dropEffect = 'move';
-                };
+            let element = $(`a[href$="${ NORMALIZED_PATHNAME }"i]`),
+                { href, icon, live, name } = STREAMER;
 
-                /* Attempt to use the Twitch API */
-                __FineDetails__:
-                if(parseBool(Settings.fine_details)) {
-                    // Get the cookie values
-                    let { cookies } = Search;
+            element.setAttribute('draggable', true);
+            element.ondragstart ??= event => {
+                event.dataTransfer.dropEffect = 'move';
+            };
 
-                    USERNAME = window.USERNAME = cookies.login ?? USERNAME;
+            /* Attempt to use the Twitch API */
+            __FineDetails__:
+            if(parseBool(Settings.fine_details)) {
+                // Get the cookie values
+                let { cookies } = Search;
 
-                    // Get the channel/vod information
-                    let channelName,
-                        videoID;
+                USERNAME = window.USERNAME = cookies.login || USERNAME;
 
-                    let { pathname } = location;
+                // Get the channel/vod information
+                let channelName,
+                    videoID;
 
-                    if(pathname.startsWith('/videos/'))
-                        videoID = pathname.replace('/videos/', '').replace(/\/g/, '').replace(/^v/i, '');
-                    else
-                        channelName = pathname.replace(/^(moderator)\/(\/[^\/]+?)/i, '$1').replace(/^(\/[^\/]+?)\/(squad|videos)\b/i, '$1').replace(/\//g, '');
+                let { pathname } = location;
 
-                    // Fetch an API request
-                    let type = (defined(videoID)? 'vod': 'channel'),
-                        value = (defined(videoID)? videoID: channelName),
-                        token = cookies.auth_token;
+                if(pathname.startsWith('/videos/'))
+                    videoID = pathname.replace('/videos/', '').replace(/\/g/, '').replace(/^v/i, '');
+                else
+                    channelName = pathname.replace(/^(moderator)\/(\/[^\/]+?)/i, '$1').replace(/^(\/[^\/]+?)\/(squad|videos)\b/i, '$1').replace(/\//g, '');
 
-                    if(nullish(STREAMER.name))
+                // Fetch an API request
+                let type = (defined(videoID)? 'vod': 'channel'),
+                    value = (defined(videoID)? videoID: channelName),
+                    token = cookies.auth_token;
+
+                if(!STREAMER.name?.length)
+                    break __FineDetails__;
+
+                // Get Twitch analytics data
+                    // activeDaysPerWeek:number         → the average number of days the channel is live (per week)
+                    // actualStartTime:Date             → the time (date) when the stream started
+                    // dailyBroadcastTime:number        → the average number of hours streamed (per day)
+                    // dailyStartTimes:array<string>    → an object of usual start times for the stream (strings are formatted as 24h time strings)
+                    // dailyStopTimes:array<string>     → an object of usual stop times for the stream (strings are formatted as 24h time strings)
+                    // dataRetrievedAt:Date             → when was the data last retrieved (successfully)
+                    // dataRetrievedOK:boolean          → was the data retrieval successful
+                    // daysStreaming:array<string>      → abbreviated names of days the stream is normally live
+                    // projectedLastCall:Date           → the assumed last time to activate First in Line according to the user's settings
+                    // projectedWindDownPeriod:Date     → the assumed "dying down" period before the stream ends (90% of the stream will have passed)
+                    // projectedStopTime:Date           → the assumed time (date) when the stream will end
+                    // usualStartTime:string            → the normal start time for the stream on the current day (formatted as 24h time string)
+                    // usualStopTime:string             → the normal stop time for the stream on the current day (formatted as 24h time string)
+
+                // First, attempt to retrieve the cached data (no older than 4h)
+                try {
+                    await Cache.load(`data/${ STREAMER.name }`, cache => {
+                        let data = cache[`data/${ STREAMER.name }`],
+                            { dataRetrievedAt, dataRetrievedOK } = data;
+
+                        dataRetrievedAt ||= 0;
+                        dataRetrievedOK ||= false;
+
+                        // Only refresh every 4h
+                        if(!parseBool(dataRetrievedOK))
+                            throw new Error(`The data was not saved correctly`);
+                        else if((dataRetrievedAt + (4 * 60 * 60 * 1000)) < +new Date)
+                            throw new Error(`The data has expired`);
+                        else
+                            STREAMER.data = { ...STREAMER.data, ...data, streamerID: STREAMER.sole };
+
+                        $remark(`Cached details about "${ STREAMER.name }"`, data);
+
+                        // PrepareForGarbageCollection(cache);
+                    });
+                } catch(exception) {
+                    let { name, sole } = STREAMER;
+
+                    if(!sole)
+                        await new Search(name)
+                            .then(Search.convertResults)
+                            .then(streamer => sole = streamer.sole);
+
+                    if(!sole)
                         break __FineDetails__;
 
-                    // Get Twitch analytics data
-                        // activeDaysPerWeek:number         → the average number of days the channel is live (per week)
-                        // actualStartTime:Date             → the time (date) when the stream started
-                        // dailyBroadcastTime:number        → the average number of hours streamed (per day)
-                        // dailyStartTimes:array<string>    → an object of usual start times for the stream (strings are formatted as 24h time strings)
-                        // dailyStopTimes:array<string>     → an object of usual stop times for the stream (strings are formatted as 24h time strings)
-                        // dataRetrievedAt:Date             → when was the data last retrieved (successfully)
-                        // dataRetrievedOK:boolean          → was the data retrieval successful
-                        // daysStreaming:array<string>      → abbreviated names of days the stream is normally live
-                        // projectedLastCall:Date           → the assumed last time to activate First in Line according to the user's settings
-                        // projectedWindDownPeriod:Date     → the assumed "dying down" period before the stream ends (90% of the stream will have passed)
-                        // projectedStopTime:Date           → the assumed time (date) when the stream will end
-                        // usualStartTime:string            → the normal start time for the stream on the current day (formatted as 24h time string)
-                        // usualStopTime:string             → the normal stop time for the stream on the current day (formatted as 24h time string)
+                    let ErrGet = (null
+                        ?? parseURL(top.location.href).searchParameters?.['tt-err-get']
+                        ?? []
+                    );
 
-                    // First, attempt to retrieve the cached data (no older than 4h)
-                    try {
-                        await Cache.load(`data/${ STREAMER.name }`, cache => {
-                            let data = cache[`data/${ STREAMER.name }`],
-                                { dataRetrievedAt, dataRetrievedOK } = data;
+                    let FETCHED_OK = false;
 
-                            dataRetrievedAt ||= 0;
-                            dataRetrievedOK ||= false;
+                    // You have to make proper CORS requests to fetch HTML data! //
 
-                            // Only refresh every 4h
-                            if(!parseBool(dataRetrievedOK))
-                                throw "The data wasn't saved correctly";
-                            else if((dataRetrievedAt + (4 * 60 * 60 * 1000)) < +new Date)
-                                throw "The data likely expired";
-                            else
-                                STREAMER.data = { ...STREAMER.data, ...data, streamerID: STREAMER.sole };
+                    /***
+                     *      _______       _ _       _       __  __      _        _
+                     *     |__   __|     (_) |     | |     |  \/  |    | |      (_)
+                     *        | |_      ___| |_ ___| |__   | \  / | ___| |_ _ __ _  ___ ___
+                     *        | \ \ /\ / / | __/ __| '_ \  | |\/| |/ _ \ __| '__| |/ __/ __|
+                     *        | |\ V  V /| | || (__| | | | | |  | |  __/ |_| |  | | (__\__ \
+                     *        |_| \_/\_/ |_|\__\___|_| |_| |_|  |_|\___|\__|_|  |_|\___|___/
+                     *
+                     *
+                     */
+                    // Stream details (JSON) → /StreamerDisplayName
+                        // activeDaysPerWeek:number<int>
+                        // actualStartTime:string<Date-ISO>
+                        // dailyBroadcastTime:number<int>
+                        // dailyStartTimes:object<{ "${ Index }": string<Date-Time<{HH:MM}>>, ... }>
+                        // dailyStopTimes:object<{ "${ Index }": string<Date-Time<{HH:MM}>>, ... }>
+                        // dataRetrievedAt:number<Date-Absolute>
+                        // dataRetrievedOK:boolean
+                        // daysStreaming:array[@activeDaysPerWeek]<{ string<Date-DayName>, ... }>
+                        // projectedLastCall:string<Date-ISO>
+                        // projectedStopTime:string<Date-ISO>
+                        // projectedWindDownPeriod:string<Date-ISO>
+                        // usualStartTime:string<Date-Time<{HH:MM}>>
+                        // usualStopTime:string<Date-Time<{HH:MM}>>
+                    www_twitchmetrics_net: if(!FETCHED_OK) {
+                        when(() => defined(STREAMER.sole)? STREAMER: false).then(({ name, sole }) => {
+                            fetchURL(`https://www.twitchmetrics.net/c/${ sole }-${ name.toLowerCase() }/stream_time_values`)
+                                .then(response => response.json())
+                                .then(json => {
+                                    let data = { dailyBroadcastTime: 0, activeDaysPerWeek: 0, usualStartTime: '00:00', usualStopTime: '00:00', daysStreaming: [], dailyStartTimes: {}, dailyStopTimes: {} },
+                                        today = new Date;
 
-                            $remark(`Cached details about "${ STREAMER.name }"`, data);
+                                    let getWeekDays = (...days) => days.sort().map(day => ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'][day]);
 
-                            // delete cache;
-                        });
-                    } catch(exception) {
-                        let { name, sole } = STREAMER;
+                                    let avgStartTime = [], avgStreamSpan = [], avgStopTime = [], dlyStartTime = {}, dlyStopTime = {};
 
-                        if(!sole)
-                            await new Search(name)
-                                .then(Search.convertResults)
-                                .then(streamer => sole = streamer.sole);
+                                    let daysWithStreams = new Set(),
+                                        totalStreamHistory = (json ?? [])
+                                            // All except today
+                                            .slice(0, -1)
+                                            // Last 2 weeks (excluding today)
+                                            // .slice(-14)
+                                            .reverse()
+                                            .map(([start, stop]) => {
+                                                let date = new Date(start.toUpperCase());
 
-                        if(!sole)
-                            break __FineDetails__;
+                                                if(Math.abs(today - date) < (30 * 24 * 60 * 60 * 1000))
+                                                    daysWithStreams.add(date.getDay());
 
-                        let ErrGet = (null
-                            ?? parseURL(top.location.href).searchParameters?.['tt-err-get']
-                            ?? []
-                        );
+                                                return [start, stop];
+                                            })
+                                            .reverse()
+                                            .map(([start, stop]) => {
+                                                // Set the average start/stop times (overall)
+                                                let [S_, _S] = [start, stop].map(date => new Date(date));
 
-                        let FETCHED_OK = false;
+                                                avgStartTime.push([ S_.getHours(), S_.getMinutes(), S_.getDay() ]);
+                                                avgStreamSpan.push(Math.abs(+S_ - +_S));
+                                                avgStopTime.push([ _S.getHours(), _S.getMinutes(), _S.getDay() ]);
 
-                        // You have to make proper CORS requests to fetch HTML data! //
+                                                return [start, stop];
+                                            });
 
-                        /***
-                         *      _______       _ _       _       __  __      _        _
-                         *     |__   __|     (_) |     | |     |  \/  |    | |      (_)
-                         *        | |_      ___| |_ ___| |__   | \  / | ___| |_ _ __ _  ___ ___
-                         *        | \ \ /\ / / | __/ __| '_ \  | |\/| |/ _ \ __| '__| |/ __/ __|
-                         *        | |\ V  V /| | || (__| | | | | |  | |  __/ |_| |  | | (__\__ \
-                         *        |_| \_/\_/ |_|\__\___|_| |_| |_|  |_|\___|\__|_|  |_|\___|___/
-                         *
-                         *
-                         */
-                        // Stream details (JSON) → /StreamerDisplayName
-                            // activeDaysPerWeek:number<int>
-                            // actualStartTime:string<Date-ISO>
-                            // dailyBroadcastTime:number<int>
-                            // dailyStartTimes:object<{ "${ Index }": string<Date-Time<{HH:MM}>>, ... }>
-                            // dailyStopTimes:object<{ "${ Index }": string<Date-Time<{HH:MM}>>, ... }>
-                            // dataRetrievedAt:number<Date-Absolute>
-                            // dataRetrievedOK:boolean
-                            // daysStreaming:array[@activeDaysPerWeek]<{ string<Date-DayName>, ... }>
-                            // projectedLastCall:string<Date-ISO>
-                            // projectedStopTime:string<Date-ISO>
-                            // projectedWindDownPeriod:string<Date-ISO>
-                            // usualStartTime:string<Date-Time<{HH:MM}>>
-                            // usualStopTime:string<Date-Time<{HH:MM}>>
-                        www_twitchmetrics_net: if(!FETCHED_OK) {
-                            when(() => defined(STREAMER.sole)? STREAMER: false).then(({ name, sole }) => {
-                                fetchURL(`https://www.twitchmetrics.net/c/${ sole }-${ name.toLowerCase() }/stream_time_values`)
-                                    .then(response => response.json())
-                                    .then(json => {
-                                        let data = { dailyBroadcastTime: 0, activeDaysPerWeek: 0, usualStartTime: '00:00', usualStopTime: '00:00', daysStreaming: [], dailyStartTimes: {}, dailyStopTimes: {} },
-                                            today = new Date;
+                                    // Set the daily start time
+                                    avgStartTime.map(([h, m, d]) => (dlyStartTime[d] ??= []).push([h, m]));
 
-                                        let getWeekDays = (...days) => days.sort().map(day => ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'][day]);
+                                    for(let day in dlyStartTime) {
+                                        let avgH = 0, avgM = 0;
 
-                                        let avgStartTime = [], avgStreamSpan = [], avgStopTime = [], dlyStartTime = {}, dlyStopTime = {};
+                                        dlyStartTime[day]
+                                            .map(([h, m]) => { avgH += h; avgM += m })
+                                            .filter((v, i, a) => !i)
+                                            .map(() => {
+                                                let { length } = dlyStartTime[day];
 
-                                        let daysWithStreams = new Set(),
-                                            totalStreamHistory = (json ?? [])
-                                                // All except today
-                                                .slice(0, -1)
-                                                // Last 2 weeks (excluding today)
-                                                // .slice(-14)
-                                                .reverse()
-                                                .map(([start, stop]) => {
-                                                    let date = new Date(start.toUpperCase());
+                                                avgH = Math.round(avgH / length);
+                                                avgM = (avgM / length).floorToNearest(15);
 
-                                                    if(Math.abs(today - date) < (30 * 24 * 60 * 60 * 1000))
-                                                        daysWithStreams.add(date.getDay());
+                                                data.dailyStartTimes[day] = data.dailyStartTimes[getWeekDays(day)] = [avgH, avgM].map(t => ('00' + t).slice(-2)).join(':');
+                                            });
+                                    }
 
-                                                    return [start, stop];
-                                                })
-                                                .reverse()
-                                                .map(([start, stop]) => {
-                                                    // Set the average start/stop times (overall)
-                                                    let [S_, _S] = [start, stop].map(date => new Date(date));
+                                    // Set the average stream length
+                                    avgStreamSpan.map(t => data.dailyBroadcastTime += t);
+                                    data.dailyBroadcastTime = (data.dailyBroadcastTime / avgStreamSpan.length) | 0;
 
-                                                    avgStartTime.push([ S_.getHours(), S_.getMinutes(), S_.getDay() ]);
-                                                    avgStreamSpan.push(Math.abs(+S_ - +_S));
-                                                    avgStopTime.push([ _S.getHours(), _S.getMinutes(), _S.getDay() ]);
+                                    // Set the daily stop time
+                                    avgStopTime.map(([h, m, d]) => (dlyStopTime[d] ??= dlyStartTime[d]));
 
-                                                    return [start, stop];
-                                                });
+                                    for(let day in dlyStartTime) {
+                                        let [H, M] = toTimeString(data.dailyBroadcastTime, '!hour:!minute').split(':').map(parseFloat);
 
-                                        // Set the daily start time
-                                        avgStartTime.map(([h, m, d]) => (dlyStartTime[d] ??= []).push([h, m]));
+                                        data.dailyStopTimes[day] = data.dailyStopTimes[getWeekDays(day)] =
+                                            data.dailyStartTimes[day]
+                                                .split(':')
+                                                .map(parseFloat)
+                                                .map((v, i) => ([H, M][i] + v) % [24, 60][i])
+                                                .map((v, i) => !!i? v.floorToNearest(15): v)
+                                                .map(t => ('00' + t).slice(-2))
+                                                .join(':');
+                                    }
 
-                                        for(let day in dlyStartTime) {
-                                            let avgH = 0, avgM = 0;
+                                    // Set today's start/stop times
+                                    data.usualStartTime = data.dailyStartTimes[today.getDay()];
+                                    data.usualStopTime = data.dailyStopTimes[today.getDay()];
 
-                                            dlyStartTime[day]
-                                                .map(([h, m]) => { avgH += h; avgM += m })
-                                                .filter((v, i, a) => !i)
-                                                .map(() => {
-                                                    let { length } = dlyStartTime[day];
+                                    data.daysStreaming = getWeekDays(...daysWithStreams);
+                                    data.activeDaysPerWeek = data.daysStreaming.length;
 
-                                                    avgH = Math.round(avgH / length);
-                                                    avgM = (avgM / length).floorToNearest(15);
+                                    data.actualStartTime = new Date(+new Date - STREAMER.time);
+                                    data.projectedStopTime = new Date(+data.actualStartTime + data.dailyBroadcastTime);
+                                    data.projectedWindDownPeriod = new Date(+data.actualStartTime + (data.dailyBroadcastTime * .9));
+                                    data.projectedLastCall = new Date(+data.projectedStopTime - (
+                                        (
+                                            parseBool(Settings.first_in_line)?
+                                                Settings.first_in_line_time_minutes:
+                                            parseBool(Settings.first_in_line_plus)?
+                                                Settings.first_in_line_plus_time_minutes:
+                                            parseBool(Settings.first_in_line_all)?
+                                                Settings.first_in_line_all_time_minutes:
+                                            15
+                                        ) * 60_000
+                                    ));
 
-                                                    data.dailyStartTimes[day] = data.dailyStartTimes[getWeekDays(day)] = [avgH, avgM].map(t => ('00' + t).slice(-2)).join(':');
-                                                });
-                                        }
+                                    $remark(`Stream details about "${ STREAMER.name }"`, data);
 
-                                        // Set the average stream length
-                                        avgStreamSpan.map(t => data.dailyBroadcastTime += t);
-                                        data.dailyBroadcastTime = (data.dailyBroadcastTime / avgStreamSpan.length) | 0;
+                                    return STREAMER.data = { ...STREAMER.data, ...data };
+                                })
+                                .then(data => {
+                                    data = { ...data, streamerID: STREAMER.sole, dataRetrievedOK: (FETCHED_OK ||= defined(data?.dailyBroadcastTime)), dataRetrievedAt: +new Date };
 
-                                        // Set the daily stop time
-                                        avgStopTime.map(([h, m, d]) => (dlyStopTime[d] ??= dlyStartTime[d]));
+                                    Cache.save({ [`data/${ STREAMER.name }`]: data });
+                                })
+                                .catch(error => {
+                                    $warn(`Failed to get STREAM details (1§1): ${ error }`)
+                                        // .toNativeStack();
 
-                                        for(let day in dlyStartTime) {
-                                            let [H, M] = toTimeString(data.dailyBroadcastTime, '!hour:!minute').split(':').map(parseFloat);
+                                    if(!ErrGet.length)
+                                        addToSearch({ 'tt-err-get': 'st-tw-metrics' });
+                                });
 
-                                            data.dailyStopTimes[day] = data.dailyStopTimes[getWeekDays(day)] =
-                                                data.dailyStartTimes[day]
-                                                    .split(':')
-                                                    .map(parseFloat)
-                                                    .map((v, i) => ([H, M][i] + v) % [24, 60][i])
-                                                    .map((v, i) => !!i? v.floorToNearest(15): v)
-                                                    .map(t => ('00' + t).slice(-2))
-                                                    .join(':');
-                                        }
-
-                                        // Set today's start/stop times
-                                        data.usualStartTime = data.dailyStartTimes[today.getDay()];
-                                        data.usualStopTime = data.dailyStopTimes[today.getDay()];
-
-                                        data.daysStreaming = getWeekDays(...daysWithStreams);
-                                        data.activeDaysPerWeek = data.daysStreaming.length;
-
-                                        data.actualStartTime = new Date(+new Date - STREAMER.time);
-                                        data.projectedStopTime = new Date(+data.actualStartTime + data.dailyBroadcastTime);
-                                        data.projectedWindDownPeriod = new Date(+data.actualStartTime + (data.dailyBroadcastTime * .9));
-                                        data.projectedLastCall = new Date(+data.projectedStopTime - (
-                                            (
-                                                parseBool(Settings.first_in_line)?
-                                                    Settings.first_in_line_time_minutes:
-                                                parseBool(Settings.first_in_line_plus)?
-                                                    Settings.first_in_line_plus_time_minutes:
-                                                parseBool(Settings.first_in_line_all)?
-                                                    Settings.first_in_line_all_time_minutes:
-                                                15
-                                            ) * 60_000
-                                        ));
-
-                                        $remark(`Stream details about "${ STREAMER.name }"`, data);
-
-                                        return STREAMER.data = { ...STREAMER.data, ...data };
-                                    })
-                                    .then(data => {
-                                        data = { ...data, streamerID: STREAMER.sole, dataRetrievedOK: (FETCHED_OK ||= defined(data?.dailyBroadcastTime)), dataRetrievedAt: +new Date };
-
-                                        Cache.save({ [`data/${ STREAMER.name }`]: data });
-                                    })
-                                    .catch(error => {
-                                        $warn(`Failed to get STREAM details (1§1): ${ error }`)
-                                            // .toNativeStack();
-
-                                        if(!ErrGet.length)
-                                            addToSearch({ 'tt-err-get': 'st-tw-metrics' });
-                                    });
-
-                                // Channel details (HTML → JSON)
-                                fetchURL(`https://www.twitchmetrics.net/c/${ sole }-${ name.toLowerCase() }`)
-                                    .then(response => response.text())
-                                    .then(html => (new DOMParser).parseFromString(html, 'text/html'))
-                                    .then(DOM => {
-                                        let data = {};
-
-                                        $.all('dt+dd', DOM).map(dd => {
-                                            let name = dd.previousElementSibling.textContent.trim().toLowerCase().replace(/\s+(\w)/g, ($0, $1, $$, $_) => $1.toUpperCase()),
-                                                value = dd.textContent.trim();
-
-                                            value = (
-                                                /^(followers)$/i.test(name)?
-                                                    parseInt(value.replace(/\D/g, '')):
-                                                /^((first|last)seen)$/i.test(name)?
-                                                    new Date($('time', dd).getAttribute('datetime')):
-                                                value
-                                            );
-
-                                            data[name] = value;
-                                        });
-
-                                        $remark(`Channel details about "${ STREAMER.name }"`, data);
-
-                                        return STREAMER.data = { ...STREAMER.data, ...data };
-                                    })
-                                    .then(data => {
-                                        data = { ...data, streamerID: STREAMER.sole, dataRetrievedOK: (FETCHED_OK ||= defined(data?.firstSeen)), dataRetrievedAt: +new Date };
-
-                                        Cache.save({ [`data/${ STREAMER.name }`]: data });
-                                    })
-                                    .catch(error => {
-                                        $warn(`Failed to get CHANNEL details (1§2): ${ error }`)
-                                            // .toNativeStack();
-
-                                        if(!ErrGet.length)
-                                            addToSearch({ 'tt-err-get': 'ch-tw-metrics' });
-                                    });
-                            }, 1e3);
-                        }
-
-                        /***
-                         *      _______       _ _       _        _____ _        _
-                         *     |__   __|     (_) |     | |      / ____| |      | |
-                         *        | |_      ___| |_ ___| |__   | (___ | |_ __ _| |_ ___
-                         *        | \ \ /\ / / | __/ __| '_ \   \___ \| __/ _` | __/ __|
-                         *        | |\ V  V /| | || (__| | | |  ____) | || (_| | |_\__ \
-                         *        |_| \_/\_/ |_|\__\___|_| |_| |_____/ \__\__,_|\__|___/
-                         *
-                         *
-                         */
-                        // Channel details (HTML → JSON) → /StreamerDisplayName
-                            // TEAMS:string
-                            // averageViewers:number<int>
-                            // averageViewersRanked:number<int>
-                            // firstSeen:object<Date>
-                            // followers:number<int>
-                            // followersRanked:number<int>
-                            // games: object<{ "${ Game_Name }":number<int>, ... }>
-                            // highestViewers:number<int>
-                            // highestViewersRanked:number<int>
-                            // lastSeen:object<Date>
-                            // streamLang:string[2]<Language-Code>
-                            // subCount:number<int>
-                            // totalViews:number<int>
-                            // totalViewsRanked:number<int>
-                        twitchstats_net: if(!FETCHED_OK)
-                            fetchURL(`https://twitchstats.net/streamer/${ name.toLowerCase() }`)
+                            // Channel details (HTML → JSON)
+                            fetchURL(`https://www.twitchmetrics.net/c/${ sole }-${ name.toLowerCase() }`)
                                 .then(response => response.text())
                                 .then(html => (new DOMParser).parseFromString(html, 'text/html'))
-                                .then(dom => {
-                                    let children = $.all('.conta > :not(:first-child, :last-child)', dom);
-                                    let obj = { games: {} };
+                                .then(DOM => {
+                                    let data = {};
 
-                                    let parse = (string = '') =>
-                                        (
-                                            /\b(da?y|h(?:ou)?r|min(?:ute)?)s?\b/i.test(string)?
-                                                parseTime(string.replace(/([a-z\s,]+)/gi, ':').replace(/:?$/, '00')):
-                                            /^([-])$/.test(string)?
-                                                '':
-                                            /^\d/.test(string)?
-                                                parseFloat(string.replace(/[^\d\.]+/g, '')) + '':
-                                            /^(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)/i.test(string)?
-                                                new Date(string) + '':
-                                            string
+                                    $.all('dt+dd', DOM).map(dd => {
+                                        let name = dd.previousElementSibling.textContent.trim().toLowerCase().replace(/\s+(\w)/g, ($0, $1, $$, $_) => $1.toUpperCase()),
+                                            value = dd.textContent.trim();
+
+                                        value = (
+                                            /^(followers)$/i.test(name)?
+                                                parseInt(value.replace(/\D/g, '')):
+                                            /^((first|last)seen)$/i.test(name)?
+                                                new Date($('time', dd).getAttribute('datetime')):
+                                            value
                                         );
 
-                                    parsing:
-                                    for(let child of children)
-                                        if($.nullish('#allgames', child))
-                                            parsing_stats: for(let grandChild of child.children) {
-                                                let [key, val, ...etc] = grandChild.children;
+                                        data[name] = value;
+                                    });
 
-                                                key = key?.textContent?.trim();
-                                                val = val?.textContent?.trim();
+                                    $remark(`Channel details about "${ STREAMER.name }"`, data);
 
-                                                if(!parseBool(key?.length))
-                                                    continue parsing_stats;
-
-                                                key = (key).replace(/\s+/g, '').replace(/^(?:[A-Z][a-z])/, ($0) => $0.toLowerCase());
-                                                val = parse(val);
-
-                                                switch(key) {
-                                                    case 'accStart': {
-                                                        key = 'firstSeen';
-                                                    } break;
-
-                                                    case 'lastOnline': {
-                                                        key = 'lastSeen';
-
-                                                        if(val?.equals('now'))
-                                                            val = new Date;
-                                                        else
-                                                            val = new Date((+new Date) - val);
-                                                    } break;
-                                                }
-
-                                                obj[key] = val;
-
-                                                for(let e of etc) {
-                                                    let [k, v] = e.textContent.split(/\s+/);
-
-                                                    obj[key + k] = parse(v);
-                                                }
-                                            }
-                                        else
-                                            parsing_games: for(let game of $.all('#allgames > *', child)) {
-                                                let [name, time] = game.children;
-
-                                                obj.games[name.textContent] = parse(time.textContent);
-                                            }
-
-                                    return obj;
+                                    return STREAMER.data = { ...STREAMER.data, ...data };
                                 })
                                 .then(data => {
                                     data = { ...data, streamerID: STREAMER.sole, dataRetrievedOK: (FETCHED_OK ||= defined(data?.firstSeen)), dataRetrievedAt: +new Date };
@@ -5290,119 +5185,225 @@ let Initialize = async(START_OVER = false) => {
                                     Cache.save({ [`data/${ STREAMER.name }`]: data });
                                 })
                                 .catch(error => {
-                                    $warn(`Failed to get CHANNEL details (2): ${ error }`)
+                                    $warn(`Failed to get CHANNEL details (1§2): ${ error }`)
                                         // .toNativeStack();
 
                                     if(!ErrGet.length)
-                                        addToSearch({ 'tt-err-get': 'ch-tw-stats' });
+                                        addToSearch({ 'tt-err-get': 'ch-tw-metrics' });
                                 });
-
-                        /***
-                         *      _______       _ _       _       _______             _
-                         *     |__   __|     (_) |     | |     |__   __|           | |
-                         *        | |_      ___| |_ ___| |__      | |_ __ __ _  ___| | _____ _ __
-                         *        | \ \ /\ / / | __/ __| '_ \     | | '__/ _` |/ __| |/ / _ \ '__|
-                         *        | |\ V  V /| | || (__| | | |    | | | | (_| | (__|   <  __/ |
-                         *        |_| \_/\_/ |_|\__\___|_| |_|    |_|_|  \__,_|\___|_|\_\___|_|
-                         *
-                         *
-                         */
-                        // Channel details (JSON)
-                        twitchtracker_com: if(!FETCHED_OK)
-                            fetchURL(`https://twitchtracker.com/api/channels/summary/${ name.toLowerCase() }`)
-                                .then(text => text.json())
-                                .then(json => {
-                                    let data = {};
-                                    let table = {
-                                        minutes_streamed: 'minutesStreamedThisMonth',
-                                        avg_viewers: 'averageViewersThisMonth',
-                                        max_viewers: 'maximumViewersThisMonth',
-                                        hours_watched: 'hoursWatchedThisMonth',
-                                        followers: 'followersThisMonth',
-                                        views: 'viewsThisMonth',
-                                        followers_total: 'followers',
-                                        views_total: 'views',
-                                    };
-
-                                    for(let key in json)
-                                        data[table[key]] = json[key];
-
-                                    Cache.save({ [`data/${ STREAMER.name }`]: { ...data, streamerID: STREAMER.sole, dataRetrievedOK: (FETCHED_OK ||= defined(data?.followers)), dataRetrievedAt: +new Date } });
-                                })
-                                .catch(error => {
-                                    $warn(`Failed to get CHANNEL details (3): ${ error }`)
-                                        // .toNativeStack();
-
-                                    if(!ErrGet.length)
-                                        addToSearch({ 'tt-err-get': 'ch-tw-tracker' });
-                                });
-
-                        /*** OBSOLETE OBSOLETE OBSOLETE OBSOLETE OBSOLETE OBSOLETE OBSOLETE OBSOLETE
-                         *      _______       _ _       _
-                         *     |__   __|     (_) |     | |
-                         *        | |_      ___| |_ ___| |__
-                         *        | \ \ /\ / / | __/ __| '_ \
-                         *        | |\ V  V /| | || (__| | | |
-                         *        |_| \_/\_/ |_|\__\___|_| |_|
-                         *
-                         *
-                         */
-                        // Channel details (JSON)
-                            // data:array<{
-                            //     id:string«User ID»,
-                            //     login:string«User login»,
-                            //     display_name:string«User name»,
-                            //     type:string<"admin" | "global_mod" | "staff" | "">,
-                            //     broadcaster_type:string<"affiliate" | "partner" | "">,
-                            //     description:string,
-                            //     profile_image_url:string<URL>,
-                            //     offline_image_url:string<URL>,
-                            //     view_count:number?<integer>!Deprecated,
-                            //     email:string?<e-mail>,
-                            //     created_at:string<Date.UTC>,
-                            // }>
-                        api_twitch_tv: if(!FETCHED_OK)
-                            fetchURL(`https://api.twitch.tv/helix/users?id=${ STREAMER.sole }`, {
-                                headers: {
-                                    Authorization: Search.authorization,
-                                    'Client-Id': Search.clientID,
-                                },
-                            })
-                                .then(response => response.json())
-                                .then(json => JSON.parse(json.data ?? "null"))
-                                .then(json => {
-                                    if(nullish(json))
-                                        throw "Fine Detail JSON data could not be parsed...";
-
-                                    $remark('Getting fine details...', { [type]: value, cookies }, json);
-
-                                    let conversion = {
-                                        ally: 'broadcaster_type',
-                                        perm: 'type',
-                                        sole: 'id',
-                                    };
-
-                                    let data = {};
-                                    for(let key in conversion)
-                                        data[key] = json[conversion[key]];
-
-                                    return data;
-                                })
-                                .then(data => {
-                                    data = { ...data, streamerID: STREAMER.sole, dataRetrievedOK: (FETCHED_OK ||= defined(data?.ally)), dataRetrievedAt: +new Date };
-
-                                    Cache.save({ [`data/${ STREAMER.name }`]: data });
-                                })
-                                .catch(error => {
-                                    $warn(`Failed to get CHANNEL details (4): ${ error }`)
-                                        // .toNativeStack();
-
-                                    if(!ErrGet.length)
-                                        addToSearch({ 'tt-err-get': 'ch-tw' });
-                                });
+                        }, 1e3);
                     }
+
+                    /***
+                     *      _______       _ _       _        _____ _        _
+                     *     |__   __|     (_) |     | |      / ____| |      | |
+                     *        | |_      ___| |_ ___| |__   | (___ | |_ __ _| |_ ___
+                     *        | \ \ /\ / / | __/ __| '_ \   \___ \| __/ _` | __/ __|
+                     *        | |\ V  V /| | || (__| | | |  ____) | || (_| | |_\__ \
+                     *        |_| \_/\_/ |_|\__\___|_| |_| |_____/ \__\__,_|\__|___/
+                     *
+                     *
+                     */
+                    // Channel details (HTML → JSON) → /StreamerDisplayName
+                        // TEAMS:string
+                        // averageViewers:number<int>
+                        // averageViewersRanked:number<int>
+                        // firstSeen:object<Date>
+                        // followers:number<int>
+                        // followersRanked:number<int>
+                        // games: object<{ "${ Game_Name }":number<int>, ... }>
+                        // highestViewers:number<int>
+                        // highestViewersRanked:number<int>
+                        // lastSeen:object<Date>
+                        // streamLang:string[2]<Language-Code>
+                        // subCount:number<int>
+                        // totalViews:number<int>
+                        // totalViewsRanked:number<int>
+                    twitchstats_net: if(!FETCHED_OK)
+                        fetchURL(`https://twitchstats.net/streamer/${ name.toLowerCase() }`)
+                            .then(response => response.text())
+                            .then(html => (new DOMParser).parseFromString(html, 'text/html'))
+                            .then(dom => {
+                                let children = $.all('.conta > :not(:first-child, :last-child)', dom);
+                                let obj = { games: {} };
+
+                                let parse = (string = '') =>
+                                    (
+                                        /\b(da?y|h(?:ou)?r|min(?:ute)?)s?\b/i.test(string)?
+                                            parseTime(string.replace(/([a-z\s,]+)/gi, ':').replace(/:?$/, '00')):
+                                        /^([-])$/.test(string)?
+                                            '':
+                                        /^\d/.test(string)?
+                                            parseFloat(string.replace(/[^\d\.]+/g, '')) + '':
+                                        /^(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)/i.test(string)?
+                                            new Date(string) + '':
+                                        string
+                                    );
+
+                                parsing: for(let child of children)
+                                    if($.nullish('#allgames', child))
+                                        parsing_stats: for(let grandChild of child.children) {
+                                            let [key, val, ...etc] = grandChild.children;
+
+                                            key = key?.textContent?.trim();
+                                            val = val?.textContent?.trim();
+
+                                            if(!parseBool(key?.length))
+                                                continue parsing_stats;
+
+                                            key = (key).replace(/\s+/g, '').replace(/^(?:[A-Z][a-z])/, ($0) => $0.toLowerCase());
+                                            val = parse(val);
+
+                                            switch(key) {
+                                                case 'accStart': {
+                                                    key = 'firstSeen';
+                                                } break;
+
+                                                case 'lastOnline': {
+                                                    key = 'lastSeen';
+
+                                                    if(val?.equals('now'))
+                                                        val = new Date;
+                                                    else
+                                                        val = new Date((+new Date) - val);
+                                                } break;
+                                            }
+
+                                            obj[key] = val;
+
+                                            for(let e of etc) {
+                                                let [k, v] = e.textContent.split(/\s+/);
+
+                                                obj[key + k] = parse(v);
+                                            }
+                                        }
+                                    else
+                                        parsing_games: for(let game of $.all('#allgames > *', child)) {
+                                            let [name, time] = game.children;
+
+                                            obj.games[name.textContent] = parse(time.textContent);
+                                        }
+
+                                return obj;
+                            })
+                            .then(data => {
+                                data = { ...data, streamerID: STREAMER.sole, dataRetrievedOK: (FETCHED_OK ||= defined(data?.firstSeen)), dataRetrievedAt: +new Date };
+
+                                Cache.save({ [`data/${ STREAMER.name }`]: data });
+                            })
+                            .catch(error => {
+                                $warn(`Failed to get CHANNEL details (2): ${ error }`)
+                                    // .toNativeStack();
+
+                                if(!ErrGet.length)
+                                    addToSearch({ 'tt-err-get': 'ch-tw-stats' });
+                            });
+
+                    /***
+                     *      _______       _ _       _       _______             _
+                     *     |__   __|     (_) |     | |     |__   __|           | |
+                     *        | |_      ___| |_ ___| |__      | |_ __ __ _  ___| | _____ _ __
+                     *        | \ \ /\ / / | __/ __| '_ \     | | '__/ _` |/ __| |/ / _ \ '__|
+                     *        | |\ V  V /| | || (__| | | |    | | | | (_| | (__|   <  __/ |
+                     *        |_| \_/\_/ |_|\__\___|_| |_|    |_|_|  \__,_|\___|_|\_\___|_|
+                     *
+                     *
+                     */
+                    // Channel details (JSON)
+                    twitchtracker_com: if(!FETCHED_OK)
+                        fetchURL(`https://twitchtracker.com/api/channels/summary/${ name.toLowerCase() }`)
+                            .then(text => text.json())
+                            .then(json => {
+                                let data = {};
+                                let table = {
+                                    minutes_streamed: 'minutesStreamedThisMonth',
+                                    avg_viewers: 'averageViewersThisMonth',
+                                    max_viewers: 'maximumViewersThisMonth',
+                                    hours_watched: 'hoursWatchedThisMonth',
+                                    followers: 'followersThisMonth',
+                                    views: 'viewsThisMonth',
+                                    followers_total: 'followers',
+                                    views_total: 'views',
+                                };
+
+                                for(let key in json)
+                                    data[table[key]] = json[key];
+
+                                Cache.save({ [`data/${ STREAMER.name }`]: { ...data, streamerID: STREAMER.sole, dataRetrievedOK: (FETCHED_OK ||= defined(data?.followers)), dataRetrievedAt: +new Date } });
+                            })
+                            .catch(error => {
+                                $warn(`Failed to get CHANNEL details (3): ${ error }`)
+                                    // .toNativeStack();
+
+                                if(!ErrGet.length)
+                                    addToSearch({ 'tt-err-get': 'ch-tw-tracker' });
+                            });
+
+                    /*** OBSOLETE OBSOLETE OBSOLETE OBSOLETE OBSOLETE OBSOLETE OBSOLETE OBSOLETE
+                     *      _______       _ _       _
+                     *     |__   __|     (_) |     | |
+                     *        | |_      ___| |_ ___| |__
+                     *        | \ \ /\ / / | __/ __| '_ \
+                     *        | |\ V  V /| | || (__| | | |
+                     *        |_| \_/\_/ |_|\__\___|_| |_|
+                     *
+                     *
+                     */
+                    // Channel details (JSON)
+                        // data:array<{
+                        //     id:string«User ID»,
+                        //     login:string«User login»,
+                        //     display_name:string«User name»,
+                        //     type:string<"admin" | "global_mod" | "staff" | "">,
+                        //     broadcaster_type:string<"affiliate" | "partner" | "">,
+                        //     description:string,
+                        //     profile_image_url:string<URL>,
+                        //     offline_image_url:string<URL>,
+                        //     view_count:number?<integer>!Deprecated,
+                        //     email:string?<e-mail>,
+                        //     created_at:string<Date.UTC>,
+                        // }>
+                    api_twitch_tv: if(!FETCHED_OK)
+                        fetchURL(`https://api.twitch.tv/helix/users?id=${ STREAMER.sole }`, {
+                            headers: {
+                                Authorization: Search.authorization,
+                                'Client-Id': Search.clientID,
+                            },
+                        })
+                            .then(response => response.json())
+                            .then(json => JSON.parse(json.data ?? "null"))
+                            .then(json => {
+                                if(nullish(json))
+                                    throw "Fine Detail JSON data could not be parsed...";
+
+                                $remark('Getting fine details...', { [type]: value, cookies }, json);
+
+                                let conversion = {
+                                    ally: 'broadcaster_type',
+                                    perm: 'type',
+                                    sole: 'id',
+                                };
+
+                                let data = {};
+                                for(let key in conversion)
+                                    data[key] = json[conversion[key]];
+
+                                return data;
+                            })
+                            .then(data => {
+                                data = { ...data, streamerID: STREAMER.sole, dataRetrievedOK: (FETCHED_OK ||= defined(data?.ally)), dataRetrievedAt: +new Date };
+
+                                Cache.save({ [`data/${ STREAMER.name }`]: data });
+                            })
+                            .catch(error => {
+                                $warn(`Failed to get CHANNEL details (4): ${ error }`)
+                                    // .toNativeStack();
+
+                                if(!ErrGet.length)
+                                    addToSearch({ 'tt-err-get': 'ch-tw' });
+                            });
                 }
-            };
+            }
         });
 
     setInterval(update, 2_5_0);
@@ -6503,7 +6504,7 @@ let Initialize = async(START_OVER = false) => {
                                     .then(async rewardsMenuButton => {
                                         let { coin, fiat } = STREAMER;
 
-                                        // $log(`Can "${ title }" be bought yet? ${ ['No', 'Yes'][+(coin >= cost)] }`);
+                                        $notice(`Can "${ title }" be bought yet? ${ ['No', 'Yes'][+(coin >= cost)] }`);
 
                                         if(TEXT_BOX_ALREADY_FOCUSED)
                                             return;
@@ -6552,6 +6553,13 @@ let Initialize = async(START_OVER = false) => {
                                         // Purchase and remove
                                         await when.defined(() => $('.rewards-list')?.getElementByText(title, 'i')?.closest('.reward-list-item')?.querySelector('button'))
                                             .then(async rewardButton => {
+                                                let { coin, fiat } = STREAMER;
+
+                                                $notice(`Can "${ title }" be bought yet? ${ ['No', 'Yes'][+(coin >= cost)] }`);
+
+                                                if(coin < cost)
+                                                    return;
+
                                                 rewardButton.click();
 
                                                 when.defined(() => $('.reward-center-body [data-test-selector*="required"i][data-test-selector*="points"i]')?.closest('button'), 500)
@@ -13696,6 +13704,12 @@ let Initialize = async(START_OVER = false) => {
             .then(async balanceButton => {
                 RegisterJob('point_watcher_placement');
 
+                let jump = (STREAMER.jump?.[STREAMER.name?.toLowerCase?.()]?.stream?.points);
+
+                // $notice('[primary] How many channel points does the user have?', jump?.balance | 0);
+                if(defined(jump?.balance))
+                    return;
+
                 let shop = (await STREAMER.shop);
 
                 balanceButton.click();
@@ -13764,8 +13778,7 @@ let Initialize = async(START_OVER = false) => {
                     STREAMER.__shop__.push(item);
                 }
 
-                when(() => STREAMER.__shop__.length > 1)
-                    .then(() => balanceButton.click());
+                wait(30).then(() => balanceButton.click());
             });
     }
 
@@ -16642,7 +16655,7 @@ if(top == window) {
             });
 
             // Lag reporter
-            Runtime.sendMessage({ action: 'BEGIN_REPORT' });
+            Runtime.sendMessage({ action: `${ (Settings.auto_tab_reloads? 'BEGIN': 'WAIVE') }_REPORT` });
         }, 500);
     });
 

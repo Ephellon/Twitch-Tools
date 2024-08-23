@@ -285,6 +285,8 @@ let // These are option names. Anything else will be removed
         'low_data_mode',
         // User Defined Settings
         'user_language_preference',
+        // Automatic Tab Reloads
+        'auto_tab_reloads',
 
         /* "Hidden" options */
         'sync-token',
