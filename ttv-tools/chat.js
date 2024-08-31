@@ -2657,7 +2657,7 @@ let Chat__Initialize = async(START_OVER = false) => {
         let timeLeftInBroadcast = averageBroadcastTime - (STREAMER.time / 3_600_000);
 
         // Set the progress bar of the button
-        let have = parseFloat(parseCoin($.last('[data-test-selector="balance-string"i]')?.innerText) | 0),
+        let have = parseFloat(parseCoin($.last('[data-test-selector*="balance-string"i]')?.innerText) | 0),
             este = parseFloat(timeLeftInBroadcast * pointsEarnedPerHour * CHANNEL_POINTS_MULTIPLIER),
             goal = parseFloat($('[data-test-selector*="required"i][data-test-selector*="points"i]')?.previousSibling?.textContent?.replace(/\D+/g, '') | 0),
             need = goal - have;
@@ -3110,9 +3110,9 @@ let Chat__Initialize = async(START_OVER = false) => {
         if((placement = Settings.points_receipt_placement ??= "null").equals("null"))
             return;
 
-        let coin = $.last('[data-test-selector="balance-string"i]')?.closest('button')?.querySelector('img[alt]');
+        let coin = $.last('[data-test-selector*="balance-string"i]')?.closest('button')?.querySelector('img[alt]');
 
-        let balance = $.last('[data-test-selector="balance-string"i]')?.innerText,
+        let balance = $.last('[data-test-selector*="balance-string"i]')?.innerText,
             exact_debt = $('[data-test-selector^="prediction-checkout"i], [data-test-selector*="user-prediction"i][data-test-selector*="points"i], [data-test-selector*="user-prediction"i] p')?.innerText,
             exact_change = $('[class*="points"i][class*="summary"i][class*="add-text"i]')?.innerText;
 
@@ -3418,7 +3418,7 @@ let Chat__Initialize_Safe_Mode = async({ banned = false, hidden = false }) => {
         Runtime.sendMessage({ action: 'LOG_RAID_EVENT', data: { from, to } }, async({ events }) => {
             $warn(`${ from } has raided ${ events } time${ (events != 1? 's': '') } this week. Current raid: ${ to } @ ${ (new Date) }`);
 
-            let payable = $.defined('[data-test-selector="balance-string"i]');
+            let payable = $.defined('[data-test-selector*="balance-string"i]');
 
             top.postMessage({ action: 'raid', from, to, events, payable }, location.origin);
         });
@@ -3464,7 +3464,7 @@ let Chat__Initialize_Safe_Mode = async({ banned = false, hidden = false }) => {
 
         Cache.load(['ChannelPoints'], ({ ChannelPoints }) => {
             let [amount, fiat, face, notEarned, pointsToEarnNext] = ((ChannelPoints ??= {})[STREAMER.name] ?? 0).toString().split('|'),
-                balance = $.last('[data-test-selector="balance-string"i]'),
+                balance = $.last('[data-test-selector*="balance-string"i]'),
                 allRewards = ALL_CHANNEL_POINT_REWARDS;
 
             hasPointsEnabled ||= defined(balance);
@@ -4352,8 +4352,11 @@ Chat__PAGE_CHECKER = setInterval(Chat__WAIT_FOR_PAGE = async() => {
 
             let mentions = message.split(/(@\S+)/).filter(s => s.startsWith('@')).map(s => s.slice(1).toLowerCase()),
                 style = $('[style]', handle)?.getAttribute('style') ?? '',
-                { hour, minute, meridiem } = /(?<![#\$\.+:\d%‰]|\p{Sc})\b(?<hour>2[0-3]|[01]?\d)(?<minute>:[0-5]\d)?(?!\d*(?:\p{Sc}|[%‰]))[ \t]*(?<meridiem>[ap]m?(?!\p{L}|\p{N}))/iu.exec(handle?.parentElement?.textContent ?? '12:00AM').groups,
+                { hour, minute, meridiem } = (/(?<![#\$\.+:\d%‰]|\p{Sc})\b(?<hour>2[0-3]|[01]?\d)(?<minute>:[0-5]\d)?(?!\d*(?:\p{Sc}|[%‰]))[ \t]*(?<meridiem>[ap]m?(?!\p{L}|\p{N}))/iu.exec(handle?.parentElement?.textContent ?? '12:00AM')?.groups ?? {}),
                 sent = new Date([(new Date).toLocaleDateString(), ' ', +hour + 12 * meridiem?.[0]?.equals('P'), minute, ':00'].join('')).toJSON();
+
+            if(nullish(hour) && nullish(minute) && nullish(meridiem))
+                return;
 
             handle = author.replace(/([^]*)\((.+)\)[^]*/, ($0, $1, $2 = '', $$, $_) => {
                 author = $2 || $1;

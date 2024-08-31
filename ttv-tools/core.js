@@ -254,6 +254,129 @@ class UUID {
 }
 
 /**
+ * Creates a tiny, secure, URL-friendly, unique string ID.
+ *
+ * @see https://zelark.github.io/nano-id-cc/
+ */
+class nanoid {
+    static #crypto = window.crypto;
+
+    static #random(bytes) {
+        return nanoid.#crypto.getRandomValues(new Uint8Array(bytes));
+    }
+
+    static #customRandom(alphabet, defaultSize, getRandom) {
+        // First, a bitmask is necessary to generate the ID. The bitmask makes bytes
+        // values closer to the alphabet size. The bitmask calculates the closest
+        // `2^31 - 1` number, which exceeds the alphabet size.
+        // For example, the bitmask for the alphabet size 30 is 31 (00011111).
+        // `Math.clz32` is not used, because it is not available in browsers.
+        let mask = (2 << (Math.log(alphabet.length - 1) / Math.LN2)) - 1;
+        // Though, the bitmask solution is not perfect since the bytes exceeding
+        // the alphabet size are refused. Therefore, to reliably generate the ID,
+        // the random bytes redundancy has to be satisfied.
+
+        // Note: every hardware random generator call is performance expensive,
+        // because the system call for entropy collection takes a lot of time.
+        // So, to avoid additional system calls, extra bytes are requested in advance.
+
+        // Next, a step determines how many random bytes to generate.
+        // The number of random bytes gets decided upon the ID size, mask,
+        // alphabet size, and magic number 1.6 (using 1.6 peaks at performance
+        // according to benchmarks).
+
+        // `-~f => Math.ceil(f)` if f is a float
+        // `-~i => i + 1` if i is an integer
+        let step = -~((1.6 * mask * defaultSize) / alphabet.length);
+
+        return (size = defaultSize) => {
+            let id = '';
+
+            while(true) {
+                let bytes = getRandom(step);
+                // A compact alternative for `for (let i = 0; i < step; i++)`.
+                let i = step;
+                while(i--) {
+                    // Adding `|| ''` refuses a random byte that exceeds the alphabet size.
+                    id += alphabet[bytes[i] & mask] || '';
+                    if(id.length === size) return id;
+                }
+            }
+        }
+    }
+
+    static #customAlphabet(alphabet, size = 21) {
+        return nanoid.#customRandom(alphabet, size, nanoid.#random);
+    }
+
+    // https://github.com/CyberAP/nanoid-dictionary
+    static #scopedUrlAlphabet = "useandom-26T198340PX75pxJACKVERYMINDBUSHWOLF_GQZbfghjklqvwyzrict";
+
+    static NUMBERS = "0123456789";
+    static HEXADECIMAL_LOWERCASE = "0123456789abcdef";
+    static HEXADECIMAL_UPPERCASE = "0123456789ABCDEF";
+    static LOWERCASE = "abcdefghijklmnopqrstuvwxyz";
+    static LOWERCASE_SAFE = "bcdfghjklmnpqrstvwxz";
+    static UPPERCASE = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+    static UPPERCASE_SAFE = "BCDFGHJKLMNPQRSTVWXZ";
+    static ALPHANUMERIC = "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ";
+    static ALPHANUMERIC_SAFE = "2456789bcdfghjklmnpqrstvwxzBCDFGHJKLMNPQRSTVWXZ";
+    static NO_LOOK_ALIKES = "346789ABCDEFGHJKLMNPQRTUVWXYabcdefghijkmnpqrtwxyz";
+    static NO_LOOK_ALIKES_SAFE = "6789BCDFGHJKLMNPQRTWbcdfghjkmnpqrtwz";
+    static BASE64 = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/=";
+
+    /** @constructor
+     *
+     * @param  {?number} [size = 21]    The size of the returned string
+     * @param  {?string} alphabet       The lsit of characters to choose from
+     * @return {string}                 A random string of characters
+     */
+    constructor(size = 21, alphabet) {
+        let id = '';
+        let bytes = nanoid.#random(size);
+
+        if(alphabet?.length)
+            id = nanoid.#customAlphabet(alphabet)(size);
+        else while(size--)
+            // Using the bitwise AND operator to "cap" the value of
+            // the random byte from 255 to 63, in that way we can make sure
+            // that the value will be a valid index for the "chars" string.
+            id += nanoid.#scopedUrlAlphabet[bytes[size] & 63];
+
+        return Object.assign(this, {
+            value: id,
+
+            [Symbol.toPrimitive](type) {
+                switch(type) {
+                    case 'boolean':
+                        return (bytes.reduce((_, v, i, a) => _ + v, 0) % 2) > 0;
+
+                    case 'bigint':
+                        let B = BigInt;
+                        let b = parseInt(id, 36);
+
+                        return (Number.isFinite(b) && !Number.isNaN(b)? B(b): bytes.reduce((_, v, i, a) => _ + B(v), 0n));
+
+                    case 'number':
+                        let n = parseInt(id, 36);
+
+                        return (Number.isFinite(n) && !Number.isNaN(n)? n: bytes.reduce((_, v, i, a) => _ + v, 0));
+
+                    case 'symbol':
+                        return Symbol(id);
+
+                    case 'object':
+                    case 'string':
+                    case 'default':
+                    default:
+                        return id;
+                }
+            },
+        });
+    }
+}
+
+/**
  * Adds LZW (base64) codec functionality.
  * @author      GitHub {@link https://github.com/antonylesuisse @antonylesuisse}
  * @author      GitHub {@link https://github.com/ephellon @ephellon}

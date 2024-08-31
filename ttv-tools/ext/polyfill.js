@@ -120,7 +120,7 @@ function parseURL(url) {
             return results;
         })(search.slice(1).split('&')),
 
-        addSearch(parameters, overwrite = false) {
+        addSearch(parameters, overwrite = true) {
             if(typeof url == 'string')
                 url = parseURL(url);
 
@@ -145,7 +145,7 @@ function parseURL(url) {
             else
                 searchParameters = [searchParameters, parameters].map(Object.entries).flat();
 
-            return parseURL(href.replace(/(?:\?[^#]*)?(#.*)?$/, `?${ searchParameters.map(parameter => parameter.join('=')).join('&') }$1`));
+            return parseURL(href.replace(/(?:\?[^#]*)?(#.*)?$/, `?${ searchParameters.filter(parameter => parameter[0]?.length).map(parameter => parameter.join('=')).join('&') }$1`));
         },
 
         delSearch(parameters) {
@@ -889,19 +889,46 @@ function getOffset(element) {
  *
  * @param  {(object|string|array<string>)} newParameters    The parameters to add to the URL
  * @param  {boolean} [reload = false]                       Should the page be forcibly reloaded or not?
- * @param  {object} [location = window.location]            The location object to apply the new parameters to
+ * @param  {object} [container = window]                    The container object to apply the new parameters to
  *
  * @return {string<URLSearch>}                              The new URL
  */
-function addToSearch(newParameters, reload = false, location = window.location) {
-    let url = parseURL(location).addSearch(newParameters, reload); // Adds to the search and overwites existing search(es)
+function addToSearch(newParameters, reload = false, container = window) {
+    let url = parseURL(container.location).addSearch(newParameters, true); // Adds to the search and overwites existing search(es)
 
     if(reload)
-        window.location.search = url.search;
+        container.location.search = url.search;
     else
-        window.history?.pushState({ path: url.href }, document.title, url.href);
+        container.history?.pushState({ path: url.href }, document.title, url.href);
 
     return url.search;
+}
+
+/**
+ * Adds a report to `sessionStorage` (the "ledger"). And optionally reloads the reporting webpage.
+ *
+ * @param  {(object|string|array<string>)} reports  The report(s) to add to the ledger
+ * @param  {boolean} [reloadPage = false]           Whether to reload the reporting webpage or not
+ * @return {void}
+ *
+ * @NOTE                                            Fixes #29 — URI too long. Duplicates parameters
+ */
+function addReport(reports, reloadPage = false) {
+    reports ??= ({});
+
+    if(reports instanceof Array)
+        for(let report of reports)
+            addReport(report);
+    else if(typeof reports == 'object')
+        for(let [key, report] of Object.entries(reports))
+            sessionStorage.setItem(key, JSON.stringify(report));
+    else if(typeof reports == 'string')
+        sessionStorage.setItem(reports, new nanoid);
+
+    if(reloadPage)
+        window.location.search = parseURL(window.location)
+            .addSearch({ 'reload-reason': `ttv-tools--module-report-${ new nanoid(6) }` }, true)
+            .search;
 }
 
 /**
@@ -1341,7 +1368,7 @@ function autocomplete(element, options) {
 
         let list = f(`#${ id }-list.autocomplete-list`).with(
             ...[...options].map(([key, val]) => {
-                let [N] = [key, val].filter(str => str.mutilate().contains(value.mutilate()) || str.toLowerCase().contains(...value.toLowerCase().split(/\s+/)));
+                let [N] = [key, val].filter(str => str?.mutilate()?.contains(value.mutilate()) || str?.toLowerCase()?.contains(...value.toLowerCase().split(/\s+/)));
 
                 if(defined(N)) {
                     N = N.trim();

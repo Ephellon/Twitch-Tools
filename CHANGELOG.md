@@ -84,6 +84,14 @@
 - Modified `get STREAMER.rank` logic
 - Added `Automatic Tab Reloads` setting (as suggested in #24)
 - Fixed issue where the Twitch.tv tab may not be active after reloading
+- Fixed issue getting `STREAMER.sole` on unscrolled pages
+- Fixed issue loading and saving channel point ledgers
+- Fixed #12 — The user can now pin a user to go to when the queue is empty and offline
+- Added `class nanoid`
+- Fixed #25 — The Lurk button now states what it will do more "clearly"
+- Fixed #29 — Some parameters are now stashed in `sessionStorage`
+- Fixed #23 — Items can now auto-purchase correctly
+- Fixed #28 — Subscriber only messages are now language independent
 
 > [`5.33.4.6`](https://github.com/Ephellon/Twitch-Tools/releases/tag/5.33.4.6)
 - Fixed issue when hovering titles on the home page

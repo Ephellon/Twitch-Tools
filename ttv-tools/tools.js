@@ -361,7 +361,7 @@ class Balloon {
                                                                                 let element = $(`#tt-balloon-job-${ connectedTo }`),
                                                                                     thisJob = $('a', element),
                                                                                     redo = !parseBool(parseURL(thisJob.href).searchParameters?.redo),
-                                                                                    url = parseURL(thisJob.href).addSearch({ redo }, true);
+                                                                                    url = parseURL(thisJob.href).addSearch({ redo });
 
                                                                                 thisJob.setAttribute('new-href', url.href);
                                                                                 ALL_FIRST_IN_LINE_JOBS.map((job, index) => {
@@ -592,7 +592,7 @@ class Balloon {
                                                         let element = $(`#tt-balloon-job-${ connectedTo }`),
                                                             thisJob = $('a', element),
                                                             redo = !parseBool(parseURL(thisJob.href).searchParameters?.redo),
-                                                            url = parseURL(thisJob.href).addSearch({ redo }, true);
+                                                            url = parseURL(thisJob.href).addSearch({ redo });
 
                                                         thisJob.setAttribute('new-href', url.href);
                                                         ALL_FIRST_IN_LINE_JOBS.map((job, index) => {
@@ -3106,7 +3106,7 @@ try {
                                     Handlers.first_in_line({ href, innerText: `${ name } is live [Greedy Raiding]` }, 'start');
                                 }
 
-                                goto(parseURL(`./${ from }`).addSearch({ tool: `raid-stopper--${ method }` }, true).href);
+                                goto(parseURL(`./${ from }`).addSearch({ tool: `raid-stopper--${ method }` }).href);
                             } else {
                                 // The user clicked "Cancel"
                                 $log('Canceled Greedy Raiding event', { from, to });
@@ -3818,6 +3818,16 @@ let Initialize = async(START_OVER = false) => {
     // Gets the next available channel (streamer)
         // GetNextStreamer(except:string?) → Object<Channel>
     function GetNextStreamer(except = '') {
+        if(defined(GetNextStreamer.pinnedStreamer) && ((ALL_FIRST_IN_LINE_JOBS?.length | 0) < 1) && !STREAMER?.live) {
+            Cache.remove(['PinnedStreamer']);
+
+            return ({
+                from: 'GET_NEXT_STREAMER__PINNED',
+                href: `/${ GetNextStreamer.pinnedStreamer }`,
+                name: GetNextStreamer.pinnedStreamer,
+            });
+        }
+
         // Next channel in "Up Next"
         if(ALL_FIRST_IN_LINE_JOBS?.length && !parseBool(Settings.first_in_line_none))
             return GetNextStreamer.cachedStreamer = (null
@@ -3966,6 +3976,10 @@ let Initialize = async(START_OVER = false) => {
 
         return when.defined(() => GetNextStreamer.cachedStreamer);
     };
+
+    Cache.load('PinnedStreamer', ({ PinnedStreamer }) => {
+        GetNextStreamer.pinnedStreamer = PinnedStreamer;
+    });
 
     if(true
         // && UP_NEXT_ALLOW_THIS_TAB
@@ -4548,11 +4562,34 @@ let Initialize = async(START_OVER = false) => {
                 if(inventory.missing(item => item.title.equals(__item__.title) && item.cost == __item__.cost))
                     inventory.push(__item__);
 
+            let cachedShopAddress = `points_shop_${ STREAMER.sole }`;
+            Cache.large.load(cachedShopAddress, shop => {
+                shop = shop[cachedShopAddress];
+
+                if(nullish(shop))
+                    return;
+
+                for(let item of shop)
+                    if(!~inventory.findIndex(i => i.id == item.id)) {
+                        let j;
+
+                        if(!!~(j = inventory.findIndex(i => i.title.equals(item.title))))
+                            inventory.splice(j, 1, item);
+                        else
+                            inventory.push(item);
+                    }
+            });
+
+            Cache.large.save({ [cachedShopAddress]: inventory });
+
             return inventory.sort((a, b) => a.cost - b.cost)
         },
 
         get sole() {
-            let [channel_id] = $.all('[data-test-selector="image_test_selector"i]').map(img => img.src).filter(src => src.contains('/panel-')).map(src => parseURL(src).pathname.split('-', 3).filter(parseFloat)).flat();
+            let [channel_id] = [
+                ...$.all('[data-test-selector="image_test_selector"i]').map(img => img.src).filter(src => src.contains('/panel-')).map(src => parseURL(src).pathname.split('-', 3)),
+                ...$.all('[src][class*="channel"i][class*="points"i][class*="icon"i]').map(img => img.src).filter(src => src.contains('-icons/')).map(src => parseURL(src).pathname.slice(1).split('/')),
+            ].flat().filter(parseFloat);
 
             return (0
                 || parseInt(channel_id ?? LIVE_CACHE.get('sole'))
@@ -5003,9 +5040,10 @@ let Initialize = async(START_OVER = false) => {
                     if(!sole)
                         break __FineDetails__;
 
-                    let ErrGet = (null
-                        ?? parseURL(top.location.href).searchParameters?.['tt-err-get']
-                        ?? []
+                    let $ErrGet = `TTV-Tools-failed-to-get`;
+                    let ErrGet = JSON.parse(null
+                        ?? sessionStorage.getItem($ErrGet)
+                        ?? '[]'
                     );
 
                     let FETCHED_OK = false;
@@ -5150,7 +5188,7 @@ let Initialize = async(START_OVER = false) => {
                                         // .toNativeStack();
 
                                     if(!ErrGet.length)
-                                        addToSearch({ 'tt-err-get': 'st-tw-metrics' });
+                                        addReport({ [$ErrGet]: `https://www.twitchmetrics.net/c/${ sole }-${ name?.toLowerCase() }/stream_time_values` });
                                 });
 
                             // Channel details (HTML → JSON)
@@ -5189,7 +5227,7 @@ let Initialize = async(START_OVER = false) => {
                                         // .toNativeStack();
 
                                     if(!ErrGet.length)
-                                        addToSearch({ 'tt-err-get': 'ch-tw-metrics' });
+                                        addReport({ [$ErrGet]: `https://www.twitchmetrics.net/c/${ sole }-${ name?.toLowerCase() }` });
                                 });
                         }, 1e3);
                     }
@@ -5296,7 +5334,7 @@ let Initialize = async(START_OVER = false) => {
                                     // .toNativeStack();
 
                                 if(!ErrGet.length)
-                                    addToSearch({ 'tt-err-get': 'ch-tw-stats' });
+                                    addReport({ [$ErrGet]: `https://twitchstats.net/streamer/${ name?.toLowerCase() }` });
                             });
 
                     /***
@@ -5336,7 +5374,7 @@ let Initialize = async(START_OVER = false) => {
                                     // .toNativeStack();
 
                                 if(!ErrGet.length)
-                                    addToSearch({ 'tt-err-get': 'ch-tw-tracker' });
+                                    addReport({ [$ErrGet]: `https://twitchtracker.com/api/channels/summary/${ name?.toLowerCase() }` });
                             });
 
                     /*** OBSOLETE OBSOLETE OBSOLETE OBSOLETE OBSOLETE OBSOLETE OBSOLETE OBSOLETE
@@ -5400,7 +5438,7 @@ let Initialize = async(START_OVER = false) => {
                                     // .toNativeStack();
 
                                 if(!ErrGet.length)
-                                    addToSearch({ 'tt-err-get': 'ch-tw' });
+                                    addReport({ [$ErrGet]: `https://api.twitch.tv/helix/users?id=${ STREAMER.sole }` });
                             });
                 }
             }
@@ -5929,7 +5967,7 @@ let Initialize = async(START_OVER = false) => {
                 $warn(`The following page failed to load correctly (no quality controls present): ${ STREAMER.name } @ ${ (new Date) }`)
                     // .toNativeStack();
 
-                goto(parseURL(scapeGoat.href).addSearch({ tool: 'away-mode--scape-goat' }, true).href);
+                goto(parseURL(scapeGoat.href).addSearch({ tool: 'away-mode--scape-goat' }).href);
             }
 
             return StopWatch.stop('away_mode');
@@ -6007,7 +6045,7 @@ let Initialize = async(START_OVER = false) => {
                 icon: $('svg', container),
                 background: $('button', container),
                 get offset() { return getOffset(container) },
-                tooltip: new Tooltip(container, `Turn lurking ${ ['on','off'][+enabled] } (${ GetMacro('alt+a') })`, { from: 'top', left: +5 }),
+                tooltip: new Tooltip(container, `${ ['Start','Stop'][+enabled] } Lurking (${ GetMacro('alt+a') })`, { from: 'top', left: +5 }),
             };
 
             // button.tooltip.id = new UUID().toString().replace(/-/g, '');
@@ -6064,7 +6102,7 @@ let Initialize = async(START_OVER = false) => {
                 { container, background, tooltip } = AwayModeButton;
 
             container.setAttribute('tt-away-mode-enabled', enabled);
-            tooltip.innerHTML = `Turn lurking ${ ['on','off'][+enabled] } (${ GetMacro('alt+a') })`;
+            tooltip.innerHTML = `${ ['Start','Stop'][+enabled] } Lurking (${ GetMacro('alt+a') })`;
             background?.modStyle(`background:${ [`var(--user-accent-color)`, 'var(--color-background-button-secondary-default)'][+enabled] } !important;`);
 
             // Return control when Lurking is engaged
@@ -6519,7 +6557,7 @@ let Initialize = async(START_OVER = false) => {
 
                                         if(needsInput) {
                                             prompt
-                                                .silent(`<input id=tt_saved_input_for_redemption hidden controller title="You have saved text for this redemption..." />${ title }<br><br><strong>${ parseBool(Settings.video_clips__trophy)? 'This redemption will be recorded</strong>': '' }`, AutoClaimAnswers[sole][id])
+                                                .silent(`<input id=tt_saved_input_for_redemption hidden controller title="You have saved text for this redemption..." />${ title }<br><br><strong>${ parseBool(Settings.video_clips__trophy)? 'This redemption will be recorded</strong>': '' }`, AutoClaimAnswers[sole]?.[id] ?? '')
                                                 .then(() => {
                                                     $('[data-a-target="chat-input"i]')?.modStyle(`background:!delete`);
                                                 });
@@ -7128,7 +7166,7 @@ let Initialize = async(START_OVER = false) => {
         })('.tw-tower *:not([class*="tooltip"i]) > button:not([class*="image"i])');
 
         TTV_DROPS_REFRESHER = setInterval(() => {
-            TTV_DROPS_FRAME.src = parseURL(TTV_DROPS_FRAME.src).addSearch({ contentReload: Date.now() }, true).href;
+            TTV_DROPS_FRAME.src = parseURL(TTV_DROPS_FRAME.src).addSearch({ contentReload: Date.now() }).href;
         }, parseInt(Settings.claim_drops__interval ?? 10) * 60_000);
     };
     Timers.claim_drops = -5_000;
@@ -7175,9 +7213,9 @@ let Initialize = async(START_OVER = false) => {
         if(nullish(url) || (FIRST_IN_LINE_HREF === url && [FIRST_IN_LINE_JOB, FIRST_IN_LINE_WARNING_JOB, FIRST_IN_LINE_WARNING_TEXT_UPDATE].filter(nullish).length < 1))
             return;
         else if(nullish(search))
-            url = parseURL(url).addSearch(location.search, true);
+            url = parseURL(url).addSearch(location.search);
         else
-            url = parseURL(url).addSearch(search, true);
+            url = parseURL(url).addSearch(search);
 
         let { href, pathname } = url,
             name = pathname.slice(1),
@@ -7252,7 +7290,7 @@ let Initialize = async(START_OVER = false) => {
                         if(action) {
                             // The user clicked "OK"
 
-                            goto(parseURL(FIRST_IN_LINE_HREF).addSearch({ tool: 'first-in-line--ok' }, true).href);
+                            goto(parseURL(FIRST_IN_LINE_HREF).addSearch({ tool: 'first-in-line--ok' }).href);
                         } else {
                             // The user clicked "Cancel"
                             $log('Canceled First in Line event', FIRST_IN_LINE_HREF);
@@ -7339,12 +7377,12 @@ let Initialize = async(START_OVER = false) => {
 
             /* After above is `false` */
 
-            Cache.save({ FIRST_IN_LINE_DUE_DATE: FIRST_IN_LINE_DUE_DATE = NEW_DUE_DATE(), ALL_FIRST_IN_LINE_JOBS: ALL_FIRST_IN_LINE_JOBS = ALL_FIRST_IN_LINE_JOBS.filter(url => parseURL(url).pathname.toLowerCase() != parseURL(FIRST_IN_LINE_HREF).pathname.toLowerCase()) }, (href = parseURL(channel?.href ?? FIRST_IN_LINE_HREF).addSearch({ ...(parseURL(FIRST_IN_LINE_HREF).searchParameters ?? {}) }, true).href) => {
+            Cache.save({ FIRST_IN_LINE_DUE_DATE: FIRST_IN_LINE_DUE_DATE = NEW_DUE_DATE(), ALL_FIRST_IN_LINE_JOBS: ALL_FIRST_IN_LINE_JOBS = ALL_FIRST_IN_LINE_JOBS.filter(url => parseURL(url).pathname.toLowerCase() != parseURL(FIRST_IN_LINE_HREF).pathname.toLowerCase()) }, (href = parseURL(channel?.href ?? FIRST_IN_LINE_HREF).addSearch({ ...(parseURL(FIRST_IN_LINE_HREF).searchParameters ?? {}) }).href) => {
                 $log('Heading to stream now [Job Interval]', href);
 
                 [FIRST_IN_LINE_JOB, FIRST_IN_LINE_WARNING_JOB, FIRST_IN_LINE_WARNING_TEXT_UPDATE].forEach(clearInterval);
 
-                goto(parseURL(href).addSearch({ tool: 'first-in-line--timeout' }, true).href);
+                goto(parseURL(href).addSearch({ tool: 'first-in-line--timeout' }).href);
             });
         }, 1000);
     };
@@ -7398,7 +7436,7 @@ let Initialize = async(START_OVER = false) => {
                         if(action) {
                             // The user clicked "OK"
 
-                            goto(parseURL(`./${ name }`).addSearch({ tool: `up-next--ok` }, true).href);
+                            goto(parseURL(`./${ name }`).addSearch({ tool: `up-next--ok` }).href);
                         } else {
                             // The user clicked "Cancel"
                             let balloonChild = $(`[id^="tt-balloon-job"i][href$="/${ name }"i]`),
@@ -7419,6 +7457,210 @@ let Initialize = async(START_OVER = false) => {
     setInterval(() => {
         if(NORMAL_MODE && nullish(FIRST_IN_LINE_BALLOON)) {
             FIRST_IN_LINE_BALLOON = new Balloon({ title: 'Up Next', icon: (UP_NEXT_ALLOW_THIS_TAB? 'calendar': 'error') });
+
+            // Pin: Go to this person when the stream(s) end
+            let pinned_button = FIRST_IN_LINE_BALLOON?.addButton({
+                attributes: {
+                    id: 'pinned-streamer',
+                    contrast: THEME__PREFERRED_CONTRAST,
+                },
+
+                icon: 'pinned',
+                onclick: async event => {
+                    let { currentTarget } = event,
+                        parent = currentTarget.closest('[id^="tt-balloon-container"i]');
+
+                    let f = furnish;
+                    let body = $('#tt-reminder-listing'),
+                        search = $('#tt-pinned-search');
+
+                    if(defined(body))
+                        return body?.remove();
+                    else
+                        body = f(`#tt-reminder-listing`);
+
+                    search = f(`input#tt-pinned-search.input.autocomplete[autocomplete=false][spellcheck=false][placeholder="Search for a streamer, game or description here... Esc to exit"]`, {
+                        style: 'margin-top:1px',
+                        onkeyup: delay(async event => {
+                            let { target, code, altKey, ctrlKey, metaKey, shiftKey } = event,
+                                value = (target?.value ?? target?.textContent ?? target?.innerText ?? "").trim();
+
+                            let terms = value.split(/\s+/).map(term => ['name', 'game', 'desc'].map(type => `[${ type }*="${ term }"i]`).join(','));
+
+                            if(value.length)
+                                AddCustomCSSBlock(target.id, `#${ target.id }-form ~ :not(${ terms.join(',') }) { display: none }`);
+                            else
+                                RemoveCustomCSSBlock(target.id);
+                            target.setAttribute('value', value);
+                        }, 250),
+                    });
+
+                    body.with(
+                        f(`form#${ search.id }-form[action=#]`, { style: 'position:sticky; top:4rem; z-index:99999' })
+                            .with(search)
+                    );
+
+                    let SearchableNames = new Set(ALL_CHANNELS.map(c => c.name));
+                    let WantedNames = new Set(STREAMERS.map(c => c.name));
+
+                    Cache.load('LiveReminders', async({ LiveReminders }) => {
+                        try {
+                            LiveReminders = JSON.parse(LiveReminders || '{}');
+                        } catch(error) {
+                            // Probably an object already...
+                            LiveReminders ??= {};
+                        }
+
+                        for(let { name } in LiveReminders) {
+                            SearchableNames.add(name);
+                            WantedNames.add(name);
+                        }
+
+                        // https://www.w3schools.com/howto/tryit.asp?filename=tryhow_js_autocomplete
+
+                        // @performance
+                        PrepareForGarbageCollection(LiveReminders);
+                    });
+
+                    parent.insertBefore(body, $('[up-next--body] > :nth-child(2)'));
+
+                    listing:
+                    for(let name of SearchableNames) {
+                        if(nullish(name))
+                            continue listing;
+
+                        let channel = (null
+                            ?? ALL_CHANNELS.find(c => c.name.equals(name))
+                            ?? await new Search(name).then(Search.convertResults)
+                        );
+
+                        if(nullish(channel))
+                            continue listing;
+
+                        let _name = name.toLowerCase();
+                        let { icon, live } = channel;
+                        let pinned = parseBool(GetNextStreamer.pinnedStreamer?.equals(name));
+                        let wanted = WantedNames.has(name);
+
+                        let desc = (STREAMER.jump?.[_name]?.title ?? '');
+                        let game = (STREAMER.jump?.[_name]?.stream?.game?.name ?? '');
+
+                        autocomplete(search, { [name]: [name, game, desc].filter(s => s.length).join(' - ') });
+
+                        let imgSize = '70px';
+
+                        let container = f(`.tt-pinnable`, { name, game, desc, live, style: `animation:fade-in 1s 1; background:var(--color-background-${ pinned? 'chat': 'base' })` },
+                            f('.simplebar-scroll-content',
+                                {
+                                    style: 'overflow: hidden;',
+                                },
+                                f('.simplebar-content',
+                                    {
+                                        style: 'overflow: hidden; width:100%;',
+                                    },
+                                    f('.tt-align-items-center.tt-flex.tt-flex-column.tt-flex-grow-1.tt-flex-nowrap.tt-overflow-hidden[@testSelector=center-window__content]').with(
+                                        f('.persistent-notification.tt-relative[@testSelector=persistent-notification]',
+                                            {
+                                                style: 'width:100%',
+                                            },
+                                            f('.persistent-notification__unread.tt-border-b.tt-flex.tt-flex-nowrap').with(
+                                                f('a.tt-block.tt-full-width.tt-interactable.tt-interactable--alpha.tt-interactable--hover-enabled.tt-interactive[@testSelector=persistent-notification__click]',
+                                                    {
+                                                        // Sometimes, Twitch likes to default to `_blank`
+                                                        'target': '_self',
+
+                                                        '@pinned': pinned,
+                                                        '@name': name,
+                                                        '@icon': icon,
+                                                        'href': `#\uD83D\uDCCC${ name }`,
+
+                                                        onmouseup({ currentTarget }) {
+                                                            let pinned;
+
+                                                            if(parseBool(currentTarget.dataset.pinned)) {
+                                                                pinned = currentTarget.dataset.pinned = false;
+                                                                delete GetNextStreamer.pinnedStreamer;
+                                                                $('#pinned-streamer').innerHTML = Glyphs.pinned;
+
+                                                                currentTarget.closest('.tt-pinnable').modStyle(`background:var(--color-background-base);`);
+                                                                $('.tt-balloon-message strong', currentTarget).modStyle(`color:!delete`);
+                                                                $('.tt-footer', currentTarget).html(``);
+
+                                                                Cache.remove(['PinnedStreamer']);
+                                                            } else {
+                                                                if(defined(GetNextStreamer.pinnedStreamer)) {
+                                                                    let pidged = $(`.tt-pinnable [data-name="${ GetNextStreamer.pinnedStreamer }"i]`);
+
+                                                                    pidged.dataset.pinned = false;
+                                                                    pidged.closest('.tt-pinnable').modStyle(`background:var(--color-background-base);`);
+                                                                    $('.tt-balloon-message strong', pidged).modStyle(`color:!delete`);
+                                                                    $('.tt-footer', pidged).html(``);
+                                                                }
+
+                                                                pinned = currentTarget.dataset.pinned = true;
+                                                                GetNextStreamer.pinnedStreamer = currentTarget.dataset.name;
+                                                                $('#pinned-streamer').innerHTML = furnish(`.tt-border-radius-rounded`).with(furnish.img({ src: currentTarget.dataset.icon, style: `min-width:calc(${ imgSize }/2); border-radius:${ imgSize }` })).outerHTML;
+
+                                                                currentTarget.closest('.tt-pinnable').modStyle(`background:var(--color-background-chat);`);
+                                                                $('.tt-balloon-message strong', currentTarget).modStyle(`color:var(--color-amazon)`);
+                                                                $('.tt-footer', currentTarget).html(`Pinned. Will go to when needed`);
+
+                                                                Cache.save({ PinnedStreamer: GetNextStreamer.pinnedStreamer });
+                                                            }
+                                                        },
+                                                    },
+                                                    f('.persistent-notification__area.tt-flex.tt-flex-nowrap.tt-pd-b-1.tt-pd-l-1.tt-pd-r-3.tt-pd-t-1').with(
+                                                        // Avatar
+                                                        f.div(
+                                                            f('.tt-border-radius-rounded.tt-card-img.tt-card-img--size-4.tt-flex-shrink-0.tt-overflow-hidden').with(
+                                                                f('.tt-aspect.tt-aspect--align-top').with(
+                                                                    f('img.tt-balloon-avatar.tt-image', { src: icon, style: `min-width:${ imgSize }` })
+                                                                )
+                                                            )
+                                                        ),
+                                                        // Message body
+                                                        f('.tt-flex.tt-flex-column.tt-flex-nowrap.tt-mg-x-1', { style: `max-width:calc(100% - ${ imgSize })` }).with(
+                                                            f('.persistent-notification__body.tt-overflow-hidden[@testSelector=persistent-notification__body]').with(
+                                                                f('span.tt-c-text-alt').with(
+                                                                    f('p.tt-balloon-message').with(
+                                                                        f.span(
+                                                                            f(`strong`, { innerHTML: `${ name } `, style: (pinned? 'color:var(--color-amazon)': '') }),
+                                                                            f(`span.tt-${ (live? 'live': 'offline') }`, {
+                                                                                style: `min-width:3.5em; background-color:var(--color-background-${ (live? 'live': 'alt-2') }) }`
+                                                                            }, (wanted? live? 'live': 'offline': 'suggested').toUpperCase())
+                                                                        )
+                                                                    )
+                                                                )
+                                                            ),
+                                                            // Subheader
+                                                            f('.tt-align-items-center.tt-flex.tt-flex-shrink-0.tt-mg-t-05', { style: `max-width:100%` }).with(
+                                                                f('.tt-mg-l-05', { style: `max-width:inherit` }).with(
+                                                                    f(`p.tt-hide-text-overflow`, { style: `text-indent:.25em; max-width:inherit` }).setTooltip(desc, { from: 'top' }).with(desc)
+                                                                )
+                                                            ),
+                                                            // Footer (persistent)
+                                                            f('.tt-footer').with(
+                                                                `Click to ${ pinned? 'un': '' }pin ${ name }`
+                                                            )
+                                                        )
+                                                    )
+                                                )
+                                            )
+                                        )
+                                    )
+                                )
+                            )
+                        );
+
+                        if(pinned)
+                            search.insertAdjacentElement('afterend', container);
+                        else
+                            body.append(container);
+                    }
+                },
+            });
+
+            pinned_button.tooltip = new Tooltip(pinned_button, 'Pin a user to go to when the queue is <em>empty</em> and <em>offline</em>');
 
             // Up Next Boost Button
             let first_in_line_boost_button = FIRST_IN_LINE_BALLOON?.addButton({
@@ -7722,6 +7964,8 @@ let Initialize = async(START_OVER = false) => {
                             if((game || desc)?.length)
                                 autocomplete(search, { [name]: [name, game, desc].filter(s => s.length).join(' - ') });
 
+                            let imgSize = '70px';
+
                             let container = f(`.tt-reminder`, { name, game, desc, live, style: `animation:fade-in 1s 1; background:var(--color-background-base)` },
                                 f('.simplebar-scroll-content',
                                     {
@@ -7749,12 +7993,12 @@ let Initialize = async(START_OVER = false) => {
                                                             f.div(
                                                                 f('.tt-border-radius-rounded.tt-card-img.tt-card-img--size-4.tt-flex-shrink-0.tt-overflow-hidden', { style: (!live? '': `border:3px solid ${ primaryColor.HEX }`) },
                                                                     f('.tt-aspect.tt-aspect--align-top').with(
-                                                                        f('img.tt-balloon-avatar.tt-image', { src: icon })
+                                                                        f('img.tt-balloon-avatar.tt-image', { src: icon, style: `min-width:${ imgSize }` })
                                                                     )
                                                                 )
                                                             ),
                                                             // Message body
-                                                            f('.tt-flex.tt-flex-column.tt-flex-nowrap.tt-mg-x-1').with(
+                                                            f('.tt-flex.tt-flex-column.tt-flex-nowrap.tt-mg-x-1', { style: `max-width:calc(100% - ${ imgSize })` }).with(
                                                                 f('.persistent-notification__body.tt-overflow-hidden[@testSelector=persistent-notification__body]').with(
                                                                     f('span.tt-c-text-alt').with(
                                                                         f('p.tt-balloon-message').with(
@@ -7769,9 +8013,9 @@ let Initialize = async(START_OVER = false) => {
                                                                     )
                                                                 ),
                                                                 // Subheader
-                                                                f('.tt-align-items-center.tt-flex.tt-flex-shrink-0.tt-mg-t-05').with(
-                                                                    f('.tt-mg-l-05').with(
-                                                                        f('span.tt-balloon-subheader.tt-c-text-alt').html([status, coinIcon + coinText].join(' &bull; '))
+                                                                f('.tt-align-items-center.tt-flex.tt-flex-shrink-0.tt-mg-t-05', { style: `max-width:100%` }).with(
+                                                                    f('.tt-mg-l-05', { style: `max-width:inherit` }).with(
+                                                                        f('span.tt-balloon-subheader.tt-c-text-alt', { style: `max-width:inherit` }).html([status, coinIcon + coinText].join(' &bull; '))
                                                                     )
                                                                 ),
                                                                 // Footer (persistent)
@@ -8643,7 +8887,7 @@ let Initialize = async(START_OVER = false) => {
 
                     [FIRST_IN_LINE_JOB, FIRST_IN_LINE_WARNING_JOB, FIRST_IN_LINE_WARNING_TEXT_UPDATE].forEach(clearInterval);
 
-                    goto(parseURL(FIRST_IN_LINE_HREF).addSearch({ tool: 'first-in-line--killed' }, true).href);
+                    goto(parseURL(FIRST_IN_LINE_HREF).addSearch({ tool: 'first-in-line--killed' }).href);
                 }
             }
         }
@@ -8895,7 +9139,7 @@ let Initialize = async(START_OVER = false) => {
                 Cache.save({ BAD_STREAMERS: OLD_STREAMERS });
 
                 // Failed to get channel at...
-                addToSearch({ 'tt-err-chn': (+new Date).toString(36) }, true);
+                addReport({ 'TTV-Tools-failed-to-get-channel-details': new Date().toString() }, true);
             });
 
             return /* Fail "gracefully" */;
@@ -11236,7 +11480,7 @@ let Initialize = async(START_OVER = false) => {
                 if(defined(streamer)) {
                     $log(`[HOSTING] ${ guest } is already followed. Just head to the channel`);
 
-                    goto(parseURL(streamer.href).addSearch({ tool: `host-stopper--${ method }` }, true).href);
+                    goto(parseURL(streamer.href).addSearch({ tool: `host-stopper--${ method }` }).href);
                     break host_stopper;
                 }
             }
@@ -11247,7 +11491,7 @@ let Initialize = async(START_OVER = false) => {
             if(defined(next)) {
                 $log(`${ host } is hosting ${ guest }. Moving onto next channel (${ next.name })`, next.href, new Date);
 
-                goto(parseURL(next.href).addSearch({ tool: `host-stopper--${ method }` }, true).href);
+                goto(parseURL(next.href).addSearch({ tool: `host-stopper--${ method }` }).href);
             } else {
                 $log(`${ host } is hosting ${ guest }. There doesn't seem to be any followed channels on right now`, new Date);
 
@@ -11307,7 +11551,7 @@ let Initialize = async(START_OVER = false) => {
                 // #1 - Collect the channel points by participating in the raid, then leave
                 // #3 should fire automatically after the page has successfully loaded
                 if(raiding && method.equals("greed")) {
-                    $log(`[RAIDING] There is a possiblity to collect bonus points. Do not leave the raid.`, parseURL(`${ location.origin }/${ to }`).addSearch({ referrer: 'raid', raided: true }, true).href);
+                    $log(`[RAIDING] There is a possiblity to collect bonus points. Do not leave the raid.`, parseURL(`${ location.origin }/${ to }`).addSearch({ referrer: 'raid', raided: true }).href);
 
                     addToSearch({ referrer: 'raid', raided: true });
                     removeFromSearch(['redo']);
@@ -11348,12 +11592,12 @@ let Initialize = async(START_OVER = false) => {
                         break raid_stopper;
 
                     if(UP_NEXT_ALLOW_THIS_TAB)
-                        goto(parseURL(next.href).addSearch({ tool: `raid-stopper--${ method }` }, true).href);
+                        goto(parseURL(next.href).addSearch({ tool: `raid-stopper--${ method }` }).href);
                     else
                         Runtime.sendMessage({ action: 'STEAL_UP_NEXT', next: next.href, from: STREAMER?.name, method }, ({ next, from, method }) => {
                             $notice(`Stealing an Up Next job (raid): ${ from } → ${ next }`);
 
-                            goto(parseURL(next).addSearch({ tool: `raid-stopper--${ method }` }, true).href);
+                            goto(parseURL(next).addSearch({ tool: `raid-stopper--${ method }` }).href);
                         });
 
                     let index = ALL_FIRST_IN_LINE_JOBS.indexOf(FIRST_IN_LINE_HREF),
@@ -11515,18 +11759,18 @@ let Initialize = async(START_OVER = false) => {
             if(defined(next)) {
                 $warn(`${ STREAMER?.name } is no longer live. Moving onto next channel (${ next.name })`, next.href, new Date);
 
-                REDO_FIRST_IN_LINE_QUEUE( parseURL(FIRST_IN_LINE_HREF)?.addSearch?.({ from: STREAMER?.name }, true)?.href );
+                REDO_FIRST_IN_LINE_QUEUE( parseURL(FIRST_IN_LINE_HREF)?.addSearch?.({ from: STREAMER?.name })?.href );
 
                 let index = ALL_FIRST_IN_LINE_JOBS.indexOf(FIRST_IN_LINE_HREF),
                     [removed] = ALL_FIRST_IN_LINE_JOBS.splice(index, 1);
 
                 if(UP_NEXT_ALLOW_THIS_TAB)
-                    Cache.save({ ALL_FIRST_IN_LINE_JOBS, FIRST_IN_LINE_DUE_DATE }, () => goto(parseURL(next.href).addSearch({ obit: STREAMER?.name, tool: 'stay-live' }, true).href));
+                    Cache.save({ ALL_FIRST_IN_LINE_JOBS, FIRST_IN_LINE_DUE_DATE }, () => goto(parseURL(next.href).addSearch({ obit: STREAMER?.name, tool: 'stay-live' }).href));
                 else
                     Runtime.sendMessage({ action: 'STEAL_UP_NEXT', next: next.href, obit: STREAMER?.name }, ({ next, obit }) => {
                         $notice(`Stealing an Up Next job (stay live): ${ obit } → ${ next }`);
 
-                        goto(parseURL(next).addSearch({ obit, tool: 'stay-live--steal' }, true).href);
+                        goto(parseURL(next).addSearch({ obit, tool: 'stay-live--steal' }).href);
                     });
             } else  {
                 $warn(`${ STREAMER?.name } is no longer live. There doesn't seem to be any followed channels on right now`, new Date);
@@ -14625,7 +14869,7 @@ let Initialize = async(START_OVER = false) => {
                             Cache.save({ ALL_FIRST_IN_LINE_JOBS, FIRST_IN_LINE_DUE_DATE }, () => {
                                 $log('Skipping queue in favor of a DVR channel', job);
 
-                                goto(parseURL(job).addSearch({ dvr: true }, true).href);
+                                goto(parseURL(job).addSearch({ dvr: true }).href);
                             });
                         }
 
@@ -15056,17 +15300,20 @@ let Initialize = async(START_OVER = false) => {
 
         $error('The stream ran into an error:', errorMessage.textContent, new Date);
 
-        if(/\b(subscribe|mature)\b/i.test(errorMessage.textContent)) {
-            let next = await GetNextStreamer(STREAMER.name);
+        let latin = top.location.pathname.slice(1).split('/').shift();
+        let native = $(`a[href$="${ latin }"i] [class*="title"]`)?.textContent ?? latin;
+
+        if(errorMessage.closest('[class*="content"i]:is([role], [data-a-target])')?.textContent?.includes(native)) {
+            let next = await GetNextStreamer(latin);
 
             // Subscriber only, etc.
             if(defined(next))
-                goto(parseURL(next.href).addSearch({ tool: 'video-recovery--non-subscriber' }, true).href);
+                goto(parseURL(next.href).addSearch({ tool: 'video-recovery--non-subscriber' }).href);
         } else {
             ($('button', errorMessage) ?? errorMessage.closest('button'))?.click();
 
             // Failed to play video at...
-            addToSearch({ 'tt-err-vid': 'video-recovery--player-error' });
+            addReport({ 'TTV-Tools-failed-to-recover-video': (errorMessage?.textContent ?? 'Unknown error') });
 
             RECOVERING_VIDEO = false;
         }
@@ -15191,7 +15438,7 @@ let Initialize = async(START_OVER = false) => {
         $error(message);
 
         if(/content.*unavailable/i.test(message) && defined(next))
-            goto(parseURL(next.href).addSearch({ tool: 'page-recovery--content-unavailable' }, true).href);
+            goto(parseURL(next.href).addSearch({ tool: 'page-recovery--content-unavailable' }).href);
         else
             ReloadPage();
 
@@ -16026,12 +16273,12 @@ if(top == window) {
 
                             if(parseBool(Settings.recover_pages)) {
                                 if(++RECOVERY_TRIALS > 10)
-                                    addToSearch(NOT_LOADED_CORRECTLY.map(fail => `fail_to_load_${ fail }=true`).join('&'), true);
+                                    addReport(NOT_LOADED_CORRECTLY.map(fail => ({ [`fail-to-load-${ fail }`]: true })), true);
                                 return false;
                             }
 
                             // Failed to activate job at...
-                            // addToSearch({ 'tt-err-job': (+new Date).toString(36) }, true);
+                            // addReport({ 'TTV-Tools-failed-to-load-module': new Date().toString() }, true);
 
                             return ready;
                         }, Math.max(...Object.values(Timers))).then(ready => Initialize.ready = ready);
