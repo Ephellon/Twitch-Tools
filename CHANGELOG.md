@@ -74,11 +74,14 @@
 - [ ] First in Line will sometimes be stuck at 0s
 - [ ] Add "Smart Sort" for First in Line
     - Sort by context and/or normal runtimes
-- [ ] Add hover previews to all Twitch pages (#19)
+- [x] Add hover previews to all Twitch pages (#19)
 
 ----
 
 # DONE &mdash; Notable Changes
+> [`5.33.4.8`](https://github.com/Ephellon/Twitch-Tools/releases/tag/5.33.4.8)
+- Changed some event timings on Settings Page to help with CPU usage
+
 > [`5.33.4.7`](https://github.com/Ephellon/Twitch-Tools/releases/tag/5.33.4.7)
 - Modified `GetQuality` logic
 - Modified `get STREAMER.rank` logic

@@ -1174,7 +1174,7 @@ setInterval(() => {
 
 /* All of the "clickables" */
 
-$.all('#whisper_audio_sound').map(element => element.onchange = async event => wait(10).then(() => $('#whisper_audio_sound-test')?.click()));
+$.all('#whisper_audio_sound').map(element => element.onchange = async event => wait(100).then(() => $('#whisper_audio_sound-test')?.click()));
 
 $.all('#whisper_audio_sound-test').map(button => button.onclick = async event => {
     let [selected] = $('#whisper_audio_sound').selectedOptions;
@@ -2110,7 +2110,7 @@ setInterval(() => {
             wait(1000, input).then(input => onchange({ currentTarget: input }));
         });
     });
-}, 10);
+}, 100);
 
 // Search for a setting...
 $.body.onkeydown = event => {
