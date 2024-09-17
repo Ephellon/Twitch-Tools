@@ -2030,7 +2030,7 @@ let Chat__Initialize = async(START_OVER = false) => {
                     }
 
                     let aliasContainer = $(`[data-blerp="${ parseURL(url).pathname }"i]`),
-                        audioContainer = f(`audio[controls]`, { style: 'margin:1rem 0; min-width:-webkit-fill-available; min-width:-moz-available;' }, f.source({ src: audio }));
+                        audioContainer = f(`audio[controls]`, { style: 'margin:1rem 0; min-width:50%;' }, f.source({ src: audio }));
 
                     if(nullish(aliasContainer))
                         return;

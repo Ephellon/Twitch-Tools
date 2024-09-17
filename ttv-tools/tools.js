@@ -3156,14 +3156,13 @@ try {
             { availHeight, availWidth } = screen,
             { innerHeight, innerWidth } = window;
 
-        // Anchors
-        let anchor = event.target.closest('a, [href]');
-
-        // Selections
+        // Text Selection(s)
         let selectionText = getSelection(),
             { baseNode, baseOffset, extentNode, extentOffset } = selectionText;
-
         selectionText = (selectionText + '').trim().normalize('NFKD');
+
+        // Anchors
+        let anchor = event.target.closest('a, [href]');
 
         // Images
         let image = event.target.closest('img, picture');
@@ -3171,56 +3170,12 @@ try {
         // Videos
         let video = event.target.closest('[data-a-target="video-player"i]');
 
+        // Iframes
+        let iframe = event.target.closest('iframe:is([src^="https://player.twitch.tv"i], [src^="//player.twitch.tv"i], [src^="player.twitch.tv"i])');
+
         // ---- ---- START ---- ---- //
 
-        // Anchors
-        if(defined(anchor)) {
-            let { href, scheme, host } = parseURL(anchor.href),
-                text = anchor.textContent;
-
-            switch(scheme.toLowerCase()) {
-                case 'mailto': {
-                    extras.push({
-                        text: `E-mail <strong>${ text }</strong>`,
-                        icon: 'chat',
-                        action: event => top.open(href, '_blank'),
-                    },{
-                        text: `Copy e-mail address`,
-                        icon: 'bolt',
-                        action: event => navigator.clipboard.writeText(host),
-                    });
-                } break;
-
-                case 'tel': {
-                    extras.push({
-                        text: `Dial <strong>${ text }</strong>`,
-                        icon: 'chat',
-                        action: event => top.open(href, '_blank'),
-                    },{
-                        text: `Copy telephone number`,
-                        icon: 'bolt',
-                        action: event => navigator.clipboard.writeText(host),
-                    });
-                } break;
-
-                default: {
-                    extras.push({
-                        text: `Open link in new tab`,
-                        icon: 'ne_arrow',
-                        favicon: parseURL(href).origin.replace(/^(https?):\/\/.+$/i, ($0, $1, $$, $_) => furnish.span().text($1.toUpperCase()).css(`background:${ ($1.equals('https')? '#22FA7C': '#FCC21B') } !important!innate;`).html()),
-                        action: event => top.open(href, '_blank'),
-                    },{
-                        text: `Copy link address`,
-                        icon: 'bolt',
-                        action: event => navigator.clipboard.writeText(href),
-                    });
-                } break;
-            }
-
-            extras.push({});
-        }
-
-        // Selections
+        // Text Selection(s)
         if(selectionText?.length) {
             let email = /(?:[a-z0-9!#$%&'*+/=?^_`{|}~-]+(?:\.[a-z0-9!#$%&'*+/=?^_`{|}~-]+)*|"(?:[\x01-\x08\x0b\x0c\x0e-\x1f\x21\x23-\x5b\x5d-\x7f]|\\[\x01-\x09\x0b\x0c\x0e-\x7f])*")@(?:(?:[a-z0-9](?:[a-z0-9-]*[a-z0-9])?\.)+[a-z0-9](?:[a-z0-9-]*[a-z0-9])?|\[(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?|[a-z0-9-]*[a-z0-9]:(?:[\x01-\x08\x0b\x0c\x0e-\x1f\x21-\x5a\x53-\x7f]|\\[\x01-\x09\x0b\x0c\x0e-\x7f])+)\])/i
             if(email.test(selectionText)) {
@@ -3271,8 +3226,54 @@ try {
             }
         }
 
-        // Image
+        // Anchors
+        if(defined(anchor)) {
+            let { href, scheme, host } = parseURL(anchor.href),
+                text = anchor.textContent;
 
+            switch(scheme.toLowerCase()) {
+                case 'mailto': {
+                    extras.push({
+                        text: `E-mail <strong>${ text }</strong>`,
+                        icon: 'chat',
+                        action: event => top.open(href, '_blank'),
+                    },{
+                        text: `Copy e-mail address`,
+                        icon: 'bolt',
+                        action: event => navigator.clipboard.writeText(host),
+                    });
+                } break;
+
+                case 'tel': {
+                    extras.push({
+                        text: `Dial <strong>${ text }</strong>`,
+                        icon: 'chat',
+                        action: event => top.open(href, '_blank'),
+                    },{
+                        text: `Copy telephone number`,
+                        icon: 'bolt',
+                        action: event => navigator.clipboard.writeText(host),
+                    });
+                } break;
+
+                default: {
+                    extras.push({
+                        text: `Open link in new tab`,
+                        icon: 'ne_arrow',
+                        favicon: parseURL(href).origin.replace(/^(https?):\/\/.+$/i, ($0, $1, $$, $_) => furnish.span().text($1.toUpperCase()).css(`background:${ ($1.equals('https')? '#22FA7C': '#FCC21B') } !important!innate;`).html()),
+                        action: event => top.open(href, '_blank'),
+                    },{
+                        text: `Copy link address`,
+                        icon: 'bolt',
+                        action: event => navigator.clipboard.writeText(href),
+                    });
+                } break;
+            }
+
+            extras.push({});
+        }
+
+        // Image
         else if(defined(image)) {
             let { src } = image;
             let [tail = 'png', ...name] = parseURL(src).filename?.split('.')?.reverse() ?? [];
@@ -3339,6 +3340,15 @@ try {
                         wait(VideoClips.length).then(() => phantomClick($(`.tt-prompt-footer button.okay`, $(`input[controller][anchor="${ $('video[uuid]').uuid }"i]`)?.closest('.tt-prompt-container'))));
                     });
                 },
+            });
+        }
+
+        // Iframe
+        else if(defined(iframe)) {
+            extras.push({
+                text: `Open video in new tab`,
+                icon: 'popout',
+                action: event => top.open(`//player.twitch.tv/?channel=${ STREAMER.name }&parent=twitch.tv`, '_blank'),
             });
         }
 
@@ -7160,7 +7170,7 @@ let Initialize = async(START_OVER = false) => {
                     if(error.length > 0)
                         alert.timed(`An error occurred while trying to claim ${ claimed }`, 7000);
                     else
-                        alert.timed(`Claimed ${ claimed }!`, 7000);
+                        alert.timed(`Claiming ${ claimed }!`, 7000);
                 }
             }).then(() => TTV_DROPS_CHECKER(btn_str));
         })('.tw-tower *:not([class*="tooltip"i]) > button:not([class*="image"i])');
@@ -7458,6 +7468,8 @@ let Initialize = async(START_OVER = false) => {
         if(NORMAL_MODE && nullish(FIRST_IN_LINE_BALLOON)) {
             FIRST_IN_LINE_BALLOON = new Balloon({ title: 'Up Next', icon: (UP_NEXT_ALLOW_THIS_TAB? 'calendar': 'error') });
 
+            let imgSize = '70px';
+
             // Pin: Go to this person when the stream(s) end
             let pinned_button = FIRST_IN_LINE_BALLOON?.addButton({
                 attributes: {
@@ -7541,13 +7553,12 @@ let Initialize = async(START_OVER = false) => {
                         let { icon, live } = channel;
                         let pinned = parseBool(GetNextStreamer.pinnedStreamer?.equals(name));
                         let wanted = WantedNames.has(name);
+                        let current = name.equals(STREAMER.name);
 
                         let desc = (STREAMER.jump?.[_name]?.title ?? '');
                         let game = (STREAMER.jump?.[_name]?.stream?.game?.name ?? '');
 
                         autocomplete(search, { [name]: [name, game, desc].filter(s => s.length).join(' - ') });
-
-                        let imgSize = '70px';
 
                         let container = f(`.tt-pinnable`, { name, game, desc, live, style: `animation:fade-in 1s 1; background:var(--color-background-${ pinned? 'chat': 'base' })` },
                             f('.simplebar-scroll-content',
@@ -7567,46 +7578,57 @@ let Initialize = async(START_OVER = false) => {
                                                 f('a.tt-block.tt-full-width.tt-interactable.tt-interactable--alpha.tt-interactable--hover-enabled.tt-interactive[@testSelector=persistent-notification__click]',
                                                     {
                                                         // Sometimes, Twitch likes to default to `_blank`
-                                                        'target': '_self',
+                                                        target: '_self',
 
                                                         '@pinned': pinned,
                                                         '@name': name,
                                                         '@icon': icon,
-                                                        'href': `#\uD83D\uDCCC${ name }`,
+                                                        href: `#\uD83D\uDCCC${ name }`,
+                                                        style: `color:inherit!important`,
 
-                                                        onmouseup({ currentTarget }) {
-                                                            let pinned;
+                                                        onmouseup(event) {
+                                                            event.preventDefault(true);
 
-                                                            if(parseBool(currentTarget.dataset.pinned)) {
-                                                                pinned = currentTarget.dataset.pinned = false;
+                                                            let { currentTarget } = event;
+                                                            let pinned = parseBool(currentTarget.dataset.pinned);
+                                                            let oldValue, newValue;
+
+                                                            unpin: if(defined(GetNextStreamer.pinnedStreamer)) {
+                                                                let pidged = $(`.tt-pinnable [data-name="${ GetNextStreamer.pinnedStreamer }"i]`);
+
+                                                                if(nullish(pidged))
+                                                                    break unpin;
+
+                                                                oldValue = { ...pidged.dataset };
+                                                                pidged.dataset.pinned = false;
+                                                                pidged.closest('.tt-pinnable').modStyle(`background:var(--color-background-base);`);
+                                                                $('.tt-balloon-message strong', pidged).modStyle(`color:!delete`);
+                                                                $('strong', pidged).html(`${ name } &bull; Click to pin \uD83D\uDCCC`);
+
+                                                                pidged.closest('form')?.insertAdjacentElement('afterend', pidged.closest('.tt-pinnable'));
+                                                            }
+
+                                                            if(pinned) {
                                                                 delete GetNextStreamer.pinnedStreamer;
                                                                 $('#pinned-streamer').innerHTML = Glyphs.pinned;
 
-                                                                currentTarget.closest('.tt-pinnable').modStyle(`background:var(--color-background-base);`);
-                                                                $('.tt-balloon-message strong', currentTarget).modStyle(`color:!delete`);
-                                                                $('.tt-footer', currentTarget).html(``);
-
                                                                 Cache.remove(['PinnedStreamer']);
                                                             } else {
-                                                                if(defined(GetNextStreamer.pinnedStreamer)) {
-                                                                    let pidged = $(`.tt-pinnable [data-name="${ GetNextStreamer.pinnedStreamer }"i]`);
-
-                                                                    pidged.dataset.pinned = false;
-                                                                    pidged.closest('.tt-pinnable').modStyle(`background:var(--color-background-base);`);
-                                                                    $('.tt-balloon-message strong', pidged).modStyle(`color:!delete`);
-                                                                    $('.tt-footer', pidged).html(``);
-                                                                }
-
+                                                                newValue = { ...currentTarget.dataset };
                                                                 pinned = currentTarget.dataset.pinned = true;
                                                                 GetNextStreamer.pinnedStreamer = currentTarget.dataset.name;
                                                                 $('#pinned-streamer').innerHTML = furnish(`.tt-border-radius-rounded`).with(furnish.img({ src: currentTarget.dataset.icon, style: `min-width:calc(${ imgSize }/2); border-radius:${ imgSize }` })).outerHTML;
 
                                                                 currentTarget.closest('.tt-pinnable').modStyle(`background:var(--color-background-chat);`);
                                                                 $('.tt-balloon-message strong', currentTarget).modStyle(`color:var(--color-amazon)`);
-                                                                $('.tt-footer', currentTarget).html(`Pinned. Will go to when needed`);
+                                                                $('strong', currentTarget).html(`${ name } &bull; Pinned. Click to unpin`);
+
+                                                                currentTarget.closest('[id$="listing"i]').querySelector('form')?.insertAdjacentElement('beforeend', currentTarget.closest('.tt-pinnable'));
 
                                                                 Cache.save({ PinnedStreamer: GetNextStreamer.pinnedStreamer });
                                                             }
+
+                                                            Runtime.sendMessage({ action: `UPDATE_PINNED_STREAMER`, oldValue, newValue  });
                                                         },
                                                     },
                                                     f('.persistent-notification__area.tt-flex.tt-flex-nowrap.tt-pd-b-1.tt-pd-l-1.tt-pd-r-3.tt-pd-t-1').with(
@@ -7624,23 +7646,22 @@ let Initialize = async(START_OVER = false) => {
                                                                 f('span.tt-c-text-alt').with(
                                                                     f('p.tt-balloon-message').with(
                                                                         f.span(
-                                                                            f(`strong`, { innerHTML: `${ name } `, style: (pinned? 'color:var(--color-amazon)': '') }),
-                                                                            f(`span.tt-${ (live? 'live': 'offline') }`, {
-                                                                                style: `min-width:3.5em; background-color:var(--color-background-${ (live? 'live': 'alt-2') }) }`
-                                                                            }, (wanted? live? 'live': 'offline': 'suggested').toUpperCase())
+                                                                            f(`strong`, { innerHTML: `${ name } &bull; ${pinned? "Pinned. Click to unpin": "Click to pin \uD83D\uDCCC"}`, style: (pinned? 'color:var(--color-amazon)': '') })
                                                                         )
                                                                     )
                                                                 )
                                                             ),
                                                             // Subheader
                                                             f('.tt-align-items-center.tt-flex.tt-flex-shrink-0.tt-mg-t-05', { style: `max-width:100%` }).with(
-                                                                f('.tt-mg-l-05', { style: `max-width:inherit` }).with(
+                                                                f(`[style="max-width:inherit"]`).with(
                                                                     f(`p.tt-hide-text-overflow`, { style: `text-indent:.25em; max-width:inherit` }).setTooltip(desc, { from: 'top' }).with(desc)
                                                                 )
                                                             ),
                                                             // Footer (persistent)
                                                             f('.tt-footer').with(
-                                                                `Click to ${ pinned? 'un': '' }pin ${ name }`
+                                                                f(`span.tt-${ (live? 'live': 'offline') }`, {
+                                                                    style: `min-width:3.5em; background-color:var(--color-background-${ (current? 'accent': wanted? live? 'live': 'alt-2': 'brand') })`
+                                                                }, (current? 'viewing': wanted? live? 'live': 'offline': 'suggested').toUpperCase())
                                                             )
                                                         )
                                                     )
@@ -7661,6 +7682,18 @@ let Initialize = async(START_OVER = false) => {
             });
 
             pinned_button.tooltip = new Tooltip(pinned_button, 'Pin a user to go to when the queue is <em>empty</em> and <em>offline</em>');
+            if(defined(GetNextStreamer.pinnedStreamer))
+                when.sated(() => ALL_CHANNELS).then(A_C =>
+                    pinned_button.innerHTML = furnish(`.tt-border-radius-rounded`).with(
+                        furnish.img({
+                            src: (null
+                                ?? A_C.find(c => c.name.equals(GetNextStreamer.pinnedStreamer))?.icon
+                                ?? `https://static-cdn.jtvnw.net/ttv-static-metadata/twitch_logo3.jpg`
+                            ),
+                            style: `min-width:calc(${ imgSize }/2); border-radius:${ imgSize }`,
+                        })
+                    ).outerHTML
+                );
 
             // Up Next Boost Button
             let first_in_line_boost_button = FIRST_IN_LINE_BALLOON?.addButton({
@@ -11765,7 +11798,7 @@ let Initialize = async(START_OVER = false) => {
                     [removed] = ALL_FIRST_IN_LINE_JOBS.splice(index, 1);
 
                 if(UP_NEXT_ALLOW_THIS_TAB)
-                    Cache.save({ ALL_FIRST_IN_LINE_JOBS, FIRST_IN_LINE_DUE_DATE }, () => goto(parseURL(next.href).addSearch({ obit: STREAMER?.name, tool: 'stay-live' }).href));
+                    Cache.save({ ALL_FIRST_IN_LINE_JOBS, FIRST_IN_LINE_DUE_DATE }, () => goto(parseURL(next.href)?.addSearch?.({ obit: STREAMER?.name, tool: 'stay-live' })?.href ?? '?tool=stay-live'));
                 else
                     Runtime.sendMessage({ action: 'STEAL_UP_NEXT', next: next.href, obit: STREAMER?.name }, ({ next, obit }) => {
                         $notice(`Stealing an Up Next job (stay live): ${ obit } → ${ next }`);
@@ -12862,7 +12895,7 @@ let Initialize = async(START_OVER = false) => {
                     || /\b(aua|(b|ch)o|canys|dla|eest|f([oö]a?r|un|yrir)|gia|hoki|kw?a(nggo|y)?|m(aka|ert)|ngoba|[ps](ara|[eëo]u?r?|r([eo]|iek))|quia|rau|til|untuk|v(arten|i|oo)r|ye|z(a|um))\b/i
                         .test(zone)
                     // "nor" or "or"
-                    // || /\b(n?or)\b/i
+                    // || /\b(n?or?)\b/i
                     //     .test(zone)
                     // "but" or "and"
                     || /\b(a([bw]?er?|g(a|us)|ka?|[ls][ei]|m(m[ao]|pak)|nd|ti?)?|b(aina|[eu]t)|d(an|he)|e(n(gari)?|s|ta?)?|izda|k(a[ij]|[ou]ma)|l(an|e)|ja|lebe|m(a([anr]{2}|i?s)?|en|utta)|no|[ou]g|s(ed|is)|(te)?ta(b|pi)|u(nd)?|v[ae]|y)\b/i
@@ -12883,7 +12916,10 @@ let Initialize = async(START_OVER = false) => {
             for(let regexp of TIME_ZONE__REGEXPS) {
                 replacing:
                 for(let MAX = Object.keys(TIME_ZONE__CONVERSIONS).length; --MAX > 0 && regexp.test(convertWordsToTimes(container?.innerText));) {
-                    container = container.getElementByText(regexp) ?? container.getElementByText(/\b(after\s?noons?|evenings?|noons?|lunch[\s\-]?time|mid[\s\-]?nights?)\b/iu);
+                    container = (null
+                        ?? container.getElementByText(regexp)
+                        ?? container.getElementByText(/\b(after\s?noons?|evenings?|noons?|lunch[\s\-]?time|mid[\s\-]?nights?)\b/iu)
+                    );
 
                     if(nullish(container))
                         continue searching;
@@ -12897,6 +12933,9 @@ let Initialize = async(START_OVER = false) => {
                     let { groups, index, length } = regexp.exec(convertedText),
                         { hour, minute = ':00', offset = '', meridiem = '', timezone = MASTER_TIME_ZONE } = groups,
                         timesone = timezone?.replace(/^([^s])t$/, '$1st')?.replace(/^([^S])T$/, '$1ST') ?? '';
+
+                    if(offset.length > 0 && isNaN(parseInt(offset)))
+                        continue;
 
                     let misint = timezone?.mutilate(),
                         MISINT = timezone?.toUpperCase(),
@@ -12921,9 +12960,6 @@ let Initialize = async(START_OVER = false) => {
                         _hr_ = new Date(STREAMER.data?.actualStartTime || now).getHours(),
                         autoMeridiem = "AP"[+(_hr_ > 11)];
 
-                    if(offset.length > 0 && isNaN(parseInt(offset)))
-                        continue;
-
                     let houl = hour = parseInt(hour);
 
                     hour += (
@@ -12934,7 +12970,8 @@ let Initialize = async(START_OVER = false) => {
                         +/\Bdt$/i.test(timezone)
                     );
 
-                    if(meridiem[0]?.unlike(autoMeridiem)) {
+                    // Doesn't work as intended? Or works too well
+                    if(meridiem[0]?.length < autoMeridiem.length) {
                         if(autoMeridiem == 'A')
                             hour -= 12;
                         else
@@ -13001,7 +13038,7 @@ let Initialize = async(START_OVER = false) => {
                 let [newText, oldText] = TZC[index].split('|');
 
                 let span = furnish('span', {
-                    id: `tt-time-zone-${ (new UUID) }`,
+                    id: `tt-time-zone--${ new nanoid(10, nanoid.LOWERCASE_SAFE) }`,
                     style: 'color:var(--user-contrast-color); text-decoration:underline 2px; width:min-content; white-space:nowrap',
                     contrast: THEME__PREFERRED_CONTRAST,
                     innerHTML: unescape(atob(newText)).split('').join('&zwj;').pad('&zwj;'),
@@ -13462,6 +13499,146 @@ let Initialize = async(START_OVER = false) => {
      *
      *
      */
+    /***
+     *      ____  _            _      ____
+     *     |  _ \| |          | |    |  _ \
+     *     | |_) | | ___   ___| | __ | |_) | __ _ _ __  _ __   ___ _ __ ___
+     *     |  _ <| |/ _ \ / __| |/ / |  _ < / _` | '_ \| '_ \ / _ \ '__/ __|
+     *     | |_) | | (_) | (__|   <  | |_) | (_| | | | | | | |  __/ |  \__ \
+     *     |____/|_|\___/ \___|_|\_\ |____/ \__,_|_| |_|_| |_|\___|_|  |___/
+     *
+     *
+     */
+    const UNWANTED_BANNER_AD_SELECTOR = new ClipName(1).replace(/^[A-Z]/, $0 => $0.toLowerCase());
+
+    Handlers.block_banners = () => {
+        /** Syntax (CSS-superset) — Comments are not allowed in the actual syntax. Each line represents a banner query.
+         * [class*="turbo"i]                // Find all `[class*="turbo"i]`
+         * [class*="subtember"i] < 1        // Find all `[class*="subtember"i]`, then travel up one (1) generation (elements' "parent")
+         * [class*="subtember"i] <          // Same as previous (elements' "parent")
+         * [style*="asset"i] < button < 3   // Find all `[style*="asset"i]`, travel up to closest `button`, then travel up three more (3) generations (buttons' "great-grand-parent")
+         */
+        // TTV Tools — Banner Rules
+        fetchURL.fromDisk(`//ephellon.github.io/ttv-tools/ad-banners.css`, { hoursUntilEntryExpires: 24 }).then(r => r.text()).then(bannerSelectors => {
+            bannerSelectors = bannerSelectors.split(/[\r\n]+/).filter(s => s.trim().length).map(selector => {
+                let syntaxes = [];
+                let path = [''];
+                let curr = "";
+                let esc = false;
+                let detect = char => {
+                    let { length } = syntaxes;
+
+                    if(char == '(') {
+                        curr = char;
+                        syntaxes.push('operator');
+                    } else if(char == '[') {
+                        curr = char;
+                        syntaxes.push('attribute');
+                    } else if(char == '"') {
+                        syntaxes.push('d-string');
+                    } else if(char == "'") {
+                        syntaxes.push('s-string');
+                    } else if(char == '<') {
+                        path.push('');
+                        syntaxes.push('closest');
+                    }
+
+                    return length < syntaxes.length;
+                };
+
+                constructing: for(let char of selector)
+                    switch(syntaxes.at(-1)) {
+                        case 'operator': {
+                            curr += char;
+
+                            if(detect(char))
+                                continue constructing;
+                            else if(char == ')') {
+                                path[path.length - 1] = curr;
+
+                                curr = "";
+                                syntaxes.pop();
+                            }
+                        } break;
+
+                        case 'attribute': {
+                            curr += char;
+
+                            if(detect(char))
+                                continue constructing;
+                            else if(char == ']') {
+                                path[path.length - 1] = curr;
+
+                                curr = "";
+                                syntaxes.pop();
+                            }
+                        } break;
+
+                        case 'd-string': {
+                            curr += char;
+
+                            if(char == '\\')
+                                esc = !esc;
+                            else if(esc)
+                                esc = !esc;
+                            else if(!esc && char == '"')
+                                syntaxes.pop();
+                        } break;
+
+                        case 's-string': {
+                            curr += char;
+
+                            if(char == '\\')
+                                esc = !esc;
+                            else if(esc)
+                                esc = !esc;
+                            else if(!esc && char == "'")
+                                syntaxes.pop();
+                        } break;
+
+                        case 'closest': {
+                            if(detect(char))
+                                continue constructing;
+                            else
+                                path[path.length - 1] += char;
+                        } break;
+
+                        default: {
+                            detect(char);
+                        } break;
+                    }
+
+                return path.reduce((elements, v, i, a) => {
+                    if(i === 0)
+                        return $.all(v);
+
+                    let c = parseInt(v.trim() || '1');
+
+                    if(Number.isNaN(c))
+                        return elements.map(el => el.closest(v)).filter(defined);
+                    else for(;c--;)
+                        return elements.map(el => el.parentElement).filter(defined);
+                }, null).isolate().forEach(el => el.dataset[UNWANTED_BANNER_AD_SELECTOR] = true);
+            });
+
+            AddCustomCSSBlock('Remove Banner Ads', `[data-${ UNWANTED_BANNER_AD_SELECTOR.replace(/[A-Z]/g, $0 => '-' + $0.toLowerCase()) }="true"i] {display:none!important}`);
+        });
+    };
+    Timers.block_banners = 2_500;
+
+    Unhandlers.block_banners = () => {
+        RemoveCustomCSSBlock('Remove Banner Ads');
+    };
+
+    __BlockBanners__:
+    if(parseBool(Settings.block_banners)) {
+        let listener = DelayJob('block_banners');
+
+        $.body.addEventListener('mouseup', listener);
+
+        listener();
+    }
+
     /*** Points Receipt & Ranking
      *      _____      _       _         _____               _       _
      *     |  __ \    (_)     | |       |  __ \             (_)     | |
@@ -13564,19 +13741,21 @@ let Initialize = async(START_OVER = false) => {
                 if(nullish(container))
                     return StopWatch.stop('points_receipt_placement__ranking');
 
-                let { cult, rank } = STREAMER,
-                    place = (100 * (rank / cult)).clamp(1, 100) | 0,
-                    string = nth(rank.toLocaleString(LANGUAGE)),
+                // Field tests show that generally (for established streams): ≤1% of followers are actively watching at any given time during a stream
+                let scale = n => n**2;
+                let { cult, poll, rank } = STREAMER,
+                    place = (100 * scale(rank / cult)).clamp(1, 100) | 0,
+                    string = nth((rank * scale(rank / cult)).round().toLocaleString(LANGUAGE)),
                     color = (null
-                        ?? ['#FFD700', '#C0C0C0', '#CD7F32'][place - 1]
+                        ?? ['#FFD700', '#C0C0C0', '#CD7F32'][((place / 10).ceil() || 1) - 1]
                         ?? '#91FF47'
                     );
 
                 rank = (
                     rank < 1 || isNaN(rank)?
                         '&infin;':
-                    place < 4?
-                        `<span style="text-decoration:${ 4 - place }px underline ${ color }">${ string }</span>`:
+                    place <= 30?
+                        `<span style="text-decoration:${ 4 - ((place / 10).ceil() || 1) }px underline ${ color }">${ string }</span>`:
                     string
                 );
 
@@ -15028,7 +15207,9 @@ let Initialize = async(START_OVER = false) => {
         VIDEO_CREATION_TIME,
         TOTAL_VIDEO_FRAMES,
         PAGE_HAS_FOCUS = document.visibilityState.equals("visible"),
-        VIDEO_OVERRIDE = false;
+        VIDEO_OVERRIDE = false,
+        FRAME_HASH_ALLOWED = ((navigator.deviceMemory ?? 0) > 1),
+        PREVIOUS_FRAME_HASH;
 
     Handlers.recover_frames = () => {
         new StopWatch('recover_frames');
@@ -15041,7 +15222,8 @@ let Initialize = async(START_OVER = false) => {
         let { paused } = video,
             isTrusted = $.defined('button[data-a-player-state="paused"i]'),
             isAdvert = $.defined('[data-a-target*="ad-countdown"i]'),
-            { creationTime, totalVideoFrames } = video.getVideoPlaybackQuality();
+            { creationTime, totalVideoFrames } = video.getVideoPlaybackQuality(),
+            cframe = () => ($.defined('#tt-embedded-video')? performance.now(): FRAME_HASH_ALLOWED? UUID.from($('video').captureFrame()).value: null);
 
         // Time that's passed since creation. Should constantly increase
         VIDEO_CREATION_TIME ??= creationTime;
@@ -15049,13 +15231,25 @@ let Initialize = async(START_OVER = false) => {
         // The total number of frames created. Should constantly increase
         TOTAL_VIDEO_FRAMES ??= totalVideoFrames;
 
+        // The frame's hash. Used to detect black screens
+        PREVIOUS_FRAME_HASH ??= cframe();
+
         // if the page isn't in focus, ignore this setting
         // if the video is paused by the user (trusted) move on
         if((paused && isTrusted) || PAGE_HAS_FOCUS === false)
             return StopWatch.stop('recover_frames');
 
         // The video is stalling: either stuck on the same frame, or lagging behind 15 frames
-        if(creationTime !== VIDEO_CREATION_TIME && (totalVideoFrames === TOTAL_VIDEO_FRAMES || totalVideoFrames - TOTAL_VIDEO_FRAMES < 15)) {
+        if(true
+            && (false
+                || (creationTime !== VIDEO_CREATION_TIME)
+                || (PREVIOUS_FRAME_HASH === cframe())
+            )
+            && (false
+                || (totalVideoFrames === TOTAL_VIDEO_FRAMES)
+                || (totalVideoFrames - TOTAL_VIDEO_FRAMES < 15)
+            )
+        ) {
             if(SECONDS_VIDEO_PAUSED_UNSAFELY > 0 && !(SECONDS_VIDEO_PAUSED_UNSAFELY % 5))
                 $warn(`The video has been stalling for ${ SECONDS_VIDEO_PAUSED_UNSAFELY }s`, { VIDEO_CREATION_TIME, TOTAL_VIDEO_FRAMES, SECONDS_VIDEO_PAUSED_UNSAFELY }, 'Frames fallen behind:', totalVideoFrames - TOTAL_VIDEO_FRAMES);
 
@@ -15150,6 +15344,7 @@ let Initialize = async(START_OVER = false) => {
             // Try constantly overwriting to see if the video plays
             // VIDEO_CREATION_TIME = creationTime; // Keep this from becoming true to force a re-run
             TOTAL_VIDEO_FRAMES = totalVideoFrames;
+            PREVIOUS_FRAME_HASH = cframe();
 
             ++SECONDS_VIDEO_PAUSED_UNSAFELY;
 
@@ -15160,6 +15355,7 @@ let Initialize = async(START_OVER = false) => {
             // Start over
             VIDEO_CREATION_TIME = creationTime;
             TOTAL_VIDEO_FRAMES = totalVideoFrames;
+            PREVIOUS_FRAME_HASH = cframe();
 
             video.stalling = false;
 
@@ -15320,7 +15516,7 @@ let Initialize = async(START_OVER = false) => {
 
         StopWatch.stop('recover_video');
     };
-    Timers.recover_video = 5000;
+    Timers.recover_video = 10_000;
 
     __RecoverVideo__:
     if(parseBool(Settings.recover_video)) {
@@ -16897,6 +17093,52 @@ if(top == window) {
                         respond({ ok: true });
 
                         wait(500).then(() => window.close());
+                    } break;
+
+                    case 'update-pinned-streamer': {
+                        $log("Updating pinned streamer...", request);
+
+                        when.defined(() => top.GetNextStreamer).then(_ => {
+                            let imgSize = '70px';
+
+                            unpin: if(defined(request.oldValue?.name)) {
+                                let pidged = $(`.tt-pinnable [data-name="${ request.oldValue.name }"i]`);
+
+                                delete _.pinnedStreamer;
+                                $('#pinned-streamer').innerHTML = Glyphs.pinned;
+
+                                if(nullish(pidged))
+                                    break unpin;
+
+                                pidged.dataset.pinned = false;
+                                pidged.closest('.tt-pinnable').modStyle(`background:var(--color-background-base);`);
+                                $('.tt-balloon-message strong', pidged).modStyle(`color:!delete`);
+                                $('strong', pidged).html(`${ name } &bull; Click to pin \uD83D\uDCCC`);
+
+                                pidged.closest('form')?.insertAdjacentElement('afterend', pidged.closest('.tt-pinnable'));
+                            }
+
+                            pin: if(defined(request.newValue?.name)) {
+                                let currentTarget = $(`.tt-pinnable [data-name="${ request.newValue.name }"i]`);
+
+                                _.pinnedStreamer = request.newValue.name;
+                                $('#pinned-streamer')?.html(furnish(`.tt-border-radius-rounded`).with(furnish.img({ src: request.newValue.icon, style: `min-width:calc(${ imgSize }/2); border-radius:${ imgSize }` })).outerHTML);
+
+                                if(nullish(currentTarget))
+                                    break pin;
+
+                                pinned = currentTarget.dataset.pinned = true;
+                                currentTarget.closest('.tt-pinnable').modStyle(`background:var(--color-background-chat);`);
+                                $('.tt-balloon-message strong', currentTarget).modStyle(`color:var(--color-amazon)`);
+                                $('strong', currentTarget).html(`${ name } &bull; Pinned. Click to unpin`);
+
+                                currentTarget.closest('[id$="listing"i]').querySelector('form')?.insertAdjacentElement('beforeend', currentTarget.closest('.tt-pinnable'));
+
+                                Cache.save({ PinnedStreamer: _.pinnedStreamer });
+                            } else {
+                                Cache.remove(['PinnedStreamer']);
+                            }
+                        });
                     } break;
                 }
             });

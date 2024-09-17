@@ -215,6 +215,8 @@ let // These are option names. Anything else will be removed
         /* Customization */
         // Away Mode Button Placement
         'away_mode_placement',
+        // Block Banners
+        'block_banners',
         // Hide Blank Ads
         'hide_blank_ads',
         // Watch Time Text Placement
@@ -2033,14 +2035,11 @@ Cache.load(['ignoreNew'], ({ ignoreNew }) => {
     let { version } = Manifest;
     let brandNewFragments = [];
 
-    if(compareVersions(`${ version } ≤ ${ ignoreNew ?? 0 }`))
-        return;
-
     $.all('[new]').map(element => {
         let conception = element.getAttribute('new');
         let title = $('.title', element)?.textContent?.trim();
 
-        if(compareVersions(`${ version } > ${ conception }`))
+        if(compareVersions(`${ ignoreNew } ≥ ${ conception }`))
             element.removeAttribute('new');
         else if(defined(title))
             brandNewFragments.push(

@@ -72,15 +72,24 @@
 - [ ] Inherit away-mode volume from parent page (failed video iframe)
 - [ ] Properly handle `obit` & `redo` clashes
 - [ ] First in Line will sometimes be stuck at 0s
+    - Jobs added may have the wrong href?!
 - [ ] Add "Smart Sort" for First in Line
     - Sort by context and/or normal runtimes
-- [x] Add hover previews to all Twitch pages (#19)
 
 ----
 
 # DONE &mdash; Notable Changes
 > [`5.33.4.8`](https://github.com/Ephellon/Twitch-Tools/releases/tag/5.33.4.8)
 - Changed some event timings on Settings Page to help with CPU usage
+- Changed `Recover Video` timer to `10s` as per #31
+- Modified channel point ranking logic to include scaling
+- Updated Pinned Streamer styling
+- Modified time zone logic
+- Modified `ClipName`
+- Modified ranking logic
+- Fixed **New Feature** logic
+- Added `Block Banners` setting
+- Modified `Recover Frames` logic
 
 > [`5.33.4.7`](https://github.com/Ephellon/Twitch-Tools/releases/tag/5.33.4.7)
 - Modified `GetQuality` logic

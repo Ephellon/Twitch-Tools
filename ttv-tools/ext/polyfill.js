@@ -4545,7 +4545,7 @@ class ClipName extends String {
             },
         };
 
-        let data = [[_.a, _.a, _.n, _.e].join(''), (new UUID).toStamp(), (new UUID).toStamp()];
+        let data = [[_.a, _.a, _.n, _.e].join(''), new nanoid(8, nanoid.LOWERCASE_SAFE), new nanoid(8, nanoid.LOWERCASE_SAFE)];
 
         return super(data.slice(0, version.clamp(1, data.length)).join('-'));
     }

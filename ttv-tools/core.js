@@ -2875,6 +2875,24 @@ __STATIC__: {
     Handlers.__reasons__.set('RegisterJob', UUID.from(RegisterJob).value);
 
     /**
+     * Delays a job to be run
+     * @simply DelayJob(JobName:string, JobReason:string?) → Number<IntervalID>
+     *
+     * @param  {function} JobName               The job (function) to register and run
+     * @param  {string} [JobReason = "default"] The reason for the job's creation; used for debugging
+     * @return {number}
+     */
+    function DelayJob(JobName, JobReason = 'default') {
+        DelayJob.__reason__ = JobReason;
+
+        if(JobReason?.unlike('default'))
+            console.log(`Delaying job: ${ JobReason }`);
+
+        return Jobs[JobName] ??= delay(Handlers[JobName], Timers[JobName]);
+    }
+    Handlers.__reasons__.set('DelayJob', UUID.from(DelayJob).value);
+
+    /**
      * Unregisters (stops) a job
      * @simply UnregisterJob(JobName:string, JobReason:string?) → undefined
      *

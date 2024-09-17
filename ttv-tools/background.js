@@ -621,6 +621,23 @@ Runtime.onMessage.addListener((request, sender, respond) => {
             for(let key in request.data)
                 SHARED_DATA.set(key, request.data[key]);
         } break;
+
+        default: {
+            if(request.action?.length)
+                Container.tabs.query({
+                    url: ["*://*.twitch.tv/*"],
+                }, (tabs = []) => {
+                    let action = request.action.toLowerCase().replace(/_+/g, '-');
+
+                    console.warn(`Sending "${ action }" to all (non-origin) tabs...`, request);
+
+                    for(let tab of tabs)
+                        if(tab.id != sender.tab.id)
+                            Container.tabs.sendMessage(tab.id, { ...request, action });
+
+                    respond(request);
+                });
+        } break;
     }
 
     reloadTabs(reloadAll);
