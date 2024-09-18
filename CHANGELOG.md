@@ -79,6 +79,9 @@
 ----
 
 # DONE &mdash; Notable Changes
+> [`5.33.4.9`](https://github.com/Ephellon/Twitch-Tools/releases/tag/5.33.4.9)
+- Fixed `Block Banners` logic—corrected fetch protocol
+
 > [`5.33.4.8`](https://github.com/Ephellon/Twitch-Tools/releases/tag/5.33.4.8)
 - Changed some event timings on Settings Page to help with CPU usage
 - Changed `Recover Video` timer to `10s` as per #31

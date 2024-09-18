@@ -13519,7 +13519,7 @@ let Initialize = async(START_OVER = false) => {
          * [style*="asset"i] < button < 3   // Find all `[style*="asset"i]`, travel up to closest `button`, then travel up three more (3) generations (buttons' "great-grand-parent")
          */
         // TTV Tools — Banner Rules
-        fetchURL.fromDisk(`//ephellon.github.io/ttv-tools/ad-banners.css`, { hoursUntilEntryExpires: 24 }).then(r => r.text()).then(bannerSelectors => {
+        fetchURL.fromDisk(`https://ephellon.github.io/ttv-tools/ad-banners.css`, { hoursUntilEntryExpires: 24 }).then(r => r.text()).then(bannerSelectors => {
             bannerSelectors = bannerSelectors.split(/[\r\n]+/).filter(s => s.trim().length).map(selector => {
                 let syntaxes = [];
                 let path = [''];
@@ -13609,7 +13609,9 @@ let Initialize = async(START_OVER = false) => {
                     }
 
                 return path.reduce((elements, v, i, a) => {
-                    if(i === 0)
+                    if(v.trim() === '')
+                        return ({ dataset: {} });
+                    else if(i === 0)
                         return $.all(v);
 
                     let c = parseInt(v.trim() || '1');

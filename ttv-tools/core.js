@@ -1899,6 +1899,9 @@ function fetchURL(url, options = {}) {
     // <https://www.site.com/path/to/file> | ../file → https://www.site.com/path/to
     url = url.replace(/^(\.\.)\//, location.origin + location.pathname.split('/').slice(0, -1).join('/'));
 
+    // <https://www.site.com/path/to/file> | //file → https://www.site.com/file
+    url = url.replace(/^\/\//, location.protocol + '//');
+
     let unknown = Symbol('UNKNOWN');
     let { href, domainPath = [], host, protocol, pathname } = parseURL(url);
     let [domain = unknown, site = unknown, ...subDomain] = domainPath;
