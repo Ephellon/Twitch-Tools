@@ -79,6 +79,15 @@
 ----
 
 # DONE &mdash; Notable Changes
+> [`5.33.4.10`](https://github.com/Ephellon/Twitch-Tools/releases/tag/5.33.4.10)
+- Modified ranking logic
+- Modified context-menu logic to include a majority of the page
+- Fixed issue where clicking on a redo channel in the Up Next queue removed it
+- Modified live reminder button logic
+- Modified CORS requests in `fetchURL`
+- Fixed issue where the fetchURL database would be cleaned multiple times
+- Fixed #32 — Preview setting is now considered on the homepage
+
 > [`5.33.4.9`](https://github.com/Ephellon/Twitch-Tools/releases/tag/5.33.4.9)
 - Fixed `Block Banners` logic—corrected fetch protocol
 

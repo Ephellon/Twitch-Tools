@@ -3145,7 +3145,7 @@ try {
     // ----
     // Save as... (Ctrl+S)
     // Print... (Ctrl+P)
-    $('main')?.addEventListener?.('contextmenu', event => {
+    $.body.addEventListener('contextmenu', event => {
         if(!event.isTrusted)
             return;
         event.preventDefault(true);
@@ -3171,7 +3171,7 @@ try {
         let video = event.target.closest('[data-a-target="video-player"i]');
 
         // Iframes
-        let iframe = event.target.closest('iframe:is([src^="https://player.twitch.tv"i], [src^="//player.twitch.tv"i], [src^="player.twitch.tv"i])');
+        let iframe = event.target.closest('iframe:is([src^="https://player.twitch.tv/"i], [src^="//player.twitch.tv"i], [src^="player.twitch.tv"i])');
 
         // ---- ---- START ---- ---- //
 
@@ -7152,6 +7152,7 @@ let Initialize = async(START_OVER = false) => {
         (TTV_DROPS_CHECKER = btn_str => {
             when(() => $.defined(btn_str, TTV_DROPS_FRAME.contentDocument)).then(() => {
                 let claimed = 0;
+                let dia_str = '[role*="dialog"i] [class*="combo"i] ~ * button';
 
                 $.all(btn_str, TTV_DROPS_FRAME.contentDocument).map(btn => {
                     if(TTV_DROPS_CLAIMED.has(getDOMPath(btn, -2)))
@@ -7160,6 +7161,8 @@ let Initialize = async(START_OVER = false) => {
 
                     ++claimed;
                     btn.click();
+
+                    // when.sated(() => $.all(dia_str, TTV_DROPS_FRAME.contentDocument)).then(dialogs => dialogs.map(dia => dia.click(), top.focus()));
                 });
 
                 let error = $('.tw-alert-banner', TTV_DROPS_FRAME.contentDocument)?.innerText ?? '';
@@ -8524,14 +8527,19 @@ let Initialize = async(START_OVER = false) => {
                             onremove: event => {
                                 let index = ALL_FIRST_IN_LINE_JOBS.findIndex(href => event.href == href),
                                     [removed] = ALL_FIRST_IN_LINE_JOBS.splice(index, 1),
-                                    name = parseURL(removed).pathname?.slice(1);
+                                    purl = parseURL(removed),
+                                    name = purl.pathname?.slice(1),
+                                    redo = parseBool(purl.searchParameters?.redo);
 
                                 $notice(`Removed from Up Next via Sorting Handler (${ nth(index + 1, 'ordinal-position') }):`, removed, 'Was it canceled?', event.canceled);
 
                                 if(event.canceled)
                                     DO_NOT_AUTO_ADD.push(removed);
+                                else if(redo)
+                                    ALL_FIRST_IN_LINE_JOBS.push(removed);
                                 // Balloon.onremove
-                                REDO_FIRST_IN_LINE_QUEUE(ALL_FIRST_IN_LINE_JOBS[0], { redo: parseBool(parseURL(removed).searchParameters?.redo) });
+                                if(ALL_FIRST_IN_LINE_JOBS.length)
+                                    REDO_FIRST_IN_LINE_QUEUE(ALL_FIRST_IN_LINE_JOBS[0], { redo: parseBool(parseURL(ALL_FIRST_IN_LINE_JOBS[0]).searchParameters?.redo) });
 
                                 if(index > 0) {
                                     Cache.save({ ALL_FIRST_IN_LINE_JOBS, FIRST_IN_LINE_DUE_DATE }, () => event.callback(event.element));
@@ -8780,14 +8788,18 @@ let Initialize = async(START_OVER = false) => {
                     onremove: event => {
                         let index = ALL_FIRST_IN_LINE_JOBS.findIndex(href => event.href == href),
                             [removed] = ALL_FIRST_IN_LINE_JOBS.splice(index, 1),
-                            name = parseURL(removed).pathname?.slice(1);
+                            purl = parseURL(removed),
+                            name = purl.pathname?.slice(1),
+                            redo = parseBool(purl.searchParameters?.redo);
 
                         $notice(`Removed from Up Next via Balloon (${ nth(index + 1, 'ordinal-position') }):`, removed, 'Was it canceled?', event.canceled);
-
                         if(event.canceled)
                             DO_NOT_AUTO_ADD.push(removed);
+                        else if(redo)
+                            ALL_FIRST_IN_LINE_JOBS.push(removed);
                         // AddBalloon.onremove
-                        REDO_FIRST_IN_LINE_QUEUE(ALL_FIRST_IN_LINE_JOBS[0], { redo: parseBool(parseURL(removed).searchParameters?.redo) });
+                        if(ALL_FIRST_IN_LINE_JOBS.length)
+                            REDO_FIRST_IN_LINE_QUEUE(ALL_FIRST_IN_LINE_JOBS[0], { redo: parseBool(parseURL(ALL_FIRST_IN_LINE_JOBS[0]).searchParameters?.redo) });
 
                         if(index > 0) {
                             Cache.save({ ALL_FIRST_IN_LINE_JOBS, FIRST_IN_LINE_DUE_DATE }, () => event.callback(event.element));
@@ -9260,7 +9272,7 @@ let Initialize = async(START_OVER = false) => {
         if(nullish(actionPanel))
             return StopWatch.stop('live_reminders');
 
-        let action = $('[tt-svg-label="live-reminders"i], [tt-action="live-reminders"i]', actionPanel);
+        let action = $('[tt-action="live-reminders"i]', actionPanel);
 
         if(defined(action))
             return StopWatch.stop('live_reminders');
@@ -9739,7 +9751,7 @@ let Initialize = async(START_OVER = false) => {
                                         name = normalize($('[class*="name"i]', item)?.textContent)?.normalize('NFKD'),
                                         img = $('[class*="img"i] img', item)?.src,
                                         price = $('[class*="price"i], [class*="subtitle"i]', item)?.textContent || 'More...',
-                                        good = game.errs(name, true) < .05;
+                                        good = game.errs(name, true) < PARTIAL_MATCH_THRESHOLD;
 
                                     if(good)
                                         return { game, name, href, img, price, good };
@@ -13744,10 +13756,10 @@ let Initialize = async(START_OVER = false) => {
                     return StopWatch.stop('points_receipt_placement__ranking');
 
                 // Field tests show that generally (for established streams): ≤1% of followers are actively watching at any given time during a stream
-                let scale = n => n**2;
+                let scale = n => n**9;
                 let { cult, poll, rank } = STREAMER,
                     place = (100 * scale(rank / cult)).clamp(1, 100) | 0,
-                    string = nth((rank * scale(rank / cult)).round().toLocaleString(LANGUAGE)),
+                    string = nth((rank * scale(rank / cult)).clamp(1, cult).round().toLocaleString(LANGUAGE)),
                     color = (null
                         ?? ['#FFD700', '#C0C0C0', '#CD7F32'][((place / 10).ceil() || 1) - 1]
                         ?? '#91FF47'
@@ -14005,29 +14017,31 @@ let Initialize = async(START_OVER = false) => {
         balance?.setAttribute('bottom-only', '');
 
         let richTooltip = $('[class*="-tooltip"i]:is([class*="channel"i], [class*="guest"i])');
+        let { name, game } = STREAMER;
+        let target = null;
 
-        if(nullish(richTooltip))
-            return StopWatch.stop('point_watcher_placement', 30_000);
+        contextualizer: if(defined(richTooltip)) {
+            let [title, subtitle, ...footers] = richTooltip.children,
+                [gTarget] = footers.map(footer => $('[class*="tooltip"i][class*="text"i]', footer)).filter(defined);
 
-        let [title, subtitle, ...footers] = richTooltip.children,
-            [target] = footers.map(footer => $('[class*="tooltip"i][class*="text"i]', footer)).filter(defined);
+            if(nullish(subtitle)) {
+                let [rTitle, rSubtitle] = $.all('[data-a-target*="side-nav-header-"i] ~ * *:hover [data-a-target$="metadata"i] > *'),
+                    rTarget = $('[data-a-target*="side-nav-header-"i] ~ * *:hover [data-a-target$="status"i]');
 
-        if(nullish(subtitle)) {
-            let [rTitle, rSubtitle] = $.all('[data-a-target*="side-nav-header-"i] ~ * *:hover [data-a-target$="metadata"i] > *'),
-                rTarget = $('[data-a-target*="side-nav-header-"i] ~ * *:hover [data-a-target$="status"i]');
+                title = rTitle;
+                subtitle = rSubtitle;
+                gTarget = rTarget;
+            }
 
-            title = rTitle;
-            subtitle = rSubtitle;
-            target = rTarget;
+            if(nullish(title) || nullish(gTarget))
+                break contextualizer;
+
+            [name, game] = title.textContent.split(/[^\w\s]/);
+
+            name = name?.trim();
+            game = game?.trim();
+            target = gTarget;
         }
-
-        if(nullish(title) || nullish(target))
-            return StopWatch.stop('point_watcher_placement', 2_600);
-
-        let [name, game] = title.textContent.split(/[^\w\s]/);
-
-        name = name?.trim();
-        game = game?.trim();
 
         // Remove the old face and values...
         $.all(`:is(.tt-point-amount, .tt-point-face):not([name="${ name }"i])`).map(element => element?.remove());
@@ -14052,7 +14066,7 @@ let Initialize = async(START_OVER = false) => {
 
                 if(amounter.innerHTML.unlike(amount))
                     amounter.innerHTML = amount;
-            } else {
+            } else if(defined(target)) {
                 let pointAmount = `span.tt-point-amount[bottom-only][name=${ name }]`,
                     pointFace = `span.tt-point-face[name=${ name }]`;
 
@@ -14148,9 +14162,9 @@ let Initialize = async(START_OVER = false) => {
                             || '#9147FF'
                         ).toUpperCase();
 
-                    image = image.src;
-                    cost = parseCoin(cost.textContent) | 0;
-                    title = (title.textContent || "").trim();
+                    image = image?.src ?? 'https://static-cdn.jtvnw.net/custom-reward-images/default-1.png';
+                    cost = parseCoin(cost?.textContent) | 0;
+                    title = (title?.textContent ?? "").trim();
 
                     let imgURL = parseURL(image),
                         imgPath = imgURL.pathname.slice(1),
@@ -16276,51 +16290,52 @@ if(top == window) {
             }
 
             // Enables previews on the home page (#19)
-            live_previews_on_hompage: if(top.location.pathname == '/') {
-                let scale = parseFloat(Settings.stream_preview_scale) || 1,
-                    muted = !parseBool(Settings.stream_preview_sound),
-                    quality = (scale > 1? 'auto': '720p'),
-                    controls = false;
+            live_previews_on_hompage: if(top.location.pathname == '/')
+                when(() => parseBool(Settings?.stream_preview), 3e3).then(() => {
+                    let scale = parseFloat(Settings.stream_preview_scale) || 1,
+                        muted = !parseBool(Settings.stream_preview_sound),
+                        quality = (scale > 1? 'auto': '720p'),
+                        controls = false;
 
-                $.all('[data-a-target*="preview"i][data-a-target*="card"i]:not([data-test-selector])').map(a => {
-                    a.addEventListener('mouseenter', ({ currentTarget }) => {
-                        let { href } = currentTarget;
-                        let name = (parseURL(href).pathname ?? '/').slice(1).split('/').shift();
+                    $.all('[data-a-target*="preview"i][data-a-target*="card"i]:not([data-test-selector])').map(a => {
+                        a.addEventListener('mouseenter', ({ currentTarget }) => {
+                            let { href } = currentTarget;
+                            let name = (parseURL(href).pathname ?? '/').slice(1).split('/').shift();
 
-                        if(!name?.length)
-                            return;
+                            if(!name?.length)
+                                return;
 
-                        let isOnline = $.defined('[class*="status"i][class*="indicator"i]', currentTarget);
+                            let isOnline = $.defined('[class*="status"i][class*="indicator"i]', currentTarget);
 
-                        if($.defined('#tt-stream-preview--iframe'))
-                            return;
+                            if($.defined('#tt-stream-preview--iframe'))
+                                return;
 
-                        let iframe = furnish(`iframe#tt-stream-preview--iframe[@index=0][@name=${ name }][@live=${ isOnline }][@controls=${ controls }][@muted=${ muted }][@quality=${ quality }]`, {
-                            allow: 'autoplay',
-                            src: parseURL(`https://player.twitch.tv/`).addSearch(
-                                isOnline?
-                                    ({
-                                        channel: name,
-                                        parent: 'twitch.tv',
+                            let iframe = furnish(`iframe#tt-stream-preview--iframe[@index=0][@name=${ name }][@live=${ isOnline }][@controls=${ controls }][@muted=${ muted }][@quality=${ quality }]`, {
+                                allow: 'autoplay',
+                                src: parseURL(`https://player.twitch.tv/`).addSearch(
+                                    isOnline?
+                                        ({
+                                            channel: name,
+                                            parent: 'twitch.tv',
 
-                                        controls, muted, quality,
-                                    }):
-                                href
-                            ).href,
+                                            controls, muted, quality,
+                                        }):
+                                    href
+                                ).href,
 
-                            height: '100%',
-                            width: '100%',
-                            style: `display:block;position:absolute;z-index:99999;`,
+                                height: '100%',
+                                width: '100%',
+                                style: `display:block;position:absolute;z-index:99999;`,
+                            });
+
+                            currentTarget.insertAdjacentElement('afterbegin', iframe);
                         });
 
-                        currentTarget.insertAdjacentElement('afterbegin', iframe);
-                    });
-
-                    a.addEventListener('mouseleave', ({ currentTarget }) => {
-                        $.all('#tt-stream-preview--iframe', currentTarget).map(iframe => iframe.remove());
+                        a.addEventListener('mouseleave', ({ currentTarget }) => {
+                            $.all('#tt-stream-preview--iframe', currentTarget).map(iframe => iframe.remove());
+                        });
                     });
                 });
-            }
 
             let ready = (true
                 // There is a valid username

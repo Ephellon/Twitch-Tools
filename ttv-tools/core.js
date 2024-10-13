@@ -2101,31 +2101,31 @@ Object.defineProperties(fetchURL, {
                     for(let [org, map] of (cache?.[DB_KEY] ?? []))
                         fetchURL.persistentCache.set(org, map);
                 });
-            }
 
-            // Clean the DataBase periodically...
-            setInterval(DB => {
-                let changed = false;
+                // Clean the DataBase periodically...
+                setInterval(DB => {
+                    let changed = false;
 
-                for(let [origin, db] of DB)
-                    for(let [fullpath, data] of db) {
-                        if(data instanceof Array) {
-                            let [text, date] = data;
+                    for(let [origin, db] of DB)
+                        for(let [fullpath, data] of db) {
+                            if(data instanceof Array) {
+                                let [text, date] = data;
 
-                            if((+new Date) >= +date) {
-                                changed = true;
+                                if((+new Date) >= +date) {
+                                    changed = true;
 
-                                db.delete(fullpath);
+                                    db.delete(fullpath);
+                                }
                             }
+
+                            if(db.size < 1)
+                                DB.delete(origin);
                         }
 
-                        if(db.size < 1)
-                            DB.delete(origin);
-                    }
-
-                if(changed)
-                    Cache.large.save({ [DB_KEY]: DB });
-            }, 3_600_000, fetchURL.persistentCache);
+                    if(changed)
+                        Cache.large.save({ [DB_KEY]: DB });
+                }, 3_600_000, fetchURL.persistentCache);
+            }
 
             let { origin, pathname, search } = parseURL(url.trim()),
                 fullpath = pathname + search;
@@ -2233,19 +2233,19 @@ prevent_fetch_dragging: if(top == window) {
 
         JSON: { value: fetchURL.origins.WHATEVER_ORIGIN },
 
-        HTML: { value: fetchURL.origins.CODE_TABS },
-        HTML_2: { value: fetchURL.origins.ALL_ORIGINS },
-        HTML_3: { value: fetchURL.origins.CORS_ANYWHERE },
-        HTML_4: { value: fetchURL.origins.CORS_PROXY },
-        HTML_5: { value: fetchURL.origins.ALLOW_ORIGIN },
-        HTML_6: { value: fetchURL.origins.TASK_CLUSTER },
+        HTML: { value: fetchURL.origins.CORS_PROXY },
+        HTML_2: { value: fetchURL.origins.CORS_ANYWHERE },
+        HTML_3: { value: fetchURL.origins.ALL_ORIGINS },
+        HTML_4: { value: fetchURL.origins.ALLOW_ORIGIN },
+        HTML_5: { value: fetchURL.origins.TASK_CLUSTER },
+        HTML_6: { value: fetchURL.origins.CODE_TABS },
 
-        TEXT: { value: fetchURL.origins.CODE_TABS },
-        TEXT_2: { value: fetchURL.origins.ALL_ORIGINS },
-        TEXT_3: { value: fetchURL.origins.CORS_ANYWHERE },
-        TEXT_4: { value: fetchURL.origins.CORS_PROXY },
-        TEXT_5: { value: fetchURL.origins.ALLOW_ORIGIN },
-        TEXT_6: { value: fetchURL.origins.TASK_CLUSTER },
+        TEXT: { value: fetchURL.origins.CORS_PROXY },
+        TEXT_2: { value: fetchURL.origins.CORS_ANYWHERE },
+        TEXT_3: { value: fetchURL.origins.ALL_ORIGINS },
+        TEXT_4: { value: fetchURL.origins.ALLOW_ORIGIN },
+        TEXT_5: { value: fetchURL.origins.TASK_CLUSTER },
+        TEXT_6: { value: fetchURL.origins.CODE_TABS },
     });
 
     Object.defineProperties(fetchURL.origins, {
