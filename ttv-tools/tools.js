@@ -1664,7 +1664,32 @@ function Chat(message = '', ...mentions) {
 Object.defineProperties(Chat, {
     element: { get() { return $('[data-test-selector$="message-container"i]').closest('section') } },
 
-    badges: { get() { return JUMP_DATA?.[STREAMER.name.toLowerCase()]?.stream?.badges }, },
+    badges: {
+        get() {
+            let badges = (null
+                ?? JUMP_DATA?.[STREAMER.name.toLowerCase()]?.stream?.badges
+                ?? {}
+            );
+
+            return {
+                ...badges,
+
+                get(type) {
+                    return ({
+                        everyone: 'https://static-cdn.jtvnw.net/user-default-pictures-uv/215b7342-def9-11e9-9a66-784f43822e80-profile_image-70x70.png',
+                        subscriber: ((STREAMER.jump[STREAMER.name.toLowerCase()]?.stream?.badges?.[`${ STREAMER.sole }_subscriber_0`]?.href) || 'https://static-cdn.jtvnw.net/user-default-pictures-uv/215b7342-def9-11e9-9a66-784f43822e80-profile_image-70x70.png'),
+                        regular: 'https://static-cdn.jtvnw.net/user-default-pictures-uv/215b7342-def9-11e9-9a66-784f43822e80-profile_image-70x70.png',
+                        twitch_vip: 'https://static-cdn.jtvnw.net/badges/v1/b817aba4-fad8-49e2-b88a-7cc744dfa6ec/3',
+                        vip: 'https://static-cdn.jtvnw.net/badges/v1/b817aba4-fad8-49e2-b88a-7cc744dfa6ec/3',
+                        moderator: 'https://static-cdn.jtvnw.net/badges/v1/3267646d-33f0-4b17-b3df-f923a41db1d0/3',
+                        mod: 'https://static-cdn.jtvnw.net/badges/v1/3267646d-33f0-4b17-b3df-f923a41db1d0/3',
+                        admin: 'https://static-cdn.jtvnw.net/badges/v1/d97c37bd-a6f5-4c38-8f57-4e4bef88af34/3',
+                        owner: 'https://static-cdn.jtvnw.net/badges/v1/5527c58c-fb7d-422d-b71b-f309dcb85cc1/3',
+                    }[(type ?? 'everyone').toString().toLowerCase()])
+                },
+            };
+        },
+    },
 
     gang: { value: [] },
     mods: { value: [] },
@@ -6494,7 +6519,7 @@ let Initialize = async(START_OVER = false) => {
                     okay="${ encodeHTML(Glyphs.modify('download', { height: '20px', width: '20px', style: 'vertical-align:bottom' })) } Save"
                     deny="${ encodeHTML(Glyphs.modify('trash', { height: '20px', width: '20px', style: 'vertical-align:bottom' })) } Discard"
                 />
-                ${ title } &mdash; ${ Glyphs.modify('channelpoints', { height: '20px', idth: '20px', style: 'display:inline-block;vertical-align:bottom;width:fit-content' }) }${ comify(cost) }`
+                ${ title } &mdash; ${ Glyphs.modify('channelpoints', { height: '20px', width: '20px', style: 'display:inline-block;vertical-align:bottom;width:fit-content' }) }${ comify(cost) }`
             , time)
                 .then(answer => {
                     if(answer === false)
@@ -6747,9 +6772,11 @@ let Initialize = async(START_OVER = false) => {
                                                             when.defined(() => $('.reward-center-body [data-test-selector^="share"i][data-test-selector*="emote"i]'), 2_500)
                                                                 .then(success => {
                                                                     EXACT_POINTS_SPENT += cost;
-                                                                    $('[class*="reward-center"i] [class*="pop"i][class*="head"i] > [class*="left"i] button').click();
 
-                                                                    wait(250).then(() => buyOut(--count));
+                                                                    when.defined(() => $('[class*="reward-center"i] [class*="pop"i][class*="head"i] button')).then(back => {
+                                                                        back.click();
+                                                                        wait(250).then(() => buyOut(--count));
+                                                                    });
                                                                 });
                                                         });
                                                 });
@@ -6874,7 +6901,7 @@ let Initialize = async(START_OVER = false) => {
                 Cache.load('AutoClaimRewards', async({ AutoClaimRewards }) => {
                     AutoClaimRewards ??= {};
 
-                    rewards.map(async reward => {
+                    for(let reward of rewards) {
                         let $image = $('img', reward)?.src,
                             $cost = parseCoin($('[data-test-selector="cost"i]', reward)?.textContent),
                             $title = ($('button ~ * [title]', reward)?.textContent || '').trim();
@@ -6882,21 +6909,27 @@ let Initialize = async(START_OVER = false) => {
                         let [item] = await STREAMER.shop.filter(({ type = 'UNKNOWN', id = '', title = '', cost = 0, image = '' }) =>
                             (false
                                 || (type.equals("unknown") && id.equals(UUID.from([$image, $title.mutilate(), $cost].join('|$|'), true).value))
-                                || (title.equals($title) && (cost == $cost || image.url.equals($image.url)))
+                                || (title.equals($title) && ((cost == $cost) || image.url.equals($image.url)))
                             )
                         );
 
                         // Variable animataion speed depending on "completion" percentage
                         let child = $('[data-test-selector="cost"i]', reward);
+                        let wanted = (AutoClaimRewards[STREAMER.sole] ??= []).contains(item?.id);
 
                         // Rainbow border
                         child.modStyle(`animation-duration:${ (1 / (STREAMER.coin / $cost)).clamp(1, 30).toFixed(2) }s`);
-                        child.setAttribute('rainbow-border', (AutoClaimRewards[STREAMER.sole] ??= []).contains(item?.id));
+                        child.setAttribute('rainbow-border', wanted);
+
+                        // Wallet
+                        reward.setAttribute('tt-wallet-title', $title);
+                        reward.setAttribute('tt-wallet-cost', $cost);
+                        reward.setAttribute('tt-wallet', wanted);
 
                         // Cooldown timer
                         if(REWARDS_ON_COOLDOWN.has(item?.id))
                             child.closest('.reward-list-item').setAttribute('timed-out', toTimeString((REWARDS_ON_COOLDOWN.get(item?.id) - +new Date).clamp(0, +Infinity), 'clock'));
-                    });
+                    }
 
                     // @performance
                     PrepareForGarbageCollection(AutoClaimRewards);
@@ -9711,8 +9744,11 @@ let Initialize = async(START_OVER = false) => {
                     XboxRegExp = /\bXbox\s*(\d+|live|one\s*(series\s*)?([x\|s]+\s*)?(enhanced)?)?.*$/i,
                     // Removes common trademarks → Xbox,Xbox 360,Xbox Live,Xbox One,Xbox One X|S,Xbox One X,Xbox One X Enhanced,Xbox One S,Xbox One Series X|S,Xbox One Series X,Xbox One Series X Enhanced,Xbox One Series S
 
-                    NintendoRegExp = /Nintendo\s*(64|[23]?DS\s*(i|XL)?|Switch|Game[\s-]?(Boy(\s*Advance)?|Cube)|Wii([\s-]?U)?)/i,
+                    NintendoRegExp = /\bNintendo\s*(64|[23]?DS\s*(i|XL)?|Switch|Game[\s-]?(Boy(\s*Advance)?|Cube)|Wii([\s-]?U)?)/i,
                     // Removes common trademarks → Nintendo Switch,Nintendo 3DS,Nintendo 2DS,Nintendo 64,Nintendo DSi,Nintendo DS,Nintendo GameBoy,Nintendo GameBoy Advance,Nintendo Wii,Nintendo Wii U
+
+                    SteamRegExp = /(Valve\s+)?\bSteam\s+(Deck(\s+O?LED)?)/i,
+                    // Removes common trademarks → Steam
 
                     EditionsRegExp = /\s*(([-~:]\s*)?([\p{L}\s'-]){3,}\s*)(Edition|Season|Episode)s?(\s+[:\-\dIVXLCD]+)?[^$]+/iu;
                     // Removes common "editions" → Standard,Digital,Deluxe,Digital Deluxe,Definitive,Anniversary,Complete,Extended,Ultiamte,Collector's,Bronze,Silver,Gold,Platinum,Enhanced,Premium,Complete Season,etc.
@@ -9741,78 +9777,225 @@ let Initialize = async(START_OVER = false) => {
                  *
                  */
                 Steam: if(parseBool(Settings.store_integration__steam)) {
-                    async function fetchSteamGame(index = 1) {
-                        return /*await*/ fetchURL.fromDisk(`https://store.steampowered.com/search/suggest?term=${ gameURI }&f=games&cc=${ counCode }&realm=1&l=${ langName }&use_store_query=1&use_search_spellcheck=1`)
-                            .then(r => r.text())
-                            .then(html => (new DOMParser).parseFromString(html, 'text/html'))
-                            .then(DOM => {
-                                for(let item of $.all('[data-ds-appid]', DOM)) {
-                                    let href = item.href,
-                                        name = normalize($('[class*="name"i]', item)?.textContent)?.normalize('NFKD'),
-                                        img = $('[class*="img"i] img', item)?.src,
-                                        price = $('[class*="price"i], [class*="subtitle"i]', item)?.textContent || 'More...',
-                                        good = game.errs(name, true) < PARTIAL_MATCH_THRESHOLD;
+                    async function fetchSteamGame(game) {
+                        return fetchURL.fromDisk(`https://raw.githubusercontent.com/Ephellon/game-store-catalog/main/steam/${ (game[0].toLowerCase().replace(/[^a-z]/, '_')) }.json`, { hoursUntilEntryExpires: 168 })
+                            .then(r => r.json())
+                            .then(data => {
+                                let [best, ...othr] = data.sort((prev, next) =>
+                                    normalize(prev.name, [SteamRegExp, ''])
+                                        .errs(game)
+                                    - normalize(next.name, [SteamRegExp, ''])
+                                        .errs(game)
+                                )
+                                    .slice(0, 60)
+                                    .sort((prev, next) =>
+                                        normalize(prev.name, [SteamRegExp, ''])
+                                            .toLowerCase()
+                                            .distanceFrom(game.toLowerCase())
+                                        - normalize(next.name, [SteamRegExp, ''])
+                                            .toLowerCase()
+                                            .distanceFrom(game.toLowerCase())
+                                    );
 
-                                    if(good)
-                                        return { game, name, href, img, price, good };
-                                }
+                                if(false
+                                    || best.name.equals(game)
+                                    || normalize(best.name, [SteamRegExp, ''])
+                                        .trim()
+                                        .equals(game)
+                                    || normalize(best.name, [SteamRegExp, ''])
+                                        .errs(game) < PARTIAL_MATCH_THRESHOLD
+                                ) return ({
+                                    game,
+                                    good: (
+                                        normalize(best.name, [SteamRegExp, ''])
+                                            .errs(game, true) < PARTIAL_MATCH_THRESHOLD
+                                    ),
+                                    name: best.name,
+                                    href: best.href,
+                                    img: best.image,
+                                    price: best.price,
+                                });
 
-                                return {};
-                            });
-                    }
-
-                    fetchSteamGame()
-                        .then((info = {}) => {
-                            let { game, name, href, img, price, good = false } = info;
-
-                            if(!href?.length)
-                                return;
-
-                            let f = furnish;
-
-                            let purchase =
-                                f(`.tt-store-purchase--container.is-steam[name="${ name }"][@goodMatch=${ good }]`).with(
-                                    // Price
-                                    f('.tt-store-purchase--price').with(price),
-
-                                    // Link to Steam
-                                    f('.tt-store-purchase--handler').with(
-                                        f(`a#steam-link[href="${ href }"][target=_blank]`).html(`Steam&reg;`)
-                                    )
-                                );
-
-                            // $('.tt-store-purchase--price', purchase).modStyle(`background: url("data:image/svg+xml;base64,${ btoa(Glyphs.store_steam) }") no-repeat center 100% / contain, #000;`);
-
-                            when.defined(() => $('#tt-steam-purchase'))
-                                .then(container => {
-                                    // Load the maturity warning (if applicable)...
-                                    fetchURL.fromDisk(href.replace(/^\/\//, 'https:$&'), { hoursUntilEntryExpires: 168 })
+                                throw ITEM_NOT_FOUND;
+                            })
+                            .catch(error => {
+                                // Fallback: Search the store normally
+                                if(error == ITEM_NOT_FOUND)
+                                    return /*await*/ fetchURL.fromDisk(`https://store.steampowered.com/search/suggest?term=${ gameURI }&f=games&cc=${ counCode }&realm=1&l=${ langName }&use_store_query=1&use_search_spellcheck=1`)
                                         .then(r => r.text())
                                         .then(html => (new DOMParser).parseFromString(html, 'text/html'))
                                         .then(DOM => {
-                                            $('.tt-store-purchase--container.is-steam').dataset.matureContent = (null
-                                                // Steam will error-out if you try to load an adult-only game...
-                                                // Or... There will be a mature label
-                                                // Or... There will be an "Age Gate"
-                                                // Or... The content descriptor will be defined
+                                            for(let item of $.all('[data-ds-appid]', DOM)) {
+                                                let href = item.href,
+                                                    name = normalize($('[class*="name"i]', item)?.textContent)?.normalize('NFKD'),
+                                                    img = $('[class*="img"i] img', item)?.src,
+                                                    price = $('[class*="price"i], [class*="subtitle"i]', item)?.textContent || 'More...',
+                                                    good = game.errs(name, true) < PARTIAL_MATCH_THRESHOLD;
 
-                                                // Too much text...
-                                                // || $('[id*="age"i][id*="gate"i], [id*="content"i][id*="desc"i]', DOM)?.textContent
-                                                || $.defined('[id*="error"i], [id*="mature"i], [id*="age"i][id*="gate"i], [id*="content"i][id*="desc"i]', DOM)
-                                            )
-                                        })
-                                        .catch(error => {
-                                            $warn(`Unable to fetch Steam pricing information for "${ game }"`, error);
+                                                if(good)
+                                                    return { game, name, href, img, price, good };
+                                            }
+
+                                            return {};
                                         });
 
-                                    container.replaceWith(purchase);
-                                });
+                                $warn(error);
+                            });
+                    }
 
-                            $log(`Got "${ game }" data from Steam:`, info);
-                        })
-                        .catch(error => {
-                            $warn(`Unable to connect to Steam. Tried to look for "${ game }"`, error);
-                        });
+                    if(/(?:^(?:The\s+)?Jackbox Party)/i.test(game)) {
+                        // Multiple versions are available
+                        let [, main, suff, vers = ''] = /^(?:The\s+)?(Jackbox Party)\s+(Pack)s?\s*(\d+)?/i.exec(game);
+
+                        suff = suff.replace(/s$/, '');
+
+                        let jbpp = `The ${ main } ${ suff } ${ vers }`.trim();
+
+                        // Make multiples' links
+                        fetchSteamGame(jbpp)
+                            .then((info = {}) => {
+                                let { game, name, href, img, price, good = false } = info;
+
+                                if(!href?.length)
+                                    return;
+
+                                let f = furnish;
+
+                                let purchase =
+                                    f(`.tt-store-purchase--container.is-steam[name="${ name }"][@goodMatch=${ good }]`).with(
+                                        // Price
+                                        f('.tt-store-purchase--price').with(price),
+
+                                        // Link to Steam
+                                        f('.tt-store-purchase--handler').with(
+                                            f(`a#steam-link[href="${ href }"][target=_blank]`).html(`Steam&reg;`)
+                                        )
+                                    );
+
+                                // $('.tt-store-purchase--price', purchase).modStyle(`background: url("data:image/svg+xml;base64,${ btoa(Glyphs.store_steam) }") no-repeat center 100% / contain, #000;`);
+
+                                when.defined(() => $('#tt-steam-purchase'))
+                                    .then(container => {
+                                        // Load the price & maturity warning (if applicable)...
+                                        fetchURL.fromDisk(href.replace(/^\/\//, 'https:$&'), { hoursUntilEntryExpires: 168 })
+                                            .then(r => r.text())
+                                            .then(html => (new DOMParser).parseFromString(html, 'text/html'))
+                                            .then(DOM => {
+                                                $('.tt-store-purchase--container.is-steam').dataset.matureContent = (null
+                                                    // Steam will error-out if you try to load an adult-only game...
+                                                    // Or... There will be a mature label
+                                                    // Or... There will be an "Age Gate"
+                                                    // Or... The content descriptor will be defined
+
+                                                    // Too much text...
+                                                    // || $('[id*="age"i][id*="gate"i], [id*="content"i][id*="desc"i]', DOM)?.textContent
+                                                    || $.defined('[id*="error"i], [id*="mature"i], [id*="age"i][id*="gate"i], [id*="content"i][id*="desc"i]', DOM)
+                                                )
+                                            })
+                                            .catch(error => {
+                                                $warn(`Unable to fetch Steam pricing information for "${ jbpp }"`, error);
+                                            });
+
+                                        // TODO: Make this faster somehow!
+                                        // Slow as hell!
+                                        fetchURL.fromDisk(href.replace(/^\/\//, 'https:$&'), { hoursUntilEntryExpires: 168 })
+                                            .then(r => r.text())
+                                            .then(DOMParser.stripBody)
+                                            .then(html => (new DOMParser).parseFromString(html, 'text/html'))
+                                            .then(DOM => {
+                                                let description = (null
+                                                    ?? $('[id][class*="description"i]')?.textContent
+                                                    ?? $('meta[name="description"i]', DOM)?.content
+                                                );
+
+                                                // Load an actual game description
+                                                let gameDesc = $('[data-twitch-provided-description]');
+
+                                                if(defined(gameDesc) && good) {
+                                                    $('[data-test-selector="chat-card-title"]').innerHTML += ' &mdash; Steam&reg;';
+
+                                                    gameDesc.innerText = description || gameDesc.innerText;
+                                                    gameDesc.removeAttribute('data-twitch-provided-description');
+                                                }
+
+                                                return /* TODO: Get this to work without freezing the machine */;
+
+                                                let data = DOM.head.getElementByText('core2')?.textContent?.replace(/.*preload.*(\{[^$]+?\});/, '$1');
+
+                                                if(data?.length) {
+                                                    data = JSON.parse(data).core2?.products?.productSummaries?.[gameID];
+
+                                                    if(nullish(data?.specificPrices))
+                                                        return;
+
+                                                    let mature = data.contentRating?.rating || '',
+                                                        price = data.specificPrices?.purchaseable?.shift?.()?.listPrice;
+
+                                                    $('.tt-store-purchase--container.is-steam').dataset.matureContent = mature;
+                                                    $('.is-steam .tt-store-purchase--price').textContent = /^\$?([\d\.]+|\w+)$/.test(price ?? '')? price: info.price;
+                                                }
+                                            });
+
+                                        container.replaceWith(purchase);
+                                    });
+                            })
+                            .catch(error => {
+                                $warn(`Unable to connect to Steam. Tried to look for "${ jbpp }"`, error);
+                            });
+                    } else {
+                        fetchSteamGame(game)
+                            .then((info = {}) => {
+                                let { game, name, href, img, price, good = false } = info;
+
+                                if(!href?.length)
+                                    return;
+
+                                let f = furnish;
+
+                                let purchase =
+                                    f(`.tt-store-purchase--container.is-steam[name="${ name }"][@goodMatch=${ good }]`).with(
+                                        // Price
+                                        f('.tt-store-purchase--price').with(price),
+
+                                        // Link to Steam
+                                        f('.tt-store-purchase--handler').with(
+                                            f(`a#steam-link[href="${ href }"][target=_blank]`).html(`Steam&reg;`)
+                                        )
+                                    );
+
+                                // $('.tt-store-purchase--price', purchase).modStyle(`background: url("data:image/svg+xml;base64,${ btoa(Glyphs.store_steam) }") no-repeat center 100% / contain, #000;`);
+
+                                when.defined(() => $('#tt-steam-purchase'))
+                                    .then(container => {
+                                        // Load the maturity warning (if applicable)...
+                                        fetchURL.fromDisk(href.replace(/^\/\//, 'https:$&'), { hoursUntilEntryExpires: 168 })
+                                            .then(r => r.text())
+                                            .then(html => (new DOMParser).parseFromString(html, 'text/html'))
+                                            .then(DOM => {
+                                                $('.tt-store-purchase--container.is-steam').dataset.matureContent = (null
+                                                    // Steam will error-out if you try to load an adult-only game...
+                                                    // Or... There will be a mature label
+                                                    // Or... There will be an "Age Gate"
+                                                    // Or... The content descriptor will be defined
+
+                                                    // Too much text...
+                                                    // || $('[id*="age"i][id*="gate"i], [id*="content"i][id*="desc"i]', DOM)?.textContent
+                                                    || $.defined('[id*="error"i], [id*="mature"i], [id*="age"i][id*="gate"i], [id*="content"i][id*="desc"i]', DOM)
+                                                )
+                                            })
+                                            .catch(error => {
+                                                $warn(`Unable to fetch Steam pricing information for "${ game }"`, error);
+                                            });
+
+                                        container.replaceWith(purchase);
+                                    });
+
+                                $log(`Got "${ game }" data from Steam:`, info);
+                            })
+                            .catch(error => {
+                                $warn(`Unable to connect to Steam. Tried to look for "${ game }"`, error);
+                            });
+                        }
                 }
 
                 /*** Get the PlayStation link (if applicable) · 1,662 Games 2022-11-22 16:37 CST
@@ -11214,16 +11397,6 @@ let Initialize = async(START_OVER = false) => {
         let CSSBlockName = `Chat-Input-Menu:${ new UUID }`,
             AvailableCommands;
 
-        let TwitchRoleBadges = ({
-            everyone: 'https://static-cdn.jtvnw.net/user-default-pictures-uv/215b7342-def9-11e9-9a66-784f43822e80-profile_image-70x70.png',
-            subscriber: ((STREAMER.jump[STREAMER.name.toLowerCase()]?.stream?.badges?.[`${ STREAMER.sole }_subscriber_0`]?.href) || ''),
-            regular: 'https://static-cdn.jtvnw.net/user-default-pictures-uv/215b7342-def9-11e9-9a66-784f43822e80-profile_image-70x70.png',
-            twitch_vip: 'https://static-cdn.jtvnw.net/badges/v1/b817aba4-fad8-49e2-b88a-7cc744dfa6ec/3',
-            moderator: 'https://static-cdn.jtvnw.net/badges/v1/3267646d-33f0-4b17-b3df-f923a41db1d0/3',
-            admin: 'https://static-cdn.jtvnw.net/badges/v1/d97c37bd-a6f5-4c38-8f57-4e4bef88af34/3',
-            owner: 'https://static-cdn.jtvnw.net/badges/v1/5527c58c-fb7d-422d-b71b-f309dcb85cc1/3',
-        });
-
         $('[data-a-target="chat-input"i]')?.addEventListener('keyup', delay(async event => {
             let { target, code, altKey, ctrlKey, metaKey, shiftKey } = event,
                 value = (target?.value ?? target?.textContent ?? target?.innerText),
@@ -11359,7 +11532,7 @@ let Initialize = async(START_OVER = false) => {
                                                     f('.tcito8').with(
                                                         f('.tcito9').with(
                                                             f('p.tt-chat-input-suggestion', { style: `word-break:break-word!important; color:${ ['inherit','var(--color-text-error)'][+!enabled] }`, command },
-                                                                f('img.chat-badge', { src: TwitchRoleBadges[availability], availability, style: `margin:0 0.75rem 0 0; height:1.5rem; width:1.5rem` }),
+                                                                f('img.chat-badge', { src: Chat.badges.get(availability), availability, style: `margin:0 0.75rem 0 0; height:1.5rem; width:1.5rem` }),
 
                                                                 `!${ command }`,
 
@@ -11490,6 +11663,90 @@ let Initialize = async(START_OVER = false) => {
                 }
             `);
         }, 250));
+    }
+
+    /*** Auto-Badge
+     *                    _              ____            _
+     *         /\        | |            |  _ \          | |
+     *        /  \  _   _| |_ ___ ______| |_) | __ _  __| | __ _  ___
+     *       / /\ \| | | | __/ _ \______|  _ < / _` |/ _` |/ _` |/ _ \
+     *      / ____ \ |_| | || (_) |     | |_) | (_| | (_| | (_| |  __/
+     *     /_/    \_\__,_|\__\___/      |____/ \__,_|\__,_|\__, |\___|
+     *                                                      __/ |
+     *                                                     |___/
+     */
+    Handlers.auto_badge = () => {
+        $('[data-a-target="chat-input"i]')?.addEventListener('keyup', delay(async event => {
+            let { target, code, altKey, ctrlKey, metaKey, shiftKey } = event,
+                value = (target?.value ?? target?.textContent ?? target?.innerText),
+                f = furnish;
+
+            if(['Tab', 'Space', 'Enter', 'Escape'].contains(code) || !value?.contains('@'))
+                return /* No username is present... */;
+
+            let elements = $.all('[class*="autocomplete"i] button[data-a-target^="@"]')
+                .isolate()
+                .filter(defined);
+
+            for(let element of elements) {
+                let name = element.dataset.aTarget.slice(1);
+                let p = $('p', element);
+
+                // Broadcaster
+                if(STREAMER.name.equals(name) && $.nullish('img[data-badge="owner"i]', p))
+                    p.append(
+                        f.img({
+                            '@badge': 'owner',
+                            src: Chat.badges.get('owner'),
+                        })
+                    );
+
+                // Moderator
+                if(Chat.mods.includes(name) && $.nullish('img[data-badge="mod"i]', p))
+                    p.append(
+                        f.img({
+                            '@badge': 'mod',
+                            src: Chat.badges.get('mod'),
+                        })
+                    );
+
+                // VIP
+                if(Chat.vips.includes(name) && $.nullish('img[data-badge="vip"i]', p))
+                    p.append(
+                        f.img({
+                            '@badge': 'vip',
+                            src: Chat.badges.get('vip'),
+                        })
+                    );
+            }
+        }, 100));
+    };
+    Timers.auto_badge = -1000;
+
+    Unhandlers.auto_badge = () => {
+        $.all('[class*="autocomplete"i] button[data-a-target^="@"] img[data-badge]')
+            .isolate()
+            .filter(defined)
+            .map(e => e.remove());
+    };
+
+    __AutoBadge__:
+    // On by Default (ObD; v5.33.4.11)
+    if(nullish(Settings.auto_badge) || parseBool(Settings.auto_badge)) {
+        $remark("Adding username-suggestion badges...");
+
+        RegisterJob('auto_badge');
+
+        // Change the img's styling...
+        AddCustomCSSBlock(`Username-Suggestion-Badges:${ new UUID }`, `
+            img[data-badge] {
+                display:inline-block;
+
+                height:2rem;
+
+                margin: 0 0 0 .75rem;
+            }
+        `);
     }
 
     /*** Stop Hosting
@@ -12836,22 +13093,22 @@ let Initialize = async(START_OVER = false) => {
     // Convert text to times
     function convertWordsToTimes(string = '') {
         return string.normalize('NFKD')
-            // .replace(/\b(mornings?|dawn)\b/i, '06:00AM')
-            .replace(/\b(after\s?noons?|evenings?)\b/i, '01:00PM')
-            .replace(/\b(noons?|lunch[\s\-]?time)\b/i, '12:00PM')
-            // .replace(/\b((?:to|2)?nights?|dusk)\b/i, '06:00PM')
-            .replace(/\b(mid[\s\-]?nights?)\b/i, '12:00AM')
+            // .replace(/\b(mornings?|dawn)\b/i, '06:00 AM')
+            .replace(/\b(after\s?noons?|evenings?)\b/i, '01:00 PM')
+            .replace(/\b(noons?|lunch[\s\-]?time)\b/i, '12:00 PM')
+            // .replace(/\b((?:to|2)?nights?|dusk)\b/i, '06:00 PM')
+            .replace(/\b(mid[\s\-]?nights?)\b/i, '12:00 AM')
 
-            // Ignores shorthands → "today" "2day" "tonight" "2night" "tomorrow" "2morrow"
-            .replace(/\b(?:to|2)(?:day|night|morrow)\b/ig, ($0, $$, $_) => $0.split('').join('\u200d'))
+            // Ignores shorthands → "today" "2day" "tonight" "2night" "tomorrow" "2morrow" "tomrw" "2mw" etc.
+            .replace(/\b(?:to|2)(?:day|night|m[or]*w)\b/ig, ($0, $$, $_) => $0.split('').join('\u200d'))
 
             // Replaces ranges
             // 6 - 11P ET | 6:00 AM - 11:00 PM EST
-            .replace(/\b(?<start>\d{1,2}(?::?\d\d)?)(?<premeridiem>\s*[ap]\.?m?\.?)?(?<delimeter>[\-\s]+)(?<stop>\d{1,2}(?::?\d\d)?)(?<postmeridiem>\s*[ap]\.?m?\.?)?\s*(?<timezone>\b(?:AOE|GMT|UTC|[A-Y]{1,4}T))\b/ig, ($0, start, preMeridiem, delimeter, stop, postMeridiem, timezone) => {
+            .replace(/\b(?<start>\d{1,2}(?::?\d\d)?)(?<premeridiem>\s*[ap]\.?m?\.?)?(?<delimeter>[\p{Pd}\p{Zs}]+)(?<stop>\d{1,2}(?::?\d\d)?)(?<postmeridiem>\s*[ap]\.?m?\.?)?\s*(?<timezone>\b(?:AOE|GMT|UTC|[A-Y]{1,4}T))\b/igu, ($0, start, preMeridiem, delimeter, stop, postMeridiem, timezone) => {
                 let autoMeridiem = "AP"[+(new Date(STREAMER.data?.actualStartTime ?? +new Date).getHours() > 11)] + 'M';
 
-                postMeridiem ||= autoMeridiem;
-                preMeridiem ||= postMeridiem;
+                preMeridiem ||= postMeridiem || autoMeridiem;
+                postMeridiem ||= preMeridiem;
 
                 let _mm = /(?<!:\d\d)$/, _00 = ':00';
 
@@ -13035,34 +13292,36 @@ let Initialize = async(START_OVER = false) => {
             }
         }
 
-        let TZC = [];
+        let TZC = [], TZE = new Set;
         for(let MAX = 1000, regexp = /\{\{time_zones\?=(.+?)\}\}/, node; --MAX > 0 && defined(node = $.body.getElementByText(regexp));) {
             let text = RegExp['$&'],
                 tzc = RegExp.$1;
 
+            TZE.add(node);
             node.innerHTML = node.innerHTML.replace(text, `<!--!time#${ TZC.push(tzc) }-->`);
         }
 
-        allNodes($.body)
-            .filter(node => /\bcomment\b/i.test(node.nodeName) && node.textContent.startsWith('!time#'))
-            .map(comment => {
-                let index = parseInt(comment.textContent.replace('!time#', '')) - 1;
-                let [newText, oldText] = TZC[index].split('|');
+        for(let node of TZE)
+            allNodes(node)
+                .filter(node => /\bcomment\b/i.test(node.nodeName) && node.textContent.startsWith('!time#'))
+                .map(comment => {
+                    let index = parseInt(comment.textContent.replace('!time#', '')) - 1;
+                    let [newText, oldText] = TZC[index].split('|');
 
-                let span = furnish('span', {
-                    id: `tt-time-zone--${ new nanoid(10, nanoid.LOWERCASE_SAFE) }`,
-                    style: 'color:var(--user-contrast-color); text-decoration:underline 2px; width:min-content; white-space:nowrap',
-                    contrast: THEME__PREFERRED_CONTRAST,
-                    innerHTML: unescape(atob(newText)).split('').join('&zwj;').pad('&zwj;'),
+                    let span = furnish('span', {
+                        id: `tt-time-zone--${ new nanoid(10, nanoid.LOWERCASE_SAFE) }`,
+                        style: 'color:var(--user-contrast-color); text-decoration:underline 2px; width:min-content; white-space:nowrap',
+                        contrast: THEME__PREFERRED_CONTRAST,
+                        innerHTML: unescape(atob(newText)).split('').join('&zwj;').pad('&zwj;'),
+                    });
+
+                    if(oldText?.length)
+                        span.setAttribute('tip-text--timezone', oldText);
+                    else
+                        span.removeAttribute('style');
+
+                    comment.replaceWith(span);
                 });
-
-                if(oldText?.length)
-                    span.setAttribute('tip-text--timezone', oldText);
-                else
-                    span.removeAttribute('style');
-
-                comment.replaceWith(span);
-            });
 
         wait(2_5_0).then(() => {
             $.all('[id^="tt-time-zone-"][tip-text--timezone]')
@@ -13521,7 +13780,7 @@ let Initialize = async(START_OVER = false) => {
      *
      *
      */
-    const UNWANTED_BANNER_AD_SELECTOR = new ClipName(1).replace(/^[A-Z]/, $0 => $0.toLowerCase());
+    const UNWANTED_BANNER_AD_SELECTOR = new nanoid(21, nanoid.LOWERCASE_SAFE);
 
     Handlers.block_banners = () => {
         /** Syntax (CSS-superset) — Comments are not allowed in the actual syntax. Each line represents a banner query.
@@ -13635,7 +13894,7 @@ let Initialize = async(START_OVER = false) => {
                 }, null).isolate().forEach(el => el.dataset[UNWANTED_BANNER_AD_SELECTOR] = true);
             });
 
-            AddCustomCSSBlock('Remove Banner Ads', `[data-${ UNWANTED_BANNER_AD_SELECTOR.replace(/[A-Z]/g, $0 => '-' + $0.toLowerCase()) }="true"i] {display:none!important}`);
+            AddCustomCSSBlock('Remove Banner Ads', `[data-${ UNWANTED_BANNER_AD_SELECTOR }="true"i] {display:none!important}`);
         });
     };
     Timers.block_banners = 2_500;

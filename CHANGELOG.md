@@ -79,6 +79,14 @@
 ----
 
 # DONE &mdash; Notable Changes
+> [`5.33.4.11`](https://github.com/Ephellon/Twitch-Tools/releases/tag/5.33.4.11)
+- Added "Auto-Badge"
+- Added `Auto Badges` feature
+- Added `ƒ Chat.badges.get`
+- Added Auto-Claim-Bonuses error handling
+- Modified `AutoBuy` logic
+- Enabled Steam integration
+
 > [`5.33.4.10`](https://github.com/Ephellon/Twitch-Tools/releases/tag/5.33.4.10)
 - Modified ranking logic
 - Modified context-menu logic to include a majority of the page

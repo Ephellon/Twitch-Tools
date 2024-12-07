@@ -753,7 +753,7 @@ Object.defineProperties(furnish, {
  *
  * @param {string} name                         The name of the block (used to delete the block)
  * @param {string<CSS>} block                   The CSS (styling) to put within the block
- * @param {Element} [container = document.body] The container to attach the new style elemnt to
+ * @param {Element} [container = document.body] The container to attach the new style element to
  *
  * @return {undefined}
  */
@@ -4686,7 +4686,7 @@ Number.prototype.suffix ??= function suffix(unit = '', decimalPlaces = true, for
     switch(format.toLowerCase()) {
         case 'imperial': {
             padded = true;
-            system.large = 'thous m b tr quadr qunit sext sept oct non'
+            system.large = 'thous m b tr quadr quint sext sept oct non'
                 .split(' ')
                 .map((suffix, index) => suffix + ['and', 'illion'][+!!index]);
             system.small = system.large.map(suffix => suffix + 'ths');
