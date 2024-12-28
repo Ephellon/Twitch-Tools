@@ -122,6 +122,7 @@ let Chat__Initialize = async(START_OVER = false) => {
                 ?? $('[class*="bonus"i]')?.closest('button')
                 ?? $('[data-test-selector*="points"i][data-test-selector*="summary"i] button[class*="success"i]')
                 ?? $('[data-test-selector*="points"i][data-test-selector*="summary"i] button:is([class*="destruct"i], [class*="error"i])')
+                ?? $('[class*="points"i] button [class*="bonus"i]')?.closest('button')
             ),
             Enabled = (Settings.auto_claim_bonuses && parseBool($('#tt-auto-claim-bonuses')?.getAttribute('tt-auto-claim-enabled') ?? $('[data-a-page-loaded-name="PopoutChatPage"i]')));
 

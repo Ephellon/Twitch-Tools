@@ -79,6 +79,9 @@
 ----
 
 # DONE &mdash; Notable Changes
+> [`5.33.4.12`](https://github.com/Ephellon/Twitch-Tools/releases/tag/5.33.4.12)
+- Modified Auto-Claim Bonus logic
+
 > [`5.33.4.11`](https://github.com/Ephellon/Twitch-Tools/releases/tag/5.33.4.11)
 - Added "Auto-Badge"
 - Added `Auto Badges` feature
