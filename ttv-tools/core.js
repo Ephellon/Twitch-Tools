@@ -43,7 +43,7 @@ class UUID {
     constructor() {
         let native = ([1e7]+-1e3+-4e3+-8e3+-1e11).replace(/[018]/g, x => (x ^ window.crypto.getRandomValues(new Uint8Array(1))[0] & 15 >> x / 4).toString(16));
 
-        return Object.assign(this, {
+        return Object.assign(this, new String(native), {
             native,
             value: native,
 
@@ -343,7 +343,7 @@ class nanoid {
             // that the value will be a valid index for the "chars" string.
             id += nanoid.#scopedUrlAlphabet[bytes[size] & 63];
 
-        return Object.assign(this, {
+        return Object.assign(this, new String(id), {
             value: id,
 
             [Symbol.toPrimitive](type) {
@@ -396,11 +396,11 @@ class LZW {
      * @return {object<string>} An LZW object
      */
     constructor(string) {
-        Object.defineProperties(this, {
+        return Object.defineProperties(this, {
             value: { value: string },
 
             encoded: {
-                get() { return LZW.encode64(this.value) }
+                get() { return LZW.encode(this.value) }
             },
 
             decoded: {
@@ -408,7 +408,7 @@ class LZW {
                     let { value } = this;
 
                     try {
-                        value = LZW.decode64(value);
+                        value = LZW.decode(value);
                     } catch(error) {
                         /* Suppress the error? */
                         // throw error;
@@ -418,8 +418,6 @@ class LZW {
                 }
             },
         });
-
-        return this;
     }
 
     /**
@@ -433,8 +431,8 @@ class LZW {
         let output = '';
 
         for(let char, index = 0, { length } = input; index < length; ++index) {
-            let a = input.charCodeAt(index),
-                b = salt.charCodeAt(index % salt.length);
+            let a = input.charCodeAt(index) | 0,
+                b = salt.charCodeAt(index % salt.length) | 0;
 
             output += String.fromCharCode(a ^ b);
         }
@@ -757,6 +755,27 @@ class Tooltip {
      */
     static get(container) {
         return Tooltip.#TOOLTIPS.get(container) ?? null;
+    }
+
+    /**
+     * Removes the current tooltip from the DOM.
+     *
+     * @return {boolean}    If the operation was successful.
+     */
+    remove() {
+        let tooltipID = this.closest('[tt-tooltip-id]').getAttribute('tt-tooltip-id');
+        let container = this.closest('[show]');
+
+        try {
+            container.setAttribute('show', false);
+            container.setAttribute('tt-remove-me', true);
+
+            RemoveCustomCSSBlock(`tooltip#${ tooltipID }`);
+
+            return true;
+        } catch(error) {
+            return false;
+        }
     }
 };
 

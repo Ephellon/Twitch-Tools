@@ -4782,7 +4782,7 @@ Number.prototype.prefix ??= function prefix(unit = '', decimalPlaces = true, for
     let delimeter = `\0${ (+new Date).toString(36) }→`;
 
     return this.suffix(delimeter, decimalPlaces, format).split(delimeter).reverse().join(unit);
-}
+};
 
 // Floors a number to the nearest X
     // Number..floorToNearest(number:number) → number

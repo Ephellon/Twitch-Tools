@@ -79,6 +79,15 @@
 ----
 
 # DONE &mdash; Notable Changes
+> [`5.33.4.13`](https://github.com/Ephellon/Twitch-Tools/releases/tag/5.33.4.13)
+- Added logic to sort games by availability
+- Fixed issue with `get time`
+- Modified time zone logic
+- Added locale-time to First in Line for better clarity
+- Increased rainbow border time to `3s`
+- Modified `STREAMER.done` logic
+- Modified Tooltip handling
+
 > [`5.33.4.12`](https://github.com/Ephellon/Twitch-Tools/releases/tag/5.33.4.12)
 - Modified Auto-Claim Bonus logic
 

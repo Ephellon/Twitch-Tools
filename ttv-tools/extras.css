@@ -1314,8 +1314,8 @@ caption {
 }
 
 [rainbow-border="true"i] {
-	-webkit-animation: 2s linear 0s infinite normal none running spinning-border;
-			animation: 2s linear 0s infinite normal none running spinning-border;
+	-webkit-animation: 3s linear 0s infinite normal none running spinning-border;
+			animation: 3s linear 0s infinite normal none running spinning-border;
 }
 
 [rainbow-border][top-only] {

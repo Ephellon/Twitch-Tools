@@ -396,6 +396,7 @@ class Balloon {
                                                                                     connectedTo = currentTarget.getAttribute('connected-to');
 
                                                                                 let element = $(`#tt-balloon-job-${ connectedTo }`);
+                                                                                let tooltip = Tooltip.get(currentTarget.closest('.persistent-notification__delete'));
 
                                                                                 if(defined(element))
                                                                                     onremove({
@@ -405,6 +406,7 @@ class Balloon {
 
                                                                                         callback(element) {
                                                                                             clearInterval(+element.getAttribute('animationID'));
+                                                                                            tooltip.remove();
                                                                                             element.remove();
                                                                                         },
                                                                                     });
@@ -627,6 +629,7 @@ class Balloon {
                                                             connectedTo = currentTarget.getAttribute('connected-to');
 
                                                         let element = $(`#tt-balloon-job-${ connectedTo }`);
+                                                        let tooltip = Tooltip.get(currentTarget.closest('.persistent-notification__delete'));
 
                                                         if(defined(element)) {
                                                             onremove({
@@ -636,6 +639,7 @@ class Balloon {
 
                                                                 callback(element) {
                                                                     clearInterval(+element.getAttribute('animationID'));
+                                                                    tooltip.remove();
                                                                     element.remove();
                                                                 },
                                                             });
@@ -4295,6 +4299,9 @@ let Initialize = async(START_OVER = false) => {
                 let shop = (await STREAMER.shop)
                     .filter(({ enabled, hidden, premium }) => enabled && !(hidden || (premium && !STREAMER.paid)));
 
+                if(shop.length < 1)
+                    return false;
+
                 for(let item of shop)
                     if(STREAMER.coin < item.cost)
                         return false;
@@ -4628,6 +4635,7 @@ let Initialize = async(START_OVER = false) => {
 
             return (0
                 || parseInt(channel_id ?? LIVE_CACHE.get('sole'))
+                || STREAMER.__sole__
             )
         },
 
@@ -4670,7 +4678,7 @@ let Initialize = async(START_OVER = false) => {
         },
 
         get time() {
-            return parseTime($('.live-time')?.textContent ?? '0')
+            return parseTime(($('.live-time')?.innerText ?? '0').replace(/^\s*([\d\:]+)[^$]*$/, '$1'))
         },
 
         get tint() {
@@ -4753,6 +4761,8 @@ let Initialize = async(START_OVER = false) => {
             STREAMER.__eventlisteners__.onraid.add(job)
         },
     };
+
+    STREAMER.__sole__ = (await Cache.load('ChannelPoints')).ChannelPoints?.[STREAMER.name]?.split('|')?.at(2)?.split('/')?.at(0);
 
     // Make the main icon draggable...
     let StreamerMainIcon = $(`main a[href$="${ NORMALIZED_PATHNAME }"i]`),
@@ -8688,7 +8698,9 @@ let Initialize = async(START_OVER = false) => {
                                         container.setAttribute('live', live);
                                     }
 
-                                    subheader.innerHTML = index > 0? nth(index + 1, 'ordinal-position'): toTimeString(time, 'clock');
+                                    subheader.innerHTML = index > 0
+                                        ? `${ nth(index + 1, 'ordinal-position') } &mdash; ${ new Date((+new Date) + time + (index * FIRST_IN_LINE_WAIT_TIME * 60_000)).toLocaleTimeString(top.LANGUAGE, { timeStyle: 'short' }) }`
+                                        : toTimeString(time, 'clock');
 
                                     StopWatch.stop('up_next_balloon__subheader_timer_animation', 1000);
                                 }, 1000);
@@ -9795,6 +9807,13 @@ let Initialize = async(START_OVER = false) => {
                                         - normalize(next.name, [SteamRegExp, ''])
                                             .toLowerCase()
                                             .distanceFrom(game.toLowerCase())
+                                    )
+                                    .sort((prev, next) =>
+                                        !isNaN(parseFloat((next.price + '').replace(/^free$/i, '0')))
+                                            ? +0
+                                            : !isNaN(parseFloat((prev.price + '').replace(/^free$/i, '0')))
+                                                ? -1
+                                                : +1
                                     );
 
                                 if(false
@@ -9826,7 +9845,7 @@ let Initialize = async(START_OVER = false) => {
                                         .then(html => (new DOMParser).parseFromString(html, 'text/html'))
                                         .then(DOM => {
                                             for(let item of $.all('[data-ds-appid]', DOM)) {
-                                                let href = item.href,
+                                                let href = item.href || `//store.steampowered.com/app/${ item.uuid }`,
                                                     name = normalize($('[class*="name"i]', item)?.textContent)?.normalize('NFKD'),
                                                     img = $('[class*="img"i] img', item)?.src,
                                                     price = $('[class*="price"i], [class*="subtitle"i]', item)?.textContent || 'More...',
@@ -10027,6 +10046,13 @@ let Initialize = async(START_OVER = false) => {
                                         - normalize(next.name, [PlayStationRegExp, ''])
                                             .toLowerCase()
                                             .distanceFrom(game.toLowerCase())
+                                    )
+                                    .sort((prev, next) =>
+                                        !isNaN(parseFloat((next.price + '').replace(/^free$/i, '0')))
+                                            ? +0
+                                            : !isNaN(parseFloat((prev.price + '').replace(/^free$/i, '0')))
+                                                ? -1
+                                                : +1
                                     );
 
                                 if(false
@@ -10320,6 +10346,13 @@ let Initialize = async(START_OVER = false) => {
                                         - normalize(next.name, [XboxRegExp, ''])
                                             .toLowerCase()
                                             .distanceFrom(game.toLowerCase())
+                                    )
+                                    .sort((prev, next) =>
+                                        !isNaN(parseFloat((next.price + '').replace(/^free$/i, '0')))
+                                            ? +0
+                                            : !isNaN(parseFloat((prev.price + '').replace(/^free$/i, '0')))
+                                                ? -1
+                                                : +1
                                     );
 
                                 if(false
@@ -10673,6 +10706,13 @@ let Initialize = async(START_OVER = false) => {
                                         - normalize(next.name, [NintendoRegExp, ''])
                                             .toLowerCase()
                                             .distanceFrom(game.toLowerCase())
+                                    )
+                                    .sort((prev, next) =>
+                                        !isNaN(parseFloat((next.price + '').replace(/^free$/i, '0')))
+                                            ? +0
+                                            : !isNaN(parseFloat((prev.price + '').replace(/^free$/i, '0')))
+                                                ? -1
+                                                : +1
                                     );
 
                                 if(false
@@ -13242,16 +13282,21 @@ let Initialize = async(START_OVER = false) => {
                     // Doesn't work as intended? Or works too well
                     if(meridiem[0]?.length < autoMeridiem.length) {
                         if(autoMeridiem == 'A')
-                            hour -= 12;
-                        else
                             hour += 12;
+                        else
+                            hour -= 12;
 
                         if(hour < 0)
                             hour += 24;
                     } else if(meridiem[0]?.equals(autoMeridiem)) {
-                        if(autoMeridiem == 'P' && hour < 13)
+                        if(autoMeridiem == 'P' && hour < 12)
                             hour += 12;
-                        else if(hour > 11)
+                        else if(autoMeridiem == 'A' && hour > 11)
+                            hour -= 12;
+                    } else if(meridiem[0]?.length) {
+                        if(meridiem[0].toUpperCase() == 'P' && hour < 12)
+                            hour += 12;
+                        else if(meridiem[0].toUpperCase() == 'A' && hour > 11)
                             hour -= 12;
                     }
 
@@ -13780,7 +13825,7 @@ let Initialize = async(START_OVER = false) => {
      *
      *
      */
-    const UNWANTED_BANNER_AD_SELECTOR = new nanoid(21, nanoid.LOWERCASE_SAFE);
+    const UNWANTED_BANNER_AD_SELECTOR = new nanoid(21, nanoid.LOWERCASE_SAFE).value;
 
     Handlers.block_banners = () => {
         /** Syntax (CSS-superset) — Comments are not allowed in the actual syntax. Each line represents a banner query.
@@ -14306,7 +14351,9 @@ let Initialize = async(START_OVER = false) => {
         $.all(`:is(.tt-point-amount, .tt-point-face):not([name="${ name }"i])`).map(element => element?.remove());
 
         // Update the rich tooltip display
-        Cache.load(['ChannelPoints'], async({ ChannelPoints = {} }) => {
+        Cache.load(['ChannelPoints'], async({ ChannelPoints }) => {
+            ChannelPoints ??= {};
+
             let [amount, fiat, face, notEarned, pointsToEarnNext] = (ChannelPoints[name] ?? 0).toString().split('|'),
                 style = new CSSObject({ verticalAlign: 'bottom', height: '20px', width: '20px' }),
                 upNext = !!~(ALL_FIRST_IN_LINE_JOBS ?? []).findIndex(href => RegExp(`/${ name }\\b`, 'i').test(href));
@@ -14473,7 +14520,8 @@ let Initialize = async(START_OVER = false) => {
                         updated: (new Date).toJSON(),
                     };
 
-                    STREAMER.__shop__.push(item);
+                    if(!~STREAMER.__shop__.findIndex(i => i.id == item.id))
+                        STREAMER.__shop__.push(item);
                 }
 
                 wait(30).then(() => balanceButton.click());
@@ -17482,6 +17530,8 @@ if(top == window) {
                             let articleID = UUID.from(header.textContent, true).value;
 
                             if(TTVToolsNewsArticles.contains(articleID))
+                                return;
+                            if(!content?.length)
                                 return;
                             TTVToolsNewsArticles.push(articleID);
 
