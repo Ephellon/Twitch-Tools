@@ -353,6 +353,7 @@ class Balloon {
                                                                     f('button.tt-redo-btn.tt-align-items-center.tt-align-middle.tt-border-bottom-left-radius-small.tt-border-bottom-right-radius-small.tt-border-top-left-radius-small.tt-border-top-right-radius-small.tt-button-icon.tt-button-icon--small.tt-core-button.tt-core-button--small.tt-inline-flex.tt-interactive.tt-justify-content-center.tt-overflow-hidden.tt-relative[@testSelector=persistent-notification__delete]',
                                                                         {
                                                                             'connected-to': `${ U }--${ guid }`,
+                                                                            '@streamer-name': parseURL(href).pathname.slice(1),
 
                                                                             onclick: event => {
                                                                                 let { currentTarget } = event,
@@ -360,7 +361,7 @@ class Balloon {
 
                                                                                 let element = $(`#tt-balloon-job-${ connectedTo }`),
                                                                                     thisJob = $('a', element),
-                                                                                    redo = !parseBool(parseURL(thisJob.href).searchParameters?.redo),
+                                                                                    redo = (parseURL(thisJob.href).searchParameters?.redo?.equals(currentTarget.dataset.streamerName)? '': currentTarget.dataset.streamerName),
                                                                                     url = parseURL(thisJob.href).addSearch({ redo });
 
                                                                                 thisJob.setAttribute('new-href', url.href);
@@ -586,6 +587,7 @@ class Balloon {
                                             f('button.tt-redo-btn.tt-align-items-center.tt-align-middle.tt-border-bottom-left-radius-small.tt-border-bottom-right-radius-small.tt-border-top-left-radius-small.tt-border-top-right-radius-small.tt-button-icon.tt-button-icon--small.tt-core-button.tt-core-button--small.tt-inline-flex.tt-interactive.tt-justify-content-center.tt-overflow-hidden.tt-relative[@testSelector=persistent-notification__delete]',
                                                 {
                                                     'connected-to': `${ uuid }--${ guid }`,
+                                                    '@streamer-name': parseURL(href).pathname.slice(1),
 
                                                     onclick: event => {
                                                         let { currentTarget } = event,
@@ -593,7 +595,7 @@ class Balloon {
 
                                                         let element = $(`#tt-balloon-job-${ connectedTo }`),
                                                             thisJob = $('a', element),
-                                                            redo = !parseBool(parseURL(thisJob.href).searchParameters?.redo),
+                                                            redo = (parseURL(thisJob.href).searchParameters?.redo?.equals(currentTarget.dataset.streamerName)? '': currentTarget.dataset.streamerName),
                                                             url = parseURL(thisJob.href).addSearch({ redo });
 
                                                         thisJob.setAttribute('new-href', url.href);
@@ -1091,8 +1093,8 @@ class Search {
             player = ({
                 type: 'site',
                 routes: {
-                    exact: ['activate', 'bits', 'bits-checkout', 'directory', 'following', 'popout', 'prime', 'store', 'subs'],
-                    start: ['bits-checkout/', 'checkout/', 'collections/', 'communities/', 'dashboard/', 'directory/', 'event/', 'prime/', 'products/', 'settings/', 'store/', 'subs/'],
+                    exact: ['activate', 'bits', 'bits-checkout', 'directory', 'following', 'luna', 'popout', 'prime', 'store', 'subs'],
+                    start: ['bits-checkout/', 'checkout/', 'collections/', 'communities/', 'dashboard/', 'directory/', 'event/', 'luna/', 'prime/', 'products/', 'settings/', 'store/', 'subs/'],
                 },
             });
 
@@ -1432,8 +1434,8 @@ class Search {
             player = ({
                 type: 'site',
                 routes: {
-                    exact: ['activate', 'bits', 'bits-checkout', 'directory', 'following', 'popout', 'prime', 'store', 'subs'],
-                    start: ['bits-checkout/', 'checkout/', 'collections/', 'communities/', 'dashboard/', 'directory/', 'event/', 'prime/', 'products/', 'settings/', 'store/', 'subs/'],
+                    exact: ['activate', 'bits', 'bits-checkout', 'directory', 'following', 'luna', 'popout', 'prime', 'store', 'subs'],
+                    start: ['bits-checkout/', 'checkout/', 'collections/', 'communities/', 'dashboard/', 'directory/', 'event/', 'luna/', 'prime/', 'products/', 'settings/', 'store/', 'subs/'],
                 },
             });
 
@@ -3539,7 +3541,7 @@ async function update() {
 
                         return live;
                     },
-                    name: ($('img', element)?.alt ?? parseURL(element.href).pathname.slice(1)),
+                    name: ($('img', element)?.alt ?? parseURL(element.href).pathname.slice(1)).split(/\s/).shift(),
                 };
 
                 element.setAttribute('draggable', true);
@@ -3579,7 +3581,7 @@ async function update() {
 
                         return live;
                     },
-                    name: ($('img', element)?.alt ?? parseURL(element.href).pathname.slice(1)),
+                    name: ($('img', element)?.alt ?? parseURL(element.href).pathname.slice(1)).split(/\s/).shift(),
                 };
 
                 element.setAttribute('draggable', true);
@@ -3617,7 +3619,7 @@ async function update() {
 
                         return live;
                     },
-                    name: ($('img', element)?.alt ?? parseURL(element.href).pathname.slice(1)),
+                    name: ($('img', element)?.alt ?? parseURL(element.href).pathname.slice(1)).split(/\s/).shift(),
                 };
 
                 element.setAttribute('draggable', true);
@@ -3712,6 +3714,7 @@ let TWITCH_PATHNAMES = [
         'following', 'friends?',
         'inventory',
         'jobs?',
+        'luna',
         'moderator',
         'popout', 'prime/?', 'products/?',
         'search', 'settings/?', 'store/?', 'subs/?', 'subscriptions?',
@@ -3853,10 +3856,32 @@ let Initialize = async(START_OVER = false) => {
                 Settings[setting] = null;
     }
 
+    let GLOBAL_ANCHORS = new Map;
+    setInterval(() => {
+        $.all('a[href]')
+            .filter(a => !GLOBAL_ANCHORS.has(a))
+            .filter(a => /^(((https?:)?\/\/)?www\.)twitch\.tv\//i.test(a.href))
+            .filter(a => !RESERVED_TWITCH_PATHNAMES.test(a.href))
+            .map(a => {
+                GLOBAL_ANCHORS.set(a, (function(event) {
+                    GetNextStreamer.href = this.href;
+                }).bind(a));
+
+                a.addEventListener('mousedown', GLOBAL_ANCHORS.get(a));
+            });
+    }, 250);
+
     top.GetNextStreamer =
     // Gets the next available channel (streamer)
         // GetNextStreamer(except:string?) → Object<Channel>
     function GetNextStreamer(except = '') {
+        if(defined(GetNextStreamer.href))
+            return {
+                from: 'GET_NEXT_STREAMER',
+                href: GetNextStreamer.href,
+                name: parseURL(GetNextStreamer.href).pathname.slice(1).split('/').shift(),
+            };
+
         if(defined(GetNextStreamer.pinnedStreamer) && ((ALL_FIRST_IN_LINE_JOBS?.length | 0) < 1) && !STREAMER?.live) {
             Cache.remove(['PinnedStreamer']);
 
@@ -4087,7 +4112,7 @@ let Initialize = async(START_OVER = false) => {
 
                         return live;
                     },
-                    name: ($('img', element)?.alt ?? parseURL(element.href).pathname.slice(1)),
+                    name: ($('img', element)?.alt ?? parseURL(element.href).pathname.slice(1)).split(/\s/).shift(),
                 };
 
                 element.setAttribute('draggable', true);
@@ -4434,7 +4459,7 @@ let Initialize = async(START_OVER = false) => {
         },
 
         get name() {
-            return $(`[class*="channel-info"i] a[href$="${ NORMALIZED_PATHNAME }"i]${ ['', ' h1'][+NORMAL_MODE] }`)?.textContent ?? LIVE_CACHE.get('name') ?? top.location.pathname.slice(1).split('/').shift()
+            return ($(`[class*="channel-info"i] a[href$="${ NORMALIZED_PATHNAME }"i]${ ['', ' h1'][+NORMAL_MODE] }`)?.textContent ?? LIVE_CACHE.get('name') ?? top.location.pathname.slice(1).split('/').shift()).split(/\s/).shift()
         },
 
         get paid() {
@@ -4601,7 +4626,7 @@ let Initialize = async(START_OVER = false) => {
 
             // Add any missing items...
             for(let __item__ of STREAMER.__shop__)
-                if(inventory.missing(item => item.title.equals(__item__.title) && item.cost == __item__.cost))
+                if(inventory.missing(item => item.title.equals(__item__.title) && (item.cost == __item__.cost)))
                     inventory.push(__item__);
 
             let cachedShopAddress = `points_shop_${ STREAMER.sole }`;
@@ -4866,7 +4891,7 @@ let Initialize = async(START_OVER = false) => {
 
                                 return live;
                             },
-                            name: ($('img', element)?.alt ?? parseURL(element.href).pathname.slice(1)),
+                            name: ($('img', element)?.alt ?? parseURL(element.href).pathname.slice(1)).split(/\s/).shift(),
                         };
 
                         element.setAttribute('draggable', true);
@@ -4910,7 +4935,7 @@ let Initialize = async(START_OVER = false) => {
 
                                 return live;
                             },
-                            name: ($('img', element)?.alt ?? parseURL(element.href).pathname.slice(1)),
+                            name: ($('img', element)?.alt ?? parseURL(element.href).pathname.slice(1)).split(/\s/).shift(),
                         };
 
                         element.setAttribute('draggable', true);
@@ -4951,7 +4976,7 @@ let Initialize = async(START_OVER = false) => {
 
                                 return live;
                             },
-                            name: ($('img', element)?.alt ?? parseURL(element.href).pathname.slice(1)),
+                            name: ($('img', element)?.alt ?? parseURL(element.href).pathname.slice(1)).split(/\s/).shift(),
                         };
 
                         element.setAttribute('draggable', true);
@@ -6821,7 +6846,7 @@ let Initialize = async(START_OVER = false) => {
                                 coin = (STREAMER?.coin) | 0,
                                 amount = (coin / cost).floor().clamp(0, available);
 
-                            if(amount < 1)
+                            if(!amount)
                                 return;
 
                             emoteCheckout.firstElementChild.lastElementChild.insertAdjacentElement('beforebegin', furnish(`button#tt-modify-all-emotes.tt-button.purple[@available=${ available }][@cost=${ cost }][@modifiers=${ modifiers }]`, {
@@ -6834,7 +6859,7 @@ let Initialize = async(START_OVER = false) => {
 
                                     // Auto-buy rewards
                                     function buyOut(count = 1) {
-                                        let rewardsBackButton = $('[class*="reward-center"i] [class*="pop"i][class*="head"i] > [class*="left"i] button');
+                                        let rewardsBackButton = $('[class*="reward-center"i] [class*="pop"i][class*="head"i] button');
 
                                         count *= +$.defined('[class*="reward-center"i]');
                                         available |= 0;
@@ -6850,7 +6875,7 @@ let Initialize = async(START_OVER = false) => {
                                                             modifier.click();
 
                                                             when.defined(() => $('button [class*="selected"i] img')).then(img => {
-                                                                let name = $('[class*="modify"i][class*="emote"i][class*="checkout"i] [data-test-selector*="modify"i][data-test-selector*="emote"i][data-test-selector*="preview"i]')?.textContent;
+                                                                let name = $('[data-test-selector*="preview"i], [class*="modify"i][class*="emote"i][class*="checkout"i] [data-a-target*="animation"i] ~ *')?.textContent;
 
                                                                 if(nullish(name))
                                                                     return /* There should always be a name */;
@@ -6866,11 +6891,11 @@ let Initialize = async(START_OVER = false) => {
 
                                                                 $remark(`Buying emote: "${ name }" for ${ cost }`);
 
-                                                                when.defined(() => $('[class*="modify"i][class*="emote"i][class*="checkout"i] [data-test-selector*="modify-emote-preview"i] ~ * ~ * button'), 250)
+                                                                when.defined(() => $(`[data-test-selector="RequiredPoints"i], [class*="modify"i][class*="emote"i][class*="checkout"i] img[class*="channel"i][class*="points"i]:not([alt="${ name }"i])`)?.closest('button'), 250)
                                                                     .then(unlock => {
                                                                         unlock.click();
 
-                                                                        when.defined(() => $(`[data-a-target*="animat"i] img[alt="${ name }"i]`), 2_500)
+                                                                        when.defined(() => $(`[class*="modify"i][class*="emote"i][class*="checkout"i] img[alt="${ name }"i]`), 2_500)
                                                                             .then(success => {
                                                                                 EXACT_POINTS_SPENT += cost;
                                                                                 rewardsBackButton?.click();
@@ -7271,7 +7296,7 @@ let Initialize = async(START_OVER = false) => {
         else if(nullish(search))
             url = parseURL(url).addSearch(location.search);
         else
-            url = parseURL(url).addSearch(search);
+            url = parseURL(url).addSearch((_ => { for(let k in _) if(_[k] === "") delete _[k]; return _ })(search));
 
         let { href, pathname } = url,
             name = pathname.slice(1),
@@ -7339,7 +7364,7 @@ let Initialize = async(START_OVER = false) => {
                     FIRST_IN_LINE_DUE_DATE = NEW_DUE_DATE(FIRST_IN_LINE_TIMER);
 
                     // Confirmation OK
-                    REDO_FIRST_IN_LINE_QUEUE(ALL_FIRST_IN_LINE_JOBS[0], { redo: parseBool(parseURL(removed).searchParameters?.redo) });
+                    REDO_FIRST_IN_LINE_QUEUE(ALL_FIRST_IN_LINE_JOBS[0], { redo: (parseURL(removed).searchParameters?.redo ?? "") });
 
                     // FIX-ME: Pressing "Skip" may destroy the queue (logically)
                     Cache.save({ ALL_FIRST_IN_LINE_JOBS, FIRST_IN_LINE_DUE_DATE }, () => {
@@ -8572,17 +8597,17 @@ let Initialize = async(START_OVER = false) => {
                                     [removed] = ALL_FIRST_IN_LINE_JOBS.splice(index, 1),
                                     purl = parseURL(removed),
                                     name = purl.pathname?.slice(1),
-                                    redo = parseBool(purl.searchParameters?.redo);
+                                    redo = (purl.searchParameters?.redo ?? "");
 
                                 $notice(`Removed from Up Next via Sorting Handler (${ nth(index + 1, 'ordinal-position') }):`, removed, 'Was it canceled?', event.canceled);
 
                                 if(event.canceled)
                                     DO_NOT_AUTO_ADD.push(removed);
-                                else if(redo)
+                                else if(redo.equals(name))
                                     ALL_FIRST_IN_LINE_JOBS.push(removed);
                                 // Balloon.onremove
                                 if(ALL_FIRST_IN_LINE_JOBS.length)
-                                    REDO_FIRST_IN_LINE_QUEUE(ALL_FIRST_IN_LINE_JOBS[0], { redo: parseBool(parseURL(ALL_FIRST_IN_LINE_JOBS[0]).searchParameters?.redo) });
+                                    REDO_FIRST_IN_LINE_QUEUE(ALL_FIRST_IN_LINE_JOBS[0], { redo: (parseURL(ALL_FIRST_IN_LINE_JOBS[0]).searchParameters?.redo ?? "") });
 
                                 if(index > 0) {
                                     Cache.save({ ALL_FIRST_IN_LINE_JOBS, FIRST_IN_LINE_DUE_DATE }, () => event.callback(event.element));
@@ -8835,16 +8860,16 @@ let Initialize = async(START_OVER = false) => {
                             [removed] = ALL_FIRST_IN_LINE_JOBS.splice(index, 1),
                             purl = parseURL(removed),
                             name = purl.pathname?.slice(1),
-                            redo = parseBool(purl.searchParameters?.redo);
+                            redo = (purl.searchParameters?.redo ?? "");
 
                         $notice(`Removed from Up Next via Balloon (${ nth(index + 1, 'ordinal-position') }):`, removed, 'Was it canceled?', event.canceled);
                         if(event.canceled)
                             DO_NOT_AUTO_ADD.push(removed);
-                        else if(redo)
+                        else if(redo.equals(name))
                             ALL_FIRST_IN_LINE_JOBS.push(removed);
                         // AddBalloon.onremove
                         if(ALL_FIRST_IN_LINE_JOBS.length)
-                            REDO_FIRST_IN_LINE_QUEUE(ALL_FIRST_IN_LINE_JOBS[0], { redo: parseBool(parseURL(ALL_FIRST_IN_LINE_JOBS[0]).searchParameters?.redo) });
+                            REDO_FIRST_IN_LINE_QUEUE(ALL_FIRST_IN_LINE_JOBS[0], { redo: (parseURL(ALL_FIRST_IN_LINE_JOBS[0]).searchParameters?.redo ?? "") });
 
                         if(index > 0) {
                             Cache.save({ ALL_FIRST_IN_LINE_JOBS, FIRST_IN_LINE_DUE_DATE }, () => event.callback(event.element));
@@ -9055,7 +9080,10 @@ let Initialize = async(START_OVER = false) => {
 
         // Redo entries
         if(true
-            && parseBool(parseURL(top.location).searchParameters?.redo)
+            && (true
+                && decodeURIComponent(parseURL(top.location).searchParameters?.redo).toLowerCase().split(',').includes(STREAMER.name.toLowerCase())
+                && !decodeURIComponent(parseURL(top.location).searchParameters?.obit).toLowerCase().split(',').includes(STREAMER.name.toLowerCase())
+            )
             && top.location.pathname.equals(`/${ STREAMER.name }`)
             && STREAMER.live
         )
@@ -9063,9 +9091,10 @@ let Initialize = async(START_OVER = false) => {
 
         // Put a rainbow around repeating entries...
         setInterval(() =>
-            $.all('[id^="tt-balloon"i][name][live][href*="redo"i]').map(el => {
+            $.all('[id^="tt-balloon"i][name][live][href*="redo="i]').map(el => {
                 let { searchParameters } = parseURL(el.getAttribute('href'));
-                let redo = parseBool(searchParameters?.redo);
+                let name = el.getAttribute('name');
+                let redo = (searchParameters?.redo ?? "").equals(name);
 
                 if(parseBool(el.getAttribute('rainbow-border')) != redo) {
                     el.setAttribute('rainbow-border', redo);
@@ -9142,7 +9171,7 @@ let Initialize = async(START_OVER = false) => {
                             $notice(`Necromancy work:`, removed);
 
                             // Necromancer
-                            REDO_FIRST_IN_LINE_QUEUE(ALL_FIRST_IN_LINE_JOBS[0], { redo: parseBool(parseURL(removed).searchParameters?.redo) });
+                            REDO_FIRST_IN_LINE_QUEUE(ALL_FIRST_IN_LINE_JOBS[0], { redo: (parseURL(removed).searchParameters?.redo ?? "") });
 
                         Cache.save({ ALL_FIRST_IN_LINE_JOBS }, () => {
                             $warn(`Unable to perform search for "${ name }" - ${ error }`, removed);
@@ -9162,7 +9191,7 @@ let Initialize = async(START_OVER = false) => {
                 $notice(`Doppleganger work:`, removed);
 
                 // Doppleganger
-                REDO_FIRST_IN_LINE_QUEUE(ALL_FIRST_IN_LINE_JOBS[0], { redo: parseBool(parseURL(removed).searchParameters?.redo) });
+                REDO_FIRST_IN_LINE_QUEUE(ALL_FIRST_IN_LINE_JOBS[0], { redo: (parseURL(removed).searchParameters?.redo ?? "") });
 
                 [FIRST_IN_LINE_JOB, FIRST_IN_LINE_WARNING_JOB, FIRST_IN_LINE_WARNING_TEXT_UPDATE].forEach(clearInterval);
 
@@ -9270,7 +9299,7 @@ let Initialize = async(START_OVER = false) => {
             let streamer = STREAMERS.find(streamer => RegExp(name, 'i').test(streamer.name)),
                 { searchParameters } = parseURL(location.href);
 
-            if(nullish(streamer) || searchParameters.obit == streamer.name || !name?.length)
+            if(nullish(streamer) || searchParameters.obit?.equals(streamer.name) || !name?.length)
                 continue creating_new_events;
 
             let { href } = streamer;
@@ -11321,6 +11350,9 @@ let Initialize = async(START_OVER = false) => {
                         return;
 
                     element.innerHTML = element.innerHTML.replace(regexp, ($0, $1, $$, $_) => {
+                        if($0.trim().length <= 1)
+                            return $0;
+
                         reply = parseCommands(reply, variables);
 
                         let url = parseURL(reply),
@@ -14455,8 +14487,6 @@ let Initialize = async(START_OVER = false) => {
                 if(defined(jump?.balance))
                     return;
 
-                let shop = (await STREAMER.shop);
-
                 balanceButton.click();
 
                 for(let reward of $.all('[class*="reward"i][class*="item"i]')) {
@@ -14471,6 +14501,9 @@ let Initialize = async(START_OVER = false) => {
                     image = image?.src ?? 'https://static-cdn.jtvnw.net/custom-reward-images/default-1.png';
                     cost = parseCoin(cost?.textContent) | 0;
                     title = (title?.textContent ?? "").trim();
+
+                    if(!title.length && !cost)
+                        continue;
 
                     let imgURL = parseURL(image),
                         imgPath = imgURL.pathname.slice(1),
@@ -15150,7 +15183,7 @@ let Initialize = async(START_OVER = false) => {
 
                     let next = await GetNextStreamer();
 
-                    $log('Saving current DVR stash. Reason:', { hosting, raiding, raided, leaving: defined(from) }, 'Moving onto:', next);
+                    $log('Saving current DVR stash. Reason (DVR leave handler):', { hosting, raiding, raided, leaving: defined(from) }, 'Moving onto:', next);
                 };
 
                 $.on('focusin', event => {
@@ -15210,7 +15243,7 @@ let Initialize = async(START_OVER = false) => {
 
             let next = await GetNextStreamer();
 
-            $log('Saving current DVR stash. Reason:', { hosting, raiding, raided, leaving: defined(from) }, 'Moving onto:', next);
+            $log('Saving current DVR stash. Reason (beforeunload):', { hosting, raiding, raided, leaving: defined(from) }, 'Moving onto:', next);
         });
     } catch(error) {
         /* Ignore these errors :P */
@@ -15366,7 +15399,7 @@ let Initialize = async(START_OVER = false) => {
                             FIRST_IN_LINE_DUE_DATE = NEW_DUE_DATE(FIRST_IN_LINE_TIMER);
 
                             // Skipper
-                            REDO_FIRST_IN_LINE_QUEUE(ALL_FIRST_IN_LINE_JOBS[0], { redo: parseBool(parseURL(removed).searchParameters?.redo) });
+                            REDO_FIRST_IN_LINE_QUEUE(ALL_FIRST_IN_LINE_JOBS[0], { redo: (parseURL(removed).searchParameters?.redo ?? "") });
 
                             Cache.save({ ALL_FIRST_IN_LINE_JOBS, FIRST_IN_LINE_DUE_DATE }, () => {
                                 $log('Skipping queue in favor of a DVR channel', job);
@@ -15482,7 +15515,7 @@ let Initialize = async(START_OVER = false) => {
 
                                     let next = await GetNextStreamer();
 
-                                    $log('Saving current DVR stash. Reason:', { hosting, raiding, raided, leaving: defined(from) }, 'Moving onto:', next);
+                                    $log('Saving current DVR stash. Reason (panel leave handler):', { hosting, raiding, raided, leaving: defined(from) }, 'Moving onto:', next);
                                 };
 
                                 $.on('focusin', event => {
@@ -16132,9 +16165,13 @@ let Initialize = async(START_OVER = false) => {
 
             // Save current recording(s) before leaving
             let leaveHandler = STREAMER.onraid = STREAMER.onhost = top.beforeleaving = top.onlocationchange = async({ hosting = false, raiding = false, raided = false, from, to, persisted }) => {
+                if(STASH_SAVED)
+                    return;
+                STASH_SAVED = true;
+
                 let next = await GetNextStreamer();
 
-                $log('Saving current recording(s). Reason:', { hosting, raiding, raided, leaving: defined(from) }, 'Moving onto:', next);
+                $log('Saving current recording(s). Reason (keyboard shortcuts leave handler):', { hosting, raiding, raided, leaving: defined(from) }, 'Moving onto:', next);
 
                 for(let [guid, { recording }] of Recording.__RECORDERS__)
                     recording?.stop()?.save();
@@ -17006,7 +17043,7 @@ if(top == window) {
                         // Save states...
                         let states = {
                             mini: (MiniPlayer?.dataset?.name),
-                            redo: (parseURL(window.location).searchParameters?.redo),
+                            redo: (parseURL(window.location).searchParameters?.redo ?? ""),
                         };
 
                         for(let key in states)
@@ -17375,7 +17412,10 @@ if(top == window) {
 
                     case 'consume-up-next': {
                         let { next, obit } = request,
-                            name = parseURL(next).pathname.slice(1);
+                            name = parseURL(next).pathname?.slice(1);
+
+                        if(nullish(name))
+                            return;
 
                         $notice(`Job stolen "${ name }" by "${ obit }" tab`);
 

@@ -324,6 +324,7 @@ class nanoid {
     static NO_LOOK_ALIKES = "346789ABCDEFGHJKLMNPQRTUVWXYabcdefghijkmnpqrtwxyz";
     static NO_LOOK_ALIKES_SAFE = "6789BCDFGHJKLMNPQRTWbcdfghjkmnpqrtwz";
     static BASE64 = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/=";
+    static CRX = "abcdefghijklmnop";
 
     /** @constructor
      *
@@ -1299,62 +1300,87 @@ defined.literal = function(value) {
  * @param {...any} objects  The list of objects to dereference
  */
 function PrepareForGarbageCollection(...objects) {
-    function isNumber(value) {
-        return ["number", "bigint"].includes(typeof value);
-    }
-
-    function isNotNumber(value) {
-        return !isNumber(value);
-    }
+    PrepareForGarbageCollection.LEDGER ??= new Set;
 
     // @TODO Keep this non-circular...
     // @performance
     for(let object of objects) {
         if(object === void null || object === null)
             continue;
+        if(!!~["number", "bigint", "string", "boolean", "symbol"].indexOf(typeof object))
+            continue;
+        if(PrepareForGarbageCollection.LEDGER.has(object))
+            continue;
 
-        if(typeof object == 'string') {
-            if(object.startsWith('blob:'))
-                URL.revokeObjectURL(object);
-        } if([Map, WeakMap].find(constructor => object instanceof constructor)) {
-            for(let [key, obj] of object)
+        if([Map, WeakMap].find(constructor => object instanceof constructor)) {
+            PrepareForGarbageCollection.LEDGER.add(object);
+
+            for(const [key, obj] of object)
                 PrepareForGarbageCollection(obj);
             object.clear();
+
+            PrepareForGarbageCollection.LEDGER.delete(object);
         } else if([Set, WeakSet].find(constructor => object instanceof constructor)) {
-            for(let obj of object)
+            PrepareForGarbageCollection.LEDGER.add(object);
+
+            for(const obj of object)
                 PrepareForGarbageCollection(obj);
             object.clear();
+
+            PrepareForGarbageCollection.LEDGER.delete(object);
         } else if([Array, Uint8Array, Uint8ClampedArray, Uint16Array, Uint32Array, Int8Array, Int16Array, Int32Array, Float32Array, Float64Array, BigInt64Array, BigUint64Array].find(constructor => object instanceof constructor)) {
-            let hasNumbersOnly = object.findIndex(isNotNumber) > 0;
+            const HAS_ONLY_PRIMITIVES = (false
+                || (object.constructor !== Array)
+                || (!~object.findIndex(_ => _ !== null && !~["number", "bigint", "string", "boolean", "symbol", "undefined"].indexOf(typeof _)))
+            );
 
             // Deliberately create Sparse Arrays
                 // → https://developer.mozilla.org/en-US/docs/Web/JavaScript/Guide/Indexed_collections#sparse_arrays
                 // → https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Array#array_methods_and_empty_slots
-            if(hasNumbersOnly)
+            if(HAS_ONLY_PRIMITIVES)
                 for(let index = 0; index < object.length; ++index)
                     delete object[index];
             else
                 for(let index = 0; index < object.length && index < Number.MAX_SAFE_INTEGER; ++index) {
-                    if(isNotNumber(object[index]))
-                        PrepareForGarbageCollection(object[index]);
+                    PrepareForGarbageCollection(object[index]);
 
                     delete object[index];
                 }
         } else if(object instanceof Object) {
-            for(let key in object) {
-                if(object[key] === object)
-                    continue;
+            PrepareForGarbageCollection.LEDGER.add(object);
 
-                // if(object[key] instanceof Element)
-                //     object[key].remove();
-
+            Object.keys(object).forEach((key, index, keys) => {
                 PrepareForGarbageCollection(object[key]);
 
                 delete object[key];
-            }
+
+                if(index == keys.length - 1)
+                    PrepareForGarbageCollection.LEDGER.delete(object);
+            });
         }
     }
 }
+
+/**
+ * Dereferences a list of objects and prepares them for garbage collection.
+ * If the object is an Element, it is removed from the DOM.
+ * If the object is a Blob URL, it is revoked.
+ * @simply PrepareForGarbageCollection.Indiscriminately(...objects:any) → void
+ *
+ * @param {...any} objects  The list of objects to dereference
+ */
+PrepareForGarbageCollection.Indiscriminately = function Indiscriminately(...objects) {
+    for(const object of objects) {
+        if(typeof object == 'string') {
+            if(object.startsWith('blob:'))
+                URL.revokeObjectURL(object);
+        } else if(object instanceof Element) {
+            object.remove();
+        } else {
+            PrepareForGarbageCollection(object);
+        }
+    }
+};
 
 /**
  * Returns a Promised <b><code>setInterval</code></b>.
@@ -2888,7 +2914,7 @@ __STATIC__: {
         RegisterJob.__reason__ = JobReason;
 
         if(JobReason?.unlike('default'))
-            console.log(`Registering job: ${ JobReason }`);
+            console.log(`Registering job (${ JobName }): ${ JobReason }`);
 
         return Jobs[JobName] ??= Timers[JobName] > 0?
             setInterval(Handlers[JobName], Timers[JobName]):
@@ -2908,7 +2934,7 @@ __STATIC__: {
         DelayJob.__reason__ = JobReason;
 
         if(JobReason?.unlike('default'))
-            console.log(`Delaying job: ${ JobReason }`);
+            console.log(`Delaying job (${ JobName }): ${ JobReason }`);
 
         return Jobs[JobName] ??= delay(Handlers[JobName], Timers[JobName]);
     }
@@ -2926,7 +2952,7 @@ __STATIC__: {
         UnregisterJob.__reason__ = JobReason;
 
         if(JobReason?.unlike('default'))
-            console.log(`Unregistering job: ${ JobReason }`);
+            console.log(`Unregistering job (${ JobName }): ${ JobReason }`);
 
         let CurrentJob = Jobs[JobName];
 
@@ -2954,7 +2980,7 @@ __STATIC__: {
         RestartJob.__reason__ = JobReason;
 
         if(JobReason?.unlike('default'))
-            console.log(`Restarting job: ${ JobReason }`);
+            console.log(`Restarting job (${ JobName }): ${ JobReason }`);
 
         new Promise((resolve, reject) => {
             try {

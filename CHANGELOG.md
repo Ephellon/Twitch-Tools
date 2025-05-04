@@ -79,6 +79,15 @@
 ----
 
 # DONE &mdash; Notable Changes
+> [`5.33.4.14`](https://github.com/Ephellon/Twitch-Tools/releases/tag/5.33.4.14)
+- Modified auto-purchasing logic
+- Modified channel redo logic
+- Modified channel name-fetching logic
+- Fixed issue where exclamation points were treated as commands
+- Modified `PrepareForGarbageCollection` logic
+- Modified `Number..suffix` logic
+- Modified `HTMLVideoElement..captureFrame` logic
+
 > [`5.33.4.13`](https://github.com/Ephellon/Twitch-Tools/releases/tag/5.33.4.13)
 - Added logic to sort games by availability
 - Fixed issue with `get time`

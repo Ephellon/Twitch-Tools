@@ -2849,6 +2849,17 @@ HTMLVideoElement.prototype.captureFrame ??= function captureFrame(imageType = "i
             data = { type: imageType, height, width, data };
         } break;
 
+        case 'clip': {
+            try {
+                canvas.toBlob(blob =>
+                    navigator.clipboard
+                        .write([ new ClipboardItem({ [blob?.type ?? 'image/png']: blob }) ])
+                );
+            } catch (error) {
+                console.error(error);
+            }
+        } break;
+
         default: break;
     }
 
@@ -4665,13 +4676,13 @@ function toImage(imageType = "image/png", returnType = "dataURL") {
 };
 
 // Returns a number formatted using unit suffixes
-    // Number..suffix(unit:string?, decimalPlaces:boolean|number?, format:string?) → string
+    // Number..suffix(unit:string?, decimalPlaces:boolean|number?, format:string?, keepTrailingZeroes:boolean?) → string
         // decimalPlaces = true | false | *:number
             // true → 123.456.suffix('m', true) => "123.456m"
             // false → 123.456.suffix('m', false) => "123m"
             // 1 → 123.456.suffix('m', 1) => "123.4m"
         // format = "metric" | "full" | "imperial" | "natural" | "readable" | "data" | "time:..."
-Number.prototype.suffix ??= function suffix(unit = '', decimalPlaces = true, format = "metric") {
+Number.prototype.suffix ??= function suffix(unit = '', decimalPlaces = true, format = "metric", keepTrailingZeroes = true) {
     let number = parseFloat(this),
         sign = (number < 0? '-': ''),
         suffix = '',
@@ -4760,12 +4771,12 @@ Number.prototype.suffix ??= function suffix(unit = '', decimalPlaces = true, for
                 number:
             (format.equals('readable') || format.equals('natural'))?
                 !infinite?
-                    (Math.abs(this) > 999? number.toFixed(decimalPlaces).replace(/\.0+$/, ''): Math.round(number)):
+                    (Math.abs(this) > 999? number.toFixed(decimalPlaces): Math.round(number)):
                 number:
             !infinite?
                 number.toFixed(decimalPlaces):
             number
-        )
+        ).toString().replace(/\.0+$/, (keepTrailingZeroes? '$&': ''))
         , suffix
         , unit
     ].join(padded? ' ': '');
