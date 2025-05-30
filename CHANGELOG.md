@@ -79,6 +79,9 @@
 ----
 
 # DONE &mdash; Notable Changes
+> [`5.33.4.15`](https://github.com/Ephellon/Twitch-Tools/releases/tag/5.33.4.15)
+- Fixed Up Next pausing logic
+
 > [`5.33.4.14`](https://github.com/Ephellon/Twitch-Tools/releases/tag/5.33.4.14)
 - Modified auto-purchasing logic
 - Modified channel redo logic

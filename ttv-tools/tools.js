@@ -3740,6 +3740,7 @@ let FIRST_IN_LINE_JOB = null,           // The current job (interval)
     FIRST_IN_LINE_BOOST,                // The "Up Next Boost" toggle
     FIRST_IN_LINE_TIMER,                // The current time left before the job is accomplished
     FIRST_IN_LINE_PAUSED = false,       // The pause-state
+    FIRST_IN_LINE_PAUSED_AT,            // The pause-state's start time
     FIRST_IN_LINE_BALLOON,              // The balloon controller
     FIRST_IN_LINE_DUE_DATE,             // The due date of the next job
     ALL_FIRST_IN_LINE_JOBS = [],        // All First in Line jobs
@@ -7844,6 +7845,7 @@ let Initialize = async(START_OVER = false) => {
 
                     currentTarget.innerHTML = Glyphs[['pause','play'][+paused]];
                     currentTarget.setAttribute('paused', FIRST_IN_LINE_PAUSED = paused);
+                    currentTarget.setAttribute('paused-at', FIRST_IN_LINE_PAUSED_AT = +new Date);
 
                     if(defined(currentTarget.tooltip))
                         currentTarget.tooltip.innerHTML = `${ ['Pause','Resume'][+paused] } the queue`;
@@ -8652,10 +8654,13 @@ let Initialize = async(START_OVER = false) => {
                                     /* First in Line is paused */
                                     if(FIRST_IN_LINE_PAUSED) {
                                         // $remark('Adding time... Subheader Animation');
+                                        if(FIRST_IN_LINE_PAUSED_AT.floorToNearest(1e3) === (+new Date).floorToNearest(1e3))
+                                            return;
+
                                         Cache.save({ FIRST_IN_LINE_DUE_DATE: FIRST_IN_LINE_DUE_DATE = NEW_DUE_DATE(timeRemaining + 1000) });
                                         StopWatch.stop('up_next_balloon__subheader_timer_animation', 1000);
 
-                                        return;
+                                        return FIRST_IN_LINE_PAUSED_AT = +new Date;
                                     }
 
                                     let name = container.getAttribute('name'),
@@ -8912,10 +8917,13 @@ let Initialize = async(START_OVER = false) => {
                             /* First in Line is paused */
                             if(FIRST_IN_LINE_PAUSED) {
                                 // $remark('Adding time... Job Watcher');
+                                if(FIRST_IN_LINE_PAUSED_AT.floorToNearest(1e3) === (+new Date).floorToNearest(1e3))
+                                    return;
+
                                 Cache.save({ FIRST_IN_LINE_DUE_DATE: FIRST_IN_LINE_DUE_DATE = NEW_DUE_DATE(timeRemaining + 1000) });
                                 StopWatch.stop('first_in_line__job_watcher', 1000);
 
-                                return;
+                                return FIRST_IN_LINE_PAUSED_AT = +new Date;
                             }
 
                             Cache.save({ FIRST_IN_LINE_BOOST });
@@ -9536,7 +9544,7 @@ let Initialize = async(START_OVER = false) => {
                                     [page, note] = [STREAMER.href, href].map(url => parseURL(url).pathname);
 
                                 // If already on the stream, break
-                                if(page.equals(note))
+                                if(page?.equals(note))
                                     break Handle_phantom_notification;
 
                                 // All of the Live Reminder handlers...
@@ -11472,7 +11480,7 @@ let Initialize = async(START_OVER = false) => {
         $('[data-a-target="chat-input"i]')?.addEventListener('keyup', delay(async event => {
             let { target, code, altKey, ctrlKey, metaKey, shiftKey } = event,
                 value = (target?.value ?? target?.textContent ?? target?.innerText),
-                [tray, chat] = target.closest('div:not([class])').firstElementChild.children,
+                [tray, chat] = target.closest('div:not([class])')?.firstElementChild?.children ?? [,],
                 f = furnish;
 
             if(['Tab', 'Space', 'Enter', 'Escape'].contains(code) || value?.contains(' ') || !value?.startsWith('!')) {
@@ -11485,10 +11493,10 @@ let Initialize = async(START_OVER = false) => {
                     target.setRangeText(`!${ command }`, index, index + text.length, 'end');
                 }
 
-                tray.classList.remove('tt-chat-input-tray__open');
+                tray?.classList?.remove('tt-chat-input-tray__open');
 
-                chat.classList.remove('tt-chat-input-container__open');
-                chat.firstElementChild.classList.remove('tt-chat-input-container__input-wrapper');
+                chat?.classList?.remove('tt-chat-input-container__open');
+                chat?.firstElementChild?.classList?.remove('tt-chat-input-container__input-wrapper');
 
                 $('#tt-tcito1')?.remove();
 
@@ -14751,7 +14759,7 @@ let Initialize = async(START_OVER = false) => {
 
             iframe.dataset.index = index;
             iframe.src = parseURL(`https://player.twitch.tv/`).addSearch({
-                video: `v${ richTooltips[index].closest('[href^="/videos/"i]').href.split('/').pop() }`,
+                video: `v${ richTooltips[index].closest('[href^="/videos/"i]')?.href?.split('/')?.pop() }`,
                 parent: 'twitch.tv',
                 autoplay: true,
 
