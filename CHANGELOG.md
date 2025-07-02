@@ -79,6 +79,10 @@
 ----
 
 # DONE &mdash; Notable Changes
+> [`5.33.4.16`](https://github.com/Ephellon/Twitch-Tools/releases/tag/5.33.4.16)
+- Modified ad banner logic
+- Added `ƒ empty` and `ƒ sated`
+
 > [`5.33.4.15`](https://github.com/Ephellon/Twitch-Tools/releases/tag/5.33.4.15)
 - Fixed Up Next pausing logic
 

@@ -1294,6 +1294,34 @@ defined.literal = function(value) {
 };
 
 /**
+ * Returns if an object is empty (`true`) or not (`false`).
+ *
+ * @param  {any} iterable   The object to check and see if empty
+ * @return {boolean}        Whether the object is empty or not
+ */
+function empty(iterable) {
+	let itr = iterable ?? [];
+
+	if(itr instanceof Map || itr instanceof Set)
+		return itr.size < 1;
+
+	if(itr.constructor === Object)
+		return empty(Object.keys(itr));
+
+	return (itr.length | 0) < 1;
+}
+
+/**
+ * Returns if an object is not empty (`true`) or empty (`false`).
+ *
+ * @param  {any} iterable   The object to check and see if empty
+ * @return {boolean}        Whether the object is empty or not
+ */
+function sated(iterable) {
+	return !empty(iterable);
+}
+
+/**
  * Dereferences a list of objects and prepares them for garbage collection.
  * @simply PrepareForGarbageCollection(...objects:any) → void
  *

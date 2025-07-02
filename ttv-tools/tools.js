@@ -1565,7 +1565,7 @@ class Search {
 
         switch(Search.parseType) {
             case 'advanced': {
-                // TODO: Parse advanced Search results...
+                // @TODO: Parse advanced Search results...
             } break;
 
             case 'pure': {
@@ -6096,7 +6096,7 @@ let Initialize = async(START_OVER = false) => {
                     innerHTML: sibling.outerHTML.replace(/(?:[\w\-]*)(?:follow|header|notifications?|settings-menu)([\w\-]*)/ig, 'away-mode$1'),
                 });
 
-            // TODO: Add an animation for the Away Mode button appearing?
+            // @TODO: Add an animation for the Away Mode button appearing?
             // container.modStyle('animation:1s fade-in-from-zero 1;');
 
             parent.insertBefore(container, parent[before + 'ElementChild']);
@@ -7325,7 +7325,7 @@ let Initialize = async(START_OVER = false) => {
 
             timeRemaining = timeRemaining < 0? 0: timeRemaining;
 
-            // TODO: Figure out a single pause controller for First in Line...
+            // @TODO: Figure out a single pause controller for First in Line...
             if(!UP_NEXT_ALLOW_THIS_TAB)
                 return;
             if(FIRST_IN_LINE_PAUSED)
@@ -7367,7 +7367,7 @@ let Initialize = async(START_OVER = false) => {
                     // Confirmation OK
                     REDO_FIRST_IN_LINE_QUEUE(ALL_FIRST_IN_LINE_JOBS[0], { redo: (parseURL(removed).searchParameters?.redo ?? "") });
 
-                    // FIX-ME: Pressing "Skip" may destroy the queue (logically)
+                    // @FIXME: Pressing "Skip" may destroy the queue (logically)
                     Cache.save({ ALL_FIRST_IN_LINE_JOBS, FIRST_IN_LINE_DUE_DATE }, () => {
                         if(action) {
                             // The user clicked "OK"
@@ -7398,7 +7398,7 @@ let Initialize = async(START_OVER = false) => {
 
         FIRST_IN_LINE_JOB = setInterval(() => {
             // If the channel disappears (or goes offline), kill the job for it
-            // FIX-ME: Reanimating First in Line jobs may cause reloading issues?
+            // @FIXME: Reanimating First in Line jobs may cause reloading issues?
             let index = ALL_CHANNELS.findIndex(channel => RegExp(parseURL(channel.href).pathname + '\\b', 'i').test(FIRST_IN_LINE_HREF)),
                 channel = ALL_CHANNELS[index],
                 timeRemaining = GET_TIME_REMAINING();
@@ -8244,7 +8244,7 @@ let Initialize = async(START_OVER = false) => {
                                                                                         delete DVRChannels[DVR_ID];
                                                                                     }
 
-                                                                                    // FIX-ME: Live Reminder alerts will not display if another alert is present...
+                                                                                    // @FIXME: Live Reminder alerts will not display if another alert is present...
                                                                                     Cache.save({ DVRChannels }, () => Settings.set({ 'DVR_CHANNELS': Object.keys(DVRChannels) }).then(() => parseBool(message) && alert.timed(message, 7000)).catch($warn));
                                                                                 });
                                                                             },
@@ -8321,7 +8321,7 @@ let Initialize = async(START_OVER = false) => {
             LIVE_REMINDERS__LISTING_INTERVAL ??=
             setInterval(() => {
                 for(let span of $.all('.tt-time-elapsed'))
-                    span.innerHTML = toTimeString(+new Date - +new Date(span.getAttribute('start')), '!hour:!minute:!second');
+                    span.innerHTML = toTimeString(+new Date - +new Date(span.getAttribute('start')), '<&days=:>!hour:!minute:!second');
             }, 1000);
 
             // Help Button
@@ -9370,7 +9370,8 @@ let Initialize = async(START_OVER = false) => {
             let f = furnish,
                 s = string => string.replace(/$/, "'").replace(/(?<!s)'$/, "'s"),
                 reminderName = STREAMER.name,
-                hasReminder = defined(LiveReminders[reminderName]),
+                realName = (Object.keys(LiveReminders).find(name => name.equals(reminderName))),
+                hasReminder = sated(realName),
                 tense = (parseBool(Settings.keep_live_reminders)? '': ' next'),
                 stream_s = 'stream'.pluralSuffix(+!!tense),
                 [title, subtitle, icon] = [
@@ -9382,7 +9383,7 @@ let Initialize = async(START_OVER = false) => {
 
             // Create the action button...
             action =
-            f('div', { 'tt-action': 'live-reminders', 'for': reminderName, 'remind': hasReminder, 'action-origin': 'foreign', style: `animation:1s fade-in 1;` },
+            f('div', { 'tt-action': 'live-reminders', 'for': realName, 'remind': hasReminder, 'action-origin': 'foreign', style: `animation:1s fade-in 1;` },
                 f('button', {
                     onmouseup: async event => {
                         let { currentTarget, isTrusted = false, button = -1 } = event;
@@ -9400,7 +9401,8 @@ let Initialize = async(START_OVER = false) => {
 
                             let s = string => string.replace(/$/, "'").replace(/(?<!s)'$/, "'s"),
                                 reminderName = STREAMER.name,
-                                notReminded = nullish(LiveReminders[reminderName]),
+                                realName = (Object.keys(LiveReminders).find(name => name.equals(reminderName))),
+                                notReminded = empty(realName),
                                 tense = (parseBool(Settings.keep_live_reminders)? '': ' next'),
                                 stream_s = 'stream'.pluralSuffix(+!!tense),
                                 [title, subtitle, icon] = [
@@ -9417,18 +9419,18 @@ let Initialize = async(START_OVER = false) => {
                             // Add the reminder...
                             let message;
                             if(notReminded) {
-                                message = `You'll be notified when <a href="/${ reminderName }">${ reminderName }</a> goes live.`;
-                                LiveReminders[reminderName] = (STREAMER.live? new Date(STREAMER?.data?.actualStartTime): STREAMER?.data?.lastSeen ?? new Date);
+                                message = `You'll be notified when <a href="/${ realName }">${ realName }</a> goes live.`;
+                                LiveReminders[realName] = (STREAMER.live? new Date(STREAMER?.data?.actualStartTime): STREAMER?.data?.lastSeen ?? new Date);
                             }
                             // Remove the reminder...
                             else {
-                                message = `Reminder for <a href="/${ reminderName }">${ reminderName }</a> removed successfully!`;
-                                delete LiveReminders[reminderName];
+                                message = `Reminder for <a href="/${ realName }">${ realName }</a> removed successfully!`;
+                                delete LiveReminders[realName];
                             }
 
                             currentTarget.closest('[tt-action]').setAttribute('remind', notReminded);
 
-                            // FIX-ME: Live Reminder alerts will not display if another alert is present...
+                            // @FIXME: Live Reminder alerts will not display if another alert is present...
                             Cache.save({ LiveReminders }, () => Settings.set({ 'LIVE_REMINDERS': Object.keys(LiveReminders) }).then(() => parseBool(message) && alert.timed(message, 7000)).catch($warn));
                         });
                     },
@@ -9481,15 +9483,16 @@ let Initialize = async(START_OVER = false) => {
 
                 checking: // Only check for the stream when it's live; if the dates don't match, it just went live again
                 for(let reminderName in LiveReminders) {
-                    culling: if(PARSED_REMINDERS.has(reminderName)) {
-                        let repeats = PARSED_REMINDERS.get(reminderName) + 1;
+                    let realName = (Object.keys(LiveReminders).find(name => name.equals(reminderName)));
 
-                        PARSED_REMINDERS.set(reminderName, repeats);
+                    culling: if(PARSED_REMINDERS.has(realName)) {
+                        let repeats = PARSED_REMINDERS.get(realName) + 1;
+
+                        PARSED_REMINDERS.set(realName, repeats);
 
                         // Let reminders refresh every 15mins
-                        if(!(repeats % 3))
-                            break culling;
-                        continue checking;
+                        if(repeats % 3)
+                            continue checking;
                     }
 
                     let channel = await new Search(reminderName).then(Search.convertResults),
@@ -9522,23 +9525,23 @@ let Initialize = async(START_OVER = false) => {
                     }
 
                     let { name, live, icon, href, data = { actualStartTime: null, lastSeen: null } } = channel;
-                    let lastOnline = new Date((+new Date(LiveReminders[reminderName])).floorToNearest(1000)).toJSON(),
+                    let lastOnline = new Date((+new Date(LiveReminders[realName])).floorToNearest(1000)).toJSON(),
                         justOnline = new Date((+new Date(data.actualStartTime)).floorToNearest(1000)).toJSON();
 
                     // The channel just went live!
                     if(lastOnline != justOnline) {
-                        PARSED_REMINDERS.set(reminderName, 0);
+                        PARSED_REMINDERS.set(realName, 0);
 
                         if(parseBool(Settings.keep_live_reminders)) {
-                            LiveReminders[reminderName] = justOnline;
+                            LiveReminders[realName] = justOnline;
                         } else {
-                            $(`[tt-action="live-reminders"i][for="${ reminderName }"i][remind="true"i] button`)
+                            $(`[tt-action="live-reminders"i][for="${ realName }"i][remind="true"i] button`)
                                 ?.dispatchEvent?.(new MouseEvent('mouseup', { bubbles: false }));
-                            delete LiveReminders[reminderName];
+                            delete LiveReminders[realName];
                         }
 
                         Cache.save({ LiveReminders }, async() => {
-                            // TODO: Currently, only one option looks for Live Reminder notifications...
+                            // @TODO: Currently, only one option looks for Live Reminder notifications...
                             Handle_phantom_notification: {
                                 let notification = { href, innerText: `${ name } is live [Live Reminders]` },
                                     [page, note] = [STREAMER.href, href].map(url => parseURL(url).pathname);
@@ -9952,7 +9955,7 @@ let Initialize = async(START_OVER = false) => {
                                                 $warn(`Unable to fetch Steam pricing information for "${ jbpp }"`, error);
                                             });
 
-                                        // TODO: Make this faster somehow!
+                                        // @TODO: Make this faster somehow!
                                         // Slow as hell!
                                         fetchURL.fromDisk(href.replace(/^\/\//, 'https:$&'), { hoursUntilEntryExpires: 168 })
                                             .then(r => r.text())
@@ -10501,7 +10504,7 @@ let Initialize = async(START_OVER = false) => {
                                                 $warn(`Unable to fetch Xbox pricing information for "${ jbpp }"`, error);
                                             });
 
-                                        // TODO: Make this faster somehow!
+                                        // @TODO: Make this faster somehow!
                                         // Slow as hell!
                                         fetchURL.fromDisk(href.replace(/^\/\//, 'https:$&'), { hoursUntilEntryExpires: 168 })
                                             .then(r => r.text())
@@ -10621,7 +10624,7 @@ let Initialize = async(START_OVER = false) => {
                                                 $warn(`Unable to fetch Xbox pricing information for "${ game }"`, error);
                                             });
 
-                                        // TODO: Make this faster somehow!
+                                        // @TODO: Make this faster somehow!
                                         // Slow as hell!
                                         fetchURL.fromDisk(href.replace(/^\/\//, 'https:$&'), { hoursUntilEntryExpires: 168 })
                                             .then(r => r.text())
@@ -12214,7 +12217,7 @@ let Initialize = async(START_OVER = false) => {
             /(?<![#\$\.+:\d%‰]|\p{Sc})\b(?:GMT[ \t]*|UTC[ \t]*)(?<offset>[+-])(?<hour>2[0-3]|[01]?\d)(?<minute>:?[0-5]\d)?(?!\d*(?:\p{Sc}|[%‰]))\b/iu,
         ],
 
-        // FIX-ME: Fix conflicting Time Zone entries...
+        // @FIXME: Fix conflicting Time Zone entries...
         TIME_ZONE__CONVERSIONS = {
             AOE: "-12:00",
             GMT: "+00:00",
@@ -13891,9 +13894,9 @@ let Initialize = async(START_OVER = false) => {
                         curr = char;
                         syntaxes.push('attribute');
                     } else if(char == '"') {
-                        syntaxes.push('d-string');
+                        syntaxes.push('string:2');
                     } else if(char == "'") {
-                        syntaxes.push('s-string');
+                        syntaxes.push('string:1');
                     } else if(char == '<') {
                         path.push('');
                         syntaxes.push('closest');
@@ -13930,7 +13933,7 @@ let Initialize = async(START_OVER = false) => {
                             }
                         } break;
 
-                        case 'd-string': {
+                        case 'string:2': {
                             curr += char;
 
                             if(char == '\\')
@@ -13941,7 +13944,7 @@ let Initialize = async(START_OVER = false) => {
                                 syntaxes.pop();
                         } break;
 
-                        case 's-string': {
+                        case 'string:1': {
                             curr += char;
 
                             if(char == '\\')
@@ -13964,19 +13967,29 @@ let Initialize = async(START_OVER = false) => {
                         } break;
                     }
 
-                return path.reduce((elements, v, i, a) => {
-                    if(v.trim() === '')
-                        return ({ dataset: {} });
-                    else if(i === 0)
-                        return $.all(v);
+                    const LAST = Symbol("last-selector-slot");
 
-                    let c = parseInt(v.trim() || '1');
+                    path.push(LAST);
 
-                    if(Number.isNaN(c))
-                        return elements.map(el => el.closest(v)).filter(defined);
-                    else for(;c--;)
-                        return elements.map(el => el.parentElement).filter(defined);
-                }, null).isolate().forEach(el => el.dataset[UNWANTED_BANNER_AD_SELECTOR] = true);
+                    return path.reduce((elements, v, i, a) => {
+                        if(v === LAST)
+                            return elements;
+                        else if(v.trim() === '')
+                            return ({ dataset: {} });
+                        else if(i === 0)
+                            return $.all(v);
+
+                        let c = parseInt(v.trim() || '1');
+
+                        if(Number.isNaN(c)) {
+                            return elements.map(el => el.closest(v)).filter(defined);
+                        } else {
+                            for(;c-->0;)
+                                elements = elements.map(el => el.parentElement).filter(defined);
+
+                            return elements;
+                        }
+                    }, []).isolate().forEach(el => el.dataset[UNWANTED_BANNER_AD_SELECTOR] = true);
             });
 
             AddCustomCSSBlock('Remove Banner Ads', `[data-${ UNWANTED_BANNER_AD_SELECTOR }="true"i] {display:none!important}`);
@@ -14638,7 +14651,7 @@ let Initialize = async(START_OVER = false) => {
             controls = false;
 
         // Watch-party information...
-        // TODO: Use this...
+        // @TODO: Use this...
         // let partyInfo = $('[class*="watch"i][class*="party"i][class*="info"i]'),
         //     partyThumbnail = $('[data-test-selector*="thumbnail"i]', partyInfo),
         //     partyTitle = $('[data-test-selector*="title"i]', partyInfo),
@@ -15152,7 +15165,7 @@ let Initialize = async(START_OVER = false) => {
 
                             currentTarget.closest('[tt-action]').setAttribute('enabled', enabled);
 
-                            // FIX-ME: Live Reminder alerts will not display if another alert is present...
+                            // @FIXME: Live Reminder alerts will not display if another alert is present...
                             Cache.save({ DVRChannels }, () => Settings.set({ 'DVR_CHANNELS': Object.keys(DVRChannels) }).then(() => parseBool(message) && alert.timed(message, 7000)).catch($warn));
                         });
                     },
@@ -17654,7 +17667,7 @@ if(top == window) {
                             // Successful login attempt
                             case '001': {
                                 socket.send(`JOIN ${ CHANNEL }`);
-                                // TODO | To be removed Feb 18, 2024 → https://dev.twitch.tv/docs/irc/chat-commands/#migration-guide
+                                // @TODO | To be removed Feb 18, 2024 → https://dev.twitch.tv/docs/irc/chat-commands/#migration-guide
                                 socket.send(`PRIVMSG ${ CHANNEL } :/mods`);
                                 socket.send(`PRIVMSG ${ CHANNEL } :/vips`);
                             } break;
@@ -17748,7 +17761,7 @@ if(top == window) {
                                         'note'
                                     ),
                                     element = when.defined((message, subject) =>
-                                        // TODO: get bullets via text content
+                                        // @TODO: get bullets via text content
                                         $.all('[role] ~ *:is([role="log"i], [class~="chat-room"i], [data-a-target*="chat"i], [data-test-selector*="chat"i]) *:is(.tt-accent-region, [data-test-selector="user-notice-line"i], [class*="notice"i][class*="line"i], [class*="gift"i]:not([class*="count"i]), [data-test-selector="announcement-line"i], [class*="announcement"i][class*="line"i])')
                                             .find(element => {
                                                 let A = message.mutilate();
@@ -17800,7 +17813,7 @@ if(top == window) {
                                     mentions,
                                     timestamp: new Date,
 
-                                    // TODO: see if there are extra `msg_id` values
+                                    // @TODO: see if there are extra `msg_id` values
                                     // msg_id,
                                 };
 
