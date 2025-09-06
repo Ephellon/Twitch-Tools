@@ -3700,9 +3700,9 @@ const PRIVATE_SYMBOL = Symbol(new UUID);
  * @prop {number} sole       - The channel's ID
  * @prop {array} tags        - Tags of the current stream
  */
-let LIVE_CACHE = new Map();
+const LIVE_CACHE = new Map();
 
-let TWITCH_PATHNAMES = [
+const TWITCH_PATHNAMES = [
         '$', '[up]/',
 
         'activate',
@@ -8789,7 +8789,7 @@ let Initialize = async(START_OVER = false) => {
                 continue;
             HANDLED_NOTIFICATIONS.push(uuid);
 
-            if(DO_NOT_AUTO_ADD.contains(href))
+            if(DO_NOT_AUTO_ADD.contains(href) || RESERVED_TWITCH_PATHNAMES.test(href))
                 continue;
 
             if(true
@@ -9419,19 +9419,19 @@ let Initialize = async(START_OVER = false) => {
                             // Add the reminder...
                             let message;
                             if(notReminded) {
-                                message = `You'll be notified when <a href="/${ realName }">${ realName }</a> goes live.`;
-                                LiveReminders[realName] = (STREAMER.live? new Date(STREAMER?.data?.actualStartTime): STREAMER?.data?.lastSeen ?? new Date);
+                                message = `You'll be notified when <a href="/${ reminderName }">${ reminderName }</a> goes live.`;
+                                LiveReminders[reminderName] = (STREAMER.live? new Date(STREAMER?.data?.actualStartTime): STREAMER?.data?.lastSeen ?? new Date);
                             }
                             // Remove the reminder...
                             else {
-                                message = `Reminder for <a href="/${ realName }">${ realName }</a> removed successfully!`;
-                                delete LiveReminders[realName];
+                                message = `Reminder for <a href="/${ reminderName }">${ reminderName }</a> removed successfully!`;
+                                delete LiveReminders[reminderName];
                             }
 
                             currentTarget.closest('[tt-action]').setAttribute('remind', notReminded);
 
                             // @FIXME: Live Reminder alerts will not display if another alert is present...
-                            Cache.save({ LiveReminders }, () => Settings.set({ 'LIVE_REMINDERS': Object.keys(LiveReminders) }).then(() => parseBool(message) && alert.timed(message, 7000)).catch($warn));
+                            Cache.save({ LiveReminders }, () => Settings.set({ 'LIVE_REMINDERS': Object.keys(LiveReminders) }).then(() => parseBool(message) && confirm.timed(message, 7000)).catch($warn));
                         });
                     },
                 }, f.div(
@@ -12103,12 +12103,12 @@ let Initialize = async(START_OVER = false) => {
      */
     let ClearIntent;
 
-    TWITCH_PATHNAMES = [
+    let twitch_pathnames = [
         USERNAME,
 
         ...TWITCH_PATHNAMES
     ];
-    RESERVED_TWITCH_PATHNAMES = RegExp(`/(${ TWITCH_PATHNAMES.join('|') })`, 'i');
+    let reserved_twitch_pathnames = RegExp(`/(${ twitch_pathnames.join('|') })`, 'i');
 
     Handlers.stay_live = async() => {
         new StopWatch('stay_live');
@@ -12135,7 +12135,7 @@ let Initialize = async(START_OVER = false) => {
                 && STREAMER.redo
             )
         ) {
-            if(RESERVED_TWITCH_PATHNAMES.test(pathname))
+            if(reserved_twitch_pathnames.test(pathname))
                 break NotLive;
 
             if(!RegExp(STREAMER?.name, 'i').test(PATHNAME))
@@ -13221,7 +13221,10 @@ let Initialize = async(START_OVER = false) => {
             let [timezone, zone, type, trigger] = (null
                 ?? (container?.innerText || '')
                     .normalize('NFKD')
-                    .match(/(?:(?<zone>\p{L}{3,})[\s\-]+)(?:(?<type>\p{L}+)[\s\-]+)?(?<trigger>time)\b/iu)
+                    .match(/(?:Time[ -]?zone[ \t:=]+)(?:(?<zone>\p{L}{3,}))(?:[ \t\-]*(?<type>\p{L}+))?/iu)
+                ?? (container?.innerText || '')
+                    .normalize('NFKD')
+                    .match(/(?:(?<zone>\p{L}{3,})[ \t\-]+)(?:(?<type>\p{L}+)[ \t\-]+)?(?<trigger>time)\b/iu)
                 ?? []
             );
 
@@ -13989,7 +13992,11 @@ let Initialize = async(START_OVER = false) => {
 
                             return elements;
                         }
-                    }, []).isolate().forEach(el => el.dataset[UNWANTED_BANNER_AD_SELECTOR] = true);
+                    }, []).isolate().forEach(el => {
+                        $remark('Blocking...', el);
+
+                        el.dataset[UNWANTED_BANNER_AD_SELECTOR] = true;
+                    });
             });
 
             AddCustomCSSBlock('Remove Banner Ads', `[data-${ UNWANTED_BANNER_AD_SELECTOR }="true"i] {display:none!important}`);

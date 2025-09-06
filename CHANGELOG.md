@@ -79,6 +79,11 @@
 ----
 
 # DONE &mdash; Notable Changes
+> [`5.33.4.17`](https://github.com/Ephellon/Twitch-Tools/releases/tag/5.33.4.17)
+- Fixed issue where notifications would add non-channel URLs
+- Modified Time Zone logic
+- Modified Ad Blocking logic
+
 > [`5.33.4.16`](https://github.com/Ephellon/Twitch-Tools/releases/tag/5.33.4.16)
 - Modified ad banner logic
 - Added `ƒ empty` and `ƒ sated`

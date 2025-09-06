@@ -164,7 +164,7 @@ function parseURL(url) {
 
 Object.defineProperties(parseURL, {
     pattern: {
-        value: /(?<href>(?<origin>(?<protocol>(?<scheme>[a-z][\w\-]{2,}):)?(?:\/\/)?)?(?:(?<username>[^:\s]*):(?<password>[^@\s]*)@)?(?<host>(?<hostname>\B\.{1,2}\B(?=[a-z\d]|\/)|(?:[a-z][a-z-]*)(?:\.[a-z][a-z-\.]*|(?=\/))|(?:[^\s\$]\d[a-z\d-]*)(?:\.[a-z][a-z-\.]*)|(?:(?:25[0-5]|(?:2[0-4]|1\d|[1-9]|)\d)(?:\.(?!$)|$)){4}|localhost)(?:\:(?<port>\d+))?)(?<pathname>\/[^?#\s]*)?(?<search>\?[^#\s]*)?(?<hash>#[^\s]*)?)/i
+        value: /(?<href>(?<origin>(?<protocol>(?<scheme>[a-z][\w\-]{2,}):)?(?:\/\/)?)?(?:(?<username>[^:\s]*):(?<password>[^@\s]*)@)?(?<host>(?<hostname>\B\.{1,2}\B(?=[a-z\d]|\/)|(?:[a-z][a-z-]*)(?:\.[a-z][a-z-\.]*|(?=\/))|(?:[^\s\$]\d[a-z\d-]*)(?:\.[a-z][a-z-\.]*)|(?:(?:25[0-5]|(?:2[0-4]|1\d|[1-9])\d)(?:\.(?!$)|$)){4}|localhost)(?:\:(?<port>\d+))?)(?<pathname>\/[^?#\s]*)?(?<search>\?[^#\s]*)?(?<hash>#[^\s]*)?)/i
     },
 });
 
@@ -4826,7 +4826,7 @@ Number.prototype.clamp ??= function clamp(min, max) {
 
 // Adds all Math prototypes to Numbers
     // Math... → Number...
-Number['#Math'] = (parent => {
+Number[Math] = (parent => {
     let methods = Object.getOwnPropertyNames(parent);
 
     for(let method of methods) {
@@ -4916,7 +4916,7 @@ String.prototype.pluralSuffix ??= function pluralSuffix(numberOfItems = 0, tail 
                 // ax | axe | axis → axes
                 case 'ax':
                 case 'axe':
-                case 'axes': /* "axes" is the plural of "ax" , "axe", and "axis" */
+                case 'axes': /* "axes" is the plural of "ax", "axe", and "axis" */
                 case 'axis': {
                     string = toFormat('axes', pattern);
                 } break;

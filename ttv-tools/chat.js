@@ -3158,7 +3158,7 @@ let Chat__Initialize = async(START_OVER = false) => {
         let [chat] = $.all('[role] ~ *:is([role="log"i], [class~="chat-room"i], [data-a-target*="chat"i], [data-test-selector*="chat"i]), [role="tt-log"i], [data-test-selector="banned-user-message"i], [data-test-selector^="video-chat"i]'),
             error = $('[class*="chat"i][class*="content"] .core-error');
 
-        if(defined(error)) {
+        if(defined(error) || nullish(chat)) {
             $('[data-a-target*="welcome"i]')?.append(furnish('p', { style: 'text-decoration:underline var(--color-error)' }, `There was an error loading chat: ${ error.textContent }`));
             error.remove();
         }
