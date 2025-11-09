@@ -3650,411 +3650,540 @@ let Chat__PAGE_CHECKER,
 Chat__PAGE_CHECKER = setInterval(Chat__WAIT_FOR_PAGE = async() => {
     // Only executes if the user is banned
     let banned = parseBool(STREAMER?.veto || $.all('[class*="banned"i]')?.length);
+    let done = false;
 
-    // Keep hidden iframes from loading resources
-    let hidden = parseBool(parseURL(location).searchParameters?.hidden);
+    try {
+        // Keep hidden iframes from loading resources
+        let hidden = parseBool(parseURL(location).searchParameters?.hidden);
 
-    if([banned, hidden].map(parseBool).contains(true)) {
-        if(!parseBool(hidden))
-            $warn('[NON_FATAL] Child container unavailable. Is it a ban? ', ['No', 'Yes'][+banned], 'Is chat embedded and hidden?', ['No', 'Yes'][+hidden]);
+        if([banned, hidden].map(parseBool).contains(true)) {
+            if(!parseBool(hidden))
+                $warn('[NON_FATAL] Child container unavailable. Is it a ban? ', ['No', 'Yes'][+banned], 'Is chat embedded and hidden?', ['No', 'Yes'][+hidden]);
 
-        wait(5000).then(() => Chat__Initialize_Safe_Mode({ banned, hidden }));
-        clearInterval(Chat__PAGE_CHECKER);
+            wait(5000).then(() => Chat__Initialize_Safe_Mode({ banned, hidden }));
 
-        return await Settings.get();
-    }
-
-    // Only executes if the user is NOT banned
-    let ready = (true
-        // The main controller is ready
-        && (false
-            || parseBool(top.MAIN_CONTROLLER_READY)
-            || (false
-                // This window is the main container
-                || (true
-                    && top == window
-                    && top.document.readyState.equals('complete')
-
-                    // The follow button exists
-                    && $.defined(`[data-a-target="follow-button"i], [data-a-target="unfollow-button"i]`)
-
-                    // There are channel buttons on the side
-                    && parseBool($.all('[id*="side"i][id*="nav"i] .side-nav-section[aria-label]')?.length)
-                )
-
-                // This window is not the main container
-                || (true
-                    && IS_A_FRAMED_CONTAINER
-                    && document.readyState.equals('complete')
-
-                    // There is a welcome message container
-                    && $.defined(`[data-a-target*="welcome"i]`)
-                )
-            )
-        )
-        // There isn't an advertisement playing
-        && $.nullish('[data-test-selector*="sad"i][data-test-selector*="overlay"i]')
-
-        // There is at least one proper container
-        && (false
-            // There is a message container
-            || $.defined('[data-test-selector$="message-container"i]')
-
-            // There is an error message
-            || $.defined('[data-a-target="core-error-message"i]')
-        )
-    );
-
-    if(!ready)
-        return;
-
-    $log("Child container ready");
-
-    await Settings.get();
-
-    wait(5000).then(Chat__Initialize);
-    clearInterval(Chat__PAGE_CHECKER);
-
-    window.CHILD_CONTROLLER_READY = true;
-
-    // Only re-execute if in an iframe
-    if(IS_A_FRAMED_CONTAINER) {
-        // Observe [top] location changes
-        LocationObserver: {
-            let { body } = document,
-                observer = new MutationObserver(mutations => {
-                    mutations.map(mutation => {
-                        if(PATHNAME !== window.location.pathname) {
-                            let OLD_HREF = PATHNAME;
-
-                            PATHNAME = window.location.pathname;
-
-                            NORMALIZED_PATHNAME = PATHNAME
-                                // Remove common "modes"
-                                .replace(/^\/(?:moderator|popout)\/(\/[^\/]+?)/i, '$1')
-                                .replace(/^(\/[^\/]+?)\/(?:about|schedule|squad|videos)\b/i, '$1');
-
-                            for(let [name, func] of (top?.__ONLOCATIONCHANGE__ ?? []))
-                                func(new CustomEvent('locationchange', { from: OLD_HREF, to: PATHNAME }));
-                        }
-                    });
-                });
-
-            observer.observe(body, { childList: true, subtree: true });
+            return await Settings.get();
         }
 
-        // Observe chat
-        let CHAT_SELF_REFLECTOR;
+        // Only executes if the user is NOT banned
+        let ready = (true
+            // The main controller is ready
+            && (false
+                || parseBool(top.MAIN_CONTROLLER_READY)
+                || (false
+                    // This window is the main container
+                    || (true
+                        && top == window
+                        && top.document.readyState.equals('complete')
 
-        ChatObserver: {
-            let [CHANNEL] = location.pathname.toLowerCase().slice(1).split('/').slice(+IS_A_FRAMED_CONTAINER),
-                USERNAME = Search.cookies.login;
+                        // The follow button exists
+                        && $.defined(`[data-a-target="follow-button"i], [data-a-target="unfollow-button"i]`)
 
-            CHANNEL = `#${ CHANNEL }`;
+                        // There are channel buttons on the side
+                        && parseBool($.all('[id*="side"i][id*="nav"i] .side-nav-section[aria-label]')?.length)
+                    )
 
-            // Simple WebSocket → https://dev.twitch.tv/docs/irc
-            if(defined(TTV_IRC.sockets[CHANNEL]))
-                return;
+                    // This window is not the main container
+                    || (true
+                        && IS_A_FRAMED_CONTAINER
+                        && document.readyState.equals('complete')
 
-            Object.defineProperty(TTV_IRC, 'wsURL_chat', {
-                value: `wss://irc-ws.chat.twitch.tv:443`,
+                        // There is a welcome message container
+                        && $.defined(`[data-a-target*="welcome"i]`)
+                    )
+                )
+            )
+            // There isn't an advertisement playing
+            && $.nullish('[data-test-selector*="sad"i][data-test-selector*="overlay"i]')
 
-                writable: false,
-                enumerable: false,
-                configurable: false,
-            });
+            // There is at least one proper container
+            && (false
+                // There is a message container
+                || $.defined('[data-test-selector$="message-container"i]')
 
-            let socket = (TTV_IRC.sockets[CHANNEL] = new WebSocket(TTV_IRC.wsURL_chat));
+                // There is an error message
+                || $.defined('[data-a-target="core-error-message"i]')
+            )
+        );
 
-            let START_WS = socket.onopen = event => {
-                $log(`Chat Relay (child) connected to "${ CHANNEL }"`);
+        if(!ready)
+            return;
 
-                // CONNECTING → 0; OPEN → 1; CLOSING → 2; CLOSED → 3
-                when(() => socket.readyState === WebSocket.OPEN)
-                    .then(() => {
-                        socket.send(`CAP REQ :twitch.tv/commands twitch.tv/membership twitch.tv/tags`);
-                        socket.send(`PASS oauth:${ Search.cookies.auth_token }`);
-                        socket.send(`NICK ${ USERNAME.toLowerCase() }`);
+        $log("Child container ready");
+
+        await Settings.get();
+
+        wait(5000).then(Chat__Initialize);
+        clearInterval(Chat__PAGE_CHECKER);
+
+        window.CHILD_CONTROLLER_READY = true;
+
+        // Only re-execute if in an iframe
+        if(IS_A_FRAMED_CONTAINER) {
+            // Observe [top] location changes
+            LocationObserver: {
+                let { body } = document,
+                    observer = new MutationObserver(mutations => {
+                        mutations.map(mutation => {
+                            if(PATHNAME !== window.location.pathname) {
+                                let OLD_HREF = PATHNAME;
+
+                                PATHNAME = window.location.pathname;
+
+                                NORMALIZED_PATHNAME = PATHNAME
+                                    // Remove common "modes"
+                                    .replace(/^\/(?:moderator|popout)\/(\/[^\/]+?)/i, '$1')
+                                    .replace(/^(\/[^\/]+?)\/(?:about|schedule|squad|videos)\b/i, '$1');
+
+                                for(let [name, func] of (top?.__ONLOCATIONCHANGE__ ?? []))
+                                    func(new CustomEvent('locationchange', { from: OLD_HREF, to: PATHNAME }));
+                            }
+                        });
                     });
 
-                let restrictions = (TTV_IRC.restrictions ??= new Map);
+                observer.observe(body, { childList: true, subtree: true });
+            }
 
-                socket.onmessage = socket.reflect = CHAT_SELF_REFLECTOR = async event => {
-                    let messages = event.data.trim().split('\r\n').map(TTV_IRC.parseMessage).filter(defined);
+            // Observe chat
+            let CHAT_SELF_REFLECTOR;
 
-                    // $remark('Chat Relay received messages', messages);
+            ChatObserver: {
+                let [CHANNEL] = location.pathname.toLowerCase().slice(1).split('/').slice(+IS_A_FRAMED_CONTAINER),
+                    USERNAME = Search.cookies.login;
 
-                    for(let { command, parameters, source, tags } of messages) {
-                        const channel = (command.channel ?? CHANNEL).toLowerCase();
-                        const usable = parseBool(channel.equals(CHANNEL));
+                CHANNEL = `#${ CHANNEL }`;
 
-                        switch(command.command) {
-                            // Successful login attempt
-                            case '001': {
-                                socket.send(`JOIN ${ CHANNEL }`);
-                                // TODO | To be removed Feb 18, 2024 → https://dev.twitch.tv/docs/irc/chat-commands/#migration-guide
-                                socket.send(`PRIVMSG ${ CHANNEL } :/mods`);
-                                socket.send(`PRIVMSG ${ CHANNEL } :/vips`);
-                            } break;
+                // Simple WebSocket → https://dev.twitch.tv/docs/irc
+                if(defined(TTV_IRC.sockets[CHANNEL]))
+                    return;
 
-                            // PONG the server back...
-                            case 'PING': {
-                                socket.send(`PONG ${ parameters }`);
-                            } break;
+                Object.defineProperty(TTV_IRC, 'wsURL_chat', {
+                    value: `wss://irc-ws.chat.twitch.tv:443`,
 
-                            // Someone joined the server
-                            case 'JOIN': {
-                                // $log(`New user "${ source.nick }" on ${ channel }`);
+                    writable: false,
+                    enumerable: false,
+                    configurable: false,
+                });
 
-                                Chat.gang?.push(source.nick);
-                            } break;
+                let socket = (TTV_IRC.sockets[CHANNEL] = new WebSocket(TTV_IRC.wsURL_chat));
 
-                            // Kicked!
-                            case 'PART': {
-                                // $warn(`Unable to relay messages from "${ source.nick }" on ${ channel }`);
+                let START_WS = socket.onopen = event => {
+                    $log(`Chat Relay (child) connected to "${ CHANNEL }"`);
 
-                                if(USERNAME.equals(source.nick))
-                                    socket.close();
+                    // CONNECTING → 0; OPEN → 1; CLOSING → 2; CLOSED → 3
+                    when(() => socket.readyState === WebSocket.OPEN)
+                        .then(() => {
+                            socket.send(`CAP REQ :twitch.tv/commands twitch.tv/membership twitch.tv/tags`);
+                            socket.send(`PASS oauth:${ Search.cookies.auth_token }`);
+                            socket.send(`NICK ${ USERNAME.toLowerCase() }`);
+                        });
 
-                                Chat.gang = Chat.gang?.filter(user => user.unlike(source.nick));
-                            } break;
+                    let restrictions = (TTV_IRC.restrictions ??= new Map);
 
-                            // Something happened...
-                            case 'NOTICE': {
-                                if('room_mods mod_success unmod_success no_mods vips_success vip_success unvip_success no_vips'.contains(tags?.msg_id)) {
-                                    let msg = tags.msg_id,
-                                        typ = msg.replace(/.*((?:mod|vip)s?).*/i, '$1').toLowerCase();
+                    socket.onmessage = socket.reflect = CHAT_SELF_REFLECTOR = async event => {
+                        let messages = event.data.trim().split('\r\n').map(TTV_IRC.parseMessage).filter(defined);
 
-                                    Chat[CHANNEL] ??= { mods: [], vips: [] };
+                        // $remark('Chat Relay received messages', messages);
 
-                                    if(msg.startsWith('no_'))
-                                        /* Do nothing */;
-                                    else if(/^(mod|vip)_/i.test(msg))
-                                        Chat[CHANNEL][typ].push(parameters.replace(/.*added\s+(\S+).*/i, '$1').toLowerCase());
-                                    else if(/^un(mod|vip)_/i.test(msg))
-                                        Chat[CHANNEL][typ] = Chat[CHANNEL][typ].filter(name => name.unlike(parameters.replace(/.*removed\s+(\S+).*/i, '$1')));
-                                    else
-                                        Chat[CHANNEL][typ].push(...parameters.replace(/^[^:]*(.+?)\.?$/, ($0, $1) => $1.replace(/[:\s]+/g, '').toLowerCase()).split(','));
-                                } else {
-                                    if(/^((?:bad|msg|no|un(?:available|recognized))_|(?:invalid)|_(?:banned|error|limit|un(?:expected)))/i.test(tags?.msg_id))
-                                        $warn(`There's an error on ${ channel }: ${ parameters }`, { command, parameters, source, tags });
-                                    else
-                                        $warn(`Something's happening on ${ channel }: ${ parameters }`, { command, parameters, source, tags });
+                        for(let { command, parameters, source, tags } of messages) {
+                            const channel = (command.channel ?? CHANNEL).toLowerCase();
+                            const usable = parseBool(channel.equals(CHANNEL));
 
-                                    // socket.send(`PART ${ channel }`);
-                                }
-                            } break;
+                            switch(command.command) {
+                                // Successful login attempt
+                                case '001': {
+                                    socket.send(`JOIN ${ CHANNEL }`);
+                                    // TODO | To be removed Feb 18, 2024 → https://dev.twitch.tv/docs/irc/chat-commands/#migration-guide
+                                    socket.send(`PRIVMSG ${ CHANNEL } :/mods`);
+                                    socket.send(`PRIVMSG ${ CHANNEL } :/vips`);
+                                } break;
 
-                            // Status(es) of the room
-                            case 'ROOMSTATE': {
-                                let { room_id, emote_only, followers_only, r9k, slow, subs_only } = tags;
+                                // PONG the server back...
+                                case 'PING': {
+                                    socket.send(`PONG ${ parameters }`);
+                                } break;
 
-                                restrictions.set(channel, {
-                                    room_id,
-                                    emote_only: parseBool(+emote_only),
-                                    followers_only: (+followers_only > 0? +followers_only * 60_000: !1),
-                                    r9k: parseBool(+r9k),
-                                    slow: (+slow * 1000),
-                                    subs_only: parseBool(+subs_only),
-                                });
-                            } break;
+                                // Someone joined the server
+                                case 'JOIN': {
+                                    // $log(`New user "${ source.nick }" on ${ channel }`);
 
-                            // Something happened (alert)
-                            case 'USERNOTICE': {
-                                let { id, msg_id, system_msg } = tags;
+                                    Chat.gang?.push(source.nick);
+                                } break;
 
-                                let message = (system_msg ?? parameters).replace(/\\s/g, ' '),
-                                    mentions = message.split(/(@\S+)/).filter(s => s.startsWith('@')).map(s => s.slice(1).toLowerCase()),
-                                    subject = (
-                                        'sub resub'.split(' ').contains(msg_id)?
-                                            'dues':
-                                        'giftpaidupgrade anongiftpaidupgrade'.split(' ').contains(msg_id)?
-                                            'keep':
-                                        'subgift rewardgift submysterygift rewardmysterygift'.split(' ').contains(msg_id)?
-                                            'gift':
-                                        'raid unraid'.split(' ').contains(msg_id)?
-                                            'raid': // incoming raids
-                                        'pointsredeemed'.split(' ').contains(msg_id)?
-                                            'coin':
-                                        // ritual (new_chatter, etc.); bitsbadgetier (100, 1000, 10000, etc.)
-                                        'note'
-                                    ),
-                                    element = when.defined(async(message, subject) =>
-                                        // TODO: get bullets via text content
-                                        $.all('[role] ~ *:is([role="log"i], [class~="chat-room"i], [data-a-target*="chat"i], [data-test-selector*="chat"i]) *:is(.tt-accent-region, [data-test-selector="user-notice-line"i], [class*="notice"i][class*="line"i], [class*="gift"i]:not([class*="count"i]), [data-test-selector="announcement-line"i], [class*="announcement"i][class*="line"i])')
-                                            .find(element => {
-                                                let A = message.mutilate();
-                                                let B = element.textContent.mutilate();
+                                // Kicked!
+                                case 'PART': {
+                                    // $warn(`Unable to relay messages from "${ source.nick }" on ${ channel }`);
 
-                                                if(A.length < B.length)
-                                                    [A, B] = [B, A];
+                                    if(USERNAME.equals(source.nick))
+                                        socket.close();
 
-                                                if(false
-                                                    // The element already has a UUID and type
-                                                    || (true
-                                                        && element.dataset.uuid
-                                                        && element.dataset.type
-                                                    )
-                                                    // The text matches less than 40% of the message
-                                                    || A.slice(0, B.length).errs(B) > .6
-                                                )
-                                                    return false;
+                                    Chat.gang = Chat.gang?.filter(user => user.unlike(source.nick));
+                                } break;
 
-                                                if(subject?.equals('coin')) {
-                                                    let I;
+                                // Something happened...
+                                case 'NOTICE': {
+                                    if('room_mods mod_success unmod_success no_mods vips_success vip_success unvip_success no_vips'.contains(tags?.msg_id)) {
+                                        let msg = tags.msg_id,
+                                            typ = msg.replace(/.*((?:mod|vip)s?).*/i, '$1').toLowerCase();
 
-                                                    STREAMER.shop?.map(item => {
-                                                        if(true
-                                                            && item.prompt.length > (I?.prompt?.length | 0)
-                                                            && item.prompt.mutilate().errs(A) < (I?.prompt?.mutilate()?.errs(A) ?? 1)
-                                                            && item.available
-                                                            && item.enabled
-                                                            && !(item.hidden || item.paused)
-                                                        ) I = item;
-                                                    });
+                                        Chat[CHANNEL] ??= { mods: [], vips: [] };
 
-                                                    if(defined(I))
-                                                        element.dataset.shopItemId = I.id;
-                                                }
+                                        if(msg.startsWith('no_'))
+                                            /* Do nothing */;
+                                        else if(/^(mod|vip)_/i.test(msg))
+                                            Chat[CHANNEL][typ].push(parameters.replace(/.*added\s+(\S+).*/i, '$1').toLowerCase());
+                                        else if(/^un(mod|vip)_/i.test(msg))
+                                            Chat[CHANNEL][typ] = Chat[CHANNEL][typ].filter(name => name.unlike(parameters.replace(/.*removed\s+(\S+).*/i, '$1')));
+                                        else
+                                            Chat[CHANNEL][typ].push(...parameters.replace(/^[^:]*(.+?)\.?$/, ($0, $1) => $1.replace(/[:\s]+/g, '').toLowerCase()).split(','));
+                                    } else {
+                                        if(/^((?:bad|msg|no|un(?:available|recognized))_|(?:invalid)|_(?:banned|error|limit|un(?:expected)))/i.test(tags?.msg_id))
+                                            $warn(`There's an error on ${ channel }: ${ parameters }`, { command, parameters, source, tags });
+                                        else
+                                            $warn(`Something's happening on ${ channel }: ${ parameters }`, { command, parameters, source, tags });
 
-                                                element.dataset.uuid ||= UUID.from(element.getPath());
-                                                element.dataset.type ||= subject;
+                                        // socket.send(`PART ${ channel }`);
+                                    }
+                                } break;
 
-                                                return message.mutilate().errs(element.textContent.mutilate()) < .2;
-                                            })
-                                        , 100, message, subject);
+                                // Status(es) of the room
+                                case 'ROOMSTATE': {
+                                    let { room_id, emote_only, followers_only, r9k, slow, subs_only } = tags;
 
-                                let results = {
-                                    element,
-                                    usable,
-                                    message,
-                                    subject,
-                                    mentions,
-                                    timestamp: new Date,
-
-                                    // TODO: see if there are extra `msg_id` values
-                                    msg_id,
-                                };
-
-                                Chat.__allbullets__.add(results);
-
-                                for(let [name, callback] of Chat.__onbullet__)
-                                    callback(results);
-
-                                for(let [name, callback] of Chat.__deferredEvents__.__onbullet__)
-                                    when.defined.pipe(async(callback, results) => await results?.element, 1000, callback, results).then(([callback, results]) => callback(results));
-
-                                for(let [name, callback] of Chat.__consumableEvents__.__onbullet__) {
-                                    when(() => PAGE_IS_READY, 250).then(() =>
-                                        callback(results).then(complete => {
-                                            if(complete)
-                                                Chat.__consumableEvents__.__onbullet__.delete(name);
-                                        })
-                                    );
-                                }
-                            } break;
-
-                            // The channel is hosting...
-                            case 'HOSTTARGET': {
-                                if(!usable) continue;
-
-                                let [to, amount] = parameters.split(' ', 2);
-
-                                when.defined(() => STREAMER)
-                                    .then(() => {
-                                        for(let callback of STREAMER.__eventlisteners__.onhost)
-                                            when(() => PAGE_IS_READY, 250).then(() => callback({ hosting: to.unlike('-') }));
+                                    restrictions.set(channel, {
+                                        room_id,
+                                        emote_only: parseBool(+emote_only),
+                                        followers_only: (+followers_only > 0? +followers_only * 60_000: !1),
+                                        r9k: parseBool(+r9k),
+                                        slow: (+slow * 1000),
+                                        subs_only: parseBool(+subs_only),
                                     });
-                            } break;
+                                } break;
 
-                            // Got a message...
-                            case 'PRIVMSG': {
-                                // $remark('PRIVMSG:', { command, parameters, source, tags });
+                                // Something happened (alert)
+                                case 'USERNOTICE': {
+                                    let { id, msg_id, system_msg } = tags;
 
-                                // Bot commands...
-                                if(defined(command.botCommand)) {
-                                    let results = { name: command.botCommand, arguments: command.botCommandParams };
+                                    let message = (system_msg ?? parameters).replace(/\\s/g, ' '),
+                                        mentions = message.split(/(@\S+)/).filter(s => s.startsWith('@')).map(s => s.slice(1).toLowerCase()),
+                                        subject = (
+                                            'sub resub'.split(' ').contains(msg_id)?
+                                                'dues':
+                                            'giftpaidupgrade anongiftpaidupgrade'.split(' ').contains(msg_id)?
+                                                'keep':
+                                            'subgift rewardgift submysterygift rewardmysterygift'.split(' ').contains(msg_id)?
+                                                'gift':
+                                            'raid unraid'.split(' ').contains(msg_id)?
+                                                'raid': // incoming raids
+                                            'pointsredeemed'.split(' ').contains(msg_id)?
+                                                'coin':
+                                            // ritual (new_chatter, etc.); bitsbadgetier (100, 1000, 10000, etc.)
+                                            'note'
+                                        ),
+                                        element = when.defined(async(message, subject) =>
+                                            // TODO: get bullets via text content
+                                            $.all('[role] ~ *:is([role="log"i], [class~="chat-room"i], [data-a-target*="chat"i], [data-test-selector*="chat"i]) *:is(.tt-accent-region, [data-test-selector="user-notice-line"i], [class*="notice"i][class*="line"i], [class*="gift"i]:not([class*="count"i]), [data-test-selector="announcement-line"i], [class*="announcement"i][class*="line"i])')
+                                                .find(element => {
+                                                    let A = message.mutilate();
+                                                    let B = element.textContent.mutilate();
 
-                                    for(let [name, callback] of Chat.__oncommand__)
+                                                    if(A.length < B.length)
+                                                        [A, B] = [B, A];
+
+                                                    if(false
+                                                        // The element already has a UUID and type
+                                                        || (true
+                                                            && element.dataset.uuid
+                                                            && element.dataset.type
+                                                        )
+                                                        // The text matches less than 40% of the message
+                                                        || A.slice(0, B.length).errs(B) > .6
+                                                    )
+                                                        return false;
+
+                                                    if(subject?.equals('coin')) {
+                                                        let I;
+
+                                                        STREAMER.shop?.map(item => {
+                                                            if(true
+                                                                && item.prompt.length > (I?.prompt?.length | 0)
+                                                                && item.prompt.mutilate().errs(A) < (I?.prompt?.mutilate()?.errs(A) ?? 1)
+                                                                && item.available
+                                                                && item.enabled
+                                                                && !(item.hidden || item.paused)
+                                                            ) I = item;
+                                                        });
+
+                                                        if(defined(I))
+                                                            element.dataset.shopItemId = I.id;
+                                                    }
+
+                                                    element.dataset.uuid ||= UUID.from(element.getPath());
+                                                    element.dataset.type ||= subject;
+
+                                                    return message.mutilate().errs(element.textContent.mutilate()) < .2;
+                                                })
+                                            , 100, message, subject);
+
+                                    let results = {
+                                        element,
+                                        usable,
+                                        message,
+                                        subject,
+                                        mentions,
+                                        timestamp: new Date,
+
+                                        // TODO: see if there are extra `msg_id` values
+                                        msg_id,
+                                    };
+
+                                    Chat.__allbullets__.add(results);
+
+                                    for(let [name, callback] of Chat.__onbullet__)
                                         callback(results);
 
-                                    for(let [name, callback] of Chat.__deferredEvents__.__oncommand__)
+                                    for(let [name, callback] of Chat.__deferredEvents__.__onbullet__)
                                         when.defined.pipe(async(callback, results) => await results?.element, 1000, callback, results).then(([callback, results]) => callback(results));
 
-                                    for(let [name, callback] of Chat.__consumableEvents__.__oncommand__) {
+                                    for(let [name, callback] of Chat.__consumableEvents__.__onbullet__) {
                                         when(() => PAGE_IS_READY, 250).then(() =>
                                             callback(results).then(complete => {
                                                 if(complete)
-                                                    Chat.__consumableEvents__.__oncommand__.delete(name);
+                                                    Chat.__consumableEvents__.__onbullet__.delete(name);
                                             })
                                         );
                                     }
+                                } break;
 
-                                    continue;
-                                }
+                                // The channel is hosting...
+                                case 'HOSTTARGET': {
+                                    if(!usable) continue;
 
-                                let author = source.nick,
-                                    badges = Object.keys(tags?.badges ?? {}),
-                                    message = parameters.replace(/^([\u0001-\u0007\u000e-\u001f])((?:\w+)\s*)([^]+)\1$/g, '$3').trim(),
-                                    // Have to wait on the page to play catch-up...
-                                    element = when.defined((message, uuid) =>
-                                        $.all('[data-test-selector$="message-container"i] [data-a-target$="message"i]')
-                                            .find(div =>
-                                                $.all(`[data-a-user="${ author }"i]`, div)
-                                                    .map(div => div.closest('[data-test-selector$="message"i], [data-a-target$="message"i]'))
-                                                    .filter(defined)
-                                                    .find(div => {
-                                                        let text = [],
-                                                            body = $('[data-test-selector$="message-body"i], [class*="message-container"i]', div);
+                                    let [to, amount] = parameters.split(' ', 2);
 
-                                                        if(nullish(body))
-                                                            return;
+                                    when.defined(() => STREAMER)
+                                        .then(() => {
+                                            for(let callback of STREAMER.__eventlisteners__.onhost)
+                                                when(() => PAGE_IS_READY, 250).then(() => callback({ hosting: to.unlike('-') }));
+                                        });
+                                } break;
 
-                                                        for(let child of $.all('[class*="username"i][class*="container"i] ~ :last-child > *', body))
-                                                            if(child.dataset.testSelector?.equals('emote-button')) {
-                                                                text.push($('img', child).alt);
-                                                            } else if(child.dataset.aTarget?.contains('timestamp')) {
-                                                                continue;
-                                                            } else if($.defined('var', child)) {
-                                                                let { textContent } = child;
+                                // Got a message...
+                                case 'PRIVMSG': {
+                                    // $remark('PRIVMSG:', { command, parameters, source, tags });
 
-                                                                for(let v of $.all('var', child))
-                                                                    textContent = textContent.replace(v.textContent, '');
+                                    // Bot commands...
+                                    if(defined(command.botCommand)) {
+                                        let results = { name: command.botCommand, arguments: command.botCommandParams };
 
-                                                                child.textContent = textContent;
-                                                            } else {
-                                                                text.push(child.textContent);
-                                                            }
+                                        for(let [name, callback] of Chat.__oncommand__)
+                                            callback(results);
 
-                                                        let match = text.join('').mutilate(true).equals(message.mutilate(true));
+                                        for(let [name, callback] of Chat.__deferredEvents__.__oncommand__)
+                                            when.defined.pipe(async(callback, results) => await results?.element, 1000, callback, results).then(([callback, results]) => callback(results));
 
-                                                        if(match)
-                                                            div.dataset.uuid = uuid;
+                                        for(let [name, callback] of Chat.__consumableEvents__.__oncommand__) {
+                                            when(() => PAGE_IS_READY, 250).then(() =>
+                                                callback(results).then(complete => {
+                                                    if(complete)
+                                                        Chat.__consumableEvents__.__oncommand__.delete(name);
+                                                })
+                                            );
+                                        }
 
-                                                        return match
-                                                    })
-                                            )
-                                        , 100, message, tags.id),
-                                    emotes = Object.keys(tags.emotes ?? {}).map(key => {
-                                        let emote = (tags.emotes[+key] || tags.emotes[key]).shift(),
-                                            name = parameters.substring(+emote.startPosition, ++emote.endPosition),
-                                            url = `https://static-cdn.jtvnw.net/emoticons/v2/${ key }/default/${ THEME }/1.0`;
+                                        continue;
+                                    }
 
-                                        Chat.__allemotes__.set(name, url);
+                                    let author = source.nick,
+                                        badges = Object.keys(tags?.badges ?? {}),
+                                        message = parameters.replace(/^([\u0001-\u0007\u000e-\u001f])((?:\w+)\s*)([^]+)\1$/g, '$3').trim(),
+                                        // Have to wait on the page to play catch-up...
+                                        element = when.defined((message, uuid) =>
+                                            $.all('[data-test-selector$="message-container"i] [data-a-target$="message"i]')
+                                                .find(div =>
+                                                    $.all(`[data-a-user="${ author }"i]`, div)
+                                                        .map(div => div.closest('[data-test-selector$="message"i], [data-a-target$="message"i]'))
+                                                        .filter(defined)
+                                                        .find(div => {
+                                                            let text = [],
+                                                                body = $('[data-test-selector$="message-body"i], [class*="message-container"i]', div);
 
-                                        return name;
-                                    }),
-                                    handle = tags.display_name,
-                                    mentions = parameters.split(/(@\S+)/).filter(s => s.startsWith('@')).map(s => s.slice(1).toLowerCase()),
-                                    raw = [(handle.unlike(author)? `${ handle } (${ author })`: handle), message].join(': '),
-                                    reply = when.defined(e => e, 100, element).then(element => element?.querySelector('[class*="reply"i] button')),
-                                    style = `color: ${ tags.color || '#9147FF' };`,
-                                    uuid = tags.id,
-                                    sent = (new Date).toJSON();
+                                                            if(nullish(body))
+                                                                return;
+
+                                                            for(let child of $.all('[class*="username"i][class*="container"i] ~ :last-child > *', body))
+                                                                if(child.dataset.testSelector?.equals('emote-button')) {
+                                                                    text.push($('img', child).alt);
+                                                                } else if(child.dataset.aTarget?.contains('timestamp')) {
+                                                                    continue;
+                                                                } else if($.defined('var', child)) {
+                                                                    let { textContent } = child;
+
+                                                                    for(let v of $.all('var', child))
+                                                                        textContent = textContent.replace(v.textContent, '');
+
+                                                                    child.textContent = textContent;
+                                                                } else {
+                                                                    text.push(child.textContent);
+                                                                }
+
+                                                            let match = text.join('').mutilate(true).equals(message.mutilate(true));
+
+                                                            if(match)
+                                                                div.dataset.uuid = uuid;
+
+                                                            return match
+                                                        })
+                                                )
+                                            , 100, message, tags.id),
+                                        emotes = Object.keys(tags.emotes ?? {}).map(key => {
+                                            let emote = (tags.emotes[+key] || tags.emotes[key]).shift(),
+                                                name = parameters.substring(+emote.startPosition, ++emote.endPosition),
+                                                url = `https://static-cdn.jtvnw.net/emoticons/v2/${ key }/default/${ THEME }/1.0`;
+
+                                            Chat.__allemotes__.set(name, url);
+
+                                            return name;
+                                        }),
+                                        handle = tags.display_name,
+                                        mentions = parameters.split(/(@\S+)/).filter(s => s.startsWith('@')).map(s => s.slice(1).toLowerCase()),
+                                        raw = [(handle.unlike(author)? `${ handle } (${ author })`: handle), message].join(': '),
+                                        reply = when.defined(e => e, 100, element).then(element => element?.querySelector('[class*="reply"i] button')),
+                                        style = `color: ${ tags.color || '#9147FF' };`,
+                                        uuid = tags.id,
+                                        sent = (new Date).toJSON();
+
+                                    let results = {
+                                        raw,
+                                        sent,
+                                        uuid,
+                                        reply,
+                                        style,
+                                        author,
+                                        emotes,
+                                        badges,
+                                        handle,
+                                        usable,
+                                        element,
+                                        message,
+                                        mentions,
+                                        timestamp: new Date,
+                                        highlighted: when.defined(e => e, 100, element).then(element => parseBool(element.dataset.testSelector?.contains('notice'))),
+                                    };
+
+                                    Object.defineProperties(results, {
+                                        deleted: {
+                                            get:(async function() {
+                                                return Promise.race([this, wait(100).then(() => null)]).then(self => {
+                                                    return (self == null) || nullish(self?.parentElement) || $.defined('[data-a-target*="delete"i]:not([class*="spam-filter"i], [data-repetitive], [data-plagiarism])', self);
+                                                });
+                                            }).bind(element)
+                                        },
+                                    });
+
+                                    Chat.__allmessages__.set(uuid, results);
+
+                                    for(let [name, callback] of Chat.__onmessage__)
+                                        callback(results);
+
+                                    for(let [name, callback] of Chat.__deferredEvents__.__onmessage__)
+                                        when.defined.pipe(async(callback, results) => await results?.element, 1000, callback, results).then(([callback, results]) => callback(results));
+
+                                    for(let [name, callback] of Chat.__consumableEvents__.__onmessage__) {
+                                        when(() => PAGE_IS_READY, 250).then(() =>
+                                            callback(results).then(complete => {
+                                                if(complete)
+                                                    Chat.__consumableEvents__.__onmessage__.delete(name);
+                                            })
+                                        );
+                                    }
+                                } break;
+
+                                // Got a whisper
+                                case 'WHISPER': {
+                                    let results = { unread: 1, from: channel, message: parameters, timestamp: new Date };
+
+                                    for(let [name, callback] of Chat.__onwhisper__)
+                                        callback(results);
+
+                                    for(let [name, callback] of Chat.__deferredEvents__.__onwhisper__)
+                                        when.defined.pipe(async(callback, results) => await results?.element, 1000, callback, results).then(([callback, results]) => callback(results));
+
+                                    for(let [name, callback] of Chat.__consumableEvents__.__onwhisper__) {
+                                        when(() => PAGE_IS_READY, 250).then(() =>
+                                            callback(results).then(complete => {
+                                                if(complete)
+                                                    Chat.__consumableEvents__.__onwhisper__.delete(name);
+                                            })
+                                        );
+                                    }
+                                } break;
+
+                                default: continue;
+                            };
+                        }
+                    };
+                };
+
+                socket.onerror = event => {
+                    $warn(`Chat Relay (child) failed to connect to "${ CHANNEL }" → ${ JSON.stringify(event) }`);
+
+                    socket = (TTV_IRC.sockets[CHANNEL] = new WebSocket(TTV_IRC.wsURL_chat));
+                    START_WS(event);
+                };
+
+                socket.onclose = event => {
+                    $warn(`Chat Relay (child) closed unexpectedly → ${ JSON.stringify(event) }`);
+
+                    socket = (TTV_IRC.sockets[CHANNEL] = new WebSocket(TTV_IRC.wsURL_chat));
+                    START_WS(event);
+                };
+
+                // The socket closed...
+                when(() => TTV_IRC.sockets[CHANNEL]?.readyState === WebSocket.CLOSED, 1000)
+                    .then(closed => {
+                        $warn(`The WebSocket closed... Restarting in 5s...`);
+
+                        wait(5000)
+                            .then(() => {
+                                if(parseBool(Settings.recover_chat))
+                                    return location.reload();
+                                return TTV_IRC.sockets[CHANNEL] = new WebSocket(TTV_IRC.wsURL_chat);
+                            })
+                            .then(() => {
+                                when(() => TTV_IRC.sockets[CHANNEL].readyState === WebSocket.OPEN, 500)
+                                    .then(() => TTV_IRC.sockets[CHANNEL].send(`JOIN ${ CHANNEL }`))
+                                    .then(() => TTV_IRC.sockets[CHANNEL].onmessage = TTV_IRC.sockets[CHANNEL].reflect = CHAT_SELF_REFLECTOR);
+                            });
+                    });
+
+                    // Play catch-up...
+                    when.defined(() => $('[data-test-selector$="message-container"i]'), 100)
+                        .then(chat => {
+                            let unhandled = $.all('[data-a-target="chat-line-message"i]:not([data-uuid])', chat);
+
+                            for(let element of unhandled) {
+                                let raw = $('[class*="message"i][class*="container"i]', element).textContent.trim().replace($('[data-a-target="chat-timestamp"]', element)?.textContent || '', ''),
+                                    uuid = UUID.from(raw).toString(),
+                                    reply = $('[class*="reply"i] button', element),
+                                    style = $('[data-a-user]', element)?.getAttribute('style')?.trim(),
+                                    author = $('[data-a-user]', element).dataset.aUser,
+                                    emotes = new Set,
+                                    badges = new Set,
+                                    __bs__ = $.all('[class*="username"i][class*="container"i] [data-a-target*="badge"i] img', element).map(e => badges.add(e.alt.toLowerCase())),
+                                    handle = $('[data-a-user]', element).textContent,
+                                    usable = false,
+                                    message = raw.replace(/^[^:]+?:/, '').trim(),
+                                    mentions = $.all('[data-a-atrget*="mention"i]', element).map(e => e.textContent),
+                                    highlighted = parseBool(element.dataset.testSelector?.contains('notice'));
+
+                                element.dataset.uuid = uuid;
+
+                                emotes = [...emotes];
+                                badges = [...badges];
 
                                 let results = {
                                     raw,
-                                    sent,
                                     uuid,
                                     reply,
                                     style,
@@ -4066,24 +4195,14 @@ Chat__PAGE_CHECKER = setInterval(Chat__WAIT_FOR_PAGE = async() => {
                                     element,
                                     message,
                                     mentions,
-                                    timestamp: new Date,
-                                    highlighted: when.defined(e => e, 100, element).then(element => parseBool(element.dataset.testSelector?.contains('notice'))),
+                                    highlighted,
+                                    deleted: $.defined('[data-a-target*="delete"i]', element),
                                 };
-
-                                Object.defineProperties(results, {
-                                    deleted: {
-                                        get:(async function() {
-                                            return Promise.race([this, wait(100).then(() => null)]).then(self => {
-                                                return (self == null) || nullish(self?.parentElement) || $.defined('[data-a-target*="delete"i]:not([class*="spam-filter"i], [data-repetitive], [data-plagiarism])', self);
-                                            });
-                                        }).bind(element)
-                                    },
-                                });
 
                                 Chat.__allmessages__.set(uuid, results);
 
                                 for(let [name, callback] of Chat.__onmessage__)
-                                    callback(results);
+                                    when(() => PAGE_IS_READY, 250).then(() => callback(results));
 
                                 for(let [name, callback] of Chat.__deferredEvents__.__onmessage__)
                                     when.defined.pipe(async(callback, results) => await results?.element, 1000, callback, results).then(([callback, results]) => callback(results));
@@ -4096,324 +4215,215 @@ Chat__PAGE_CHECKER = setInterval(Chat__WAIT_FOR_PAGE = async() => {
                                         })
                                     );
                                 }
-                            } break;
-
-                            // Got a whisper
-                            case 'WHISPER': {
-                                let results = { unread: 1, from: channel, message: parameters, timestamp: new Date };
-
-                                for(let [name, callback] of Chat.__onwhisper__)
-                                    callback(results);
-
-                                for(let [name, callback] of Chat.__deferredEvents__.__onwhisper__)
-                                    when.defined.pipe(async(callback, results) => await results?.element, 1000, callback, results).then(([callback, results]) => callback(results));
-
-                                for(let [name, callback] of Chat.__consumableEvents__.__onwhisper__) {
-                                    when(() => PAGE_IS_READY, 250).then(() =>
-                                        callback(results).then(complete => {
-                                            if(complete)
-                                                Chat.__consumableEvents__.__onwhisper__.delete(name);
-                                        })
-                                    );
-                                }
-                            } break;
-
-                            default: continue;
-                        };
-                    }
-                };
-            };
-
-            socket.onerror = event => {
-                $warn(`Chat Relay (child) failed to connect to "${ CHANNEL }" → ${ JSON.stringify(event) }`);
-
-                socket = (TTV_IRC.sockets[CHANNEL] = new WebSocket(TTV_IRC.wsURL_chat));
-                START_WS(event);
-            };
-
-            socket.onclose = event => {
-                $warn(`Chat Relay (child) closed unexpectedly → ${ JSON.stringify(event) }`);
-
-                socket = (TTV_IRC.sockets[CHANNEL] = new WebSocket(TTV_IRC.wsURL_chat));
-                START_WS(event);
-            };
-
-            // The socket closed...
-            when(() => TTV_IRC.sockets[CHANNEL]?.readyState === WebSocket.CLOSED, 1000)
-                .then(closed => {
-                    $warn(`The WebSocket closed... Restarting in 5s...`);
-
-                    wait(5000)
-                        .then(() => {
-                            if(parseBool(Settings.recover_chat))
-                                return location.reload();
-                            return TTV_IRC.sockets[CHANNEL] = new WebSocket(TTV_IRC.wsURL_chat);
-                        })
-                        .then(() => {
-                            when(() => TTV_IRC.sockets[CHANNEL].readyState === WebSocket.OPEN, 500)
-                                .then(() => TTV_IRC.sockets[CHANNEL].send(`JOIN ${ CHANNEL }`))
-                                .then(() => TTV_IRC.sockets[CHANNEL].onmessage = TTV_IRC.sockets[CHANNEL].reflect = CHAT_SELF_REFLECTOR);
-                        });
-                });
-
-                // Play catch-up...
-                when.defined(() => $('[data-test-selector$="message-container"i]'), 100)
-                    .then(chat => {
-                        let unhandled = $.all('[data-a-target="chat-line-message"i]:not([data-uuid])', chat);
-
-                        for(let element of unhandled) {
-                            let raw = $('[class*="message"i][class*="container"i]', element).textContent.trim().replace($('[data-a-target="chat-timestamp"]', element)?.textContent || '', ''),
-                                uuid = UUID.from(raw).toString(),
-                                reply = $('[class*="reply"i] button', element),
-                                style = $('[data-a-user]', element)?.getAttribute('style')?.trim(),
-                                author = $('[data-a-user]', element).dataset.aUser,
-                                emotes = new Set,
-                                badges = new Set,
-                                __bs__ = $.all('[class*="username"i][class*="container"i] [data-a-target*="badge"i] img', element).map(e => badges.add(e.alt.toLowerCase())),
-                                handle = $('[data-a-user]', element).textContent,
-                                usable = false,
-                                message = raw.replace(/^[^:]+?:/, '').trim(),
-                                mentions = $.all('[data-a-atrget*="mention"i]', element).map(e => e.textContent),
-                                highlighted = parseBool(element.dataset.testSelector?.contains('notice'));
-
-                            element.dataset.uuid = uuid;
-
-                            emotes = [...emotes];
-                            badges = [...badges];
-
-                            let results = {
-                                raw,
-                                uuid,
-                                reply,
-                                style,
-                                author,
-                                emotes,
-                                badges,
-                                handle,
-                                usable,
-                                element,
-                                message,
-                                mentions,
-                                highlighted,
-                                deleted: $.defined('[data-a-target*="delete"i]', element),
-                            };
-
-                            Chat.__allmessages__.set(uuid, results);
-
-                            for(let [name, callback] of Chat.__onmessage__)
-                                when(() => PAGE_IS_READY, 250).then(() => callback(results));
-
-                            for(let [name, callback] of Chat.__deferredEvents__.__onmessage__)
-                                when.defined.pipe(async(callback, results) => await results?.element, 1000, callback, results).then(([callback, results]) => callback(results));
-
-                            for(let [name, callback] of Chat.__consumableEvents__.__onmessage__) {
-                                when(() => PAGE_IS_READY, 250).then(() =>
-                                    callback(results).then(complete => {
-                                        if(complete)
-                                            Chat.__consumableEvents__.__onmessage__.delete(name);
-                                    })
-                                );
                             }
-                        }
-                    });
+                        });
+            }
+
+            // Override variables
+            Overrides: {
+                window.ALLOWED_JOBS ??= (parseURL(location).searchParameters?.allow || '').split(',');
+
+                // Registers a job
+                    // @override RegisterJob(JobName:string) → Number<IntervalID>
+                window.RegisterJob = function RegisterJob(JobName, JobReason = 'default') {
+                    RegisterJob.__reason__ = JobReason;
+
+                    // Prevent disallowed jobs...
+                    if(ALLOWED_JOBS.length) {
+                        // @performance
+                        // Constaly clear the chat...
+                        if(ALLOWED_JOBS.missing((v,i,a) => v.includes('chat')))
+                            setInterval(() => {
+                                for(let key in Chat)
+                                    Chat[key].clear?.();
+                            }, 15_000);
+
+                        if(ALLOWED_JOBS.missing(JobName))
+                            return;
+                    }
+
+                    return Jobs[JobName] ??= Timers[JobName] > 0?
+                        setInterval(Handlers[JobName], Timers[JobName]):
+                    -setTimeout(Handlers[JobName], -Timers[JobName]);
+                }
+            }
         }
 
-        // Override variables
-        Overrides: {
-            window.ALLOWED_JOBS ??= (parseURL(location).searchParameters?.allow || '').split(',');
+        top.onlocationchange = () => {
+            $warn("[Child] Re-initializing...");
 
-            // Registers a job
-                // @override RegisterJob(JobName:string) → Number<IntervalID>
-            window.RegisterJob = function RegisterJob(JobName, JobReason = 'default') {
-                RegisterJob.__reason__ = JobReason;
+            // Do NOT soft-reset ("turn off, turn on") these settings
+            // They will be destroyed, including any data they are using
+            let VOLATILE = top?.VOLATILE ?? [].map(AsteriskFn);
 
-                // Prevent disallowed jobs...
-                if(ALLOWED_JOBS.length) {
-                    // @performance
-                    // Constaly clear the chat...
-                    if(ALLOWED_JOBS.missing((v,i,a) => v.includes('chat')))
-                        setInterval(() => {
-                            for(let key in Chat)
-                                Chat[key].clear?.();
-                        }, 15_000);
+            DestroyingJobs:
+            for(let job in Jobs)
+                if(!!~VOLATILE.findIndex(name => name.test(job)))
+                    continue DestroyingJobs;
+                else
+                    RestartJob(job, 'job-destruction:chat.js');
 
-                    if(ALLOWED_JOBS.missing(JobName))
-                        return;
+            Reinitialize:
+            if(NORMAL_MODE) {
+                if(parseBool(Settings.keep_popout)) {
+                    Chat__PAGE_CHECKER ??= setInterval(Chat__WAIT_FOR_PAGE, 500);
+
+                    break Reinitialize;
                 }
 
-                return Jobs[JobName] ??= Timers[JobName] > 0?
-                    setInterval(Handlers[JobName], Timers[JobName]):
-                -setTimeout(Handlers[JobName], -Timers[JobName]);
+                // Handled by parent controller
+                // ReloadPage();
             }
-        }
-    }
-
-    top.onlocationchange = () => {
-        $warn("[Child] Re-initializing...");
-
-        // Do NOT soft-reset ("turn off, turn on") these settings
-        // They will be destroyed, including any data they are using
-        let VOLATILE = top?.VOLATILE ?? [].map(AsteriskFn);
-
-        DestroyingJobs:
-        for(let job in Jobs)
-            if(!!~VOLATILE.findIndex(name => name.test(job)))
-                continue DestroyingJobs;
-            else
-                RestartJob(job, 'job-destruction:chat.js');
-
-        Reinitialize:
-        if(NORMAL_MODE) {
-            if(parseBool(Settings.keep_popout)) {
-                Chat__PAGE_CHECKER ??= setInterval(Chat__WAIT_FOR_PAGE, 500);
-
-                break Reinitialize;
-            }
-
-            // Handled by parent controller
-            // ReloadPage();
-        }
-    };
-
-    // Add custom styling
-    CustomCSSInitializer: {
-        AddCustomCSSBlock('chat.js', `
-            /* [data-a-page-loaded-name="PopoutChatPage"i] [class*="chat"i][class*="header"i] { display: none !important; } */
-
-            #tt-auto-claim-bonuses .tt-z-above { display: none }
-            :is([data-plagiarism], [data-repetitive]):not([data-resurrected]) { display: none }
-            #tt-hidden-emote-container::after {
-                content: 'Collecting emotes...\\A Do not close this window';
-                text-align: center;
-                white-space: break-spaces;
-
-                --background: #000e;
-                --text-align: center;
-
-                position: absolute;
-                --padding-top: 100%;
-                left: 50%;
-                top: 50%;
-                transform: translate(-50%, -50%);
-
-                --height: 100%;
-                --width: 100%;
-            }
-            #tt-hidden-emote-container .simplebar-scroll-content { visibility: hidden }
-
-            section[data-test-selector^="chat"i] :is([tt-hidden-message="true"i], [tt-hidden-bulletin="true"i]) { display: none }
-
-            [class*="theme"i][class*="dark"i] [tt-light], [class*="theme"i][class*="dark"i] [class*="chat"i][class*="status"i] { background-color: var(--color-opac-w-4) !important }
-            [class*="theme"i][class*="light"i] [tt-light], [class*="theme"i][class*="light"i] [class*="chat"i][class*="status"i] { background-color: var(--color-opac-b-4) !important }
-
-            .chat-line__message[style] a {
-                color: var(--color-text-alt);
-                text-decoration: underline;
-            }
-
-            .tt-emote-captured [data-test-selector="badge-button-icon"i],
-            .tt-emote-bttv [data-test-selector="badge-button-icon"i] {
-                left: 0;
-                top: 0;
-            }
-        `);
-    }
-
-    // Update the settings
-    SettingsInitializer: {
-        switch(Settings.onInstalledReason) {
-            // Is this the first time the extension has run?
-            // If so, then point out what's been changed
-            case INSTALL: {
-                // Alert something for the chats...
-            } break;
-        }
-
-        Settings.set({ onInstalledReason: null });
-    }
-
-    // Handle pinned messages...
-    Pinned: {
-        let PinnedMessageHandler = header => {
-            let toggle = $('button', header.closest('[class*="pinned"i][class*="chat"i][class*="area"i]')),
-                collapsed = defined(toggle?.closest('[class*="highlight"i][class*="collapsed"i]'));
-
-            if(collapsed)
-                toggle.click();
-
-            let element = header.closest('[class*="chat"][class*="content"i] > div:not([class])'),
-                message = $('[class*="pinned"i][class*="message"i]', element),
-                handle = $('.chatter-name', element),
-                badges = $.all('.chat-badge', element).map(img => img.alt).isolate(),
-                emotes = $.all('.chat-image', message).map(img => img.alt).isolate(),
-                author = handle?.textContent ?? 'Anonymous';
-
-            if(nullish(header) || nullish(message)) {
-                if(collapsed)
-                    toggle.click();
-                return;
-            }
-
-            header = header.textContent;
-            message = message.textContent;
-
-            let mentions = message.split(/(@\S+)/).filter(s => s.startsWith('@')).map(s => s.slice(1).toLowerCase()),
-                style = $('[style]', handle)?.getAttribute('style') ?? '',
-                { hour, minute, meridiem } = (/(?<![#\$\.+:\d%‰]|\p{Sc})\b(?<hour>2[0-3]|[01]?\d)(?<minute>:[0-5]\d)?(?!\d*(?:\p{Sc}|[%‰]))[ \t]*(?<meridiem>[ap]m?(?!\p{L}|\p{N}))/iu.exec(handle?.parentElement?.textContent ?? '12:00AM')?.groups ?? {}),
-                sent = new Date([(new Date).toLocaleDateString(), ' ', +hour + 12 * meridiem?.[0]?.equals('P'), minute, ':00'].join('')).toJSON();
-
-            if(nullish(hour) && nullish(minute) && nullish(meridiem))
-                return;
-
-            handle = author.replace(/([^]*)\((.+)\)[^]*/, ($0, $1, $2 = '', $$, $_) => {
-                author = $2 || $1;
-
-                return $1;
-            });
-
-            let raw = `${ header } → ${ [(handle.unlike(author)? `${ handle } (${ author })`: handle), message].join(': ') }`,
-                uuid = UUID.from([sent, message, author].join('@')).toString();
-
-            let results = {
-                raw,
-                sent,
-                uuid,
-                style,
-                author,
-                emotes,
-                badges,
-                handle,
-                element,
-                message,
-                mentions,
-            };
-
-            if(collapsed)
-                toggle.click();
-
-            Chat.__allpinned__.set(uuid, results);
-
-            for(let [name, callback] of Chat.__onpinned__)
-                when(() => PAGE_IS_READY, 250).then(() => callback(results));
-
-            for(let [name, callback] of Chat.__deferredEvents__.__onpinned__)
-                when.defined.pipe(async(callback, results) => await results?.element, 1000, callback, results).then(([callback, results]) => callback(results));
-
-            for(let [name, callback] of Chat.__consumableEvents__.__onpinned__) {
-                when(() => PAGE_IS_READY, 250).then(() =>
-                    callback(results).then(complete => {
-                        if(complete)
-                            Chat.__consumableEvents__.__onpinned__.delete(name);
-                    })
-                );
-            }
-
-            when(() => $.nullish('[class*="pinned"i][class*="by"i]'))
-                .then(() => when.defined(() => $('[class*="pinned"i][class*="by"i]')).then(PinnedMessageHandler));
         };
 
-        // FIX-ME: it's the time the page waits (5s) + time the function starts (2.5s)
-        when.defined(() => $('[class*="pinned"i][class*="by"i]'), 8_000).then(PinnedMessageHandler);
+        // Add custom styling
+        CustomCSSInitializer: {
+            AddCustomCSSBlock('chat.js', `
+                /* [data-a-page-loaded-name="PopoutChatPage"i] [class*="chat"i][class*="header"i] { display: none !important; } */
+
+                #tt-auto-claim-bonuses .tt-z-above { display: none }
+                :is([data-plagiarism], [data-repetitive]):not([data-resurrected]) { display: none }
+                #tt-hidden-emote-container::after {
+                    content: 'Collecting emotes...\\A Do not close this window';
+                    text-align: center;
+                    white-space: break-spaces;
+
+                    --background: #000e;
+                    --text-align: center;
+
+                    position: absolute;
+                    --padding-top: 100%;
+                    left: 50%;
+                    top: 50%;
+                    transform: translate(-50%, -50%);
+
+                    --height: 100%;
+                    --width: 100%;
+                }
+                #tt-hidden-emote-container .simplebar-scroll-content { visibility: hidden }
+
+                section[data-test-selector^="chat"i] :is([tt-hidden-message="true"i], [tt-hidden-bulletin="true"i]) { display: none }
+
+                [class*="theme"i][class*="dark"i] [tt-light], [class*="theme"i][class*="dark"i] [class*="chat"i][class*="status"i] { background-color: var(--color-opac-w-4) !important }
+                [class*="theme"i][class*="light"i] [tt-light], [class*="theme"i][class*="light"i] [class*="chat"i][class*="status"i] { background-color: var(--color-opac-b-4) !important }
+
+                .chat-line__message[style] a {
+                    color: var(--color-text-alt);
+                    text-decoration: underline;
+                }
+
+                .tt-emote-captured [data-test-selector="badge-button-icon"i],
+                .tt-emote-bttv [data-test-selector="badge-button-icon"i] {
+                    left: 0;
+                    top: 0;
+                }
+            `);
+        }
+
+        // Update the settings
+        SettingsInitializer: {
+            switch(Settings.onInstalledReason) {
+                // Is this the first time the extension has run?
+                // If so, then point out what's been changed
+                case INSTALL: {
+                    // Alert something for the chats...
+                } break;
+            }
+
+            Settings.set({ onInstalledReason: null });
+        }
+
+        // Handle pinned messages...
+        Pinned: {
+            let PinnedMessageHandler = header => {
+                let toggle = $('button', header.closest('[class*="pinned"i][class*="chat"i][class*="area"i]')),
+                    collapsed = defined(toggle?.closest('[class*="highlight"i][class*="collapsed"i]'));
+
+                if(collapsed)
+                    toggle.click();
+
+                let element = header.closest('[class*="chat"][class*="content"i] > div:not([class])'),
+                    message = $('[class*="pinned"i][class*="message"i]', element),
+                    handle = $('.chatter-name', element),
+                    badges = $.all('.chat-badge', element).map(img => img.alt).isolate(),
+                    emotes = $.all('.chat-image', message).map(img => img.alt).isolate(),
+                    author = handle?.textContent ?? 'Anonymous';
+
+                if(nullish(header) || nullish(message)) {
+                    if(collapsed)
+                        toggle.click();
+                    return;
+                }
+
+                header = header.textContent;
+                message = message.textContent;
+
+                let mentions = message.split(/(@\S+)/).filter(s => s.startsWith('@')).map(s => s.slice(1).toLowerCase()),
+                    style = $('[style]', handle)?.getAttribute('style') ?? '',
+                    { hour, minute, meridiem } = (/(?<![#\$\.+:\d%‰]|\p{Sc})\b(?<hour>2[0-3]|[01]?\d)(?<minute>:[0-5]\d)?(?!\d*(?:\p{Sc}|[%‰]))[ \t]*(?<meridiem>[ap]m?(?!\p{L}|\p{N}))/iu.exec(handle?.parentElement?.textContent ?? '12:00AM')?.groups ?? {}),
+                    sent = new Date([(new Date).toLocaleDateString(), ' ', +hour + 12 * meridiem?.[0]?.equals('P'), minute, ':00'].join('')).toJSON();
+
+                if(nullish(hour) && nullish(minute) && nullish(meridiem))
+                    return;
+
+                handle = author.replace(/([^]*)\((.+)\)[^]*/, ($0, $1, $2 = '', $$, $_) => {
+                    author = $2 || $1;
+
+                    return $1;
+                });
+
+                let raw = `${ header } → ${ [(handle.unlike(author)? `${ handle } (${ author })`: handle), message].join(': ') }`,
+                    uuid = UUID.from([sent, message, author].join('@')).toString();
+
+                let results = {
+                    raw,
+                    sent,
+                    uuid,
+                    style,
+                    author,
+                    emotes,
+                    badges,
+                    handle,
+                    element,
+                    message,
+                    mentions,
+                };
+
+                if(collapsed)
+                    toggle.click();
+
+                Chat.__allpinned__.set(uuid, results);
+
+                for(let [name, callback] of Chat.__onpinned__)
+                    when(() => PAGE_IS_READY, 250).then(() => callback(results));
+
+                for(let [name, callback] of Chat.__deferredEvents__.__onpinned__)
+                    when.defined.pipe(async(callback, results) => await results?.element, 1000, callback, results).then(([callback, results]) => callback(results));
+
+                for(let [name, callback] of Chat.__consumableEvents__.__onpinned__) {
+                    when(() => PAGE_IS_READY, 250).then(() =>
+                        callback(results).then(complete => {
+                            if(complete)
+                                Chat.__consumableEvents__.__onpinned__.delete(name);
+                        })
+                    );
+                }
+
+                when(() => $.nullish('[class*="pinned"i][class*="by"i]'))
+                    .then(() => when.defined(() => $('[class*="pinned"i][class*="by"i]')).then(PinnedMessageHandler));
+            };
+
+            // FIX-ME: it's the time the page waits (5s) + time the function starts (2.5s)
+            when.defined(() => $('[class*="pinned"i][class*="by"i]'), 8_000).then(PinnedMessageHandler);
+        }
+
+        done = true;
+    } finally {
+        if(done) {
+            clearInterval(Chat__PAGE_CHECKER);
+            Chat__PAGE_CHECKER = void null;
+            $log('[Chat] Page-Checker interval cleared');
+        }
     }
 }, 500);
 

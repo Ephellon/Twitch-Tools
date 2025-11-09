@@ -9977,8 +9977,6 @@ let Initialize = async(START_OVER = false) => {
                                                     gameDesc.removeAttribute('data-twitch-provided-description');
                                                 }
 
-                                                return /* TODO: Get this to work without freezing the machine */;
-
                                                 let data = DOM.head.getElementByText('core2')?.textContent?.replace(/.*preload.*(\{[^$]+?\});/, '$1');
 
                                                 if(data?.length) {
@@ -10904,7 +10902,7 @@ let Initialize = async(START_OVER = false) => {
                                 .then((info = {}) => {
                                     let { game, name, href, img, price, rating = 'none', good = false } = info;
 
-                                    img = `https://assets.nintendo.com/image/upload/ar_16:9,b_auto:border,c_lpad/b_white/f_auto/q_auto/dpr_1.0/c_scale,w_700/${ img }`;
+                                    // img = `https://assets.nintendo.com/image/upload/ar_16:9,b_auto:border,c_lpad/b_white/f_auto/q_auto/dpr_1.0/c_scale,w_700/${ img }`;
 
                                     if(!href?.length)
                                         return;
@@ -10975,7 +10973,7 @@ let Initialize = async(START_OVER = false) => {
                             .then((info = {}) => {
                                 let { game, name, href, img, price, rating = 'none', good = false } = info;
 
-                                img = `https://assets.nintendo.com/image/upload/ar_16:9,b_auto:border,c_lpad/b_white/f_auto/q_auto/dpr_1.0/c_scale,w_700/${ img }`;
+                                // img = `https://assets.nintendo.com/image/upload/ar_16:9,b_auto:border,c_lpad/b_white/f_auto/q_auto/dpr_1.0/c_scale,w_700/${ img }`;
 
                                 if(!href?.length)
                                     return;
@@ -11006,7 +11004,7 @@ let Initialize = async(START_OVER = false) => {
                             .then((info = {}) => {
                                 let { game, name, href, img, price, rating = 'none', good = false } = info;
 
-                                img = `https://assets.nintendo.com/image/upload/ar_16:9,b_auto:border,c_lpad/b_white/f_auto/q_auto/dpr_1.0/c_scale,w_700/${ img }`;
+                                // img = `https://assets.nintendo.com/image/upload/ar_16:9,b_auto:border,c_lpad/b_white/f_auto/q_auto/dpr_1.0/c_scale,w_700/${ img }`;
 
                                 if(!href?.length)
                                     return;

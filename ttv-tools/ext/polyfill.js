@@ -164,7 +164,7 @@ function parseURL(url) {
 
 Object.defineProperties(parseURL, {
     pattern: {
-        value: /(?<href>(?<origin>(?<protocol>(?<scheme>[a-z][\w\-]{2,}):)?(?:\/\/)?)?(?:(?<username>[^:\s]*):(?<password>[^@\s]*)@)?(?<host>(?<hostname>\B\.{1,2}\B(?=[a-z\d]|\/)|(?:[a-z][a-z-]*)(?:\.[a-z][a-z-\.]*|(?=\/))|(?:[^\s\$]\d[a-z\d-]*)(?:\.[a-z][a-z-\.]*)|(?:(?:25[0-5]|(?:2[0-4]|1\d|[1-9])\d)(?:\.(?!$)|$)){4}|localhost)(?:\:(?<port>\d+))?)(?<pathname>\/[^?#\s]*)?(?<search>\?[^#\s]*)?(?<hash>#[^\s]*)?)/i
+        value: /(?<href>(?<origin>(?<protocol>(?<scheme>[a-z][\w\-]{2,}):)?(?:\/\/+)?)?(?:(?<username>[^:\s]*)(?::(?<password>[^@\s]*))?@)?(?<host>\B\.{1,2}\B(?=[a-z\d]|\/)|(?<=[\\\/])[A-Z]:|(?<hostname>(?:[a-z][a-z-]*)(?:\.[a-z][a-z-\.]*|(?=\/))|(?:[^\s\$]\d[a-z\d-]*)(?:\.[a-z][a-z-\.]*)|(?:(?:25[0-5]|(?:2[0-4]|1\d|[1-9])?\d)(?:\.(?!$)|\b)){4}|localhost)(?:\:(?<port>\d+))?)(?<pathname>\/[^?#\s]*)?(?<search>\?[^#\s]*)?(?<hash>#[^\s]*)?)/i
     },
 });
 

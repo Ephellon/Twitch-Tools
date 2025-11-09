@@ -1328,65 +1328,74 @@ function sated(iterable) {
  * @param {...any} objects  The list of objects to dereference
  */
 function PrepareForGarbageCollection(...objects) {
-    PrepareForGarbageCollection.LEDGER ??= new Set;
+    const LEDGER = (PrepareForGarbageCollection.__GARBAGE_COLLECTION_NON_CIRCULAR_LEDGER__ ??= new Set);
+    const ENDING = (PrepareForGarbageCollection.__GARBAGE_COLLECTION_END_OF_LIST__ ??= Symbol('__GARBAGE_COLLECTION_END_OF_LIST__'));
 
-    // @TODO Keep this non-circular...
+    // If this is the top-most garbage-collector, run some special code later-on...
+    const LOCALE = Symbol('__GARBAGE_COLLECTION_LOCATION__');
+    const locale = PrepareForGarbageCollection.__GARBAGE_COLLECTION_LOCATION__ ??= LOCALE;
+
+    if(locale === LOCALE)
+        objects.push(ENDING);
+
     // @performance
-    for(let object of objects) {
-        if(object === void null || object === null)
-            continue;
-        if(!!~["number", "bigint", "string", "boolean", "symbol"].indexOf(typeof object))
-            continue;
-        if(PrepareForGarbageCollection.LEDGER.has(object))
-            continue;
+    new Promise((resolve, reject) => {
+        let object;
 
-        if([Map, WeakMap].find(constructor => object instanceof constructor)) {
-            PrepareForGarbageCollection.LEDGER.add(object);
+        for(object of objects) {
+            if(object === void null || object === null)
+                continue;
+            if(!!~["number", "bigint", "string", "boolean", "symbol"].indexOf(typeof object))
+                continue;
+            if(LEDGER.has(object))
+                continue;
 
-            for(const [key, obj] of object)
-                PrepareForGarbageCollection(obj);
-            object.clear();
+            if([Map, WeakMap].find(constructor => object instanceof constructor)) {
+                LEDGER.add(object);
 
-            PrepareForGarbageCollection.LEDGER.delete(object);
-        } else if([Set, WeakSet].find(constructor => object instanceof constructor)) {
-            PrepareForGarbageCollection.LEDGER.add(object);
+                for(const [key, obj] of object)
+                    PrepareForGarbageCollection(obj);
+                object.clear();
+            } else if([Set, WeakSet].find(constructor => object instanceof constructor)) {
+                LEDGER.add(object);
 
-            for(const obj of object)
-                PrepareForGarbageCollection(obj);
-            object.clear();
+                for(const obj of object)
+                    PrepareForGarbageCollection(obj);
+                object.clear();
+            } else if([Array, Uint8Array, Uint8ClampedArray, Uint16Array, Uint32Array, Int8Array, Int16Array, Int32Array, Float32Array, Float64Array, BigInt64Array, BigUint64Array].find(constructor => object instanceof constructor)) {
+                const HAS_ONLY_PRIMITIVES = (false
+                    || (object.constructor !== Array)
+                    || (!~object.findIndex(_ => _ !== null && _ !== void null && !~["number", "bigint", "string", "boolean", "symbol"].indexOf(typeof _)))
+                );
 
-            PrepareForGarbageCollection.LEDGER.delete(object);
-        } else if([Array, Uint8Array, Uint8ClampedArray, Uint16Array, Uint32Array, Int8Array, Int16Array, Int32Array, Float32Array, Float64Array, BigInt64Array, BigUint64Array].find(constructor => object instanceof constructor)) {
-            const HAS_ONLY_PRIMITIVES = (false
-                || (object.constructor !== Array)
-                || (!~object.findIndex(_ => _ !== null && !~["number", "bigint", "string", "boolean", "symbol", "undefined"].indexOf(typeof _)))
-            );
+                // Deliberately create Sparse Arrays
+                    // → https://developer.mozilla.org/en-US/docs/Web/JavaScript/Guide/Indexed_collections#sparse_arrays
+                    // → https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Array#array_methods_and_empty_slots
+                if(HAS_ONLY_PRIMITIVES)
+                    for(let index = 0; index < object.length; ++index)
+                        delete object[index];
+                else
+                    for(let index = 0; index < object.length && index < Number.MAX_SAFE_INTEGER; ++index) {
+                        PrepareForGarbageCollection(object[index]);
 
-            // Deliberately create Sparse Arrays
-                // → https://developer.mozilla.org/en-US/docs/Web/JavaScript/Guide/Indexed_collections#sparse_arrays
-                // → https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Array#array_methods_and_empty_slots
-            if(HAS_ONLY_PRIMITIVES)
-                for(let index = 0; index < object.length; ++index)
-                    delete object[index];
-            else
-                for(let index = 0; index < object.length && index < Number.MAX_SAFE_INTEGER; ++index) {
-                    PrepareForGarbageCollection(object[index]);
+                        delete object[index];
+                    }
+            } else if(object instanceof Object) {
+                LEDGER.add(object);
 
-                    delete object[index];
-                }
-        } else if(object instanceof Object) {
-            PrepareForGarbageCollection.LEDGER.add(object);
+                Object.keys(object).forEach((key, index, keys) => {
+                    PrepareForGarbageCollection(object[key]);
 
-            Object.keys(object).forEach((key, index, keys) => {
-                PrepareForGarbageCollection(object[key]);
-
-                delete object[key];
-
-                if(index == keys.length - 1)
-                    PrepareForGarbageCollection.LEDGER.delete(object);
-            });
+                    delete object[key];
+                });
+            }
         }
-    }
+
+        resolve(object === ENDING);
+    }).then(ok => {
+        if(ok)
+            LEDGER.clear();
+    });
 }
 
 /**
@@ -2059,14 +2068,14 @@ function fetchURL(url, options = {}) {
             && as.equals('json')
         )
             return fetch(href, { ...options, signal: controller.signal }).then(async response => {
-                clearTimeout(timeoutID);
-
                 return response.text().then(text =>
                     new Promise((resolve, reject) => {
                         try {
                             resolve(new Response(new Blob([text], { type: 'text/plain' })));
                         } catch(error) {
                             reject(error);
+                        } finally {
+                            clearTimeout(timeoutID);
                         }
                     })
                 );
@@ -2080,14 +2089,14 @@ function fetchURL(url, options = {}) {
             )
         )
             return fetch(href, { ...options, signal: controller.signal }).then(response => {
-                clearTimeout(timeoutID);
-
                 return response.json().then(json =>
                     new Promise((resolve, reject) => {
                         try {
                             resolve(new Response(new Blob([JSON.stringify(json)], { type: 'application/json' })));
                         } catch(error) {
                             reject(error);
+                        } finally {
+                            clearTimeout(timeoutID);
                         }
                     })
                 );

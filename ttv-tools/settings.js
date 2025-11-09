@@ -1270,12 +1270,15 @@ $.all('#help, .help').map(element => element.onclick = async event => {
     $('#accessibility').scrollIntoView();
 });
 
-function PostSyncStatus(message = '&nbsp;', type = 'alert') {
+function PostSyncStatus(message = '\u00A0', type = 'alert') {
     clearTimeout(clearSyncStatus.clearID);
 
-    $('#sync-status').setAttribute('style', $('#sync-status').getAttribute('style').replace(/;;[^]*$/, ';; opacity: 1'));
-
-    message = $('#sync-status').innerHTML = `<span ${ type }-text>${ message }</span>`;
+    const syncStatus = $('#sync-status');
+    syncStatus.setAttribute('style', $('#sync-status').getAttribute('style').replace(/;;[^]*$/, ';; opacity: 1'));
+    syncStatus.textContent = '';
+    syncStatus.append(
+        furnish('span', { [`${ type }-text`]: '', textContent: message })
+    );
 
     clearSyncStatus.clearID = setTimeout(clearSyncStatus, message.split(/\s+/).length * 1_500);
 }
@@ -1694,7 +1697,7 @@ $('#sync-settings--download').onmouseup = async event => {
                             uploadAge = +new Date() - +new Date(settings.syncDate);
 
                         if(uploadAge > 30 * 24 * 60 * 60 * 1000) {
-                            messages.push(`<span warning-text>This upload is ${ toTimeString(uploadAge, '~days days') } old</span>`);
+                            messages.push(`This upload is ${ toTimeString(uploadAge, '~days days') } old`);
 
                             $log('These settings were uploaded at', new Date(settings.syncDate), settings);
                         }
@@ -1740,7 +1743,7 @@ $('#sync-settings--download').onmouseup = async event => {
                             uploadAge = +new Date() - +new Date(settings.syncDate);
 
                         if(uploadAge > 30 * 24 * 60 * 60 * 1000) {
-                            messages.push(`<span warning-text>This upload is ${ toTimeString(uploadAge, '~days days') } old</span>`);
+                            messages.push(`This upload is ${ toTimeString(uploadAge, '~days days') } old`);
 
                             $log('These settings were uploaded at', new Date(settings.syncDate), settings);
                         }

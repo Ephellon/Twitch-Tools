@@ -4,7 +4,7 @@
     "name": "TTV Tools",
     "description": "Adds extra features to Twitch",
 
-    "version": "5.33.4.17",
+    "version": "5.33.4.18",
     "minimum_chrome_version": "88",
     "homepage_url": "https://github.com/ephellon/twitch-tools",
 
@@ -20,8 +20,7 @@
     "content_scripts": [
         {
             "matches": [
-                "https://clips.twitch.tv/*",
-                "http://clips.twitch.tv/*"
+                "https://clips.twitch.tv/*"
             ],
 
             "all_frames": true,
@@ -38,8 +37,7 @@
 
         {
             "matches": [
-                "https://player.twitch.tv/*",
-                "http://player.twitch.tv/*"
+                "https://player.twitch.tv/*"
             ],
 
             "all_frames": true,
@@ -56,8 +54,7 @@
 
         {
             "matches": [
-                "https://www.twitch.tv/popout/*",
-                "http://www.twitch.tv/popout/*"
+                "https://www.twitch.tv/popout/*"
             ],
 
             "all_frames": true,
@@ -76,8 +73,7 @@
 
         {
             "matches": [
-                "https://www.twitch.tv/*",
-                "http://www.twitch.tv/*"
+                "https://www.twitch.tv/*"
             ],
 
             "all_frames": true,
@@ -127,21 +123,23 @@
     },
 
     "host_permissions": [
-        "*://player.twitch.tv/*",
-        "*://www.twitch.tv/*",
-        "*://twitch.tv/*"
+        "https://player.twitch.tv/*",
+        "https://www.twitch.tv/*",
+        "https://twitch.tv/*"
     ],
 
     "permissions": [
-        "storage"
+        "storage",
+        "tabs"
     ],
 
     "web_accessible_resources": [{
         "resources": ["*.png", "*.svg", "aud/*.*", "ext/*.*", "font/*.*", "*.css"],
         "matches": [
-            "*://player.twitch.tv/*",
-            "*://www.twitch.tv/*",
-            "*://twitch.tv/*"
+            "https://player.twitch.tv/*",
+            "https://clips.twitch.tv/*",
+            "https://www.twitch.tv/*",
+            "https://twitch.tv/*"
         ],
         "use_dynamic_url": false
     }]

@@ -79,6 +79,9 @@
 ----
 
 # DONE &mdash; Notable Changes
+> [`5.33.4.18`](https://github.com/Ephellon/Twitch-Tools/releases/tag/5.33.4.18)
+-
+
 > [`5.33.4.17`](https://github.com/Ephellon/Twitch-Tools/releases/tag/5.33.4.17)
 - Fixed issue where notifications would add non-channel URLs
 - Modified Time Zone logic

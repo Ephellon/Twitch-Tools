@@ -228,20 +228,20 @@ Object.defineProperties(RemoveTab, {
 function TabIsOffline(tab) {
     return (false
         || tab.pendingUrl?.length
-        || tab.title.endsWith('.twitch.tv')
+        || tab.url?.endsWith('.twitch.tv')
         || tab.status == UNLOADED
     );
 }
 
-let browser, global, window, Storage, Runtime, Manifest, Extension, Container, BrowserNamespace;
+let global, window, Storage, Runtime, Manifest, Extension, Container, BrowserNamespace;
 
-if(browser && browser.runtime)
+if(globalThis.browser && globalThis.browser.runtime)
     BrowserNamespace = 'browser';
-else if(chrome && chrome.extension)
+else if(globalThis.chrome && globalThis.chrome.extension)
     BrowserNamespace = 'chrome';
 
 // Can NOT be done programmatically?
-Container = chrome;
+Container = globalThis[BrowserNamespace];
 
 switch(BrowserNamespace) {
     case 'browser': {
