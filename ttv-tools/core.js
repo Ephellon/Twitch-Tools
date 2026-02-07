@@ -664,7 +664,7 @@ class Tooltip {
         let tooltip = furnish(`.tt-tooltip.tt-tooltip--align-${ fineTuning.lean || 'center' }.tt-tooltip--${ fineTuning.from || 'down' }`, { role: 'tooltip', innerHTML: text });
 
         let upper = parent.closest('[tt-tooltip-id]')?.getAttribute('tt-tooltip-id') ?? '';
-        let values = [parent.getAttribute('tt-tooltip-id'), parent.getAttribute('id'), UUID.from(parent.getPath(-1)).value];
+        let values = [parent.getAttribute('tt-tooltip-id'), parent.getAttribute('id'), UUID.from(parent.getPath(getDOMPath.ANCHORED)).value];
         for(let value, index = 0; nullish(value) && index < values.length; ++index) {
             value = values[index];
             uuid = [upper, value, (['', 'tooltip'][index] ?? '')].filter(_ => _?.length).join(':');
@@ -1258,7 +1258,7 @@ Object.defineProperties($, {
  * @return {boolean}    Returns <i>true</i> if the value is <i>nullish</i>
  */
 function nullish(value) {
-    return (value === null) || (value === void null) || (value instanceof Promise) || (value instanceof Number && Number.isNaN(value));
+    return (value === null) || (value === void null) || (value instanceof Promise) || (Number.isNaN(value)) || (value instanceof Number && Number.isNaN(value.valueOf()));
 }
 
 /**

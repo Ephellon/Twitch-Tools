@@ -79,8 +79,16 @@
 ----
 
 # DONE &mdash; Notable Changes
+> [`5.33.4.19`](https://github.com/Ephellon/Twitch-Tools/releases/tag/5.33.4.19)
+- Used AI to fix some the following...
+    + `ƒ nullish` when parsing raw `NaN`
+    + `ƒ getDOMPath` better implementation
+    + `ƒ Element..getElementByText` actual flag usage, and bug fix
+    + `ƒ Element.getElementsByText` ""
+    + `get live` fetching live status more robustly
+
 > [`5.33.4.18`](https://github.com/Ephellon/Twitch-Tools/releases/tag/5.33.4.18)
--
+- Game Store Catalog changes
 
 > [`5.33.4.17`](https://github.com/Ephellon/Twitch-Tools/releases/tag/5.33.4.17)
 - Fixed issue where notifications would add non-channel URLs

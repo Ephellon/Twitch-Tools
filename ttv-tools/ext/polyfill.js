@@ -1245,7 +1245,7 @@ function parseBool(value = null) {
 /**
  * Returns the DOM path of an element.
  *
- * @simply getDOMPath(element:Element, length:number?<int>) → string
+ * @simply getDOMPath(element:Element, mode:number?<int>) → string
  *
  * @param  {Element} element        The element to de-path
  * @param  {number} [length = 0]    How verbose the output should be; an integer in the range [-1, 2]
@@ -1253,66 +1253,160 @@ function parseBool(value = null) {
  *
  * @see https://stackoverflow.com/a/16742828/4211612
  *
+ * @prop SHORT        Tag-only, minimal DOM path
+ * @prop IDS          Include ids in DOM path
+ * @prop IDS_CLASSES  Include ids and classes in DOM path
+ * @prop FULL         Include ids, classes, and simple (non-spaced) attributes in DOM path
+ * @prop ANCHORED     Stop at first id (or root), then "compress" same-tag runs in DOM path
+ *
  * @example
- * getDOMPath(element, +2); // → Adds ids, classes, and non-spaced attributes to the path
+ * getDOMPath(element, getDOMPath.FULL); // → Adds ids, classes, and non-spaced attributes to the path
  * // html>body>div#root.root[data-a-page-loaded-name="ChannelWatchPage"][data-a-page-loaded="1686805563781"][data-a-page-events-submitted="1686805565437"]>div>div:nth-child(2)>div>main>div>div:nth-child(3)>div>div>div>div>div:nth-child(2)>div>div>div>div:nth-child(3)>div:nth-child(3)>div>div>div:nth-child(7)>div>div>div>div>p:nth-child(5)>a
  *
- * getDOMPath(element, +1); // → Adds ids and classes to the path
+ * getDOMPath(element, getDOMPath.IDS_CLASSES); // → Adds ids and classes to the path
  * // html>body>div#root.root>div>div:nth-child(2)>div>main>div>div:nth-child(3)>div>div>div>div>div:nth-child(2)>div>div>div>div:nth-child(3)>div:nth-child(3)>div>div>div:nth-child(7)>div>div>div>div>p:nth-child(5)>a
  *
- * getDOMPath(element, +0); // → Adds ids to the path
+ * getDOMPath(element, getDOMPath.IDS); // → Adds ids to the path
  * // html>body>div#root>div>div:nth-child(2)>div>main>div>div:nth-child(3)>div>div>div>div>div:nth-child(2)>div>div>div>div:nth-child(3)>div:nth-child(3)>div>div>div:nth-child(7)>div>div>div>div>p:nth-child(5)>a
  *
- * getDOMPath(element, -1); // → Finds the first id and stops, or traverses up the entire tree. Removes single-tag generations ("div>div>div>div..." → "div div")
+ * getDOMPath(element, getDOMPath.ANCHORED); // → Finds the first id and stops, or traverses up the entire tree. Removes single-tag generations ("div>div>div>div..." → "div div")
  * // #root>div>div:nth-child(2)>div>main>div>div:nth-child(3) div div:nth-child(2) div div:nth-child(3)>div:nth-child(3) div div:nth-child(7) div p:nth-child(5)>a
  */
-function getDOMPath(element, length = 0) {
-    if(nullish(element))
-        throw 'Unable to get path of non-Node';
+function getDOMPath(element, mode = getDOMPath.IDS) {
+    if(!(element && element.nodeType === 1))
+        throw new TypeError('Unable to get path of non-Element');
 
-    let path = [];
-    while(defined(element.parentNode)) {
-        let parent = element.parentNode,
-            siblings = parent.children;
+    // Accept either enum object or legacy number.
+    // Legacy mapping: -1 (anchored), ±0 (ids), +1 (ids & classes), +2 (full)
+    let level = 0;
+    let anchored = false;
 
-        let nthChild = 1, sameTag = false;
-        nth: for(let sibling of siblings)
-            if(sibling === element)
-                break nth;
-            else if(sameTag ||= (sibling.nodeName.equals(element.nodeName)))
-                ++nthChild;
+    if(typeof mode === 'number') {
+        anchored = mode < 0;
+        level = anchored? 0: mode;
+    } else {
+        anchored = !!mode.anchored;
+        level = mode.level | 0;
+    }
 
-        let nodeName = element.nodeName.toLowerCase();
-        let attributes = [...element.attributes].filter(attr => !/\s/.test(attr.value) && !/^(id|class)$/i.test(attr.name)).map(attr => `[${ attr.name }="${ attr.value }"]`).join('');
+    // Clamp to sane range [0..2]
+    level = level.clamp(0, 2);
 
-        if(element.id.length) {
-            path.unshift(`${
-                (length < 0? '': nodeName)
-                    }#${
-                element.id
-                    }${
-                (length > 0? ['', ...element.classList].join('.'): '')
-                    }${
-                (length > 1? attributes: '')
-            }`);
+    const wantIds = true;           // keep legacy behavior: ids are always considered
+    const wantClasses = level >= 1;
+    const wantAttrs = level >= 2;
 
-            if(length < 0)
-                break;
-        } else if(nthChild > 1) {
-            path.unshift(`${ nodeName }${ (length > 1? attributes: '') }:nth-child(${ nthChild })`);
-        } else {
-            path.unshift(`${ nodeName }${ (length > 1? attributes: '') }`);
+    const esc = defined(top?.CSS?.escape)
+        // Prefer real CSS escaping if available
+        ? top.CSS.escape
+        // Minimal fallback: escapes common CSS selector breakers
+        : (s) => String(s).replace(/([ !"#$%&'()*+,./:;<=>?@[\\\]^`{|}~])/g, '\\$1');
+
+    const path = [];
+
+    walker: while(element) {
+        const parent = element.parentElement;
+        const nodeName = element.nodeName.toLowerCase();
+
+        // attributes: only those without whitespace, excluding id/class
+        let attributes = '';
+
+        if(wantAttrs && element.hasAttributes()) {
+            attributes = Array.prototype
+                .slice.call(element.attributes)
+                .filter(attr => !/\s/.test(attr.value) && !/^(id|class)$/i.test(attr.name))
+                .map(attr => `[${ attr.name }="${ attr.value }"]`)
+                .join('');
         }
 
+        // Build selector chunk
+        let chunk = nodeName;
+
+        if(wantIds && element.id) {
+            // Use escaped id directly
+            chunk += `#${ esc(element.id) }`;
+        }
+
+        if(wantClasses && element.classList && element.classList.length) {
+            // Escape each class
+            chunk += '.' + Array.prototype.map.call(element.classList, esc).join('.');
+        }
+
+        if(wantAttrs && attributes)
+            chunk += attributes;
+
+        // If no id, add positional selector for uniqueness
+        // IMPORTANT: We emit :nth-child() and compute it correctly (all element siblings)
+        if(!element.id && parent) {
+            const siblings = parent.children;
+
+            if(siblings && siblings.length > 1) {
+                let idx = 1;
+
+                nth_child: for(let i = 0; i < siblings.length; ++i) {
+                    if(siblings[i] === element) {
+                        idx = i + 1;
+                        break nth_child;
+                    }
+                }
+
+                // Only add :nth-child when there is at least one same-tag sibling (keeps output shorter than always adding it)
+                let sameTagSibling = false;
+
+                nth_of_type: for(let i = 0; i < siblings.length; ++i) {
+                    if(siblings[i] !== element && siblings[i].nodeName === element.nodeName) {
+                        sameTagSibling = true;
+                        break nth_of_type;
+                    }
+                }
+
+                if(sameTagSibling)
+                    chunk += `:nth-child(${ idx })`;
+            }
+        }
+
+        // Anchored mode: if we hit an id, stop here (legacy -1)
+        if(anchored && element.id) {
+            // In the legacy -1 behavior, we omitted the tag name for the id node, uncomment the next line for same behavior:
+            // chunk = `#${ esc(element.id) }${ wantClasses ? ('.' + Array.prototype.map.call(element.classList, esc).join('.')) : '' }${ wantAttrs ? attributes : '' }`;
+            path.unshift(chunk);
+            break walker;
+        }
+
+        path.unshift(chunk);
         element = parent;
     }
 
-    path = path.join('>').replace(/#([^a-z][^>\s]*)/ig, '[id="$1"]');
-    for(let regexp = /[> ](?:(\w+)[> ]\1[^#:\[\]])+/; length < 0 && regexp.test(path);)
-        path = path.replace(regexp, ' $1 ');
+    let out = path.join('>');
 
-    return path;
+    // Your original "compress same-tag generations" behavior for anchored/short form.
+    // This is still heuristic, but now it runs on already-escaped selector tokens.
+    if(anchored) {
+        // turn "div>div>div" into "div div" (spaces instead of >)
+        const rx = /[> ](?:(\w+)[> ]\1(?![#:\[]))+?/;
+
+        while(rx.test(out))
+            out = out.replace(rx, '\b$1\b');
+        out = out.replace(/[\b]+/g, ' ').trim();
+    }
+
+    return out.replace(/[\b]/g, ' ');
 }
+
+/** Enum-ish modes */
+getDOMPath.SHORT        ??= { level: 0, anchored: false };
+getDOMPath.IDS          ??= { level: 0, anchored: false };
+getDOMPath.IDS_CLASSES  ??= { level: 1, anchored: false };
+getDOMPath.FULL         ??= { level: 2, anchored: false };
+getDOMPath.ANCHORED     ??= { level: 0, anchored: true };
+
+// Legacy: numeric equivalents
+getDOMPath.LEGACY ??= {
+    ANCHORED: -1,
+    IDS: 0,
+    IDS_CLASSES: 1,
+    FULL: 2,
+};
 
 /**
  * Adds an autocomplete listener to the chosen element. **Requires** a container with an "action" attribute.
@@ -1330,7 +1424,7 @@ function autocomplete(element, options) {
         throw new Error(`The provided options must have at least one element`);
 
     // Get a common "GUID"
-    element.id ||= 'ac_' + UUID.from(element.getPath(-1));
+    element.id ||= 'ac_' + UUID.from(element.getPath(getDOMPath.ANCHORED));
 
     // Convert the options to a common item...
     if(options instanceof Array) {
@@ -1714,7 +1808,7 @@ Document.prototype.get ??= function get(property) {
  * @simply Element..getElementByText(searchText:string|regexp|array, flags:string?) → Element | null
  *
  * @param {(string|regexp|array<(string|regexp)>)} searchText   The text to search for
- * @param {string} [flags = ""]                                 Optional flags to be added to the search: <strong>i</strong> → case-insensitive; <strong>g</strong> → global (top-most shared parent); <strong>u</strong> → Unicode
+ * @param {string} [flags = ""]                                 Optional flags to be added to the search: <strong>i</strong> → case-insensitive; <strong>g</strong> → global (include possibly hidden text); <strong>u</strong> → Unicode
  *
  * @return {Element}
  */
@@ -1724,18 +1818,48 @@ Element.prototype.getElementByText ??= function getElementByText(searchText, fla
         GLOBAL_FLAG = false,
         UNICODE_FLAG = false;
 
-    if(!(searchText?.length ?? searchText?.source))
-        throw 'Cannot search for empty text';
+    // unify "empty" semantics
+    const ERR_IS_EMPTY = new Error(`Cannot search for empty text`);
+
+    if(searchType === 'array') {
+        if(!searchText.length)
+            throw ERR_IS_EMPTY;
+    } else if(searchType === 'regexp') {
+        if(!searchText.source)
+            throw ERR_IS_EMPTY;
+    } else {
+        if((searchText + '').length < 1)
+            throw ERR_IS_EMPTY;
+    }
 
     let container = this,
-        owner = null,
-        thisIsOwner = true;
+        owner = null;
 
-    // innerText → Visible Text; textContent → All Text
     let { innerText, textContent } = this;
 
     function normalize(string = '', unicode = UNICODE_FLAG) {
         return (unicode? string.normalize('NFKD'): string);
+    }
+
+    function mergeFlags(baseFlags, extraFlags) {
+        let set = '';
+        let add = (s) => {
+            s = (s || '') + '';
+            for(let i = 0; i < s.length; ++i)
+                if(!set.contains(s.charAt(i)))
+                    set += s.charAt(i);
+        };
+
+        add(baseFlags);
+        add(extraFlags);
+
+        return set;
+    }
+
+    function safeTest(rx, str) {
+        if(rx.global || rx.sticky)
+            rx.lastIndex = 0;
+        return rx.test(str);
     }
 
     switch(searchType) {
@@ -1747,116 +1871,89 @@ Element.prototype.getElementByText ??= function getElementByText(searchText, fla
         } break;
 
         case 'regexp': {
-            searchText = RegExp(searchText.source, flags = searchText.flags || flags);
+            flags = mergeFlags(searchText.flags, flags);
+            searchText = RegExp(searchText.source, flags);
+
             IGNORE_CASE = flags.contains('i');
-            GLOBAL_FLAG = flags.contains('g');
+            GLOBAL_FLAG = flags.contains('g', 'a');
             UNICODE_FLAG = flags.contains('u');
 
-            // Replace special characters...
-            let text = normalize(GLOBAL_FLAG? textContent: innerText)
+            // textContent → DOM-text   /   innerText → UI/UX-text
+            let text = normalize(GLOBAL_FLAG? textContent: innerText);
             let _tx_ = (GLOBAL_FLAG? 'textContent': 'innerText');
 
-            // See if the element contains the text...
-            if(!searchText.test(text))
+            if(!safeTest(searchText, text))
                 return null;
 
             searching:
             while(nullish(owner)) {
-                for(let child of container.children)
-                    if([...child.children].filter(element => searchText.test(normalize(element[_tx_]))).length) {
-                        // A sub-child is the text container
+                for(let child of container.children) {
+                    // any descendant matches?
+                    if([...child.children].some(el => safeTest(searchText, normalize(el[_tx_])))) {
                         container = child;
-                        thisIsOwner = false;
-
                         continue searching;
-                    } else if(searchText.test(normalize(child[_tx_]))) {
-                        // This is the text container
-                        owner = child;
-                        thisIsOwner = false;
-
-                        break searching;
                     }
 
-                // None of the children contain the text...
-                if(thisIsOwner)
-                    owner = this;
+                    if(safeTest(searchText, normalize(child[_tx_]))) {
+                        owner = child;
+                        break searching;
+                    }
+                }
+
+                owner = container; // no deeper match: container is the tightest we found
             }
         } break;
 
         default: {
-            // Convert to a string...
             searchText += '';
             IGNORE_CASE = flags.contains('i');
-            GLOBAL_FLAG = flags.contains('g');
+            GLOBAL_FLAG = flags.contains('g', 'a');
             UNICODE_FLAG = flags.contains('u');
 
-            // Replace special characters...
-            let text = normalize(GLOBAL_FLAG? textContent: innerText)
+            // textContent → DOM-text   /   innerText → UI/UX-text
+            let text = normalize(GLOBAL_FLAG? textContent: innerText);
             let _tx_ = (GLOBAL_FLAG? 'textContent': 'innerText');
 
             if(IGNORE_CASE) {
-                // Ignore-case mode
                 searchText = searchText.toLowerCase();
-
-                // See if the element contains the text...
                 if(text.toLowerCase().missing(searchText))
                     return null;
 
                 searching:
                 while(nullish(owner)) {
-                    for(let child of container.children)
-                        if([...child.children].filter(element => normalize(element[_tx_]).toLowerCase().contains(searchText)).length) {
-                            // A sub-child is the text container
+                    for(let child of container.children) {
+                        if([...child.children].some(el => normalize(el[_tx_]).toLowerCase().contains(searchText))) {
                             container = child;
-                            thisIsOwner = false;
-
                             continue searching;
-                        } else if(normalize(child[_tx_]).toLowerCase().contains(searchText)) {
-                            // This is the text container
-                            owner = child;
-                            thisIsOwner = false;
-
-                            break searching;
                         }
 
-                    // None of the children contain the text...
-                    if(thisIsOwner)
-                        owner = this;
+                        if(normalize(child[_tx_]).toLowerCase().contains(searchText)) {
+                            owner = child;
+                            break searching;
+                        }
+                    }
+
+                    owner = container;
                 }
             } else {
-                // Normal (perfect-match) mode
-                IGNORE_CASE = flags.contains('i');
-                GLOBAL_FLAG = flags.contains('g');
-                UNICODE_FLAG = flags.contains('u');
-
-                // Replace special characters...
-                let text = normalize(GLOBAL_FLAG? textContent: innerText)
-                let _tx_ = (GLOBAL_FLAG? 'textContent': 'innerText');
-
-                // See if the element contains the text...
                 if(text.missing(searchText))
                     return null;
 
                 searching:
                 while(nullish(owner)) {
-                    for(let child of container.children)
-                        if([...child.children].filter(element => normalize(element[_tx_]).contains(searchText)).length) {
-                            // A sub-child is the text container
+                    for(let child of container.children) {
+                        if([...child.children].some(el => normalize(el[_tx_]).contains(searchText))) {
                             container = child;
-                            thisIsOwner = false;
-
                             continue searching;
-                        } else if(normalize(child[_tx_]).contains(searchText)) {
-                            // This is the text container
-                            owner = child;
-                            thisIsOwner = false;
-
-                            break searching;
                         }
 
-                    // None of the children contain the text...
-                    if(thisIsOwner)
-                        owner = this;
+                        if(normalize(child[_tx_]).contains(searchText)) {
+                            owner = child;
+                            break searching;
+                        }
+                    }
+
+                    owner = container;
                 }
             }
         } break;
@@ -1869,7 +1966,7 @@ Element.prototype.getElementByText ??= function getElementByText(searchText, fla
  * @simply Element..getAllElementsByText(searchText:string|regexp|array, flags:string?) → [Element...]
  *
  * @param {(string|regexp|array<(string|regexp)>)} searchText   The text to search for
- * @param {string} [flags = ""]                                 Optional flags to be added to the search: <strong>i</strong> → case-insensitive; <strong>g</strong> → global (top-most shared parent); <strong>u</strong> → Unicode
+ * @param {string} [flags = ""]                                 Optional flags to be added to the search: <strong>i</strong> → case-insensitive; <strong>g</strong> → global (include possibly hidden text); <strong>u</strong> → Unicode
  *
  * @returns {Element[]}
  */
@@ -1879,16 +1976,47 @@ Element.prototype.getAllElementsByText ??= function getAllElementsByText(searchT
         GLOBAL_FLAG = false,
         UNICODE_FLAG = false;
 
-    if(nullish(searchText?.length ?? searchText?.source))
-        throw 'Cannot search for empty text';
+    // unify "empty" semantics
+    const ERR_IS_EMPTY = new Error(`Cannot search for empty text`);
+
+    if(searchType === 'array') {
+        if(!searchText.length)
+            throw ERR_IS_EMPTY;
+    } else if(searchType === 'regexp') {
+        if(!searchText.source)
+            throw ERR_IS_EMPTY;
+    } else {
+        if((searchText + '').length < 1)
+            throw ERR_IS_EMPTY;
+    }
 
     let containers = [];
 
-    // innerText → Visible Text; textContent → All Text
     let { innerText, textContent } = this;
 
     function normalize(string = '', unicode = UNICODE_FLAG) {
         return (unicode? string.normalize('NFKD'): string);
+    }
+
+    function mergeFlags(baseFlags, extraFlags) {
+        let set = '';
+        let add = (s) => {
+            s = (s || '') + '';
+            for(let i = 0; i < s.length; ++i)
+                if(!set.contains(s.charAt(i)))
+                    set += s.charAt(i);
+        };
+
+        add(baseFlags);
+        add(extraFlags);
+
+        return set;
+    }
+
+    function safeTest(rx, str) {
+        if(rx.global || rx.sticky)
+            rx.lastIndex = 0;
+        return rx.test(str);
     }
 
     switch(searchType) {
@@ -1898,88 +2026,77 @@ Element.prototype.getAllElementsByText ??= function getAllElementsByText(searchT
         } break;
 
         case 'regexp': {
-            searchText = RegExp(searchText.source, flags = searchText.flags || flags);
+            flags = mergeFlags(searchText.flags, flags);
+            searchText = RegExp(searchText.source, flags);
+
             IGNORE_CASE = flags.contains('i');
-            GLOBAL_FLAG = flags.contains('g');
+            GLOBAL_FLAG = flags.contains('g', 'a');
             UNICODE_FLAG = flags.contains('u');
 
-            // Replace special characters...
-            let text = normalize(GLOBAL_FLAG? textContent: innerText)
+            // textContent → DOM-text   /   innerText → UI/UX-text
+            let text = normalize(GLOBAL_FLAG? textContent: innerText);
             let _tx_ = (GLOBAL_FLAG? 'textContent': 'innerText');
 
-            // See if the element contains the text...
-            if(!searchText.test(text))
+            if(!safeTest(searchText, text))
                 break;
+
             containers.push(this);
 
-            let children = [...this.children],
-                child;
+            let children = [...this.children], child;
 
-            collecting:
-            while(child = children.pop())
-                if([...child.children].filter(element => searchText.test(normalize(element[_tx_]))).length) {
-                    // A sub-child contains the text
+            while(child = children.pop()) {
+                if([...child.children].some(el => safeTest(searchText, normalize(el[_tx_])))) {
                     containers.push(child);
                     children = [...children, ...child.children].isolate();
-                } else if(searchText.test(normalize(child[_tx_]))) {
-                    // This contains the text
+                } else if(safeTest(searchText, normalize(child[_tx_]))) {
                     containers.push(child);
                 }
+            }
         } break;
 
         default: {
-            // Convert to a string...
             searchText += '';
             IGNORE_CASE = flags.contains('i');
-            GLOBAL_FLAG = flags.contains('g');
+            GLOBAL_FLAG = flags.contains('g', 'a');
             UNICODE_FLAG = flags.contains('u');
 
-            // Replace special characters...
-            let text = normalize(GLOBAL_FLAG? textContent: innerText)
+            // textContent → DOM-text   /   innerText → UI/UX-text
+            let text = normalize(GLOBAL_FLAG? textContent: innerText);
             let _tx_ = (GLOBAL_FLAG? 'textContent': 'innerText');
 
             if(IGNORE_CASE) {
-                // Ignore-case mode
                 searchText = searchText.toLowerCase();
-
-                // See if the element contains the text...
                 if(text.toLowerCase().missing(searchText))
                     break;
+
                 containers.push(this);
 
-                let children = [...this.children],
-                    child;
+                let children = [...this.children], child;
 
-                collecting:
-                while(child = children.pop())
-                    if([...child.children].filter(element => normalize(element[_tx_]).toLowerCase().contains(searchText)).length) {
-                        // A sub-child contains the text
+                while(child = children.pop()) {
+                    if([...child.children].some(el => normalize(el[_tx_]).toLowerCase().contains(searchText))) {
                         containers.push(child);
                         children = [...children, ...child.children].isolate();
                     } else if(normalize(child[_tx_]).toLowerCase().contains(searchText)) {
-                        // This contains the text
                         containers.push(child);
                     }
+                }
             } else {
-                // Normal (perfect-match) mode
-                // See if the element contains the text...
                 if(text.missing(searchText))
                     break;
+
                 containers.push(this);
 
-                let children = [...this.children],
-                    child;
+                let children = [...this.children], child;
 
-                collecting:
-                while(child = children.pop())
-                    if([...child.children].filter(element => normalize(element[_tx_]).contains(searchText)).length) {
-                        // A sub-child contains the text
+                while(child = children.pop()) {
+                    if([...child.children].some(el => normalize(el[_tx_]).contains(searchText))) {
                         containers.push(child);
                         children = [...children, ...child.children].isolate();
                     } else if(normalize(child[_tx_]).contains(searchText)) {
-                        // This contains the text
                         containers.push(child);
                     }
+                }
             }
         } break;
     }
@@ -1988,9 +2105,9 @@ Element.prototype.getAllElementsByText ??= function getAllElementsByText(searchT
 };
 
 // Gets the DOM path of an element
-    // Element..getPath(length:number?<int>) → string
-Element.prototype.getPath ??= function getPath(length = 0) {
-    return getDOMPath(this, length);
+    // Element..getPath(mode:number?<int>) → string
+Element.prototype.getPath ??= function getPath(mode = getDOMPath.SHORT) {
+    return getDOMPath(this, mode);
 };
 
 // Sets the tooltip of an element
@@ -2006,7 +2123,7 @@ Element.prototype.setTooltip ??= function setTooltip(message, fineTuning) {
     // Element..isVisible() → boolean
 Element.prototype.isVisible ??= function isVisible() {
     // Styling...
-    let style = getComputedStyle(this),
+    const style = getComputedStyle(this),
         { display = 'none', visibility = 'hidden', opacity = 0 } = style;
 
     if(false
@@ -2116,7 +2233,8 @@ Element.prototype.queryBy ??= function queryBy(selectors, container = document) 
 	} else {
 		// Helpers
 		let copy  = array => [...array],
-			query = (SELECTORS, CONTAINER = container) => (CONTAINER instanceof Array? CONTAINER.map(C => C.querySelectorAll(SELECTORS)) : CONTAINER.querySelectorAll(SELECTORS));
+			query = (SELECTORS, CONTAINER = container) => (CONTAINER instanceof Array? CONTAINER.map(C => C.querySelectorAll(SELECTORS)) : CONTAINER.querySelectorAll(SELECTORS)),
+            qBy = `\0qBy\0`;
 
 		// Get rid of enclosing syntaxes: [...] and (...)
 		let regexp = /(\((?:[^\(\)\\]|\\.)+?\)|\[(?:[^\[\]\\]|\\.)+?\])/g,
@@ -2128,16 +2246,18 @@ Element.prototype.queryBy ??= function queryBy(selectors, container = document) 
 		// The index shouldn't be longer than the length of the selector's string
 		// Keep this to prevent infinite loops
 		for(index = 0, length = selectors.length; index++ < length && regexp.test(selectors);)
-			selectors = selectors.replace(regexp, ($0, $1, $$, $_) => '\b--' + pulled.push($1) + '\b');
+			selectors = selectors.replace(regexp, ($0, $1, $$, $_) => `${qBy}--${ pulled.push($1) }${qBy}`);
 
-		let order	    = selectors.split(','),
-			dummy	    = copy(order),
-			output	    = [],
-			generations = 0,
-			cousins		= 0;
+		let order	     = selectors.split(','),
+			dummy	     = copy(order),
+			output	     = [],
+			generations  = 0,
+			cousins		 = 0,
+            usedParents  = false,
+            usedSiblings = false;
 
 		// Replace those syntaxes (they were ignored)
-		for(index = 0, length = dummy.length, order = [], regexp = /[\b]--(\d+)[\b]/gi; index < length; index++)
+		for(index = 0, length = dummy.length, order = [], regexp = new RegExp(`${qBy}--(\\d+)${qBy}`, 'g'); index < length; index++)
 			order.push(dummy[index].replace(regexp, ($0, $1, $$, $_) => pulled[+$1 - 1]));
 
 		// Make sure to put the elements in order
@@ -2147,12 +2267,12 @@ Element.prototype.queryBy ??= function queryBy(selectors, container = document) 
 
 			selector = selector
 			// siblings
-				.replace(/\:nth-sibling\((\d+)\)/gi, ($0, $1, $$, $_) => (cousins += +$1, ''))
-				.replace(/(\:{1,2}(next-|previous-)?sibling)/gi, ($0, $1, $2, $$, $_) => (cousins += ($2 == 'next'? 1: -1), ''))
+				.replace(/\:nth-sibling\((\d+)\)/gi, ($0, $1, $$, $_) => (usedSiblings = !0, cousins += +$1, ''))
+				.replace(/(\:{1,2}(next-|previous-)?sibling)/gi, ($0, $1, $2, $$, $_) => (usedSiblings = !0, cousins += ($2 == 'next'? 1: -1), ''))
 			// parents
-				.replace(/\:nth-parent\((\d+)\)/gi, ($0, $1, $$, $_) => (generations -= +$1, ''))
-				.replace(/(\:{1,2}parent\b|<\s*(\s*(,|$)))/gi, ($0, $$, $_) => (--generations, ''))
-				.replace(/<([^<,]+)?/gi, ($0, $1, $$, $_) => (ancestor = $1, --generations, ''))
+				.replace(/\:nth-parent\((\d+)\)/gi, ($0, $1, $$, $_) => (usedParents = !0, generations -= +$1, ''))
+				.replace(/(\:{1,2}parent\b|<\s*(\s*(,|$)))/gi, ($0, $$, $_) => (usedParents = !0, --generations, ''))
+				.replace(/<([^<,]+)?/gi, ($0, $1, $$, $_) => (usedParents = !0, ancestor = $1, --generations, ''))
 			// miscellaneous
 				.trim();
 
@@ -2211,8 +2331,12 @@ Element.prototype.queryBy ??= function queryBy(selectors, container = document) 
 						return sibling;
 					});
 
-			media.push(parents.length? parents: elements);
-			media.push(siblings.length? siblings: elements);
+            if(usedParents)
+			    media.push(parents.length? parents: elements);
+            else
+                media.push(elements);
+            if(usedSiblings)
+			    media.push(siblings.length? siblings: elements);
 			order.splice(index, 1, selector);
 		}
 

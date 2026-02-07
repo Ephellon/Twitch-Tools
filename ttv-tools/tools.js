@@ -4403,18 +4403,36 @@ let Initialize = async(START_OVER = false) => {
         },
 
         get live() {
-            return (false
-                || SPECIAL_MODE
-                || (true
-                    && $.defined('[class*="channel"i][class*="info"i] [class*="home"i][class*="head"i] [status="live"i], [class*="channel"i][class*="info"i] [id*="live"i]:is([id*="channel"i], [id*="stream"i])')
-                    && $.nullish('[class*="offline-recommendations"i], [data-test-selector="follow-panel-overlay"i]')
-                    && !/(\b(?:offline|autohost)\b|^$)/i.test(null
-                        ?? $.queryBy(`[class*="video-player"i] [class*="media-card"i], [class*="channel"i][class*="status"i]:is(:not([class*="offline"i], [class*="autohost"i]))`).first?.textContent
-                        ?? $.queryBy(`[class*="video-player"i] [class*="media-card"i], [class*="channel"i][class*="status"i]`).first?.classList?.value
-                        ?? 'offline'
-                    )
-                )
-            )
+            const playerCard = $.queryBy(`[class*="video-player"i] [class*="media-card"i]`)?.first;
+            const statusNode = $.queryBy(`[class*="channel"i][class*="status"i]`)?.first;
+
+            const liveText =
+                playerCard?.textContent
+                ?? (
+                    statusNode
+                    && !statusNode.classList.contains('offline')
+                    && !statusNode.classList.contains('autohost')
+                        ? statusNode.textContent
+                        : null
+                );
+
+            const statusClasses = statusNode?.classList?.value || '';
+
+            const probe = (statusClasses || liveText || '').toLowerCase();
+            const looksOffline = !probe || /\boffline\b/.test(probe) || /\bautohost\b/.test(probe);
+
+            if(SPECIAL_MODE)
+                return true;
+
+            return (true
+                && $.defined(`
+                    [class*="channel"i][class*="info"i] [class*="home"i][class*="head"i] [status="live"i]
+                    , [class*="channel"i][class*="info"i] [id*="live"i][id*="channel"i]
+                    , [class*="channel"i][class*="info"i] [id*="live"i][id*="stream"i]
+                `)
+                && $.nullish(`[class*="offline-recommendations"i], [data-test-selector="follow-panel-overlay"i]`)
+                && !looksOffline
+            );
         },
 
         get main() {
@@ -7224,9 +7242,9 @@ let Initialize = async(START_OVER = false) => {
                 let dia_str = '[role*="dialog"i] [class*="combo"i] ~ * button';
 
                 $.all(btn_str, TTV_DROPS_FRAME.contentDocument).map(btn => {
-                    if(TTV_DROPS_CLAIMED.has(getDOMPath(btn, -2)))
+                    if(TTV_DROPS_CLAIMED.has(getDOMPath(btn, getDOMPath.ANCHORED)))
                         return;
-                    TTV_DROPS_CLAIMED.add(getDOMPath(btn, -2));
+                    TTV_DROPS_CLAIMED.add(getDOMPath(btn, getDOMPath.ANCHORED));
 
                     ++claimed;
                     btn.click();
