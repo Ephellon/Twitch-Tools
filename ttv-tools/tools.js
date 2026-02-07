@@ -443,7 +443,7 @@ class Balloon {
             )
         );
 
-        R_pane.insertBefore(p, R_pane.children[1]);
+        R_pane?.insertBefore(p, R_pane.children[1]);
 
         this.body = C;
         this.icon = N;
@@ -6558,7 +6558,7 @@ let Initialize = async(START_OVER = false) => {
 
             // CANNOT be chained with the above; removes `this` context (can no longer be aborted)
             recording
-                .then(({ target }) => target.recording.save())
+                .then(async({ target }) => await target.recording.save())
                 .then(link => alert.silent(`
                     <video controller controls
                         title="Trophy Clip Saved &mdash; ${ link.download }"
@@ -7236,12 +7236,14 @@ let Initialize = async(START_OVER = false) => {
 
         $.body.append(TTV_DROPS_FRAME);
 
-        (TTV_DROPS_CHECKER = btn_str => {
+        (TTV_DROPS_CHECKER = (btn_str, svg_str) => {
             when(() => $.defined(btn_str, TTV_DROPS_FRAME.contentDocument)).then(() => {
                 let claimed = 0;
                 let dia_str = '[role*="dialog"i] [class*="combo"i] ~ * button';
 
                 $.all(btn_str, TTV_DROPS_FRAME.contentDocument).map(btn => {
+                    if($.nullish(svg_str, btn))
+                        return;
                     if(TTV_DROPS_CLAIMED.has(getDOMPath(btn, getDOMPath.ANCHORED)))
                         return;
                     TTV_DROPS_CLAIMED.add(getDOMPath(btn, getDOMPath.ANCHORED));
@@ -7263,7 +7265,7 @@ let Initialize = async(START_OVER = false) => {
                         alert.timed(`Claiming ${ claimed }!`, 7000);
                 }
             }).then(() => TTV_DROPS_CHECKER(btn_str));
-        })('.tw-tower *:not([class*="tooltip"i]) > button:not([class*="image"i])');
+        })('.tw-tower *:not([class*="tooltip"i]) > button:not([class*="image"i]):not([disabled], [aria-label*="refresh"i])', 'path:is([clip-rule~="evenodd"i], [fill-rule~="evenodd"i])');
 
         TTV_DROPS_REFRESHER = setInterval(() => {
             TTV_DROPS_FRAME.src = parseURL(TTV_DROPS_FRAME.src).addSearch({ contentReload: Date.now() }).href;

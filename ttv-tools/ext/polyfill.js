@@ -923,7 +923,7 @@ function addReport(reports, reloadPage = false) {
         for(let [key, report] of Object.entries(reports))
             sessionStorage.setItem(key, JSON.stringify(report));
     else if(typeof reports == 'string')
-        sessionStorage.setItem(reports, new nanoid);
+        sessionStorage.setItem(new nanoid, reports);
 
     if(reloadPage)
         window.location.search = parseURL(window.location)
@@ -2992,7 +2992,7 @@ HTMLVideoElement.prototype.captureFrame ??= function captureFrame(imageType = "i
     return data;
 };
 
-// Records a video element
+// Records a video, audio, or canvas element
     // new Recording(video:HTMLVideoElement|HTMLAudioElement|HTMLCanvasElement, options:object?) → Promise
 class Recording {
     static __BLOBS__ = new Map;
@@ -3017,7 +3017,7 @@ class Recording {
 
     constructor(streamable, options = { name: 'DEFAULT_RECORDING', as: new ClipName, maxTime: Infinity, mimeType: 'video/webm;codecs=vp9', hidden: false, chunksPerSecond: 1 }) {
         if(Recording.STREAMABLES.missing(streamable?.constructor?.name) && nullish(streamable?.captureStream))
-            throw `new Recording(streamable:Element<Streamable>, options:Object?) must be called on a streamable element: <video>, <audio>, or <canvas>; not <${ from?.constructor?.name }>`;
+            throw `new Recording(streamable:Element<Streamable>, options:Object?) must be called on a streamable element: <video>, <audio>, or <canvas>; not <${ streamable?.constructor?.name }>`;
 
         const configurable = false, writable = false, enumerable = false;
 
@@ -3028,7 +3028,8 @@ class Recording {
         for(let key of ['name', 'key', 'hidden', 'maxTime', 'chunksPerSecond', 'proxy', 'canvas'])
             delete options[key];
 
-        let recorder = new MediaRecorder((proxy ?? streamable.captureStream()), options);
+        let stream = (proxy ?? streamable.captureStream());
+        let recorder = new MediaRecorder(stream, { ...options, mimeType });
         let blobs = new Array;
 
         let controller = new AbortController;
@@ -3039,8 +3040,11 @@ class Recording {
 
         Object.defineProperties(recorder, {
             controller: { value: controller, configurable, writable, enumerable },
-            proxy: { value: canvas, configurable, writable, enumerable },
+            stream: { value: stream, configurable, writable, enumerable },
+            proxy: { value: proxy, configurable, writable, enumerable },
+            canvas: { value: canvas, configurable, writable, enumerable },
 
+            mimeType: { value: mimeType, configurable, writable },
             maxTime: { value: maxTime, configurable, writable },
             name: { value: name, configurable, writable },
             data: {
@@ -3058,13 +3062,13 @@ class Recording {
             guid: { value: guid, configurable, writable },
             uuid: { value: uuid, configurable, writable },
             blobs: { value: blobs },
-            slice: { value: blobs.length },
+            slice: { value: blobs.length, configurable, writable: true },
             hidden: { value: hidden, configurable, writable },
             source: { value: streamable, configurable, writable },
             creationTime: { value: +new Date, configurable, writable },
             recordingLength: {
                 get() {
-                    return (new Date) - this.blobs.creationTime;
+                    return Date.now() - this.blobs.creationTime;
                 },
 
                 set(value) {
@@ -3076,6 +3080,7 @@ class Recording {
         Object.defineProperties(blobs, {
             controller: { value: controller, configurable, writable, enumerable },
 
+            mimeType: { value: mimeType, configurable, writable },
             maxTime: { value: maxTime, configurable, writable },
             name: { value: name, configurable, writable },
 
@@ -3086,7 +3091,7 @@ class Recording {
             creationTime: { value: +new Date, configurable, writable },
             recordingLength: {
                 get() {
-                    return (new Date) - this.creationTime;
+                    return Date.now() - this.creationTime;
                 },
 
                 set(value) {
@@ -3100,7 +3105,7 @@ class Recording {
 
         // Actually record the data...
         recorder.ondataavailable = (async function(event) {
-            this.mimeType ??= recorder.mimeType;
+            this.mimeType = event?.data?.type ?? recorder.mimeType ?? this.mimeType;
 
             Recording.__BLOBS__.get(event.target.name).push(event.data);
         }).bind(streamable);
@@ -3148,6 +3153,7 @@ class Recording {
         Object.defineProperties(self, {
             controller: { value: controller, configurable, writable, enumerable },
 
+            mimeType: { value: mimeType, configurable, writable },
             maxTime: { value: maxTime, configurable, writable },
             name: { value: name, configurable, writable },
             as: { value: as, configurable, writable },
@@ -3223,7 +3229,7 @@ class Recording {
             },
 
             save: {
-                value(as = null) {
+                async value(as = null) {
                     let recorder = this.recorder,
                         source = recorder.source,
                         blobs = this.blobs ?? recorder?.blobs,
@@ -3243,9 +3249,10 @@ class Recording {
                         throw `Unable to save clip. No recording data available.`;
 
                     let blob = new Blob(chunks, { type: chunks[0].type });
-                    let link = furnish(`a[@saveName="${ as.replaceAll('"', '&quot;') }"]`, { href: URL.createObjectURL(blob), download: [as, MIME_Types.find(source.mimeType)].join('.') }, as);
+                    let extn = await Recording.guessMIMEType(blob);
+                    let link = furnish(`a[@saveName="${ as.replaceAll('"', '&quot;') }"]`, { href: URL.createObjectURL(blob), download: [as, extn].join('.') }, as);
 
-                    // $notice(`Saving recording (Recording.save): "${ as }"`, { recorder, source, blob, link, blobs, signal, download: [as, MIME_Types.find(source.mimeType)] });
+                    // $notice(`Saving recording (Recording.save): "${ as }"`, { recorder, source, blob, link, blobs, signal, download: [as, extn] });
 
                     link.click();
 
@@ -3271,8 +3278,8 @@ class Recording {
         let to = options?.canvas ?? furnish(`canvas[@aTarget="${ Recording.#videoCaptureID }__${ (+new Date).toString(36) }"]`, { height: max(from.videoHeight, from.height, from.clientHeight), width: max(from.videoWidth, from.width, from.clientWidth) });
         let context = to.getContext('2d');
 
-        if(Recording.STREAMABLES.missing(to.constructor.name) && nullish(options?.captureStream))
-            throw `Recording.proxy(<${ from.constructor.name }>, options:{ canvas:Element<Streamable>? }?) must have a streamable proxy when set: null, <video>, <audio>, or <canvas>; not <${ to.constructor.name }>`;
+        if(Recording.STREAMABLES.missing(to.constructor.name) && nullish(options?.proxy?.captureStream))
+            throw `Recording.proxy(<${ from.constructor.name }>, options:{ proxy:Element<Streamable>? }?) must have a streamable proxy when set: null, <video>, <audio>, or <canvas>; not <${ to.constructor.name }>`;
 
         function update(source) {
             context.drawImage(source, 0, 0, context.canvas.width, context.canvas.height);
@@ -3321,6 +3328,63 @@ class Recording {
             flush() {}
         });
     }
+
+    static async guessMIMEType(blob) {
+        // 1) Prefer declared type when available
+        let t = (blob?.type ?? '').toLowerCase();
+        if (t) {
+            // Known container...
+            let x = MIME_Types.find(t);
+            if (x) return x;
+        } else {
+            // Unknown container, raw binary data...
+            t = "video/bin";
+        }
+
+        // 2) Sniff magic numbers (first ~64 bytes is plenty)
+        let buf = await blob.slice(0, 64).arrayBuffer();
+        let u8 = new Uint8Array(buf);
+
+        // --- EBML (WebM/Matroska) ---
+        // EBML header starts with 1A 45 DF A3
+        if (u8.length >= 4 && u8[0] === 0x1A && u8[1] === 0x45 && u8[2] === 0xDF && u8[3] === 0xA3) {
+            // could be webm or mkv; mkv is the "safe" matroska container label
+            if(top.TextDecoder) {
+                const text = new TextDecoder('ascii', { faltal: false }).decode(u8);
+
+                if(text.includes('webm'))
+                    t = "video/webm";
+            }
+
+            t = "video/x-matroska";
+        }
+
+        // --- ISO BMFF (MP4/M4A/MOV) ---
+        // typically: [size][ 'f' 't' 'y' 'p' ] at offset 4
+        if (u8.length >= 12 && u8[4] === 0x66 && u8[5] === 0x74 && u8[6] === 0x79 && u8[7] === 0x70) {
+            // brand at 8..11
+            let brand = String.fromCharCode(u8[8], u8[9], u8[10], u8[11]).toLowerCase();
+
+            if (brand.startsWith("qt"))
+                t = "video/mov";
+            t = "video/mp4";
+        }
+
+        // --- Ogg ---
+        if (u8.length >= 4 && u8[0] === 0x4F && u8[1] === 0x67 && u8[2] === 0x67 && u8[3] === 0x53)
+            t = "video/ogg";
+
+        // --- RIFF (WAV/AVI) ---
+        if (u8.length >= 12 && u8[0] === 0x52 && u8[1] === 0x49 && u8[2] === 0x46 && u8[3] === 0x46) {
+            let riffType = String.fromCharCode(u8[8], u8[9], u8[10], u8[11]).toLowerCase();
+            if (riffType === "wave")
+                t = "video/wav";
+            if (riffType === "avi ")
+                t = "video/x-msvideo";
+        }
+
+        return MIME_Types.find(t);
+    }
 }
 
 // https://developer.mozilla.org/en-US/docs/Web/API/MediaStream_Recording_API/Recording_a_media_element
@@ -3360,14 +3424,16 @@ HTMLVideoElement.prototype.hasRecording ??= function hasRecording(key = 'DEFAULT
 // Removes a recording of a video element
     // HTMLVideoElement..removeRecording(key:string?) → HTMLVideoElement
 HTMLVideoElement.prototype.removeRecording ??= function removeRecording(key = 'DEFAULT_RECORDING') {
-    if(key == Recording.ALL)
+    if(key == Recording.ALL) {
         for(let [key, recorder] of Recording.__RECORDERS__) {
             Recording.__RECORDERS__.delete(key);
-            Recording.__RECORDERS__.delete(key);
+            Recording.__BLOBS__.delete(key);
+            Recording.__LINKS__.delete(key);
         }
-    else {
+    } else {
         Recording.__RECORDERS__.delete(key);
-        Recording.__RECORDERS__.delete(key);
+        Recording.__BLOBS__.delete(key);
+        Recording.__LINKS__.delete(key);
     }
 
     return this;
@@ -3434,12 +3500,14 @@ HTMLVideoElement.prototype.stopRecording ??= function stopRecording(key = 'DEFAU
     // HTMLVideoElement..saveRecording(key:string?, name:string?) → HTMLAnchorElement | HTMLAnchorElement[]
 HTMLVideoElement.prototype.saveRecording ??= function saveRecording(key = null, name = null) {
     key ??= 'DEFAULT_RECORDING';
+    name ??= new ClipName;
 
     let saves = [], count = 0;
 
     if(key == Recording.ALL)
-        for(let [key, recorder] of Recording.__RECORDERS__)
-            saves.push(recorder.recording.save(count++? `${ name } (${ count })`: name ??= new ClipName));
+        for(let [key, recorder] of Recording.__RECORDERS__) {
+            saves.push(recorder.recording.save(count++? `${ name } (${ count })`: name));
+        }
     else
         return this.getRecording(key)?.recording?.save(name);
 
@@ -3520,16 +3588,20 @@ HTMLPictureElement.prototype.copy ??= function copy() {
         copy.addEventListener('load', event => {
             context.drawImage(copy, 0, 0);
 
-            canvas.toBlob(blob =>
-                navigator.clipboard
-                    .write([ new ClipboardItem({ [blob?.type]: blob }) ])
-                    .then(resolve)
-                    .catch(reject)
-                    .finally(() => {
-                        copy?.remove();
-                        canvas?.remove();
-                    })
-            );
+            try {
+                canvas.toBlob(blob =>
+                    navigator.clipboard
+                        .write([ new ClipboardItem({ [blob?.type]: blob }) ])
+                        .then(resolve)
+                        .catch(reject)
+                        .finally(() => {
+                            copy?.remove();
+                            canvas?.remove();
+                        })
+                );
+            } catch(e) {
+                reject(e);
+            }
         });
     });
 
@@ -7731,10 +7803,13 @@ window.MIME_Types ??= ({
 	"text/plain": "txt",
 	"video/3gpp": "3gp",
 	"video/3gpp2": "3g2",
+	"video/bin": "bin",
+	"video/mov": "mov",
 	"video/mp2t": "ts",
 	"video/mp4": "mp4",
 	"video/mpeg": "mpeg",
 	"video/ogg": "ogv",
+	"video/wav": "wav",
 	"video/webm": "webm",
     "video/x-matroska": "mkv",
 	"video/x-msvideo": "avi",

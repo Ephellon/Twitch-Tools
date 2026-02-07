@@ -79,6 +79,11 @@
 ----
 
 # DONE &mdash; Notable Changes
+> [`5.33.4.20`](https://github.com/Ephellon/Twitch-Tools/releases/tag/5.33.4.20)
+- Fixed drops logic
+- Fixed `class Recording` logic
+- Removed `class Async`
+
 > [`5.33.4.19`](https://github.com/Ephellon/Twitch-Tools/releases/tag/5.33.4.19)
 - Used AI to fix some the following...
     + `ƒ nullish` when parsing raw `NaN`
