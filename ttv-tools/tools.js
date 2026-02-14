@@ -107,6 +107,17 @@ when(() => top.TWITCH_INTEGRITY_FAIL, 5_000).then(() => {
     });
 });
 
+// Twith's "bonus button blunder" issue...
+// If the bonus button is present before the extension finishes loading, the display completely breaks...
+BONUS_BUTTON_BLUNDER: {
+    when.defined(() => null
+        ?? $.last('[class*="bonus"i]')?.closest('button')
+        ?? $.last('[data-test-selector*="points"i][data-test-selector*="summary"i] button[class*="success"i]')
+        ?? $.last('[data-test-selector*="points"i][data-test-selector*="summary"i] button:is([class*="destruct"i], [class*="error"i])')
+        ?? $.last('[class*="points"i] button [class*="bonus"i]')?.closest('button')
+    ).then(ChannelPointsButton => ChannelPointsButton.click());
+}
+
 /*** Setup (pre-init) - #MARK:classes #MARK:functions #MARK:methods
  *       _____      _                  __                      _       _ _ __
  *      / ____|    | |                / /                     (_)     (_) |\ \
@@ -131,10 +142,13 @@ class Balloon {
     constructor({ title, icon = 'play', iconAttr = {} }, ...jobs) {
         let f = furnish;
 
-        let [L_pane, C_pane, R_pane] = $.all('.top-nav__menu > div'),
+        let [L_pane, C_pane, R_pane] = $.all('.top-nav__menu > div:not(:only-child)'),
             X = $('#tt-balloon', R_pane),
             I = Runtime.getURL('profile.png'),
             F, C, H, U, N;
+
+        if([L_pane, C_pane, R_pane].filter(nullish).length)
+            return;
 
         let uuid = U = UUID.from([title, JSON.stringify(jobs)].join(':')).value,
             existing = Balloon.#BALLOONS.get(title);
@@ -443,7 +457,7 @@ class Balloon {
             )
         );
 
-        R_pane?.insertBefore(p, R_pane.children[1]);
+        R_pane?.insertBefore(p, R_pane.firstElementChild);
 
         this.body = C;
         this.icon = N;

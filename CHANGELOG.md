@@ -79,6 +79,9 @@
 ----
 
 # DONE &mdash; Notable Changes
+> [`5.33.4.21`](https://github.com/Ephellon/Twitch-Tools/releases/tag/5.33.4.21)
+- Fixed Bonus Button Blunder issue
+
 > [`5.33.4.20`](https://github.com/Ephellon/Twitch-Tools/releases/tag/5.33.4.20)
 - Fixed drops logic
 - Fixed `class Recording` logic
