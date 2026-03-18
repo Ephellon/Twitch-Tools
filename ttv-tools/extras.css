@@ -1575,6 +1575,12 @@ caption {
 	background: linear-gradient(to right, #e60012 5%, #ac000d 95%);
 }
 
+.is-epic .tt-store-purchase--handler a {
+	background: -webkit-gradient(linear, left top, right top, color-stop(5%, #a040f0), color-stop(95%, #9a29e9));
+	background: -o-linear-gradient(left, #a040f0 5%, #9a29e9 95%);
+	background: linear-gradient(to right, #a040f0 5%, #9a29e9 95%);
+}
+
 .tt-store-purchase--handler a:hover {
 	-webkit-box-shadow: #00000088 0 0 20px 10px inset;
 			box-shadow: #00000088 0 0 20px 10px inset;

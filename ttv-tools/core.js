@@ -1639,7 +1639,7 @@ function delay(executor, ms = 0, ...args) {
  */
 function fetchURL(url, options = {}) {
     let empty = Promise.resolve({});
-    let { timeout = 0, native = false, foster = (fetchURL?.origins?.BEST ?? fetchURL?.origins?.CODE_TABS ?? Symbol(null)), as = 'text' } = options;
+    let { timeout = 0, native = false, foster = (fetchURL?.origins?.BEST ?? fetchURL?.origins?.CORSFIX ?? Symbol(null)), as = 'text' } = options;
 
     if(!url?.length)
         return empty;
@@ -1691,9 +1691,9 @@ function fetchURL(url, options = {}) {
                 href = `https://api.allorigins.win/raw?url=${ encodeURIComponent(href) }`;
             } break;
 
-            // https://cors-anywhere.herokuapp.com/{ URL }
+            // https://cors-anywhere.com/{ URL }
             case fetchURL.origins.CORS_ANYWHERE: {
-                href = `https://cors-anywhere.herokuapp.com/${ encodeURI(href) }`;
+                href = `https://cors-anywhere.com/${ encodeURI(href) }`;
                 Object.assign(options.headers ?? {}, { Origin: location.origin });
             } break;
 
@@ -1718,9 +1718,15 @@ function fetchURL(url, options = {}) {
             } break;
 
             // https://api.codetabs.com/v1/proxy?quest={ URL }
-            case fetchURL.origins.CODE_TABS:
-            default: {
+            case fetchURL.origins.CODE_TABS: {
                 href = `https://api.codetabs.com/v1/proxy?quest=${ encodeURI(href) }`;
+            } break;
+
+            // https://proxy.corsfix.com/?{ URL }
+            case fetchURL.origins.CORSFIX:
+            default: {
+                href = `https://proxy.corsfix.com/?${ encodeURI(href) }`;
+                Object.assign(options.headers ?? {}, { Origin: location.origin, 'X-CORSFIX-KEY': "cfx_89e67fa7264d2a5cce550a731c934d67", 'X-CORSFIX-CACHE': "4h" });
             } break;
         }
     }
@@ -1733,7 +1739,16 @@ function fetchURL(url, options = {}) {
         let timeoutID = setTimeout(() => controller.abort(`The fetch has timed out (${ (timeout / 1e3).suffix('s') })`), timeout);
 
         // Convert to TEXT/HTML
-        if([fetchURL.origins.HTML, fetchURL.origins.HTML_2, fetchURL.origins.HTML_3, fetchURL.origins.HTML_4, fetchURL.origins.HTML_5, fetchURL.origins.HTML_6].contains(foster)
+        if(true
+            && [
+                fetchURL.origins.CORSFIX
+                , fetchURL.origins.CORS_PROXY
+                , fetchURL.origins.CORS_ANYWHERE
+                , fetchURL.origins.ALL_ORIGINS
+                , fetchURL.origins.ALLOW_ORIGIN
+                , fetchURL.origins.TASK_CLUSTER
+                , fetchURL.origins.CODE_TABS
+            ].contains(foster)
             && as.equals('json')
         )
             return fetch(href, { ...options, signal: controller.signal }).then(async response => {
@@ -1751,7 +1766,7 @@ function fetchURL(url, options = {}) {
             });
 
         // Convert to JSON
-        if([fetchURL.origins.JSON].contains(foster)
+        if([fetchURL.origins.WHATEVER_ORIGIN].contains(foster)
             && (false
                 || as.equals('html')
                 || as.equals('text')
@@ -1779,7 +1794,16 @@ function fetchURL(url, options = {}) {
     }
 
     // Convert to TEXT/HTML
-    if([fetchURL.origins.HTML, fetchURL.origins.HTML_2, fetchURL.origins.HTML_3, fetchURL.origins.HTML_4, fetchURL.origins.HTML_5, fetchURL.origins.HTML_6].contains(foster)
+    if(true
+        && [
+            fetchURL.origins.CORSFIX
+            , fetchURL.origins.CORS_PROXY
+            , fetchURL.origins.CORS_ANYWHERE
+            , fetchURL.origins.ALL_ORIGINS
+            , fetchURL.origins.ALLOW_ORIGIN
+            , fetchURL.origins.TASK_CLUSTER
+            , fetchURL.origins.CODE_TABS
+        ].contains(foster)
         && as.equals('json')
     )
         return fetch(href, options).then(async response => {
@@ -1789,7 +1813,7 @@ function fetchURL(url, options = {}) {
         });
 
     // Convert to JSON
-    if([fetchURL.origins.JSON].contains(foster)
+    if([fetchURL.origins.WHATEVER_ORIGIN].contains(foster)
         && (false
             || as.equals('html')
             || as.equals('text')
@@ -1956,6 +1980,7 @@ Object.defineProperties(fetchURL, {
             CORS_PROXY: Symbol('corsproxy'),
             ALLOW_ORIGIN: Symbol('alloworigin'),
             TASK_CLUSTER: Symbol('taskcluster'),
+            CORSFIX: Symbol('corsfix'),
         }
     },
 });
@@ -1964,13 +1989,13 @@ prevent_fetch_dragging: if(top == window) {
     Object.defineProperties(fetchURL.origins, {
         BEST: {
             value: Promise.any([
-                fetchURL.origins.CODE_TABS,
-                fetchURL.origins.CORS_ANYWHERE,
-                fetchURL.origins.ALL_ORIGINS,
-                fetchURL.origins.WHATEVER_ORIGIN,
-                fetchURL.origins.CORS_PROXY,
-                fetchURL.origins.ALLOW_ORIGIN,
-                // fetchURL.origins.TASK_CLUSTER,
+                fetchURL.origins.CORSFIX
+                , fetchURL.origins.CORS_PROXY
+                , fetchURL.origins.CORS_ANYWHERE
+                , fetchURL.origins.ALL_ORIGINS
+                , fetchURL.origins.ALLOW_ORIGIN
+                , fetchURL.origins.TASK_CLUSTER
+                , fetchURL.origins.CODE_TABS
             ].map(foster =>
                 fetchURL.idempotent('https://example.org/', { foster, as: 'native', timeout: 3_000 })
                     .then(async r =>
@@ -1981,28 +2006,12 @@ prevent_fetch_dragging: if(top == window) {
                 )
             ).catch($ignore)
         },
-
-        JSON: { value: fetchURL.origins.WHATEVER_ORIGIN },
-
-        HTML: { value: fetchURL.origins.CORS_PROXY },
-        HTML_2: { value: fetchURL.origins.CORS_ANYWHERE },
-        HTML_3: { value: fetchURL.origins.ALL_ORIGINS },
-        HTML_4: { value: fetchURL.origins.ALLOW_ORIGIN },
-        HTML_5: { value: fetchURL.origins.TASK_CLUSTER },
-        HTML_6: { value: fetchURL.origins.CODE_TABS },
-
-        TEXT: { value: fetchURL.origins.CORS_PROXY },
-        TEXT_2: { value: fetchURL.origins.CORS_ANYWHERE },
-        TEXT_3: { value: fetchURL.origins.ALL_ORIGINS },
-        TEXT_4: { value: fetchURL.origins.ALLOW_ORIGIN },
-        TEXT_5: { value: fetchURL.origins.TASK_CLUSTER },
-        TEXT_6: { value: fetchURL.origins.CODE_TABS },
     });
 
     Object.defineProperties(fetchURL.origins, {
         JSON_BEST: {
             value: Promise.any([
-                fetchURL.origins.JSON,
+                fetchURL.origins.WHATEVER_ORIGIN,
             ].map(foster =>
                 fetchURL.idempotent('https://example.org/', { foster, as: 'json', timeout: 1_000 })
                     .then(async r =>
@@ -2016,12 +2025,13 @@ prevent_fetch_dragging: if(top == window) {
 
         HTML_BEST: {
             value: Promise.any([
-                fetchURL.origins.HTML,
-                fetchURL.origins.HTML_2,
-                fetchURL.origins.HTML_3,
-                fetchURL.origins.HTML_4,
-                fetchURL.origins.HTML_5,
-                // fetchURL.origins.HTML_6,
+                fetchURL.origins.CORSFIX
+                , fetchURL.origins.CORS_PROXY
+                , fetchURL.origins.CORS_ANYWHERE
+                , fetchURL.origins.ALL_ORIGINS
+                , fetchURL.origins.ALLOW_ORIGIN
+                , fetchURL.origins.TASK_CLUSTER
+                , fetchURL.origins.CODE_TABS
             ].map(foster =>
                 fetchURL.idempotent('https://example.org/', { foster, as: 'html', timeout: 1_000 })
                     .then(async r =>

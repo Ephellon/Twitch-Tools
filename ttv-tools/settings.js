@@ -217,6 +217,8 @@ let // These are option names. Anything else will be removed
         'away_mode_placement',
         // Block Banners
         'block_banners',
+        // Context Menu Override
+        'context_menu_override',
         // Hide Blank Ads
         'hide_blank_ads',
         // Watch Time Text Placement
@@ -243,6 +245,7 @@ let // These are option names. Anything else will be removed
             'store_integration__playstation',
             'store_integration__xbox',
             'store_integration__nintendo',
+            'store_integration__epic',
 
         // DVR Settings
         'video_clips__file_type',

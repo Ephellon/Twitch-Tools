@@ -2187,7 +2187,7 @@ body.popup [pad-bottom] {
 }
 
 /* Store peculiars */
-:is(#store_integration__steam, #store_integration__playstation, #store_integration__xbox, #store_integration__nintendo):not(:checked) + label {
+:is(#store_integration__steam, #store_integration__playstation, #store_integration__xbox, #store_integration__nintendo, #store_integration__epic):not(:checked) + label {
     box-shadow: 0 0 2rem 0 #0008 inset;
 }
 
@@ -2205,4 +2205,8 @@ body.popup [pad-bottom] {
 
 #store_integration__nintendo + label {
     background: linear-gradient(to right, #e60012 5%, #ac000d 95%) !important;
+}
+
+#store_integration__epic + label {
+    background: linear-gradient(to right, #a040f0 5%, #9a29e9 95%) !important;
 }

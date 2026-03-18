@@ -2935,7 +2935,7 @@ try {
 
     // Receive messages from other content scripts
     top.addEventListener('message', async event => {
-        if(!/\b\.?twitch\.tv\b/i.test(event.origin))
+        if(!/(\.|\b)twitch\.tv\b/i.test(event.origin))
             return /* Not meant for us... */;
 
         let R = RegExp;
@@ -3191,7 +3191,10 @@ try {
     // Save as... (Ctrl+S)
     // Print... (Ctrl+P)
     $.body.addEventListener('contextmenu', event => {
-        if(!event.isTrusted)
+        if(false
+            || !event.isTrusted
+            || !Settings.context_menu_override
+        )
             return;
         event.preventDefault(true);
         // event.stopPropagation();
@@ -4390,6 +4393,7 @@ let Initialize = async(START_OVER = false) => {
                         playstation: { get() { return $('#playstation-link')?.href } },
                         xbox: { get() { return $('#xbox-link')?.href } },
                         nintendo: { get() { return $('#nintendo-link')?.href } },
+                        epic: { get() { return $('#epic-link')?.href } },
                     }),
                 },
             });
@@ -5179,7 +5183,7 @@ let Initialize = async(START_OVER = false) => {
                         // usualStopTime:string<Date-Time<{HH:MM}>>
                     www_twitchmetrics_net: if(!FETCHED_OK) {
                         when(() => defined(STREAMER.sole)? STREAMER: false).then(({ name, sole }) => {
-                            fetchURL(`https://www.twitchmetrics.net/c/${ sole }-${ name.toLowerCase() }/stream_time_values`)
+                            fetchURL.fromDisk(`https://www.twitchmetrics.net/c/${ sole }-${ name.toLowerCase() }/stream_time_values`, { mode: 'cors', hoursUntilEntryExpires: 168 })
                                 .then(response => response.json())
                                 .then(json => {
                                     let data = { dailyBroadcastTime: 0, activeDaysPerWeek: 0, usualStartTime: '00:00', usualStopTime: '00:00', daysStreaming: [], dailyStartTimes: {}, dailyStopTimes: {} },
@@ -5295,7 +5299,7 @@ let Initialize = async(START_OVER = false) => {
                                 });
 
                             // Channel details (HTML → JSON)
-                            fetchURL(`https://www.twitchmetrics.net/c/${ sole }-${ name.toLowerCase() }`)
+                            fetchURL.fromDisk(`https://www.twitchmetrics.net/c/${ sole }-${ name.toLowerCase() }`, { mode: 'cors', hoursUntilEntryExpires: 168 })
                                 .then(response => response.text())
                                 .then(html => (new DOMParser).parseFromString(html, 'text/html'))
                                 .then(DOM => {
@@ -5361,7 +5365,7 @@ let Initialize = async(START_OVER = false) => {
                         // totalViews:number<int>
                         // totalViewsRanked:number<int>
                     twitchstats_net: if(!FETCHED_OK)
-                        fetchURL(`https://twitchstats.net/streamer/${ name.toLowerCase() }`)
+                        fetchURL.fromDisk(`https://twitchstats.net/streamer/${ name.toLowerCase() }`, { mode: 'cors', hoursUntilEntryExpires: 168 })
                             .then(response => response.text())
                             .then(html => (new DOMParser).parseFromString(html, 'text/html'))
                             .then(dom => {
@@ -5452,7 +5456,7 @@ let Initialize = async(START_OVER = false) => {
                      */
                     // Channel details (JSON)
                     twitchtracker_com: if(!FETCHED_OK)
-                        fetchURL(`https://twitchtracker.com/api/channels/summary/${ name.toLowerCase() }`)
+                        fetchURL.fromDisk(`https://twitchtracker.com/api/channels/summary/${ name.toLowerCase() }`, { mode: 'cors', hoursUntilEntryExpires: 168 })
                             .then(text => text.json())
                             .then(json => {
                                 let data = {};
@@ -5505,11 +5509,13 @@ let Initialize = async(START_OVER = false) => {
                         //     created_at:string<Date.UTC>,
                         // }>
                     api_twitch_tv: if(!FETCHED_OK)
-                        fetchURL(`https://api.twitch.tv/helix/users?id=${ STREAMER.sole }`, {
+                        fetchURL.fromDisk(`https://api.twitch.tv/helix/users?id=${ STREAMER.sole }`, {
                             headers: {
                                 Authorization: Search.authorization,
                                 'Client-Id': Search.clientID,
                             },
+                            mode: 'cors',
+                            hoursUntilEntryExpires: 168,
                         })
                             .then(response => response.json())
                             .then(json => JSON.parse(json.data ?? "null"))
@@ -9745,7 +9751,8 @@ let Initialize = async(START_OVER = false) => {
                                             f('#tt-steam-purchase'),
                                             f('#tt-playstation-purchase'),
                                             f('#tt-xbox-purchase'),
-                                            f('#tt-nintendo-purchase')
+                                            f('#tt-nintendo-purchase'),
+                                            f('#tt-epic-purchase')
                                         )
                                     )
                                 )
@@ -9835,6 +9842,9 @@ let Initialize = async(START_OVER = false) => {
 
                     SteamRegExp = /(Valve\s+)?\bSteam\s+(Deck(\s+O?LED)?)/i,
                     // Removes common trademarks → Steam
+
+                    EpicRegExp = /(?:Epic\s+Games)/i,
+                    // Removes common trademarks → Epic
 
                     EditionsRegExp = /\s*(([-~:]\s*)?([\p{L}\s'-]){3,}\s*)(Edition|Season|Episode)s?(\s+[:\-\dIVXLCD]+)?[^$]+/iu;
                     // Removes common "editions" → Standard,Digital,Deluxe,Digital Deluxe,Definitive,Anniversary,Complete,Extended,Ultiamte,Collector's,Bronze,Silver,Gold,Platinum,Enhanced,Premium,Complete Season,etc.
@@ -10023,7 +10033,7 @@ let Initialize = async(START_OVER = false) => {
                                                         price = data.specificPrices?.purchaseable?.shift?.()?.listPrice;
 
                                                     $('.tt-store-purchase--container.is-steam').dataset.matureContent = mature;
-                                                    $('.is-steam .tt-store-purchase--price').textContent = /^\$?([\d\.]+|\w+)$/.test(price ?? '')? price: info.price;
+                                                    $('.is-steam .tt-store-purchase--price').textContent = /^\p{Sc}?(\d+(?:[\.,]\d+)?|\w+)$/u.test(price ?? '')? price: info.price;
                                                 }
                                             });
 
@@ -10089,7 +10099,7 @@ let Initialize = async(START_OVER = false) => {
                         }
                 }
 
-                /*** Get the PlayStation link (if applicable) · 1,662 Games 2022-11-22 16:37 CST
+                /*** Get the PlayStation link (if applicable)
                  *      _____  _              _____ _        _   _
                  *     |  __ \| |            / ____| |      | | (_)
                  *     | |__) | | __ _ _   _| (___ | |_ __ _| |_ _  ___  _ __
@@ -10389,7 +10399,7 @@ let Initialize = async(START_OVER = false) => {
                         }
                 }
 
-                /*** Get the Xbox link (if applicable) · 2,964 Games 2022-11-22 16:37 CST
+                /*** Get the Xbox link (if applicable)
                  *     __   ___
                  *     \ \ / / |
                  *      \ V /| |__   _____  __
@@ -10528,7 +10538,7 @@ let Initialize = async(START_OVER = false) => {
 
                                                 rating.modStyle(RATING_STYLING);
 
-                                                $('.is-xbox .tt-store-purchase--price').textContent = /^\$?([\d\.]+|\w+)$/.test(price ?? '')? price: info.price;
+                                                $('.is-xbox .tt-store-purchase--price').textContent = /^\p{Sc}?(\d+(?:[\.,]\d+)?|\w+)$/u.test(price ?? '')? price: info.price;
                                                 $('.tt-store-purchase--container.is-xbox').dataset.matureContent = (rating.alt || mature);
                                                 $('#tt-content-rating-placeholder')?.replaceWith(rating);
                                             })
@@ -10572,7 +10582,7 @@ let Initialize = async(START_OVER = false) => {
                                                         price = data.specificPrices?.purchaseable?.shift?.()?.listPrice;
 
                                                     $('.tt-store-purchase--container.is-xbox').dataset.matureContent = mature;
-                                                    $('.is-xbox .tt-store-purchase--price').textContent = /^\$?([\d\.]+|\w+)$/.test(price ?? '')? price: info.price;
+                                                    $('.is-xbox .tt-store-purchase--price').textContent = /^\p{Sc}?(\d+(?:[\.,]\d+)?|\w+)$/u.test(price ?? '')? price: info.price;
                                                 }
                                             });
 
@@ -10648,7 +10658,7 @@ let Initialize = async(START_OVER = false) => {
 
                                                 rating?.modStyle(RATING_STYLING);
 
-                                                $('.is-xbox .tt-store-purchase--price').textContent = /^\$?([\d\.]+|\w+)$/.test(price ?? '')? price: info.price;
+                                                $('.is-xbox .tt-store-purchase--price').textContent = /^\p{Sc}?(\d+(?:[\.,]\d+)?|\w+)$/u.test(price ?? '')? price: info.price;
                                                 $('.tt-store-purchase--container.is-xbox').dataset.matureContent = (rating?.alt || mature);
                                                 $('#tt-content-rating-placeholder')?.replaceWith(rating);
                                             })
@@ -10734,7 +10744,7 @@ let Initialize = async(START_OVER = false) => {
                                                         price = data.specificPrices?.purchaseable?.shift?.()?.listPrice;
 
                                                     $('.tt-store-purchase--container.is-xbox').dataset.matureContent = mature;
-                                                    $('.is-xbox .tt-store-purchase--price').textContent = /^\$?([\d\.]+|\w+)$/.test(price ?? '')? price: info.price;
+                                                    $('.is-xbox .tt-store-purchase--price').textContent = /^\p{Sc}?(\d+(?:[\.,]\d+)?|\w+)$/u.test(price ?? '')? price: info.price;
                                                 }
                                             });
 
@@ -10749,7 +10759,7 @@ let Initialize = async(START_OVER = false) => {
                         }
                 }
 
-                /*** Get the Nintendo link (if applicable) · 10,507 Games 2022-11-22 16:37 CST
+                /*** Get the Nintendo link (if applicable)
                  *      _   _ _       _                 _
                  *     | \ | (_)     | |               | |
                  *     |  \| |_ _ __ | |_ ___ _ __   __| | ___
@@ -11115,6 +11125,188 @@ let Initialize = async(START_OVER = false) => {
                                 $warn(`Unable to connect to Nintendo. Tried to look for "${ game }"`, error);
                             });
                     }
+                }
+
+                /*** Get the Epic link (if applicable)
+                 *      ______       _
+                 *     |  ____|     (_)
+                 *     | |__   _ __  _  ___
+                 *     |  __| | '_ \| |/ __|
+                 *     | |____| |_) | | (__
+                 *     |______| .__/|_|\___|
+                 *            | |
+                 *            |_|
+                 */
+                Epic: if(parseBool(Settings.store_integration__epic)) {
+                    async function fetchEpicGame(game) {
+                        return fetchURL.fromDisk(`https://raw.githubusercontent.com/Ephellon/game-store-catalog/main/epic/${ (game[0].toLowerCase().replace(/[^a-z]/, '_')) }.json`, { hoursUntilEntryExpires: 168 })
+                            .then(r => r.json())
+                            .then(data => {
+                                let [best, ...othr] = data.sort((prev, next) =>
+                                    normalize(prev.name, [EpicRegExp, ''])
+                                        .errs(game)
+                                    - normalize(next.name, [EpicRegExp, ''])
+                                        .errs(game)
+                                )
+                                    .slice(0, 60)
+                                    .sort((prev, next) =>
+                                        normalize(prev.name, [EpicRegExp, ''])
+                                            .toLowerCase()
+                                            .distanceFrom(game.toLowerCase())
+                                        - normalize(next.name, [EpicRegExp, ''])
+                                            .toLowerCase()
+                                            .distanceFrom(game.toLowerCase())
+                                    )
+                                    .sort((prev, next) =>
+                                        !isNaN(parseFloat((next.price + '').replace(/^free$/i, '0')))
+                                            ? +0
+                                            : !isNaN(parseFloat((prev.price + '').replace(/^free$/i, '0')))
+                                                ? -1
+                                                : +1
+                                    );
+
+                                if(false
+                                    || best.name.equals(game)
+                                    || normalize(best.name, [EpicRegExp, ''])
+                                        .trim()
+                                        .equals(game)
+                                    || normalize(best.name, [EpicRegExp, ''])
+                                        .errs(game) < PARTIAL_MATCH_THRESHOLD
+                                ) return ({
+                                    game,
+                                    good: (
+                                        normalize(best.name, [EpicRegExp, ''])
+                                            .errs(game, true) < PARTIAL_MATCH_THRESHOLD
+                                    ),
+                                    name: best.name,
+                                    href: best.href,
+                                    img: best.image,
+                                    price: best.price,
+                                });
+
+                                throw ITEM_NOT_FOUND;
+                            })
+                            .catch(error => {
+                                // Fallback: Search the store normally
+                                const variables = JSON.stringify({
+                                    allowCountries: counCode,
+                                    country: counCode,
+                                    locale: lang,
+                                    category: ["games/edition/base", "games/edition", "games/demo"].join('|'),
+                                    count: 10,
+                                    sortBy: null,
+                                    sortDir: "DESC",
+                                    keywords: game.replace(/\s+/g, '+'),
+                                });
+
+                                if(error == ITEM_NOT_FOUND)
+                                    return /*await*/ fetchURL.fromDisk(`https://store.epicgames.com/graphql?operationName=primarySearchAutocomplete&variables=${ encodeURIComponent(variables) }`)
+                                        .then(r => r.json())
+                                        .then(async({ data = {} }) => {
+                                            for(let element of data.Catalog?.searchStore?.elements) {
+                                                const { offerId, sandboxId, title } = element;
+
+                                                if(nullish(offerId))
+                                                    continue;
+
+                                                const offer = JSON.stringify({
+                                                    country: counCode,
+                                                    locale: lang,
+                                                    offerId, sandboxId,
+                                                });
+
+                                                const item = (await fetch(`https://store.epicgames.com/graphql?operationName=getCatalogOffer&variables=${ encodeURIComponent(offer) }`).then(r => r.json()))
+                                                    .data?.Catalog?.catalogOffer;
+
+                                                if(nullish(item))
+                                                    continue;
+
+                                                let href = `//store.epicgames.com/en-US/p/${ item.urlSlug }`,
+                                                    name = item.title.normalize('NFKD'),
+                                                    img = item.keyImages.at(0),
+                                                    price = item.price.totalPrice.fmtPrice?.originalPrice ?? (item.price.totalPrice.originalPrice / (10 ** (item.price.totalPrice.currencyInfo?.decimals || -1))),
+                                                    good = game.errs(name, true) < PARTIAL_MATCH_THRESHOLD;
+
+                                                if(good)
+                                                    return { game, name, href, img, price, good };
+                                            }
+
+                                            return {
+                                                game,
+                                                name,
+                                                href: `https://store.epicgames.com/en-US/browse?q=${ encodeURIComponent(game) }`,
+                                                price: 'Unavailable',
+                                                good: game.errs(name, true) < PARTIAL_MATCH_THRESHOLD,
+                                            };
+                                        });
+
+                                $warn(error);
+                            });
+                    }
+
+                    fetchEpicGame(game)
+                        .then((info = {}) => {
+                            let { game, name, href, img, price, good = false } = info;
+
+                            if(!href?.length)
+                                return;
+
+                            href = parseURL(href).addSearch({ category: 'Game', count: 10, start: 0 }).href;
+
+                            let f = furnish;
+
+                            let purchase =
+                                f(`.tt-store-purchase--container.is-epic[name="${ name }"][@goodMatch=${ good }]`).with(
+                                    // Price
+                                    f('.tt-store-purchase--price').with(price),
+
+                                    // Link to Epic
+                                    f('.tt-store-purchase--handler').with(
+                                        f(`a#epic-link[href="${ href }"][target=_blank]`).html(`Epic Games&reg;`)
+                                    )
+                                );
+
+                            // $('.tt-store-purchase--price', purchase).modStyle(`background: url("data:image/svg+xml;base64,${ btoa(Glyphs.store_epic) }") no-repeat center 100% / contain, #000;`);
+
+                            when.defined(() => $('#tt-epic-purchase'))
+                                .then(container => {
+                                    // Load the maturity warning (if applicable)...
+                                    fetchURL.fromDisk(href.replace(/^\/\//, 'https:$&'), { hoursUntilEntryExpires: 168 })
+                                        .then(r => r.text())
+                                        .then(html => (new DOMParser).parseFromString(html, 'text/html'))
+                                        .then(DOM => {
+                                            $('.tt-store-purchase--container.is-epic').dataset.matureContent = (null
+                                                ?? JSON.parse(
+                                                    $.all('script', DOM).find(script => script.textContent.includes('__REACT_QUERY_INITIAL_QUERIES__'))
+                                                        ?.textContent
+                                                        ?.replace(/\b__REACT_QUERY_INITIAL_QUERIES__\s*=\s*(.+);\r?\n/, '$1')
+                                                    ?? '{}'
+                                                )
+                                                    ?.queries
+                                                    ?.find(({ queryKey }) => Array.isArray(queryKey) && queryKey.find(query => query.includes('age-rating')))
+                                                    ?.state
+                                                    ?.data
+                                                    ?.ageGate
+                                                    ?.gate
+                                                    ?.toLowerCase()
+                                                    // age-gate → Maturity warning
+                                                    // no-gate → No warning
+                                                    ?.startsWith('age')
+                                                ?? ''
+                                            )
+                                        })
+                                        .catch(error => {
+                                            $warn(`Unable to fetch Epic pricing information for "${ game }"`, error);
+                                        });
+
+                                    container.replaceWith(purchase);
+                                });
+
+                            $log(`Got "${ game }" data from Epic:`, info);
+                        })
+                        .catch(error => {
+                            $warn(`Unable to connect to Epic. Tried to look for "${ game }"`, error);
+                        });
                 }
             }
     };

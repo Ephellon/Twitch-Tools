@@ -79,6 +79,10 @@
 ----
 
 # DONE &mdash; Notable Changes
+> [`5.34`](https://github.com/Ephellon/Twitch-Tools/releases/tag/5.34)
+- Added Epic Game Store
+- Fixed #36 → The context menu can now be toggled
+
 > [`5.33.4.21`](https://github.com/Ephellon/Twitch-Tools/releases/tag/5.33.4.21)
 - Fixed Bonus Button Blunder issue
 
