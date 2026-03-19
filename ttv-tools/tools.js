@@ -5614,8 +5614,16 @@ let Initialize = async(START_OVER = false) => {
 
                         Search.authorization = `Bearer ${ oauthToken }`;
                         Search.clientID = clientID;
-                    }).catch(error => {
+                    }).catch(async error => {
                         $warn(error);
+
+                        let { oauthToken: savedToken } = await Settings.get('oauthToken');
+                        if(!nullish(savedToken) && !savedToken?.equals('.DENIED')) {
+                            Cache.save({ oauthToken: savedToken, clientID });
+                            Search.authorization = `Bearer ${ savedToken }`;
+                            Search.clientID = clientID;
+                            return;
+                        }
 
                         confirm(`<div controller
                             okay="Grant access"
