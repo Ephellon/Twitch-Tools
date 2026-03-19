@@ -79,6 +79,11 @@
 ----
 
 # DONE &mdash; Notable Changes
+> [`5.34.0.1`](https://github.com/Ephellon/Twitch-Tools/releases/tag/5.34.0.1)
+- Fixed tooltips on Settings page
+- Fixed issue where the side panel would be collapsed
+- Added new option to immediately go to streams that just went live
+
 > [`5.34`](https://github.com/Ephellon/Twitch-Tools/releases/tag/5.34)
 - Added Epic Game Store
 - Fixed #36 → The context menu can now be toggled

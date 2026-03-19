@@ -3648,6 +3648,10 @@ let Chat__PAGE_CHECKER,
     Chat__SETTING_RELOADER;
 
 Chat__PAGE_CHECKER = setInterval(Chat__WAIT_FOR_PAGE = async() => {
+    // Do NOT run on unsafe pages
+    if(top.UNSAFE_TWITCH_PATHNAMES?.test(location.pathname))
+        return false;
+
     // Only executes if the user is banned
     let banned = parseBool(STREAMER?.veto || $.all('[class*="banned"i]')?.length);
     let done = false;

@@ -103,6 +103,7 @@ let // These are option names. Anything else will be removed
             'first_in_line_plus_time_minutes',
         'first_in_line_all',
             'first_in_line_all_time_minutes',
+        'first_in_line_now',
         'up_next__one_instance',
         // Greedy Raiding
         'greedy_raiding',
@@ -2045,7 +2046,7 @@ Cache.load(['ignoreNew'], ({ ignoreNew }) => {
         let conception = element.getAttribute('new');
         let title = $('.title', element)?.textContent?.trim();
 
-        if(compareVersions(`${ ignoreNew } ≥ ${ conception }`))
+        if(compareVersions(`${ ignoreNew } > ${ conception }`))
             element.removeAttribute('new');
         else if(defined(title))
             brandNewFragments.push(
@@ -2765,7 +2766,7 @@ document.body.onload = async() => {
 
                     let tooltipContainer = dependent.closest(':not(input)');
 
-                    tooltipContainer.setAttribute('right-tooltip', new Tooltip(tooltipContainer, `Requires ${ providers.map(provider => depadName(provider.id)).join(', ') }`, { direction: 'right' }));
+                    tooltipContainer.setAttribute('right-tooltip', new Tooltip(tooltipContainer, `Requires ${ providers.map(provider => depadName(provider.id)).join(', ') }`, { direction: 'right' }).textContent);
                 });
 
                 // All unit targets

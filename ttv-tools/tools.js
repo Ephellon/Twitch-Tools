@@ -3742,6 +3742,27 @@ const TWITCH_PATHNAMES = [
     ],
     RESERVED_TWITCH_PATHNAMES = RegExp(`/(${ TWITCH_PATHNAMES.join('|') })`, 'i');
 
+    const UNSAFE_PATHNAMES = window.UNSAFE_PATHNAMES = [
+            '[up]/',
+
+            'activate',
+            'bits(-checkout/?)?',
+            'checkout/', 'collections/?', 'communities/?',
+            'dashboard/?', 'downloads?',
+            'event/?',
+            'following', 'friends?',
+            'jobs?',
+            'luna',
+            'prime/?', 'products/?',
+            'schedule',
+            'settings/?', 'store/?', 'subs/?', 'subscriptions?',
+            'team', 'turbo',
+            'user',
+            'videos?',
+            'wallet',
+        ],
+        UNSAFE_TWITCH_PATHNAMES = window.UNSAFE_TWITCH_PATHNAMES = RegExp(`/(${ UNSAFE_PATHNAMES.join('|') })`, 'i');
+
 /*** First in Line Helpers - NOT A SETTING. Create, manage, and display the "Up Next" balloon
  *      ______ _          _     _         _      _              _    _      _
  *     |  ____(_)        | |   (_)       | |    (_)            | |  | |    | |
@@ -5277,6 +5298,8 @@ let Initialize = async(START_OVER = false) => {
                                                 Settings.first_in_line_plus_time_minutes:
                                             parseBool(Settings.first_in_line_all)?
                                                 Settings.first_in_line_all_time_minutes:
+                                            parseBool(Settings.first_in_line_now)?
+                                                0:
                                             15
                                         ) * 60_000
                                     ));
@@ -7323,6 +7346,8 @@ let Initialize = async(START_OVER = false) => {
             Settings.first_in_line_plus_time_minutes:
         parseBool(Settings.first_in_line_all)?
             Settings.first_in_line_all_time_minutes:
+        parseBool(Settings.first_in_line_now)?
+            0:
         0
     ) | 0;
 
@@ -9087,7 +9112,7 @@ let Initialize = async(START_OVER = false) => {
     };
 
     __FirstInLine__:
-    if(parseBool(Settings.first_in_line) || parseBool(Settings.first_in_line_plus) || parseBool(Settings.first_in_line_all)) {
+    if(parseBool(Settings.first_in_line) || parseBool(Settings.first_in_line_plus) || parseBool(Settings.first_in_line_all) || parseBool(Settings.first_in_line_now)) {
         await Cache.load(['ALL_FIRST_IN_LINE_JOBS', 'FIRST_IN_LINE_DUE_DATE', 'FIRST_IN_LINE_BOOST'], cache => {
             let oneMin = 60_000,
                 fiveMin = 5.5 * oneMin,
@@ -9292,10 +9317,15 @@ let Initialize = async(START_OVER = false) => {
 
             // removeFromSearch(['tt-err-chn']);
         } else if($.nullish('[id*="side"i][id*="nav"i] .side-nav-section[aria-label][tt-svg-label="followed"i] a[class*="side-nav-card"i]') && !/^User_Not_Logged_In_\d+$/.test(USERNAME)) {
-            $('[data-a-target="side-nav-arrow"i]')
-                ?.closest('[class*="expand"i]')
-                ?.querySelector('button')
-                ?.click();
+            // Is the nav open?
+            let alreadyOpen = $.defined('[data-a-target="side-nav-search-input"i], [data-a-target="side-nav-header-expanded"i]'),
+                sidenav = $('[data-a-target="side-nav-arrow"i]')
+                    ?.closest('[class*="expand"i]')
+                    ?.querySelector('button');
+
+            // Close the Side Nav
+            if(alreadyOpen) // Only close it if it was already open
+                sidenav?.click();
 
             wait(3000).then(() => {
                 if($.nullish('[id*="side"i][id*="nav"i] .side-nav-section[aria-label][tt-svg-label="followed"i] a[class*="side-nav-card"i]'))
@@ -9308,6 +9338,10 @@ let Initialize = async(START_OVER = false) => {
                 // Failed to get channel at...
                 addReport({ 'TTV-Tools-failed-to-get-channel-details': new Date().toString() }, true);
             });
+
+            // Open the Side Nav
+            if(alreadyOpen) // Only open it if it isn't already
+                wait().then(() => sidenav?.click());
 
             return /* Fail "gracefully" */;
         }
@@ -16849,6 +16883,10 @@ if(top == window) {
             $error(`The current runtime (v${ Manifest.version }) is not correct (v${ version })`)
                 .toNativeStack():
         setInterval(WAIT_FOR_PAGE = async() => {
+            // Do NOT run on unsafe pages
+            if(UNSAFE_TWITCH_PATHNAMES.test(location.pathname))
+                return false;
+
             let sadOverlay = $('[data-test-selector*="sad"i][data-test-selector*="overlay"i]');
             let adCountdown = $('[data-a-target*="ad-countdown"i]');
 

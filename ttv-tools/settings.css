@@ -1653,6 +1653,26 @@ section[dead]::after {
     background: linear-gradient(135deg, #0000 50%, var(--baby-grey) 0);
 }
 
+[new]:not(section) {
+    border-left: 5px solid var(--baby-blue);
+    padding-left: 3px;
+}
+
+[beta]:not(section) {
+    border-left: 5px solid var(--baby-pink);
+    padding-left: 3px;
+}
+
+[soon]:not(section) {
+    border-left: 5px solid var(--baby-gold);
+    padding-left: 3px;
+}
+
+[dead]:not(section) {
+    border-left: 5px solid var(--baby-grey);
+    padding-left: 3px;
+}
+
 /* Search for settings... */
 #search-container {
     display: block !important;

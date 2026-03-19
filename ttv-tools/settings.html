@@ -183,7 +183,7 @@
             </section>
 
             <!-- First in Line / Up Next → avenue,blink,carrier,channel,current,flood,flow,flutter,jerk,jiggle,keep,keep reminders,live,live reminders,means,medium,route,rush,shudder,spate,stream,surge,tide,torrent,tremble,tributary,tunnel,twitch -->
-            <section new='4.26'>
+            <section beta='5.34.0.1'>
                 <div class=title tr-id=first-in-line><span small glyph=favorite></span> First in Line / Up Next</div>
                 <div class=summary>
                     <p tr-id>
@@ -201,6 +201,14 @@
                                 <label tr-id='first-in-line:disabled' for=first_in_line_none>
                                     <h2>Disabled</h2>
                                     Do not ues this feature
+                                </label>
+                            </div>
+
+                            <div class=radio beta>
+                                <input id=first_in_line_now type=radio name=first-in-line>
+                                <label tr-id='first-in-line:immediate' for=first_in_line_now>
+                                    <h2>Immediate</h2>
+                                    Go to all streams as soon as they go live
                                 </label>
                             </div>
 
@@ -1421,7 +1429,7 @@
             </section>
 
             <!-- Context Menu → click,context,custom,menu,right,over,popup,ride -->
-            <section new='5.33.4.22'>
+            <section new='5.34'>
                 <div class=title tr-id=context-menu-override><span small glyph=latest></span> Context Menu Override</div>
                 <div class=summary>
                     <div class=toggle>
