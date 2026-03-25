@@ -17,7 +17,7 @@
 - [ ] Dead channels get re-added to Up Next sometimes
     * May have something to do with case sensitivity in HREFs?
     * My wife: "It seems to be going thru every channel and adding what it believes is the best fit"
-- [-] Add cache logic to detect raids
+- [ ] Add cache logic to detect raids
     - Interferes with the AdBlock extension (pushes `ab_channel` to the URL, removing all other search parameters)
 - [x] Pause First in Line when observing a raid
     - [ ] Use the `UserIntent` variable to detect if a raid failed: variable not set and channel not followed
@@ -31,7 +31,7 @@
 - [ ] Garner user feedback → https://form.jotform.com/222442891146153
 - [ ] Sometimes, chat bullets do not register in the main "catcher;" may be related to the reflector (after the initializer) → `TTV_IRC.socket?.reflect?.(...)`
     * Typically affects only user generated messages
-- [-] Modify DVR logic to record over ads
+- [ ] Modify DVR logic to record over ads
     * Currently, skips entire ad section; does not substitute mini-video's contents in ads' place
 - [ ] Add option to handle chat commands and messages
     * Might just need to make another extension for that
@@ -40,12 +40,12 @@
 - [ ] There is an issue where all tabs will **not** be the Up Next owner
     - Happens if all tabs go to the same streamer and the Up Next tab changes
     - Add logic to ignore `name` in background.js?
-- [-] Add auto-save clip logic (handler) to navigation events: first in line, time out, etc.
+- [ ] Add auto-save clip logic (handler) to navigation events: first in line, time out, etc.
     - [x] Actual automatic DVR added v5.33.0.8; see @deprecated for the original confirmation
 - [ ] The background script may stall indefinitely when a tab disappears
 - [ ] If a pre-roll ad plays, the recording feature stops working
     * Tentative fix `v5.33.0.8`
-- [-] Display alerts for Prime Gaming loot for specific games
+- [ ] Display alerts for Prime Gaming loot for specific games
 - [ ] Finish JSDoc commenting
     - [x] background.js
     - [x] core.js
@@ -79,6 +79,10 @@
 ----
 
 # DONE &mdash; Notable Changes
+> [`5.34.1`](https://github.com/Ephellon/Twitch-Tools/releases/tag/5.34.1)
+- Fixed side panel collapsing issue for channels that were not live, or not in English
+- Fixed an issue where queried elements were not properly handled in `ƒ Handle.block_banners`
+
 > [`5.34.0.1`](https://github.com/Ephellon/Twitch-Tools/releases/tag/5.34.0.1)
 - Fixed tooltips on Settings page
 - Fixed issue where the side panel would be collapsed

@@ -3791,6 +3791,8 @@ let FIRST_IN_LINE_JOB = null,           // The current job (interval)
 
 let DO_NOT_AUTO_ADD = []; // List of names to ignore for auto-adding; the user already canceled the job
 
+let ALREADY_EXPANDED = false;
+
 // Intializes the extension
     // Initialize(START_OVER:boolean) → undefined
 let Initialize = async(START_OVER = false) => {
@@ -4896,7 +4898,9 @@ let Initialize = async(START_OVER = false) => {
 
     // Expand the left-hand panel until the last live channel is visible
     __GetAllChannels__:
-    if(true) {
+    if(!ALREADY_EXPANDED) {
+        ALREADY_EXPANDED = true;
+
         let element, max_show_more = 10, max_show_less = 10, max_panel_size = 10;
 
         // Is the nav open?
@@ -5618,11 +5622,14 @@ let Initialize = async(START_OVER = false) => {
                         $warn(error);
 
                         let { oauthToken: savedToken } = await Settings.get('oauthToken');
-                        if(!nullish(savedToken) && !savedToken?.equals('.DENIED')) {
+
+                        if(defined(savedToken) && savedToken?.unlike('.DENIED')) {
                             Cache.save({ oauthToken: savedToken, clientID });
+
                             Search.authorization = `Bearer ${ savedToken }`;
                             Search.clientID = clientID;
-                            return;
+
+                            return /* @yetval fix for #38 */;
                         }
 
                         confirm(`<div controller
@@ -5633,7 +5640,11 @@ let Initialize = async(START_OVER = false) => {
                             if(answer === false)
                                 return Cache.save({ clientID: '.DENIED', oauthToken: '.DENIED' });
 
-                            let oauth = open(`https://id.twitch.tv/oauth2/authorize?response_type=code&client_id=s8glgfv1nm23ts567xdsmwqu5wylof&redirect_uri=${ encodeURIComponent("https://ephellon.github.io/TTVAuth") }&response_type=token&scope=${ encodeURIComponent(['user:read:follows', 'user:read:subscriptions', 'chat:read'].join(' ')) }&state=${ (new UUID).value }`, '_blank');
+                            const redirectURI = encodeURIComponent("https://ephellon.github.io/TTVAuth")
+                                , scope = encodeURIComponent(['user:read:follows', 'user:read:subscriptions', 'chat:read'].join(' '))
+                                , state = (new UUID).value;
+
+                            let oauth = open(`https://id.twitch.tv/oauth2/authorize?response_type=code&client_id=${ clientID }&redirect_uri=${ redirectURI }&response_type=token&scope=${ scope }&state=${ state }`, '_blank');
 
                             when(() => oauth.closed).then(async() => {
                                 let { oauthToken } = await Settings.get('oauthToken');
@@ -9325,17 +9336,20 @@ let Initialize = async(START_OVER = false) => {
 
             // removeFromSearch(['tt-err-chn']);
         } else if($.nullish('[id*="side"i][id*="nav"i] .side-nav-section[aria-label][tt-svg-label="followed"i] a[class*="side-nav-card"i]') && !/^User_Not_Logged_In_\d+$/.test(USERNAME)) {
-            // Is the nav open?
-            let alreadyOpen = $.defined('[data-a-target="side-nav-search-input"i], [data-a-target="side-nav-header-expanded"i]'),
-                sidenav = $('[data-a-target="side-nav-arrow"i]')
-                    ?.closest('[class*="expand"i]')
-                    ?.querySelector('button');
-
-            // Close the Side Nav
-            if(alreadyOpen) // Only close it if it was already open
-                sidenav?.click();
-
             wait(3000).then(() => {
+                // Is the nav open?
+                let alreadyOpen = $.defined('[data-a-target="side-nav-search-input"i], [data-a-target="side-nav-header-expanded"i]'),
+                    sidenav = $('[data-a-target="side-nav-arrow"i]')
+                        ?.closest('[class*="expand"i]')
+                        ?.querySelector('button');
+
+                // Toggle the Side Nav
+                if(alreadyOpen) {
+                    sidenav?.click();
+
+                    wait(1e3).then(() => sidenav?.click());
+                }
+
                 if($.nullish('[id*="side"i][id*="nav"i] .side-nav-section[aria-label][tt-svg-label="followed"i] a[class*="side-nav-card"i]'))
                     return;
 
@@ -9346,10 +9360,6 @@ let Initialize = async(START_OVER = false) => {
                 // Failed to get channel at...
                 addReport({ 'TTV-Tools-failed-to-get-channel-details': new Date().toString() }, true);
             });
-
-            // Open the Side Nav
-            if(alreadyOpen) // Only open it if it isn't already
-                wait().then(() => sidenav?.click());
 
             return /* Fail "gracefully" */;
         }
@@ -14244,7 +14254,7 @@ let Initialize = async(START_OVER = false) => {
                         if(v === LAST)
                             return elements;
                         else if(v.trim() === '')
-                            return ({ dataset: {} });
+                            return [{ dataset: {} }];
                         else if(i === 0)
                             return $.all(v);
 

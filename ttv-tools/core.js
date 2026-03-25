@@ -812,7 +812,7 @@ class Tooltip {
  * @property {function} nullish                 <div class="signature">(selector:(string|array|Element), container:Node<span class="signature-attributes">opt</span>, multiple:boolean<span class="signature-attributes">opt</span>) → boolean</div>
  *                                              <br>Returns whether or not a query selection is found or not. Returns <i>true</i> if none of the elements queried for exist.
  *
- * @return {(Element|Array|null)}
+ * @return {?(Element|Array<?Element>)}
  */
 function $(selector, container = document, multiple = false) {
     return multiple?

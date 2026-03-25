@@ -3715,6 +3715,19 @@ Chat__PAGE_CHECKER = setInterval(Chat__WAIT_FOR_PAGE = async() => {
 
         $log("Child container ready");
 
+        // Fixes shift-left issue
+        when(() => $.defined('[data-a-target*="chat"i][data-a-target*="welcome"i]')).then(() => {
+            setTimeout(() => {
+                const ebWabz = $('.Layout-sc-1xcs6mc-0.ebWabz');
+                const root = $('.channel-root--home');
+
+                $notice(`Unshifting webpage...`);
+
+                if(defined(ebWabz) && defined(root))
+                    ebWabz.scrollLeft = 0;
+            }, 5e3);
+        });
+
         await Settings.get();
 
         wait(5000).then(Chat__Initialize);

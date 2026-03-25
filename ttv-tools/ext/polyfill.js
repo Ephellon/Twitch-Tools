@@ -896,6 +896,8 @@ function getOffset(element) {
 function addToSearch(newParameters, reload = false, container = window) {
     let url = parseURL(container.location).addSearch(newParameters, true); // Adds to the search and overwites existing search(es)
 
+    // container.history.scrollRestoration = 'manual';
+
     if(reload)
         container.location.search = url.search;
     else
@@ -939,17 +941,19 @@ function addReport(reports, reloadPage = false) {
  *
  * @param  {array<string>} keys                     The parameters to remove from the URL
  * @param  {boolean} [reload = false]               Should the page be forcibly reloaded or not?
- * @param  {object} [location = window.location]    The location object to remove the parameters from
+ * @param  {object} [container = window]            The container object to apply the new parameters to
  *
  * @return {string<URLSearch>}                      The modified URL
  */
-function removeFromSearch(keys, reload = false, location = window.location) {
-    let url = parseURL(location).delSearch(keys);
+function removeFromSearch(keys, reload = false, container = window) {
+    let url = parseURL(container.location).delSearch(keys);
+
+    // container.history.scrollRestoration = 'manual';
 
     if(reload)
-        window.location.search = url.search;
+        container.location.search = url.search;
     else
-        window.history?.pushState({ path: url.href }, document.title, url.href);
+        container.history?.pushState({ path: url.href }, document.title, url.href);
 
     return url.search;
 }
