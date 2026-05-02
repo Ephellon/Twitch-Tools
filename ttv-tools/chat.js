@@ -157,7 +157,7 @@ let Chat__Initialize = async(START_OVER = false) => {
             if(nullish(button)) {
                 let parent    = $('[data-test-selector*="points"i][data-test-selector*="summary"i]'),
                     heading   = $.all('.top-nav__menu > div').pop(),
-                    container = furnish();
+                    container = furnish('div');
 
                 if(nullish(parent) || nullish(heading)) {
                     // wait(5000).then(Chat__Initialize);
@@ -207,9 +207,9 @@ let Chat__Initialize = async(START_OVER = false) => {
                 when.defined(container => $('[data-test-selector*="balance"i][data-test-selector*="string"i]', container), 30, container).then(text => text.remove());
                 when.defined(container => ($.all('svg, img', container).length > 2? container: null), 30, container).then(container => {
                     let oldIcon = $('svg, img', container);
-                    let newIcon = $.last('svg, img', container);
+                    let newIcon = $.last('svg, img, .tw-img, .tw-svg', container);
 
-                    newIcon.closest('[data-a-target] *:last-child:not(:first-child)')?.remove();
+                    newIcon.closest('*:not(:first-of-type):not(:first-child)')?.remove();
 
                     oldIcon.replaceWith(newIcon);
                 });

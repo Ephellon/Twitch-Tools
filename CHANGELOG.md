@@ -79,6 +79,10 @@
 ----
 
 # DONE &mdash; Notable Changes
+> [`5.34.1.1`](https://github.com/Ephellon/Twitch-Tools/releases/tag/5.34.1.1)
+- Fixed #41
+- Fixed issue with selecting animation image; caused content to shift unpredictably
+
 > [`5.34.1`](https://github.com/Ephellon/Twitch-Tools/releases/tag/5.34.1)
 - Fixed side panel collapsing issue for channels that were not live, or not in English
 - Fixed an issue where queried elements were not properly handled in `ƒ Handle.block_banners`

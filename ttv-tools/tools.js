@@ -2183,10 +2183,12 @@ async function GetQuality() {
         })
         .catch($error);
 
-    let qualities = $.all('[data-a-target*="quality"i]:is([data-a-target*="option"i], [data-a-target*="setting"i]) input[type="radio"i]')
-        .map(input => ({ input, label: input.parentElement.querySelector(`label[for="${ input.id }"]`), uuid: input.id }));
-
     let textOf = text => (text?.textContent ?? text?.value ?? text);
+
+    let qualities = $.all('[data-a-target*="quality"i]:is([data-a-target*="option"i], [data-a-target*="setting"i]) input[type="radio"i]')
+        .map(input => ({ input, label: input.parentElement.querySelector(`label[for="${ input.id }"]`), uuid: input.id }))
+        .map(option => ({ value: (textOf(option.label) ?? 'Unknown'), ...option }))
+        .sort((a, b) => parseInt(b.value) - parseInt(a.value));
 
     let current = qualities.find(({ input }) => input.checked);
 
@@ -2202,10 +2204,10 @@ async function GetQuality() {
 
     let quality = new String(current.label.textContent);
 
-    let source = current.uuid == qualities.find(({ label }) => /source/i.test(textOf(label)))?.uuid,
-        auto   = current.uuid == qualities.find(({ label }) => /auto/i.test(textOf(label)))?.uuid,
-        high   = current.uuid == qualities.find(({ label }) => !/auto|source/i.test(textOf(label)))?.uuid,
-        low    = current.uuid == qualities[qualities.length - 1]?.uuid;
+    let source = current.uuid == qualities.find(({ value }) => /source/i.test(value))?.uuid,
+        auto   = current.uuid == qualities.find(({ value }) => /auto/i.test(value))?.uuid,
+        high   = current.uuid == qualities.find(({ value }) => /^\d+p/i.test(value))?.uuid,
+        low    = current.uuid == qualities.at(-1)?.uuid;
 
     Object.defineProperties(quality, {
         auto:   { value: auto, ...lock },
@@ -2245,15 +2247,17 @@ async function SetQuality(quality = 'auto', backup = 'source') {
         })
         .catch($error);
 
-    let qualities = $.all('[data-a-target*="quality"i]:is([data-a-target*="option"i], [data-a-target*="setting"i]) input[type="radio"i]')
-        .map(input => ({ input, label: input.parentElement.querySelector(`label[for="${ input.id }"]`), uuid: input.id }));
-
     let textOf = text => (text?.textContent ?? text?.value ?? text);
 
-    qualities.source = qualities.find(({ label }) => /source/i.test(textOf(label)));
-    qualities.auto   = qualities.find(({ label }) => /auto/i.test(textOf(label)));
-    qualities.high   = qualities.find(({ label }) => !/auto|source/i.test(textOf(label)));
-    qualities.low    = qualities[qualities.length - 1];
+    let qualities = $.all('[data-a-target*="quality"i]:is([data-a-target*="option"i], [data-a-target*="setting"i]) input[type="radio"i]')
+        .map(input => ({ input, label: input.parentElement.querySelector(`label[for="${ input.id }"]`), uuid: input.id }))
+        .map(option => ({ value: (textOf(option.label) ?? 'Unknown'), ...option }))
+        .sort((a, b) => parseInt(b.value) - parseInt(a.value));
+
+    qualities.source = qualities.find(({ value }) => /source/i.test(value));
+    qualities.auto   = qualities.find(({ value }) => /auto/i.test(value));
+    qualities.high   = qualities.find(({ value }) => /^\d+p/i.test(value));
+    qualities.low    = qualities.at(-1);
 
     let current = qualities.find(({ input }) => input.checked),
         desired;
@@ -10592,7 +10596,9 @@ let Initialize = async(START_OVER = false) => {
 
                                                 $('.is-xbox .tt-store-purchase--price').textContent = /^\p{Sc}?(\d+(?:[\.,]\d+)?|\w+)$/u.test(price ?? '')? price: info.price;
                                                 $('.tt-store-purchase--container.is-xbox').dataset.matureContent = (rating.alt || mature);
-                                                $('#tt-content-rating-placeholder')?.replaceWith(rating);
+
+                                                if(rating)
+                                                    $('#tt-content-rating-placeholder')?.replaceWith(rating);
                                             })
                                             .catch(error => {
                                                 $warn(`Unable to fetch Xbox pricing information for "${ jbpp }"`, error);
@@ -10712,7 +10718,9 @@ let Initialize = async(START_OVER = false) => {
 
                                                 $('.is-xbox .tt-store-purchase--price').textContent = /^\p{Sc}?(\d+(?:[\.,]\d+)?|\w+)$/u.test(price ?? '')? price: info.price;
                                                 $('.tt-store-purchase--container.is-xbox').dataset.matureContent = (rating?.alt || mature);
-                                                $('#tt-content-rating-placeholder')?.replaceWith(rating);
+
+                                                if(rating)
+                                                    $('#tt-content-rating-placeholder')?.replaceWith(rating);
                                             })
                                             .catch(error => {
                                                 $warn(`Unable to fetch Xbox pricing information for "${ game }"`, error);
@@ -14148,6 +14156,8 @@ let Initialize = async(START_OVER = false) => {
      *
      */
     const UNWANTED_BANNER_AD_SELECTOR = new nanoid(21, nanoid.LOWERCASE_SAFE).value;
+    const LAST_ELEMENT = Symbol("last-selector-slot");
+    const EMPTY_ELEMENT_SUBSTITUTE = ({ dataset: {} });
 
     Handlers.block_banners = () => {
         /** Syntax (CSS-superset) — Comments are not allowed in the actual syntax. Each line represents a banner query.
@@ -14246,15 +14256,13 @@ let Initialize = async(START_OVER = false) => {
                         } break;
                     }
 
-                    const LAST = Symbol("last-selector-slot");
-
-                    path.push(LAST);
+                    path.push(LAST_ELEMENT);
 
                     return path.reduce((elements, v, i, a) => {
-                        if(v === LAST)
+                        if(v === LAST_ELEMENT)
                             return elements;
                         else if(v.trim() === '')
-                            return [{ dataset: {} }];
+                            return [EMPTY_ELEMENT_SUBSTITUTE];
                         else if(i === 0)
                             return $.all(v);
 
@@ -14269,6 +14277,9 @@ let Initialize = async(START_OVER = false) => {
                             return elements;
                         }
                     }, []).isolate().forEach(el => {
+                        if(parseBool(el.dataset?.[UNWANTED_BANNER_AD_SELECTOR]))
+                            return;
+
                         $remark('Blocking...', el);
 
                         el.dataset[UNWANTED_BANNER_AD_SELECTOR] = true;
