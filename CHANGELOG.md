@@ -79,6 +79,9 @@
 ----
 
 # DONE &mdash; Notable Changes
+> [`5.34.1.2`](https://github.com/Ephellon/Twitch-Tools/releases/tag/5.34.1.2)
+- Fixed issue with usernames containing reserved words
+
 > [`5.34.1.1`](https://github.com/Ephellon/Twitch-Tools/releases/tag/5.34.1.1)
 - Fixed #41
 - Fixed issue with selecting animation image; caused content to shift unpredictably

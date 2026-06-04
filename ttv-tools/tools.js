@@ -3744,7 +3744,7 @@ const TWITCH_PATHNAMES = [
         'videos?',
         'wallet', 'watchparty',
     ],
-    RESERVED_TWITCH_PATHNAMES = RegExp(`/(${ TWITCH_PATHNAMES.join('|') })`, 'i');
+    RESERVED_TWITCH_PATHNAMES = RegExp(`/(${ TWITCH_PATHNAMES.join('|') })(?:[/#?]|$)`, 'i');
 
     const UNSAFE_PATHNAMES = window.UNSAFE_PATHNAMES = [
             '[up]/',
@@ -3765,7 +3765,7 @@ const TWITCH_PATHNAMES = [
             'videos?',
             'wallet',
         ],
-        UNSAFE_TWITCH_PATHNAMES = window.UNSAFE_TWITCH_PATHNAMES = RegExp(`/(${ UNSAFE_PATHNAMES.join('|') })`, 'i');
+        UNSAFE_TWITCH_PATHNAMES = window.UNSAFE_TWITCH_PATHNAMES = RegExp(`/(${ UNSAFE_PATHNAMES.join('|') })(?:[/#?]|$)`, 'i');
 
 /*** First in Line Helpers - NOT A SETTING. Create, manage, and display the "Up Next" balloon
  *      ______ _          _     _         _      _              _    _      _
