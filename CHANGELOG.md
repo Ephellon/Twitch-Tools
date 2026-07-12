@@ -35,7 +35,7 @@
 
 ## Release History
 
-### Version 5.34.\*
+### Version 5.35.\*
 - [`5.35.1`](https://github.com/Ephellon/Twitch-Tools/releases/tag/5.35.1) — Fixed reserved word issues in usernames; added "RAM Alarms".
 
 ### Version 5.34.\*
