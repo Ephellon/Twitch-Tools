@@ -233,7 +233,7 @@ function TabIsOffline(tab) {
     );
 }
 
-let global, window, Storage, Runtime, Manifest, Extension, Container, BrowserNamespace;
+let global, window, Storage, Runtime, Manifest, Extension, Container, BrowserNamespace, Alarms;
 
 if(globalThis.browser && globalThis.browser.runtime)
     BrowserNamespace = 'browser';
@@ -249,6 +249,7 @@ switch(BrowserNamespace) {
         Storage = Container.storage;
         Extension = Container.extension;
         Manifest = Runtime.getManifest();
+        Alarms = Container.alarms;
 
         let _storage = {};
 
@@ -271,6 +272,7 @@ switch(BrowserNamespace) {
         Storage = Container.storage;
         Extension = Container.extension;
         Manifest = Runtime.getManifest();
+        Alarms = Container.alarms;
 
         let _storage = {};
 
@@ -348,6 +350,19 @@ Runtime.onInstalled.addListener(({ reason, previousVersion, id }) => {
 
         // Update the badge text when there's an update available
         Container.action.setBadgeText({ text: '' });
+
+        // Memory Management
+        Alarms.create('ttvMemoryAudit', { periodInMinutes: 5 });
+
+        Storage.get(['ram_onhigh', 'ram_onmedium', 'ram_onlow'], ({ ram_onhigh, ram_onmedium, ram_onlow }) => {
+            if(!ram_onhigh && !ram_onmedium && !ram_onlow)
+                Storage.set({
+                    // ignore | notify | respawn
+                    ram_onlow: "ignore",    // ≥500MB
+                    ram_onmedium: "ignore", // ≥1GB
+                    ram_onhigh: "ignore",   // ≥2GB
+                });
+        });
     });
 });
 
@@ -622,6 +637,19 @@ Runtime.onMessage.addListener((request, sender, respond) => {
                 SHARED_DATA.set(key, request.data[key]);
         } break;
 
+        case 'RESPAWN_THIS_TAB': {
+            Runtime.tabs.get(request.tabId, tab => {
+                if(tab && !tab.discarded)
+                    try {
+                        RemoveTab(tab, true, true);
+                        respond({ success: true });
+                    } catch(e) {
+                        console.debug(`Failed to self-respawn a tab: ${ tab.id }`, e);
+                        respond({ success: false });
+                    }
+            });
+        } break;
+
         default: {
             if(request.action?.length)
                 Container.tabs.query({
@@ -759,6 +787,89 @@ let GALLOWS_CHECKER = setInterval(() => {
             GALLOWS.delete(ID);
         }
 }, 500);
+
+// Handle memory audits (alarms)
+Alarms.onAlarm.addListener(({ name }) => {
+    if(name === 'ttvMemoryAudit')
+        auditMemory();
+});
+
+const MEMORY_TIERS = {
+    // Can't fetch real RAM usage, but can guess:
+    //                          Real* / Heap
+    LOW:    0.4 * 1024**3,  //  500MB / 400MB
+    MEDIUM: 0.6 * 1024**3,  //  1GB   / 600MB
+    HIGH:   0.8 * 1024**3,  //  2GB   / 800MB
+};
+
+async function auditMemory() {
+    const tabs = await Container.tabs.query({ url: '*://*.twitch.tv/*', discarded: false });
+    const offenders = [];
+
+    const { ram_onhigh = 'ignore', ram_onmedium = 'ignore', ram_onlow = 'ignore' } = await Storage.get(['ram_onhigh', 'ram_onmedium', 'ram_onlow']);
+    const ram_ = { ram_onhigh, ram_onmedium, ram_onlow };
+
+    find_offenders: for(const tab of tabs) {
+        if(!tab.url.startsWith('http'))
+            continue /* Not a Twitch site */;
+
+        try {
+            const results = await Container.scripting.executeScript({
+                target: { tabId: tab.id },
+                func: () => [window.performance?.memory?.usedJSHeapSize | 0, window.performance?.now?.() | 0],
+            });
+
+            const [ramUsed, liveTime] = results?.[0]?.result ?? [];
+
+            if(!ramUsed)
+                continue;
+
+            let tier = (
+                ramUsed >= MEMORY_TIERS.HIGH
+                    ? "high"
+                    : ramUsed >= MEMORY_TIERS.MEDIUM
+                        ? "medium"
+                        : ramUsed >= MEMORY_TIERS.LOW
+                            ? "low"
+                            : "normal"
+            );
+            let act = ram_[`ram_on${ tier }`];
+
+            // Boomer Tabs — over 30, high resource usage, and inactive
+            if((liveTime > (30 * 60 * 1e3)) && (act === 'respawn') && !tab.active) {
+                Container.tabs.sendMessage(tab.id, {
+                    action: 'notify',
+                    message: `<div title="RAM Management" okay="Respawn" deny="Cancel">This tab is at <strong style="color:var(--color-red)">${ Math.round(ramUsed / 1024**2) }MB in RAM usage</strong>.</div>`,
+                    onAccept: 'RESPAWN_THIS_TAB',
+                    onIgnore: 'RESPAWN_THIS_TAB',
+                });
+            } else if(act === 'notify') {
+                Container.tabs.sendMessage(tab.id, {
+                    action: 'notify',
+                    message: `<div title="RAM Warning">This tab is at <strong style="color:var(--color-warn)">${ Math.round(ramUsed / 1024**2) }MB in RAM usage</strong>.</div>`,
+                    onAccept: 'RESPAWN_THIS_TAB',
+                });
+            } else {
+                // This tab needs no warning or action taken
+                continue find_offenders;
+            }
+
+            offenders.push({
+                id: tab.id,
+                title: tab.title || "Twitch Stream",
+                url: tab.url,
+                active: tab.active,
+                action: act,
+                ramUsed,
+                tier,
+            });
+        } catch(error) {
+            console.debug(`Skipping tab during memory audit: ${ tab.id }`, tab);
+        }
+    }
+
+    await Storage.set({ memoryAuditOffenders: offenders });
+}
 
 /**
  * Returns the current week of the year.

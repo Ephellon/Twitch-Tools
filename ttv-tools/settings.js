@@ -262,6 +262,10 @@ let // These are option names. Anything else will be removed
         'recover_video',
         // Recover Stream
         'recover_stream',
+        // RAM Alarms
+        'ram_onhigh',
+        'ram_onmedium',
+        'ram_onlow',
         // Recover Ads
         'recover_ads',
         // Recover Frames

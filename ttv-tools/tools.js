@@ -17725,6 +17725,22 @@ if(top == window) {
                 let R = RegExp;
 
                 switch(request?.action) {
+                    case 'notify': {
+                        $notice(request.message);
+                        confirm.timed(request.message, (request.timeout | 0) || 15e3)
+                            .then(answer => {
+                                // OK
+                                if(answer)
+                                    Runtime.sendMessage({ action: request.onAccept });
+                                // Cancel
+                                else if(answer === false)
+                                    Runtime.sendMessage({ action: request.onDeny });
+                                // Timeout
+                                else
+                                    Runtime.sendMessage({ action: request.onIgnore });
+                            });
+                    } break;
+
                     case 'report-back': {
                         respond({ ok: true, performance: (performance.memory.usedJSHeapSize / performance.memory.totalJSHeapSize), timestamp: +new Date });
                     } break;
