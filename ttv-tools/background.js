@@ -122,7 +122,48 @@ const defined = value => !nullish(value);
  * @property {function} RESERVED_TWITCH_PATHNAMES.has   <div class="signature">(value:string<span class="signature-attributes">opt</span>) → boolean</div>
  *                                                      Determines whether the value clashes with a reserved pathname or not.
  */
-const RESERVED_TWITCH_PATHNAMES = Object.defineProperties(['activate', 'bits', 'bits-checkout', 'clips', 'checkout', 'collections', 'communities', 'dashboard', 'directory', 'downloads', 'drops', 'event', 'following', 'friends', 'inventory', 'jobs', 'moderator', 'popout', 'prime', 'products', 'search', 'settings', 'store', 'subs', 'subscriptions', 'team', 'turbo', 'user', 'videos', 'wallet', 'watchparty'], {
+const RESERVED_TWITCH_PATHNAMES = Object.defineProperties([
+    "u",
+    "p",
+    "activate",
+    "bits",
+    "bits-checkout",
+    "checkout",
+    "clips",
+    "collections",
+    "communities",
+    "dashboard",
+    "directory",
+    "download",
+    "downloads?",
+    "drops",
+    "event",
+    "following",
+    "friend",
+    "friends",
+    "inventory",
+    "job",
+    "jobs",
+    "luna",
+    "moderator",
+    "popout",
+    "prime",
+    "products",
+    "schedule",
+    "search",
+    "settings",
+    "store",
+    "subs",
+    "subscription",
+    "subscriptions",
+    "team",
+    "turbo",
+    "user",
+    "video",
+    "videos",
+    "wallet",
+    "watchparty"
+], {
     has: { value(value) { return !!~this.indexOf(value?.toLowerCase()) } },
 });
 
@@ -184,8 +225,8 @@ function RemoveTab(tab, duplicateTab = false, forced = true) {
 
         let created = RemoveTab.duplicatedTabs.get(tab.url);
 
-        // The tab was just duplicated (<5s ago)
-        if(defined(created) && +(new Date) - created < 5_000)
+        // The tab was just duplicated (<15s ago)
+        if(defined(created) && +(new Date) - created < 15e3)
             break duplication;
 
         console.warn(`Duplicating tab #${ tab.id }... [forced=${ forced }] ${ tab.url }`);
@@ -354,13 +395,14 @@ Runtime.onInstalled.addListener(({ reason, previousVersion, id }) => {
         // Memory Management
         Alarms.create('ttvMemoryAudit', { periodInMinutes: 5 });
 
-        Storage.get(['ram_onhigh', 'ram_onmedium', 'ram_onlow'], ({ ram_onhigh, ram_onmedium, ram_onlow }) => {
+        Storage.get(['ram_onhigh', 'ram_onmedium', 'ram_onlow', 'ram_timescale'], ({ ram_onhigh, ram_onmedium, ram_onlow, ram_timescale }) => {
             if(!ram_onhigh && !ram_onmedium && !ram_onlow)
                 Storage.set({
                     // ignore | notify | respawn
                     ram_onlow: "ignore",    // ≥500MB
                     ram_onmedium: "ignore", // ≥1GB
                     ram_onhigh: "ignore",   // ≥2GB
+                    ram_timescale: false,   // Scale with tab age
                 });
         });
     });
@@ -442,6 +484,19 @@ Storage.onChanged.addListener(changes => {
 
             default: continue updater;
         }
+    }
+});
+
+let FOCUSED_TAB = null;
+
+Container.windows.onFocusChanged.addListener(async(windowId) => {
+    if(windowId === Container.windows.WINDOW_ID_NONE) {
+        FOCUSED_TAB = null;
+    } else {
+        const [tab] = await Container.tabs.query({ active: true, windowId });
+
+        if(tab)
+            FOCUSED_TAB = tab.id;
     }
 });
 
@@ -638,7 +693,7 @@ Runtime.onMessage.addListener((request, sender, respond) => {
         } break;
 
         case 'RESPAWN_THIS_TAB': {
-            Runtime.tabs.get(request.tabId, tab => {
+            Container.tabs.get(sender.tab.id, tab => {
                 if(tab && !tab.discarded)
                     try {
                         RemoveTab(tab, true, true);
@@ -804,71 +859,94 @@ const MEMORY_TIERS = {
 
 async function auditMemory() {
     const tabs = await Container.tabs.query({ url: '*://*.twitch.tv/*', discarded: false });
-    const offenders = [];
+    const memoryAudit = [];
 
-    const { ram_onhigh = 'ignore', ram_onmedium = 'ignore', ram_onlow = 'ignore' } = await Storage.get(['ram_onhigh', 'ram_onmedium', 'ram_onlow']);
+    const { ram_onhigh = 'ignore', ram_onmedium = 'ignore', ram_onlow = 'ignore', ram_timescale = false } = await Storage.get(['ram_onhigh', 'ram_onmedium', 'ram_onlow', 'ram_timescale']);
     const ram_ = { ram_onhigh, ram_onmedium, ram_onlow };
 
-    find_offenders: for(const tab of tabs) {
-        if(!tab.url.startsWith('http'))
+    find_offenders: for(const { id, url, title, active, autoDiscardable, discarded, frozen } of tabs) {
+        if(!url.startsWith('http'))
             continue /* Not a Twitch site */;
 
-        try {
-            const results = await Container.scripting.executeScript({
-                target: { tabId: tab.id },
-                func: () => [window.performance?.memory?.usedJSHeapSize | 0, window.performance?.now?.() | 0],
+        if(frozen) {
+            memoryAudit.push({
+                id,
+                title: title || "Twitch Stream",
+                url,
+                active,
+                action: act,
+                ramUsed: 0,
+                tier: 'high',
+                discarded,
+                frozen,
             });
 
-            const [ramUsed, liveTime] = results?.[0]?.result ?? [];
+            continue;
+        }
 
-            if(!ramUsed)
-                continue;
+        try {
+            Container.tabs.sendMessage(id, { action: 'heap-audit' }, response => {
+                let [ramUsed, liveTime] = response?.results ?? [];
 
-            let tier = (
-                ramUsed >= MEMORY_TIERS.HIGH
-                    ? "high"
-                    : ramUsed >= MEMORY_TIERS.MEDIUM
-                        ? "medium"
-                        : ramUsed >= MEMORY_TIERS.LOW
-                            ? "low"
-                            : "normal"
-            );
-            let act = ram_[`ram_on${ tier }`];
+                if(discarded || !ramUsed)
+                    return;
 
-            // Boomer Tabs — over 30, high resource usage, and inactive
-            if((liveTime > (30 * 60 * 1e3)) && (act === 'respawn') && !tab.active) {
-                Container.tabs.sendMessage(tab.id, {
-                    action: 'notify',
-                    message: `<div title="RAM Management" okay="Respawn" deny="Cancel">This tab is at <strong style="color:var(--color-red)">${ Math.round(ramUsed / 1024**2) }MB in RAM usage</strong>.</div>`,
-                    onAccept: 'RESPAWN_THIS_TAB',
-                    onIgnore: 'RESPAWN_THIS_TAB',
+                // Scale the heap size with the tab's age
+                if(ram_timescale)
+                    ramUsed *= 1 + (liveTime / (60 * 60 * 1e3));
+
+                let tier = (
+                    ramUsed >= MEMORY_TIERS.HIGH
+                        ? "high"
+                        : ramUsed >= MEMORY_TIERS.MEDIUM
+                            ? "medium"
+                            : ramUsed >= MEMORY_TIERS.LOW
+                                ? "low"
+                                : "normal"
+                );
+                let act = ram_[`ram_on${ tier }`] ?? 'ignore';
+
+                const onAccept = 'RESPAWN_THIS_TAB'
+                    , onIgnore = (true
+                        && autoDiscardable
+                        && FOCUSED_TAB !== id
+                            ? 'RESPAWN_THIS_TAB'
+                            : void null
+                    );
+
+                // Boomer Tabs — over 30, high resource usage, and inactive
+                if(act === 'respawn') {
+                    Container.tabs.sendMessage(id, {
+                        action: 'notify',
+                        message: `<div title="RAM Overage - Respawn Pending" okay="Respawn" deny="Cancel" data-on-okay="${ onAccept }" data-on-deny="${ onAccept }">This tab is at <strong style="color:var(--color-red)">${ Math.round(ramUsed / 1024**2) }MB in RAM usage</strong>. This tab will not be respawned if you are actively using it.</div>`,
+                        onAccept, onIgnore,
+                    });
+                } else if(act === 'notify') {
+                    Container.tabs.sendMessage(id, {
+                        action: 'notify',
+                        message: `<div title="RAM Warning" data-on-okay="${ onAccept }">This tab is at <strong style="color:var(--color-warn)">${ Math.round(ramUsed / 1024**2) }MB in RAM usage</strong>.</div>`,
+                        onAccept,
+                    });
+                }
+
+                memoryAudit.push({
+                    id,
+                    title: title || "Twitch Stream",
+                    url,
+                    active,
+                    action: act,
+                    ramUsed,
+                    tier,
+                    discarded,
+                    frozen,
                 });
-            } else if(act === 'notify') {
-                Container.tabs.sendMessage(tab.id, {
-                    action: 'notify',
-                    message: `<div title="RAM Warning">This tab is at <strong style="color:var(--color-warn)">${ Math.round(ramUsed / 1024**2) }MB in RAM usage</strong>.</div>`,
-                    onAccept: 'RESPAWN_THIS_TAB',
-                });
-            } else {
-                // This tab needs no warning or action taken
-                continue find_offenders;
-            }
-
-            offenders.push({
-                id: tab.id,
-                title: tab.title || "Twitch Stream",
-                url: tab.url,
-                active: tab.active,
-                action: act,
-                ramUsed,
-                tier,
             });
         } catch(error) {
             console.debug(`Skipping tab during memory audit: ${ tab.id }`, tab);
         }
     }
 
-    await Storage.set({ memoryAuditOffenders: offenders });
+    await Storage.set({ memoryAudit });
 }
 
 /**

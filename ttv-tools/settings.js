@@ -266,6 +266,7 @@ let // These are option names. Anything else will be removed
         'ram_onhigh',
         'ram_onmedium',
         'ram_onlow',
+        'ram_timescale',
         // Recover Ads
         'recover_ads',
         // Recover Frames
@@ -2050,7 +2051,7 @@ Cache.load(['ignoreNew'], ({ ignoreNew }) => {
         let conception = element.getAttribute('new');
         let title = $('.title', element)?.textContent?.trim();
 
-        if(compareVersions(`${ ignoreNew } > ${ conception }`))
+        if(compareVersions(`${ ignoreNew } ≥ ${ conception }`))
             element.removeAttribute('new');
         else if(defined(title))
             brandNewFragments.push(

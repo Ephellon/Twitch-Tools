@@ -4,7 +4,7 @@
     "name": "TTV Tools",
     "description": "Adds extra features to Twitch",
 
-    "version": "5.35.1",
+    "version": "5.35.2",
     "minimum_chrome_version": "88",
     "homepage_url": "https://github.com/ephellon/twitch-tools",
 
@@ -129,7 +129,6 @@
     ],
 
     "permissions": [
-        "scripting",
         "storage",
         "alarms",
         "tabs"

@@ -2768,6 +2768,41 @@ String.prototype.count ??= function count(...searches) {
 String.prototype.equals ??= function equals(value = '', caseSensitive = false) {
     value = value?.toString() || '';
 
+    function bCompare(a, b, increment = 512) {
+        if(false
+            || (typeof a === 'string')
+            || (typeof b === 'string')
+        ) {
+            if(a.length !== b.length)
+                return false;
+
+            a = (a.split?.('') ?? a);
+            b = (b.split?.('') ?? b);
+
+            return bCompare(a, b, increment);
+        }
+
+        const l = a.length;
+        const j = Math.max(increment | 0, 1);
+
+        if(l < j)
+            return a.toString() === b.toString();
+
+        for(let i = 0; i < l; i += j) {
+            if(a[i] != b[i])
+                return false;
+
+            a.splice(i, 1);
+            b.splice(i, 1);
+
+            // Check each individual character for the last round
+            // if(j === 1 && i >= l)
+            //     i = -1;
+        }
+
+        return bCompare(a, b, Math.max(j / 2, 1));
+    }
+
     if(!caseSensitive)
         return this.normalize('NFKD').trim().toLowerCase() == value.normalize('NFKD').trim().toLowerCase();
     return this.normalize('NFKD').trim() == value.normalize('NFKD').trim();
@@ -6261,7 +6296,7 @@ setInterval(() => {
 ;
 
 // Displays an alert message
-    // alert(message:string?) → Promise
+    // alert(message:string?) → boolean | null
 function alert(message = '') {
     if(alert.done.contains(message))
         return alert.done.fetch(message);
@@ -6406,8 +6441,8 @@ Object.defineProperties(alert, {
     }
 });
 
-// Displays an alert message (silently)
-    // alert.silent(message:string?, veiled:boolean?) → Promise
+// Displays an alert message (sticky, pre-hidden)
+    // alert.silent(message:string?, veiled:boolean?) → boolean | null
 alert.silent ??= (message = '', veiled = false) => {
     if(alert.done.contains(message))
         return alert.done.fetch(message);
@@ -6432,7 +6467,7 @@ alert.silent ??= (message = '', veiled = false) => {
 };
 
 // Displays an alert message with a timer
-    // alert.timed(message:string?, milliseconds:number?, pausable:boolean?) → Promise
+    // alert.timed(message:string?, milliseconds:number?, pausable:boolean?) → boolean | null
 alert.timed ??= (message = '', milliseconds = 60_000, pausable = false) => {
     if(alert.done.contains(message))
         return alert.done.fetch(message);
@@ -6685,7 +6720,7 @@ Object.defineProperties(confirm, {
     }
 });
 
-// Displays a confirmation message (silently)
+// Displays a confirmation message (sticky, pre-hidden)
     // confirm.silent(message:string?, veiled:boolean?) → boolean | null
 confirm.silent ??= (message = '', veiled = false) => {
     if(confirm.done.contains(message))
@@ -6982,7 +7017,7 @@ Object.defineProperties(prompt, {
     }
 });
 
-// Prompts a message (silently)
+// Prompts a message (sticky, pre-hidden)
     // prompt.silent(message:string?, defaultValue:string?, veiled:boolean?) → string | null
 prompt.silent ??= (message = '', defaultValue = '', veiled = false) => {
     if(prompt.done.contains(message))
@@ -7338,7 +7373,7 @@ Object.defineProperties(select, {
     }
 });
 
-// Selects an option (silently)
+// Selects an option (sticky, pre-hidden)
     // select.silent(message:string?, options:array?|object?, multiple:boolean?, veiled:boolean?) → string<number|array:number> | null
 select.silent ??= (message = '', options = [], multiple = false, veiled = false) => {
     if(select.done.contains(message))

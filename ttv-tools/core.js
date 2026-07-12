@@ -1162,7 +1162,7 @@ PrepareForGarbageCollection.Indiscriminately = function Indiscriminately(...obje
  *      );
  *
  */
-async function when(condition, ms = 1, ...args) {
+async function when(condition, ms = 30, ...args) {
     return new Promise((resolve, reject) => {
         let interval = setInterval(async args => {
             let value = await condition.apply(null, args);

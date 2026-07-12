@@ -27,6 +27,7 @@
     - Fix background script stalls when tabs disappear.
     - Resolve memory leaks related to Hardware Acceleration and excessive iframes.
     - Fix CPU spikes (>100%) during memory cleanup.
+    - Add ability to change RAM alarm thresholds: `[400MB, 800MB)`, `[800MB, 1.5GB)`, `[1.5GB, ∞)`.
 - [ ] **Recording:** Fix recording failures when pre-roll ads play.
 - [ ] **Chat:** Fix chat bullets not registering in the main catcher/reflector.
 - [ ] **Documentation:** Complete JSDoc for `polyfills.js`, `tools.js`, `chat.js`, `player.js`, `glyphs.js`, and `settings.js`.
@@ -36,6 +37,7 @@
 ## Release History
 
 ### Version 5.35.\*
+- [`5.35.2`](https://github.com/Ephellon/Twitch-Tools/releases/tag/5.35.2) — Fixed issue with new feature notices; fixed "RAM Alarms"; dropped the `scripting` permission.
 - [`5.35.1`](https://github.com/Ephellon/Twitch-Tools/releases/tag/5.35.1) — Fixed reserved word issues in usernames; added "RAM Alarms".
 
 ### Version 5.34.\*
