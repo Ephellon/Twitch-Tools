@@ -37,6 +37,7 @@
 ## Release History
 
 ### Version 5.35.\*
+- [`5.35.3`](https://github.com/Ephellon/Twitch-Tools/releases/tag/5.35.2) — "RAM Alarms" now ignore pages that are active.
 - [`5.35.2`](https://github.com/Ephellon/Twitch-Tools/releases/tag/5.35.2) — Fixed issue with new feature notices; fixed "RAM Alarms"; dropped the `scripting` permission.
 - [`5.35.1`](https://github.com/Ephellon/Twitch-Tools/releases/tag/5.35.1) — Fixed reserved word issues in usernames; added "RAM Alarms".
 

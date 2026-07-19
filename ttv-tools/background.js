@@ -693,16 +693,19 @@ Runtime.onMessage.addListener((request, sender, respond) => {
         } break;
 
         case 'RESPAWN_THIS_TAB': {
-            Container.tabs.get(sender.tab.id, tab => {
-                if(tab && !tab.discarded)
-                    try {
-                        RemoveTab(tab, true, true);
-                        respond({ success: true });
-                    } catch(e) {
-                        console.debug(`Failed to self-respawn a tab: ${ tab.id }`, e);
-                        respond({ success: false });
-                    }
-            });
+            if(!request.meta?.isActive)
+                Container.tabs.get(sender.tab.id, tab => {
+                    if(tab && !tab.discarded)
+                        try {
+                            RemoveTab(tab, true, true);
+                            respond({ success: true });
+                        } catch(e) {
+                            console.debug(`Failed to self-respawn a tab: ${ tab.id }`, e);
+                            respond({ success: false });
+                        }
+                });
+            else
+                console.debug(`Ignoring self-respawn, it is active still: ${ tab.id }`);
         } break;
 
         default: {
@@ -918,13 +921,13 @@ async function auditMemory() {
                 if(act === 'respawn') {
                     Container.tabs.sendMessage(id, {
                         action: 'notify',
-                        message: `<div title="RAM Overage - Respawn Pending" okay="Respawn" deny="Cancel" data-on-okay="${ onAccept }" data-on-deny="${ onAccept }">This tab is at <strong style="color:var(--color-red)">${ Math.round(ramUsed / 1024**2) }MB in RAM usage</strong>. This tab will not be respawned if you are actively using it.</div>`,
+                        message: `<div title="RAM Overage - Respawn Pending" okay="Respawn" deny="Cancel" data-on-okay="${ onAccept }" data-on-time="${ onAccept }">This tab is at <strong style="color:var(--color-red)">${ Math.round(ramUsed / 1024**2) }MB in RAM usage</strong>. This tab will not be respawned if you are actively using it.</div>`,
                         onAccept, onIgnore,
                     });
                 } else if(act === 'notify') {
                     Container.tabs.sendMessage(id, {
                         action: 'notify',
-                        message: `<div title="RAM Warning" data-on-okay="${ onAccept }">This tab is at <strong style="color:var(--color-warn)">${ Math.round(ramUsed / 1024**2) }MB in RAM usage</strong>.</div>`,
+                        message: `<div title="RAM Warning" okay="Respawn" data-on-okay="${ onAccept }">This tab is at <strong style="color:var(--color-warn)">${ Math.round(ramUsed / 1024**2) }MB in RAM usage</strong>.</div>`,
                         onAccept,
                     });
                 }

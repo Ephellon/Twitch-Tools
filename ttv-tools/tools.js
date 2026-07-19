@@ -17737,15 +17737,18 @@ if(top == window) {
                         $notice(request.message);
                         confirm.timed(request.message, (request.timeout | 0) || 15e3)
                             .then(answer => {
+                                // Is this tab active: taking input, hovering a link, or contains an active element?
+                                const isActive = $.defined('input:focus, a:hover, *:active');
+
                                 // OK
                                 if(answer)
-                                    Runtime.sendMessage({ action: request.onAccept });
+                                    Runtime.sendMessage({ action: request.onAccept, meta: { isActive } });
                                 // Cancel
                                 else if(answer === false)
-                                    Runtime.sendMessage({ action: request.onDeny });
+                                    Runtime.sendMessage({ action: request.onDeny, meta: { isActive } });
                                 // Timeout
                                 else
-                                    Runtime.sendMessage({ action: request.onIgnore });
+                                    Runtime.sendMessage({ action: request.onIgnore, meta: { isActive } });
                             });
                     } break;
 
