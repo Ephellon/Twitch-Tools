@@ -1238,40 +1238,15 @@ class Search {
              * unavailableReason: string
              */
             case 'getID': {
-                return fetchURL.fromDisk(`https://api.twitchinsights.net/v1/user/status/${ ID }`)
-                    .then(response => response.json())
-                    .then(json => {
-                        let id = parseInt(json?.id);
-
-                        if(nullish(id))
-                            throw `[${ json.status }] An error occurred: ${ json.error }`;
-
-                        return id;
-                    })
-                    .catch($warn);
+                return Search.findUserID(ID);
             } break;
 
             case 'getName': {
-                return fetchURL.fromDisk(`https://api.twitchinsights.net/v1/user/status/${ ID }`)
-                    .then(response => response.json())
-                    .then(json => {
-                        let name = json?.displayName;
-
-                        if(nullish(name))
-                            throw `[${ json.status }] An error occurred: ${ json.error }`;
-
-                        return name;
-                    })
-                    .catch($warn);
+                return Search.findUsername(ID);
             } break;
 
             case 'status.live': {
-                return fetchURL.idempotent(`https://static-cdn.jtvnw.net/previews-ttv/live_user_${ ID.toLowerCase() }-80x45.jpg`, { as: 'native', hoursUntilEntryExpires: 1/12, keepDefectiveEntry: true })
-                    .then(response => {
-                        let { pathname, filename } = parseURL(response.url);
-
-                        return !(/\/404_/.test(pathname) || !/\/previews-ttv\//i.test(pathname));
-                    });
+                return Search.getUserStatus(ID);
             } break;
 
             default: {
@@ -1667,6 +1642,43 @@ class Search {
         }
 
         return new Promise(resolve => resolve({ ok: parseBool(parseURL(data.icon).pathname?.startsWith('/jtv_user')), ...data }));
+    }
+
+    static async findUserID(username = null) {
+        return fetchURL.fromDisk(`https://api.twitchinsights.net/v1/user/status/${ username }`)
+            .then(response => response.json())
+            .then(json => {
+                let id = parseInt(json?.id);
+
+                if(nullish(id))
+                    throw `[${ json.status }] An error occurred: ${ json.error }`;
+
+                return id;
+            })
+            .catch($warn);
+    }
+
+    static async findUsername(userID = null) {
+        return fetchURL.fromDisk(`https://api.twitchinsights.net/v1/user/status/${ userID }`)
+            .then(response => response.json())
+            .then(json => {
+                let name = json?.displayName;
+
+                if(nullish(name))
+                    throw `[${ json.status }] An error occurred: ${ json.error }`;
+
+                return name;
+            })
+            .catch($warn);
+    }
+
+    static async getUserStatus(username = null) {
+        return fetchURL.idempotent(`https://static-cdn.jtvnw.net/previews-ttv/live_user_${ username.toLowerCase() }-80x45.jpg`, { as: 'native', hoursUntilEntryExpires: 1/12, keepDefectiveEntry: true })
+            .then(response => {
+                let { pathname, filename } = parseURL(response.url);
+
+                return !(/\/404_/.test(pathname) || !/\/previews-ttv\//i.test(pathname));
+            });
     }
 }
 
@@ -4113,7 +4125,7 @@ let Initialize = async(START_OVER = false) => {
 
                         from: 'LIVE_REMINDERS',
                         href: `https://www.twitch.tv/${ name }`,
-                        live: await new Search(name, 'channel', 'status.live'),
+                        live: await Search.getUserStatus(name),
                     });
                 }
 
@@ -8125,7 +8137,7 @@ let Initialize = async(START_OVER = false) => {
                             let day = time.toLocaleDateString(top.LANGUAGE, { dateStyle: 'short' }),
                                 hour = time.toLocaleTimeString(top.LANGUAGE, { timeStyle: 'short' }),
                                 recent = (abs(+now - +time) / 3_600_000 < 24),
-                                live = (+real > +time) || await new Search(name, 'channel', 'status.live'),
+                                live = (+real > +time) || await Search.getUserStatus(name),
                                 [since] = toTimeString((live && time < now? now - time: abs(now - time)), '~hour hour|~minute minute|~second second').split('|').filter(parseFloat),
                                 [tense_A, tense_B] = [['',' ago'],['in ','']][+legacy];
 
@@ -17738,17 +17750,22 @@ if(top == window) {
                         confirm.timed(request.message, (request.timeout | 0) || 15e3)
                             .then(answer => {
                                 // Is this tab active: taking input, hovering a link, or contains an active element?
-                                const isActive = $.defined('input:focus, a:hover, *:active');
+                                const meta = {
+                                    isOkay: (answer == true),
+                                    isDeny: (answer === false),
+                                    isDead: (answer == null),
+                                    isActive: $.defined('input:focus, a:hover, *:active'),
+                                };
 
                                 // OK
                                 if(answer)
-                                    Runtime.sendMessage({ action: request.onAccept, meta: { isActive } });
+                                    Runtime.sendMessage({ action: request.onAccept, meta });
                                 // Cancel
                                 else if(answer === false)
-                                    Runtime.sendMessage({ action: request.onDeny, meta: { isActive } });
+                                    Runtime.sendMessage({ action: request.onDeny, meta });
                                 // Timeout
                                 else
-                                    Runtime.sendMessage({ action: request.onIgnore, meta: { isActive } });
+                                    Runtime.sendMessage({ action: request.onIgnore, meta });
                             });
                     } break;
 
