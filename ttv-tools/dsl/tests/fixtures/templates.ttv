@@ -1,0 +1,22 @@
+// Template literal and interpolation stress cases.
+using *
+    await (.message is *)
+        // An empty template. The runtime refuses to send a whitespace-only message.
+        REPLY ``
+        // A single interpolation.
+        REPLY `hi ${ .sender }`
+        // Several interpolations in one template.
+        REPLY `${ .sender } said ${ .message } in ${ #name }`
+        // An interpolation holding its own `any from` of templates.
+        REPLY `verdict: ${ any from (
+            `yes, ${ .sender }`
+            `no, ${ .sender }`
+        ) }`
+        // A channel property interpolated.
+        POST `${ #name } is stinky :P`
+        // Braces and a lone dollar sign that are NOT interpolations.
+        POST `a { plain } brace, 100$ and a }`
+        // An emote selector inside an interpolation.
+        REPLY `mood: ${ :kappa: }`
+        // An interpolation whose expression itself contains a template.
+        REPLY `nested: ${ any from (`${ .sender }!`) }`

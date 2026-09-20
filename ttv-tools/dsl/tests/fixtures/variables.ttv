@@ -1,0 +1,28 @@
+// Both binding arrows, what each one makes visible, and what an unbound name reads as.
+// The three `await`s use staggered durations so one clock advance fires each exactly once,
+// in the order written.
+
+using *
+    await 1:00
+        // `=>` writes into the PARENT scope, so this binding outlives the block that made
+        // it and is visible to every later sibling.
+        `checked in` => shift_note
+        POST `first: ${ shift_note }`
+
+    await 1:10
+        // Visible here only because the binding above used `=>`. With `->` this would read
+        // as empty.
+        POST `second: ${ shift_note }`
+
+        // `->` writes into THIS scope: this block and its descendants, nothing else.
+        `local only` -> inner_note
+
+        if #live is true
+            POST `nested: ${ inner_note }`
+
+    await 1:20
+        // Never bound anywhere. Reading it is not an error — it is empty, exactly as
+        // `.prop` on a subject that has no such property is empty.
+        POST `missing: [${ never_bound }]`
+        POST `sibling: ${ shift_note }`
+        POST `leaked: [${ inner_note }]`

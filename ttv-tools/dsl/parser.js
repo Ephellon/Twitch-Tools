@@ -1,0 +1,947 @@
+/*** /dsl/parser.js - Recursive-descent statements, precedence-climbing expressions
+ *   _____             _____    _____  ______  _____               _   _____
+ *  |  __ \     /\    |  __ \  / ____||  ____||  __ \             | | / ____|
+ *  | |__) |   /  \   | |__) || (___  | |__   | |__) |            | || (___
+ *  |  ___/   / /\ \  |  _  /  \___ \ |  __|  |  _  /         _   | | \___ \
+ *  | |      / ____ \ | | \ \  ____) || |____ | | \ \    _   | |__| | ____) |
+ *  |_|     /_/    \_\|_|  \_\|_____/ |______||_|  \_\  (_)   \____/ |_____/
+ */
+
+/** @file Turns a TTV DSL token stream into an AST.
+ *
+ * Statements go through a `STATEMENT_PARSERS` dispatch map keyed on the leading keyword;
+ * expressions go through precedence climbing driven by the `OPERATORS` table in
+ * `tokens.js`, so the precedence of `where` relative to `<|` is stated in exactly one
+ * place rather than being implied by the shape of a cascade of methods.
+ *
+ * On a syntax fault the parser records the error and resynchronizes at the next line
+ * boundary (skipping the whole indented block if the broken line opened one), so a script
+ * with three mistakes reports three errors instead of an avalanche.
+ * @author Ephellon Grey (GitHub {@link https://github.com/ephellon @ephellon})
+ * @module
+ */
+
+;
+
+globalThis.TTV_DSL ??= {};
+
+if (typeof require === 'function' && typeof module === 'object') {
+    require('./errors.js');
+    require('./tokens.js');
+    require('./tokenizer.js');
+    require('./ast.js');
+}
+
+(() => {
+    const { DSLParseError } = globalThis.TTV_DSL.errors;
+    const { TokenType, OPERATORS, SELECTOR_KINDS, Associativity, LOWEST_PRECEDENCE, THIS_ALIASES, VARIABLE_PATTERN } = globalThis.TTV_DSL.tokens;
+    const { Tokenizer } = globalThis.TTV_DSL.tokenizer;
+    const AST = globalThis.TTV_DSL.ast;
+    const { NodeType } = AST;
+
+    /** Token types that never carry meaning between statements.
+     *
+     * `COMMA` is deliberately **absent**. Commas are ignorable *inside* a list, not between
+     * statements — putting one here would let a stray comma on its own line vanish instead
+     * of being reported. */
+    const SKIPPABLE = new Set([TokenType.NEWLINE]);
+
+    /** Token types that separate items inside a bracketed list, a `using` header or a host
+     * call. Newline still separates, exactly as in v1; the comma is merely *additional*, so
+     * leading, trailing and repeated commas all collapse to nothing and two templates on one
+     * line are still two items. */
+    const SEPARATORS = new Set([TokenType.NEWLINE, TokenType.COMMA]);
+
+    /** Builds the expression node for a binary operator. Anything not listed here becomes
+     * a plain `BinaryExpression` carrying the operator's lexeme. */
+    const BINARY_BUILDERS = {
+        [TokenType.PIPE]: (left, right, loc) => AST.pipeExpression(left, right, loc),
+        [TokenType.WHERE]: (left, right, loc) => AST.whereExpression(left, right, loc),
+        [TokenType.RANGE_EXCLUSIVE]: (left, right, loc) => AST.rangeExpression(left, right, false, loc),
+        [TokenType.RANGE_INCLUSIVE]: (left, right, loc) => AST.rangeExpression(left, right, true, loc),
+        [TokenType.PERCENT]: (left, right, loc, token) => AST.percentExpression(left, token.value, right, loc),
+    };
+
+    /** The diagnostic each poisoned reserved word produces. They exist for no other reason.
+     * @type {Object<String, String>}
+     */
+    const RESERVED_MESSAGES = {
+        else: '`else` is not a keyword in TTV DSL; use `when` for the next condition',
+        elif: '`elif` is not a keyword in TTV DSL; use `when` for the next condition',
+        elseif: '`elseif` is not a keyword in TTV DSL; use `when` for the next condition',
+        switch: '`switch` is not a keyword in TTV DSL; write `when <expression> is` and indent the cases',
+        case: '`case` is not a keyword in TTV DSL; a `when` case is written `<value>:` and indented',
+        default: '`default` is not a keyword in TTV DSL; a `when` case of `*` is the default',
+        calc: 'arithmetic is not implemented; `calc( ... )` is reserved for a future version and will require the `eval:calc` permission',
+    };
+
+    /** The one diagnostic the tokenizer can no longer produce for `:`, now that a bare colon
+     * is a real token. Spelled out here because the parser is the only place that knows all
+     * four readings were on the table. */
+    const COLON_MESSAGE = 'Unexpected ":"; expected an emote like ":kappa:", a duration like "15:00", or a `when` case label like `"help":`';
+
+    /** @param {Object} node @return {Boolean} true for a template that still needs evaluating */
+    let isInterpolated = (node) => (NodeType.TemplateLiteral === node?.type && node.expressions.length > 0);
+
+    /** @param {Object} node @return {Boolean} true for the `when <test>` continuation form */
+    let isWhenChain = (node) => (NodeType.WhenStatement === node?.type && null === node.operator);
+
+    /** Spans two locations into one.
+     * @param {Object} from
+     * @param {Object} to
+     * @return {Object}
+     */
+    let span = (from, to) => ({
+        line: from.line,
+        column: from.column,
+        start: from.start,
+        end: (to?.end ?? from.end),
+    });
+
+    /** Parses one token stream. */
+    class Parser {
+        #tokens;
+        #index = 0;
+        #source;
+        #errors = [];
+
+        /** Set only while reading a `when` head, where an `is`/`in` with nothing after it is
+         * legal and means "switch on this". Everywhere else a dangling comparison is the
+         * error it looks like. */
+        #danglingAllowed = false;
+
+        /** The dangling comparison token `#parseExpression` stopped at, if any. */
+        #dangling = null;
+
+        /**
+         * @param {Array<Object>} tokens
+         * @param {String} source - the text locations refer to, used for code frames
+         */
+        constructor(tokens, source) {
+            this.#tokens = tokens;
+            this.#source = source;
+        }
+
+        /** Every error collected during the parse. */
+        get errors() {
+            return this.#errors;
+        }
+
+        // -- cursor -----------------------------------------------------------
+
+        /** @param {Number} [ahead = 0] @return {Object} */
+        #peek(ahead = 0) {
+            let index = this.#index + ahead;
+
+            return this.#tokens[index < this.#tokens.length? index: this.#tokens.length - 1];
+        }
+
+        /** @return {Object} */
+        #next() {
+            let token = this.#peek();
+
+            if (this.#index < this.#tokens.length - 1)
+                ++this.#index;
+
+            return token;
+        }
+
+        /** @param {...String} types @return {Boolean} */
+        #at(...types) {
+            return types.includes(this.#peek().type);
+        }
+
+        /** Consumes the current token when it matches.
+         * @param {String} type
+         * @return {?Object}
+         */
+        #accept(type) {
+            return (this.#at(type)? this.#next(): null);
+        }
+
+        /** Consumes the current token or fails.
+         * @param {String} type
+         * @param {String} [what] - a human phrase for the error message
+         * @return {Object}
+         */
+        #expect(type, what) {
+            if (this.#at(type))
+                return this.#next();
+
+            return this.#fail(`Expected ${ what ?? type }, found ${ this.#describe(this.#peek()) }`);
+        }
+
+        /** @param {Object} token @return {String} */
+        #describe(token) {
+            switch (token.type) {
+                case TokenType.EOF:
+                    return 'end of input';
+
+                case TokenType.NEWLINE:
+                    return 'end of line';
+
+                case TokenType.INDENT:
+                    return 'an indented block';
+
+                case TokenType.DEDENT:
+                    return 'the end of a block';
+
+                default:
+                    return JSON.stringify(token.lexeme);
+            }
+        }
+
+        /** Raises the tailored diagnostic for a poisoned reserved word. */
+        #failReserved(token) {
+            return this.#fail(RESERVED_MESSAGES[token.lexeme] ?? `\`${ token.lexeme }\` is reserved`, token);
+        }
+
+        /** @param {String} message @param {Object} [token] */
+        #fail(message, token) {
+            throw new DSLParseError(message, (token ?? this.#peek()).loc, this.#source);
+        }
+
+        /** Skips insignificant tokens. */
+        #skipNewlines() {
+            while (SKIPPABLE.has(this.#peek().type))
+                this.#next();
+        }
+
+        /** Skips item separators — newlines *and* commas. Used only inside a list context. */
+        #skipSeparators() {
+            while (SEPARATORS.has(this.#peek().type))
+                this.#next();
+        }
+
+        /** Panic-mode recovery: discard the rest of the broken line, and the block it
+         * opened, so the next statement starts clean. */
+        #synchronize() {
+            while (!this.#at(TokenType.NEWLINE, TokenType.EOF, TokenType.DEDENT))
+                this.#next();
+
+            this.#accept(TokenType.NEWLINE);
+
+            if (!this.#at(TokenType.INDENT))
+                return;
+
+            let depth = 0;
+
+            do {
+                let type = this.#next().type;
+
+                if (TokenType.INDENT === type)
+                    ++depth;
+                else if (TokenType.DEDENT === type)
+                    --depth;
+                else if (TokenType.EOF === type)
+                    return;
+            } while (depth > 0);
+        }
+
+        // -- program and blocks ------------------------------------------------
+
+        /** @return {Object} a `Program` node */
+        parseProgram() {
+            let start = this.#peek().loc,
+                body = this.#parseStatements(TokenType.EOF),
+                end = this.#peek().loc;
+
+            return AST.program(body, span(start, end));
+        }
+
+        /** Parses statements until `terminator`.
+         * @param {String} terminator
+         * @return {Array<Object>}
+         */
+        #parseStatements(terminator) {
+            let body = [];
+
+            while (true) {
+                this.#skipNewlines();
+
+                if (this.#at(terminator, TokenType.EOF))
+                    break;
+
+                // Only a fault can produce a stray INDENT here; a well-formed block was
+                // already consumed by whichever statement opened it.
+                if (this.#at(TokenType.INDENT)) {
+                    this.#record(new DSLParseError('Unexpected indentation', this.#peek().loc, this.#source));
+                    this.#synchronize();
+
+                    continue;
+                }
+
+                let before = this.#index;
+
+                try {
+                    let statement = this.#parseStatement();
+
+                    // The chain form of `when` is written as a *sibling* of the `if` (or
+                    // `when`) it continues, because that is how it reads on the page. It is
+                    // folded into that sibling's `alternate` here rather than being parsed
+                    // as part of it, so the off-side rule stays uniform: every branch of a
+                    // chain sits at the same indentation.
+                    if (isWhenChain(statement) && this.#foldAlternate(body, statement))
+                        continue;
+
+                    body.push(statement);
+                } catch (error) {
+                    if (!(error instanceof DSLParseError))
+                        throw error;
+
+                    this.#record(error);
+                    this.#synchronize();
+
+                    // A parser that fails without consuming anything would spin forever.
+                    if (this.#index === before)
+                        this.#next();
+                }
+            }
+
+            return body;
+        }
+
+        /** Attaches a chain-form `when` to the innermost open `alternate` of the statement
+         * before it.
+         * @param {Array<Object>} body - the sibling list parsed so far
+         * @param {Object} statement - the chain `when`
+         * @return {Boolean} true when it was folded away; false leaves the caller to report
+         */
+        #foldAlternate(body, statement) {
+            let previous = body[body.length - 1];
+
+            if (!previous || (NodeType.IfStatement !== previous.type && NodeType.WhenStatement !== previous.type)) {
+                this.#record(new DSLParseError('`when <test>` continues the `if` or `when` before it, but there is none here; either add one or use `if`', statement.loc, this.#source));
+
+                return false;
+            }
+
+            let target = previous;
+
+            while (target.alternate)
+                target = target.alternate;
+
+            target.alternate = statement;
+
+            return true;
+        }
+
+        /** @param {DSLParseError} error */
+        #record(error) {
+            this.#errors.push(error);
+        }
+
+        /** Parses the indented block belonging to the statement just read, if there is one.
+         * @return {?Object} a `Block` node, or null when the statement has no body
+         */
+        #parseBlock() {
+            this.#expect(TokenType.NEWLINE, 'end of line');
+
+            if (!this.#at(TokenType.INDENT))
+                return null;
+
+            let open = this.#next().loc,
+                body = this.#parseStatements(TokenType.DEDENT),
+                close = this.#peek().loc;
+
+            this.#accept(TokenType.DEDENT);
+
+            return AST.block(body, span(open, close));
+        }
+
+        // -- statements --------------------------------------------------------
+
+        /** @return {Object} */
+        #parseStatement() {
+            let token = this.#peek(),
+                parse = this.#statementParsers[token.type];
+
+            if (parse)
+                return parse.call(this, token);
+
+            // Caught before anything else: `else`/`switch`/`calc` in statement position are
+            // exactly the mistakes a reader arriving from another language makes, and the
+            // generic "expected a statement" tells them nothing.
+            if (TokenType.RESERVED === token.type)
+                return this.#failReserved(token);
+
+            // An all-caps bare word in statement position is a verb call. The decision is
+            // made here, by position, rather than in the lexer — so the host can register
+            // new verbs without touching the language.
+            if (TokenType.IDENT === token.type && token.isUpper)
+                return this.#parseVerbStatement(token);
+
+            return this.#parseExpressionStatement(token);
+        }
+
+        /** A line whose only job is to bind a name, e.g. `any from ( ... ) -> mod_msg`.
+         *
+         * Deliberately narrow: the expression is parsed speculatively and *only* an
+         * assignment is accepted. A bare expression on a line remains an error, because a
+         * language whose statements are verbs has no use for a value nobody reads, and
+         * accepting one would turn every misspelled verb into a silent no-op.
+         */
+        #parseExpressionStatement(token) {
+            let before = this.#index,
+                expression = null;
+
+            try {
+                expression = this.#parseExpression();
+            } catch (error) {
+                if (!(error instanceof DSLParseError))
+                    throw error;
+
+                this.#index = before;
+
+                throw error;
+            }
+
+            if (NodeType.AssignmentExpression !== expression.type) {
+                this.#index = before;
+
+                return this.#fail(`Expected a statement, found ${ this.#describe(token) }`);
+            }
+
+            this.#expect(TokenType.NEWLINE, 'end of line');
+
+            return AST.expressionStatement(expression, span(token.loc, expression.loc));
+        }
+
+        /** `await <subject> [with <filter>]` */
+        #parseAwaitStatement(token) {
+            this.#next();
+
+            let subject = this.#parseExpression(),
+                filter = null;
+
+            if (this.#accept(TokenType.WITH))
+                filter = this.#parseExpression();
+
+            let body = this.#parseBlock();
+
+            return AST.awaitStatement(subject, filter, body, span(token.loc, (body ?? filter ?? subject).loc));
+        }
+
+        /** `using <subject> [<subject> ...] [+permission ...]` */
+        #parseUsingStatement(token) {
+            this.#next();
+
+            let subjects = [],
+                permissions = [];
+
+            // Several subjects may sit on one line — `using <viewer> <everyone> <all>` —
+            // with juxtaposition meaning "any of these". Grants may be interleaved with
+            // them freely; they are read directly here rather than through
+            // `#parseExpression`, which is what keeps a `+permission` from being a valid
+            // operand anywhere else in the language.
+            while (!this.#at(TokenType.NEWLINE, TokenType.EOF, TokenType.DEDENT)) {
+                if (this.#accept(TokenType.COMMA))
+                    continue;
+
+                if (this.#at(TokenType.PERMISSION)) {
+                    permissions.push(this.#next().value);
+
+                    continue;
+                }
+
+                subjects.push(this.#parseExpression());
+            }
+
+            if (!subjects.length)
+                this.#fail('`using` needs at least one subject', token);
+
+            let body = this.#parseBlock();
+
+            return AST.usingStatement(subjects, body, span(token.loc, (body ?? subjects[subjects.length - 1]).loc), permissions);
+        }
+
+        /** `when <expr> is` + indented cases, or `when <test>` + block.
+         *
+         * The two are told apart by a single fact: whether the head ended on a comparison
+         * with nothing after it. Nothing else about the line differs, and nothing has to be
+         * looked ahead for.
+         */
+        #parseWhenStatement(token) {
+            this.#next();
+
+            let discriminant = this.#parseWhenHead(),
+                dangling = this.#dangling;
+
+            this.#dangling = null;
+
+            if (!dangling) {
+                let body = this.#parseBlock();
+
+                if (null === body)
+                    this.#record(new DSLParseError('`when` has no indented body', token.loc, this.#source));
+
+                return AST.whenChain(discriminant, body, span(token.loc, (body ?? discriminant).loc));
+            }
+
+            this.#expect(TokenType.NEWLINE, 'end of line after `when ... is`');
+            this.#expect(TokenType.INDENT, 'an indented list of `when` cases');
+
+            let cases = [];
+
+            this.#skipNewlines();
+
+            while (!this.#at(TokenType.DEDENT, TokenType.EOF)) {
+                cases.push(this.#parseWhenCase());
+                this.#skipNewlines();
+            }
+
+            let close = this.#peek().loc;
+
+            this.#accept(TokenType.DEDENT);
+
+            if (!cases.length)
+                this.#fail('`when ... is` needs at least one case', { loc: span(token.loc, close) });
+
+            return AST.whenStatement(discriminant, dangling.lexeme, cases, span(token.loc, close));
+        }
+
+        /** Reads a `when` head with the dangling-comparison rule switched on. */
+        #parseWhenHead() {
+            this.#dangling = null;
+            this.#danglingAllowed = true;
+
+            try {
+                return this.#parseExpression();
+            } finally {
+                this.#danglingAllowed = false;
+            }
+        }
+
+        /** `<value>:` + block. A `*` label is the default for free: comparing anything
+         * against the wildcard already means "is present". */
+        #parseWhenCase() {
+            let test = this.#parseExpression(),
+                colon = this.#expect(TokenType.COLON, '`:` after a `when` case label'),
+                body = this.#parseBlock();
+
+            return AST.whenCase(test, body, span(test.loc, (body ?? colon).loc));
+        }
+
+        /** `with (<expr>)` + block — the statement form.
+         *
+         * The expression is read in the *current* scope, so `with (.links | ...)` filters
+         * the enclosing subject's property; the block runs one scope deeper. */
+        #parseWithStatement(token) {
+            this.#next();
+
+            let filter = this.#parseExpression(),
+                body = this.#parseBlock();
+
+            if (null === body)
+                this.#record(new DSLParseError('`with` has no indented body', token.loc, this.#source));
+
+            return AST.withStatement(filter, body, span(token.loc, (body ?? filter).loc));
+        }
+
+        /** `if <test>` */
+        #parseIfStatement(token) {
+            this.#next();
+
+            let test = this.#parseExpression(),
+                body = this.#parseBlock();
+
+            if (null === body)
+                this.#record(new DSLParseError('`if` has no indented body', token.loc, this.#source));
+
+            return AST.ifStatement(test, body, span(token.loc, (body ?? test).loc));
+        }
+
+        /** `goto <target>` */
+        #parseGotoStatement(token) {
+            this.#next();
+
+            let target = this.#parseExpression();
+
+            this.#expect(TokenType.NEWLINE, 'end of line');
+
+            return AST.gotoStatement(target, span(token.loc, target.loc));
+        }
+
+        /** `POST <argument>` / `REPLY <argument>` / any registered verb. */
+        #parseVerbStatement(token) {
+            this.#next();
+
+            let argument = null;
+
+            if (!this.#at(TokenType.NEWLINE, TokenType.EOF, TokenType.DEDENT))
+                argument = this.#parseExpression();
+
+            this.#expect(TokenType.NEWLINE, 'end of line');
+
+            return AST.verbStatement(token.value, argument, span(token.loc, (argument ?? token).loc));
+        }
+
+        /** Keyword -> handler. Declared as a field so `this` stays bound through dispatch. */
+        #statementParsers = {
+            [TokenType.AWAIT]: this.#parseAwaitStatement,
+            [TokenType.USING]: this.#parseUsingStatement,
+            [TokenType.IF]: this.#parseIfStatement,
+            [TokenType.GOTO]: this.#parseGotoStatement,
+            [TokenType.WHEN]: this.#parseWhenStatement,
+            [TokenType.WITH]: this.#parseWithStatement,
+        };
+
+        // -- expressions -------------------------------------------------------
+
+        /** Precedence climbing.
+         * @param {Number} [minimum = LOWEST_PRECEDENCE] - the loosest operator this call
+         *   is allowed to absorb
+         * @return {Object}
+         */
+        #parseExpression(minimum = LOWEST_PRECEDENCE) {
+            let left = this.#parseUnary();
+
+            while (true) {
+                let token = this.#peek(),
+                    operator = OPERATORS[token.type];
+
+                if (!operator || operator.precedence < minimum)
+                    break;
+
+                this.#next();
+
+                // `when .command is` — a comparison with nothing after it is the switch
+                // head. Legal only where `#danglingAllowed` says so; everywhere else the
+                // right operand is parsed and the missing one reported as usual.
+                if (this.#danglingAllowed && this.#at(TokenType.NEWLINE) && (TokenType.IS === token.type || TokenType.IN === token.type)) {
+                    this.#dangling = token;
+
+                    break;
+                }
+
+                // A left-associative operator forbids its own precedence on the right, so
+                // `a or b or c` groups as `(a or b) or c`. A non-associative one does the
+                // same, and then rejects a repeat outright.
+                let next = (Associativity.RIGHT === operator.associativity? operator.precedence: operator.precedence + 1),
+                    right = this.#parseExpression(next);
+
+                if (TokenType.IS === token.type)
+                    this.#rejectInterpolatedComparison(left, right, token);
+
+                let build = BINARY_BUILDERS[token.type],
+                    loc = span(left.loc, right.loc);
+
+                left = (build? build(left, right, loc, token): AST.binaryExpression(operator.lexeme, left, right, loc));
+
+                if (Associativity.NONE === operator.associativity) {
+                    let ahead = OPERATORS[this.#peek().type];
+
+                    if (ahead && ahead.precedence === operator.precedence)
+                        this.#fail(`\`${ operator.lexeme }\` is not associative; parenthesize to say which comparison comes first`);
+                }
+            }
+
+            // Assignment is the loosest thing in the language, and it is handled here rather
+            // than as a row in `OPERATORS` because its right side is a *name*, not an
+            // expression — there is nothing for precedence climbing to climb. Gating on the
+            // outermost level is what makes it loosest for free, and is why `(5:00 -> a)`
+            // works while `1st <| .links -> a` binds the piped result rather than `.links`.
+            if (LOWEST_PRECEDENCE === minimum && this.#at(TokenType.ARROW_LOCAL, TokenType.ARROW_PARENT))
+                return this.#parseAssignmentTail(left);
+
+            // A `-` sitting after a complete expression can only have been meant as
+            // subtraction. Saying so beats "expected end of line".
+            if (LOWEST_PRECEDENCE === minimum && this.#at(TokenType.MINUS))
+                this.#fail('arithmetic is not implemented; `calc( ... )` is reserved for a future version and will require the `eval:calc` permission');
+
+            return left;
+        }
+
+        /** `<value> -> name` / `<value> => name`. */
+        #parseAssignmentTail(value) {
+            let arrow = this.#next(),
+                scope = (TokenType.ARROW_PARENT === arrow.type? 'parent': 'local'),
+                target = this.#peek();
+
+            if (TokenType.IDENT !== target.type)
+                this.#fail(`Expected a variable name after \`${ arrow.lexeme }\`, found ${ this.#describe(target) }`);
+
+            this.#next();
+
+            let name = target.value;
+
+            // Enforced here, at the binding site, and nowhere else. The lexer cannot tell
+            // `USERNAME` from `mod_msg`, and a reference site must not try: a name with an
+            // interior underscore resolves variable-then-constant, one without resolves
+            // constant-only. Checking only where a name is *created* is also what makes the
+            // subject aliases safe — they are only ever read, so they can never trip this.
+            if (THIS_ALIASES.has(name))
+                this.#fail(`\`${ name }\` always means the current subject and cannot be bound`, target);
+
+            if (!VARIABLE_PATTERN.test(name))
+                this.#fail('A variable name must contain an interior underscore, e.g. `mod_msg`; `x`, `_x` and `x_` are not variable names', target);
+
+            if (this.#at(TokenType.ARROW_LOCAL, TokenType.ARROW_PARENT))
+                this.#fail('Chained assignment is not allowed; bind one name per expression');
+
+            return AST.assignmentExpression(name, scope, value, span(value.loc, target.loc));
+        }
+
+        /** `is` refuses a template that still carries an interpolation.
+         *
+         * `\`this template is cooked\`` is a fine thing to compare against — it is just
+         * text. `\`still needs ${ parsing }\`` is not: comparing against a value that has yet
+         * to be evaluated is almost always a half-written thought, and letting it through
+         * would make the comparison depend on `stringify`'s rendering rules rather than on
+         * anything the script said. */
+        #rejectInterpolatedComparison(left, right, token) {
+            if (isInterpolated(left) || isInterpolated(right))
+                this.#fail('`is` does not accept a template with `${ ... }` in it; compare against a string, or bind the template to a name first', token);
+        }
+
+        /** `not <expr>` / `-<expr>` / `=<expr>` */
+        #parseUnary() {
+            let token = this.#peek();
+
+            if (this.#at(TokenType.NOT, TokenType.MINUS, TokenType.EXACT)) {
+                this.#next();
+
+                let argument = this.#parseUnary(),
+                    operator = (TokenType.NOT === token.type? 'not': TokenType.EXACT === token.type? '=': '-');
+
+                return AST.unaryExpression(operator, argument, span(token.loc, argument.loc));
+            }
+
+            return this.#parsePrimary();
+        }
+
+        /** @return {Object} */
+        #parsePrimary() {
+            let token = this.#peek();
+
+            switch (token.type) {
+                case TokenType.NUMBER:
+                case TokenType.STRING:
+                    this.#next();
+
+                    return AST.literal(token.value, token.lexeme, token.loc);
+
+                case TokenType.TRUE:
+                case TokenType.FALSE:
+                    this.#next();
+
+                    return AST.literal(TokenType.TRUE === token.type, token.lexeme, token.loc);
+
+                case TokenType.DURATION:
+                    this.#next();
+
+                    return AST.duration(token.value, token.loc);
+
+                case TokenType.ORDINAL:
+                    this.#next();
+
+                    return AST.ordinalIndex(token.value, token.loc);
+
+                case TokenType.WILDCARD:
+                    this.#next();
+
+                    return AST.wildcard(token.loc);
+
+                case TokenType.TEMPLATE:
+                    this.#next();
+
+                    return this.#buildTemplate(token);
+
+                case TokenType.ANY:
+                    return this.#parseAnyFrom();
+
+                case TokenType.LPAREN:
+                    return this.#parseGroup();
+
+                case TokenType.JS_PATH:
+                    return this.#parseJSInvoke();
+
+                case TokenType.IDENT:
+                    this.#next();
+
+                    // `_` and its long-winded spellings are the subject itself — the same
+                    // thing `.prop` reads a property from, minus the read.
+                    if (THIS_ALIASES.has(token.value))
+                        return AST.thisExpression(token.loc);
+
+                    return AST.identifier(token.value, !!token.isUpper, token.loc);
+
+                case TokenType.RESERVED:
+                    return this.#failReserved(token);
+
+                case TokenType.PERMISSION:
+                    return this.#fail('A `+permission` may only appear in a `using` header', token);
+
+                case TokenType.COLON:
+                    return this.#fail(COLON_MESSAGE, token);
+
+                default:
+                    break;
+            }
+
+            if (token.type in SELECTOR_KINDS)
+                return this.#parseSelector();
+
+            return this.#fail(`Expected an expression, found ${ this.#describe(token) }`);
+        }
+
+        /** `$:Date.now( <arg> , <arg> )`.
+         *
+         * The path was lexed as one token and the arguments are ordinary expressions. There
+         * is no string anywhere in this construct that becomes code: the compiler hands the
+         * segment list to the runtime, which walks a host-supplied binding table. A script
+         * naming a path the host never registered fails loudly, exactly as `DISCORD` does. */
+        #parseJSInvoke() {
+            let token = this.#next();
+
+            this.#expect(TokenType.LPAREN, '`(` after a `$:` host call');
+
+            let args = [];
+
+            this.#skipSeparators();
+
+            while (!this.#at(TokenType.RPAREN, TokenType.EOF)) {
+                args.push(this.#parseExpression());
+                this.#skipSeparators();
+            }
+
+            let close = this.#expect(TokenType.RPAREN, '`)` closing the `$:` argument list').loc;
+
+            return AST.jsInvokeExpression(token.value, args, span(token.loc, close));
+        }
+
+        /** Any sigil. `/channel` glued directly to `#prop` collapses into one node. */
+        #parseSelector() {
+            let token = this.#next(),
+                kind = SELECTOR_KINDS[token.type];
+
+            if (TokenType.SELECTOR_REALM === token.type)
+                return AST.selector(kind, token.value.path, { realm: token.value.realm, path: token.value.path }, token.loc);
+
+            // `/ginger_enby#name` — two tokens, but only because they were written without
+            // a space. Adjacency in the source is what makes them one selector.
+            if (TokenType.SELECTOR_CHANNEL === token.type && this.#at(TokenType.SELECTOR_PROP) && this.#peek().loc.start === token.loc.end) {
+                let property = this.#next();
+
+                return AST.selector('prop', property.value, { channel: token.value }, span(token.loc, property.loc));
+            }
+
+            return AST.selector(kind, token.value, {}, token.loc);
+        }
+
+        /** `any from ( <item> \n <item> ... )` or `any from ( <range> )` */
+        #parseAnyFrom() {
+            let start = this.#expect(TokenType.ANY, '`any`').loc;
+
+            this.#expect(TokenType.FROM, '`from` after `any`');
+            this.#expect(TokenType.LPAREN, '`(` after `any from`');
+
+            let items = [];
+
+            this.#skipSeparators();
+
+            while (!this.#at(TokenType.RPAREN, TokenType.EOF)) {
+                items.push(this.#parseExpression());
+
+                // Items are separated by line; a comma is an *optional* extra separator, so
+                // a leading, trailing or doubled one collapses to nothing and two items on
+                // one line are still two items. Blank and comment-only lines were already
+                // dropped by the tokenizer, so any run of these is one separator.
+                this.#skipSeparators();
+            }
+
+            let close = this.#expect(TokenType.RPAREN, '`)` closing `any from`').loc;
+
+            if (!items.length)
+                this.#fail('`any from` needs at least one item', { loc: span(start, close) });
+
+            return AST.anyFromExpression(items, span(start, close));
+        }
+
+        /** A parenthesized expression. May span lines. */
+        #parseGroup() {
+            let open = this.#expect(TokenType.LPAREN, '`(`').loc;
+
+            this.#skipSeparators();
+
+            // Re-entering at the outermost level is what makes `(5:00 -> wait_time)` bind:
+            // the assignment tail pass is gated on that level, and a group is a fresh one.
+            let inner = this.#parseExpression();
+
+            this.#skipSeparators();
+            this.#expect(TokenType.RPAREN, '`)`');
+
+            // The group is transparent; only its span widens, so `(a) is b` and `a is b`
+            // produce identical trees.
+            return Object.assign({}, inner, { loc: span(open, this.#peek(-1).loc) });
+        }
+
+        /** Turns a `TEMPLATE` token into a node, recursively parsing each interpolation.
+         *
+         * Each sub-expression is re-tokenized in `fragment` mode against its absolute
+         * offset in the original file, so an error inside `${ ... }` reports the real line
+         * and column rather than a position inside a detached substring.
+         * @param {Object} token
+         * @return {Object}
+         */
+        #buildTemplate(token) {
+            let { quasis, expressions } = token.value,
+                parsed = expressions.map(({ source, offset }) => {
+                    let tokens = new Tokenizer(source, { fragment: true, origin: { offset, source: this.#source } }).tokenize(),
+                        parser = new Parser(tokens, this.#source);
+
+                    return parser.parseInterpolation();
+                });
+
+            return AST.templateLiteral(quasis, parsed, token.loc);
+        }
+
+        /** Parses a lone expression — the body of a `${ ... }`.
+         * @return {Object}
+         */
+        parseInterpolation() {
+            this.#skipNewlines();
+
+            let expression = this.#parseExpression();
+
+            this.#skipNewlines();
+
+            if (!this.#at(TokenType.EOF))
+                this.#fail(`Unexpected ${ this.#describe(this.#peek()) } after the interpolated expression`);
+
+            return expression;
+        }
+    }
+
+    /** Parses source into an AST, collecting every recoverable error.
+     * @param {String} source
+     * @return {{ program: Object, errors: Array<DSLParseError> }}
+     */
+    let parseTolerant = (source) => {
+        let text = String(source),
+            tokens = new Tokenizer(text).tokenize(),
+            parser = new Parser(tokens, text);
+
+        return { program: parser.parseProgram(), errors: parser.errors };
+    };
+
+    /** Parses source into an AST.
+     * @param {String} source
+     * @return {Object} a `Program` node
+     * @throws {DSLSyntaxError|DSLParseError} the first fault found
+     */
+    let parse = (source) => {
+        let { program, errors } = parseTolerant(source);
+
+        if (errors.length)
+            throw errors[0];
+
+        return program;
+    };
+
+    globalThis.TTV_DSL.parser = { Parser, parse, parseTolerant };
+    globalThis.TTV_DSL.parse = parse;
+})();
+
+if (typeof module === 'object' && module?.exports)
+    module.exports = globalThis.TTV_DSL;

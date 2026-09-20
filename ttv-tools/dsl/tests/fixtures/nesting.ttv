@@ -1,0 +1,18 @@
+// Deep nesting: six levels, then a dedent that closes four blocks at once.
+await * with (#live is true)
+    using *
+        await (.message is *)
+            if .sender is "ephellon"
+                if .command is "deep"
+                    await 0:30
+                        POST `six levels down`
+        // The next line drops from level six back to level two in one step.
+        await 5:00
+            POST `back to level two`
+    using <moderator>
+        await 1:00
+            POST `modCheck`
+    using <vip> <subscriber>
+        await (.command is *)
+            if .command is "lurk"
+                REPLY `enjoy the lurk`

@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<!-- /dsl/tests/index.html - Browser runner for the TTV DSL test suite.
+     Open directly (file://) or serve it; there is no build step and no bundler.
+     Script order mirrors dsl/tests/run.js. -->
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>TTV DSL &mdash; Tests</title>
+    <style>
+        body { margin: 0; padding: 1rem; background: #18181b; color: #efeff1; font: 13px/1.5 ui-monospace, Consolas, monospace; }
+        h1 { font-size: 1rem; font-weight: 700; margin: 0 0 1rem; color: #bf94ff; }
+        pre { margin: 0; white-space: pre-wrap; }
+        .pass { color: #00c8af; }
+        .fail { color: #ff6b6b; }
+        .skip { color: #adadb8; }
+    </style>
+</head>
+<body>
+    <h1>TTV DSL &mdash; Tests</h1>
+    <pre id="output">Loading&hellip;</pre>
+
+    <script src="../errors.js"></script>
+    <script src="../tokens.js"></script>
+    <script src="../tokenizer.js"></script>
+    <script src="../ast.js"></script>
+    <script src="../parser.js"></script>
+    <script src="../runtime.js"></script>
+    <script src="../compiler.js"></script>
+    <script src="../index.js"></script>
+
+    <script src="harness.js"></script>
+
+    <script src="tokenizer.test.js"></script>
+    <script src="parser.test.js"></script>
+    <script src="runtime.test.js"></script>
+    <script src="v2.test.js"></script>
+
+    <script>
+        (() => {
+            let output = document.querySelector('#output');
+
+            output.textContent = '';
+
+            let log = (line) => {
+                let text = String(line),
+                    element = document.createElement('span');
+
+                element.className = (/^\s+\+/.test(text)? 'pass': /^\s+x/.test(text)? 'fail': /^\s+-/.test(text)? 'skip': '');
+                element.textContent = text + '\n';
+
+                output.append(element);
+            };
+
+            globalThis.TTV_DSL.testing.run({ log }).catch(error => log(String(error && error.stack || error)));
+        })();
+    </script>
+</body>
+</html>

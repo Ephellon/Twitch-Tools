@@ -1,0 +1,17 @@
+// Permission grants on a `using` header, and the fact that they never widen.
+
+using <vip> +read:datetime
+    await 1:00
+        // The host maps `Date.now` to `read:datetime`, which this header granted.
+        POST `granted: ${ $:Date.now() }`
+
+using <moderator> +eval
+    await 1:10
+        // `Math.random` is unmapped, so it needs `eval:js`. `+eval` is NOT a prefix of
+        // anything — it grants `eval` and only `eval` — so this fails loudly.
+        POST `refused: ${ $:Math.random() }`
+
+using <subscriber> +eval:calc
+    await 1:20
+        // Nor does the narrow grant imply the broad one: `+eval:calc` is not `+eval`.
+        POST `also refused: ${ $:Math.random() }`

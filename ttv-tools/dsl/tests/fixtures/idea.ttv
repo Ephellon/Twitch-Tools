@@ -1,0 +1,111 @@
+/* `with <filter>` binds a filter to a scope, i.e. `using * where <filter>`
+    await * with (#live is true)
+    -- is the same as --
+    await * using * where (#live is true)
+*/
+await * with (#live is true)
+    // Shadyhen's `Skyward Sanctuary/Announcements`
+    using DISCORD/779741119520571456
+        await (.sender is "streamcord") and ("twitch.tv" in .content)
+            goto 1st of .links where "twitch.tv" in .href
+        // Can also be (ugly but legal) shorthanded to...
+        await.sender is"streamcord"and"twitch.tv"in.content
+            goto 1th<|.links|"twitch.tv"in.href
+        // Or...
+        await (.sender is "streamcord") and ("twitch.tv" in .content)
+            with (.links | ("twitch.tv" in .href))
+                goto .href
+
+    using *
+        await 15:00
+            goto #
+            await 5:00
+                if #name is "ginger_enby"
+                    POST `!lurk watching anime`
+
+        // `is "TeXt"` → case-insensitive
+        // `is <property>` → case-insensitive
+        // `is <var_name>` → case-insensitive
+        // `is ='TeXt'` → case-sensitive
+        // `is =<property>` → case-sensitive
+        // `is =<var_name>` → case-sensitive
+        // `is` does not accept raw templates
+            // `this template is cooked` → no further parsing required
+            // `this tempalte is ${ "raw" }` → still needs further parsing
+        await (.message is 'HELP')
+            REPLY `Here are some things you can do in this chat...`
+
+        await (USERNAME in .message) or (USERNAME in .mentions)
+            if #name is "soulbewitch" and .sender is "Jjay_89"
+                REPLY `what do you want now, ${ .sender }?`
+
+        await (.command is *)
+            // Unterminated `is` invokes the switch-syntax
+            when .command is
+                "help":
+                    // `%` joins lists or splits-and-joins newline blocks in strings
+                    // `%` alone evolves into `%n%s`; otherwise `%a[%b[%c...]]` replaces regex sequences that match, in order given, e.g. `%d%s` matches all spaces that immediately follow a digit
+                        // `...` % <replacement> → `...` %n%s <replacement>
+                        // Only acceptable sequences: `%0` (null) `%a` (alphabetic) `%A` (non-alphabetic) `%b` (word-boundary) `%B` (non-word-boundary) `%d` (digit) `%D` (non-digit) `%f` (formfeed) `%n` (newline) `%r` (carriage return) `%s` (space) `%S` (non-space) `%t` (tab) `%v` (vertical tab) `%w` (alphanumeric) `%W` (non-alphanumeric)
+                    // `%c` regardless of sequence, always trims the string first
+                    REPLY `
+                        help → this help message
+                        gamble → throw away all your monies
+                        whoami → ${ .sender }, silly
+                    ` % ' · '
+                    // Trim string, then replace stretches of newlines + whitespace with "·"
+                    // Should equal `help → this help message · gamble → throw away all your monies · whoami → ${ .sender }, silly`
+
+                "gamble":
+                    REPLY any from (
+                        `You lost. End of story :)`
+                        `Congration. You'd done it. +${ any from(1 .. 10) }`
+                    )
+
+                "whoami":
+                    REPLY `${ .sender }, silly`
+
+    using <moderator>
+        await (5:00 -> wait_time)
+            any from (
+                `can I mod today?`
+                "modCheck"
+                'who needs ban?'
+            ) -> mod_msg
+
+        POST `${ mod_msg } (${ wait_time })`
+
+    using <subscriber>
+        await 5:00
+            POST any from (
+                , `burger`
+                , `burrito`
+                , `chimichanga`
+                , `churro` `quessadilla` `taco`
+                ,
+            )
+
+    using <vip> +read:datetime +eval:calc
+        await 5:00
+            POST any from (
+                `!lurk`
+                `!lurk + sound`
+                `!lurk into the shadows`
+                `!lurk watching tv`
+                `${ #name } is stinky :P`
+                `!lurk What time is it? It's ${ $:Date.now() }`
+                    // Invoke JavaScript's native `Date.now` with an empty list `()`
+                    // `$:Date.now(123)` → `(123) → JavaScriptArray[123]` → `JavaScriptInvoke(["Date", "now"], [123])`
+                        // Where `JavaScriptInvoke` is in the form `ƒ JavaScriptInvoke(path:Array<String>, arguments?:Array<any>) → void`
+            )
+
+    using <viewer> <everyone> <anyone> <all>
+        await 5:00
+            POST any from (
+                `!lurk homework :P`
+                `!lurk i sleep`
+                `!lurk time to eat`
+                `UwU mfs`
+                `g'day chat`
+                `i have risen`
+            )
