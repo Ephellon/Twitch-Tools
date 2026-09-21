@@ -1070,7 +1070,7 @@ Object.defineProperties(SaveSettings, {
 });
 
 async function LoadSettings(OVER_RIDE_SETTINGS = null) {
-    let assignValue = LoadSettings.assignValue;
+    const assignValue = LoadSettings.assignValue;
 
     let elements = $.all(usable_settings.map(name => '#' + name).join(', ')),
         using = elements.map(element => element.id);
@@ -1289,7 +1289,7 @@ function PostSyncStatus(message = '\u00A0', type = 'alert') {
         furnish('span', { [`${ type }-text`]: '', textContent: message })
     );
 
-    clearSyncStatus.clearID = setTimeout(clearSyncStatus, message.split(/\s+/).length * 1_500);
+    clearSyncStatus.clearID = setTimeout(clearSyncStatus, message?.split?.(/\s+/)?.length * 1_500);
 }
 
 Object.defineProperties(PostSyncStatus, {
@@ -1312,7 +1312,7 @@ function Sym(string = '') {
 }
 
 $('#sync-settings--upload').onmouseup = async event => {
-    let extractValue = SaveSettings.extractValue;
+    const extractValue = SaveSettings.extractValue;
     let syncToken = $('#sync-token'),
         { currentTarget } = event;
 
@@ -1521,7 +1521,7 @@ $('#sync-settings--upload').onmouseup = async event => {
 };
 
 $('#sync-settings--download').onmouseup = async event => {
-    let assignValue = LoadSettings.assignValue;
+    const assignValue = LoadSettings.assignValue;
     let syncToken = $('#sync-token').value,
         { currentTarget } = event;
 
@@ -1777,6 +1777,226 @@ $('#sync-settings--share').onmousedown = async event => {
     await navigator.clipboard.writeText(syncToken)
         .then(() => PostSyncStatus.success('Copied to clipboard'))
         .catch(PostSyncStatus.warning);
+};
+
+$('#sync-settings--upload-json-input').onchange = async event => {
+    const assignValue = LoadSettings.assignValue;
+    const { currentTarget } = event;
+    const { files } = currentTarget;
+
+    PostSyncStatus('Reading file...');
+    currentTarget.nextElementSibling.classList.add('spin');
+
+    if(files.length != 1)
+        return PostSyncStatus(`A single JSON file must be selected!`);
+
+    const [file] = files;
+
+    file.text().then(json => {
+        const data = JSON.parse(json);
+
+        reading: for(let index = 0; index < usable_settings.length; ++index) {
+            let ID = usable_settings[index],
+                element = $(`#${ ID }:not([data-rest-id])`);
+
+            if(nullish(element))
+                continue;
+            element.dataset.restId = ID;
+
+            let value = data[ID];
+
+            switch(id) {
+                case 'filter_rules': {
+                    RedoRuleElements(value, 'filter');
+                } break;
+
+                case 'phrase_rules': {
+                    RedoRuleElements(value, 'phrase');
+                } break;
+
+                case 'lurking_rules': {
+                    RedoRuleElements(value, 'lurking', ';', 'channel badge text');
+                } break;
+
+                case 'away_mode_schedule': {
+                    RedoTimeElements(value, 'away_mode');
+                } break;
+
+                case 'away_mode__volume': {
+                    assignValue(element, value * 100);
+                } break;
+
+                case 'user_language_preference': {
+                    value ||= (top.navigator?.userLanguage ?? top.navigator?.language ?? 'en').toLowerCase().split('-').reverse().pop();
+
+                    assignValue(element, value);
+
+                    if(TRANSLATED) continue reading;
+
+                    // Translate(document.documentElement.lang = value.toLowerCase());
+                } break;
+
+                case 'simplify_chat_font': {
+                    $(`#${ id }`).setAttribute('style', `font-family:${ value } !important`);
+
+                    assignValue(element, value);
+                } break;
+
+                default: {
+                    if(/^!(\d+)/.test(value) && element.options?.length) {
+                        let selected = value.replace('!', '');
+
+                        assignValue(element, element.options[selected].value);
+                    } else if('TF_X'.contains(value) && value?.length) {
+                        let library = { T: true, F: false, _: null, X: '' };
+
+                        assignValue(element, library[value]);
+                    } else {
+                        assignValue(element, value);
+                    }
+                } break;
+            }
+        }
+
+        $.all('[data-rest-id]').map(e => { delete e.dataset.restId });
+    }).catch(e => {
+        $warn(e);
+        PostSyncStatus(`Failed to parse JSON file. See the console for more information.`);
+    }).finally(() => {
+        // SaveSettings();
+        currentTarget.nextElementSibling.classList.remove('spin');
+    });
+};
+
+$('#sync-settings--download-json').onmouseup = async event => {
+    const extractValue = SaveSettings.extractValue;
+    const { currentTarget } = event;
+
+    PostSyncStatus('Capturing settings...');
+    currentTarget.classList.add('spin');
+
+    let settings = {};
+    for(let index = 0, value, place; index < usable_settings.length; ++index) {
+        let ID = usable_settings[index], element = $(`#${ ID }`);
+
+        if(nullish(element))
+            continue;
+
+        switch(ID) {
+            case 'filter_rules': {
+                let rules = [],
+                    input = extractValue($('#filter_rules-input'));
+
+                if(parseBool(input))
+                    rules = input.split(',');
+
+                for(let rule of $.all('#filter_rules code'))
+                    rules.push(rule.textContent);
+                rules = rules.isolate().filter(rule => rule.length);
+
+                value = rules.sort().join(',');
+            } break;
+
+            case 'phrase_rules': {
+                let rules = [],
+                    input = extractValue($('#phrase_rules-input'));
+
+                if(parseBool(input))
+                    rules = input.split(',');
+
+                for(let rule of $.all('#phrase_rules code'))
+                    rules.push(rule.textContent);
+                rules = rules.isolate().filter(rule => rule.length);
+
+                value = rules.sort().join(',');
+            } break;
+
+            case 'lurking_rules': {
+                let rules = [],
+                    input = extractValue($('#lurking_rules-input'));
+
+                if(parseBool(input))
+                    rules = input.split(';');
+
+                for(let rule of $.all('#lurking_rules code'))
+                    rules.push(rule.textContent);
+                rules = rules.isolate().filter(rule => rule.length);
+
+                value = rules.sort().join(';');
+            } break;
+
+            case 'away_mode_schedule': {
+                let times = [];
+                for(let button of $.all('#away_mode_schedule button[duration]')) {
+                    let day = parseInt(button.getAttribute('day')),
+                        time = parseInt(button.getAttribute('time')),
+                        duration = parseInt(button.getAttribute('duration')),
+                        status = parseBool(button.getAttribute('status'));
+
+                    times.push({ day, time, duration, status });
+                }
+
+                let validTimes = [];
+                for(let object of times) {
+                    let { day, time, duration } = object;
+
+                    if(false
+                        || (day < 0 || day > 6)
+                        || (time < 0 || time > 23)
+                        || (duration < 1)
+                    )
+                        continue;
+
+                    validTimes.push(object);
+                }
+
+                value = JSON.stringify(validTimes.isolate());
+            } break;
+
+            case 'away_mode__volume': {
+                let volume = extractValue($('#away_mode__volume'));
+
+                value = parseFloat(volume) / 100;
+            } break;
+
+            case 'user_language_preference': {
+                let preferred = extractValue($('#user_language_preference'));
+
+                value = preferred.toLowerCase();
+            } break;
+
+            default: {
+                if(nullish(element)) {
+                    settings.set(ID, 'X');
+                    continue;
+                }
+
+                value = SaveSettings.extractValue(element);
+                place = element.options?.selectedIndex;
+            } break;
+        }
+
+        settings[ID] = value;
+    }
+
+    try {
+        PostSyncStatus('Making file...');
+
+        const j = JSON.stringify(settings);
+        const b = btoa(j);
+        const a = furnish('a', {
+            download: `TTV Settings.json`,
+            href: `data:application/json;base64,${ b }`,
+        }, `Download Settings`);
+
+        document.head.appendChild(a);
+        a.click();
+    } catch(e) {
+        $warn(e);
+        PostSyncStatus.error(`Failed to create JSON file. See the console for more information.`);
+    } finally {
+        currentTarget.classList.remove('spin');
+    }
 };
 
 /* Adding new schedules */
