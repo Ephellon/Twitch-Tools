@@ -1487,6 +1487,53 @@ let DO_NOT_AUTO_ADD = []; // List of names to ignore for auto-adding; the user a
 
 let ALREADY_EXPANDED = false;
 
+/**
+ * Restarts a one-shot placement job once the stream's live timer (`.live-time`) appears, if the feature is still on.
+ * One wait per job; an offline channel otherwise restarted these every second.
+ * @param {string} job - The job to restart
+ * @returns {Promise<void>}
+ */
+function WaitForLiveTime(job) {
+    WaitForLiveTime.waiting ??= new Set;
+
+    if(WaitForLiveTime.waiting.has(job))
+        return;
+
+    WaitForLiveTime.waiting.add(job);
+
+    return when.defined(() => $('.live-time'), 2_500).then(() => {
+        WaitForLiveTime.waiting.delete(job);
+
+        if(defined(Settings[job]) && `${ Settings[job] }`.unlike('null'))
+            RestartJob(job, 'live_time');
+    });
+}
+
+/**
+ * The left-hand navigation. Twitch re-renders it, so its state is read fresh and every change is checked.
+ */
+const SideNav = {
+    /** Whether the navigation is expanded. */
+    get open() {
+        return $.defined('[data-a-target="side-nav-header-expanded"i], [data-a-target="side-nav-search-input"i]')
+            && $.nullish('[data-a-target="side-nav-header-collapsed"i]');
+    },
+
+    /**
+     * Expands or collapses the navigation, clicking its (freshly found) toggle until it reports the wanted state.
+     * @param {boolean} open - Whether it should be expanded
+     * @returns {Promise<boolean>} Whether it ended up that way
+     */
+    async set(open) {
+        for(let tries = 0; tries < 3 && this.open != open; ++tries) {
+            $('[data-a-target="side-nav-arrow"i]')?.click();
+            await wait(250);
+        }
+
+        return this.open == open;
+    },
+};
+
 // Intializes the extension
     // Initialize(START_OVER:boolean) → undefined
 // Shared between features and their plugins (src/plugins/); Initialize() assigns them
@@ -2617,13 +2664,11 @@ let Initialize = async(START_OVER = false) => {
 
         let element, max_show_more = 10, max_show_less = 10, max_panel_size = 10;
 
-        // Is the nav open?
-        const alreadyOpen = $.defined('[data-a-target="side-nav-search-input"i], [data-a-target="side-nav-header-expanded"i]')
-            , sidenav = $('[data-a-target="side-nav-arrow"i]');
+        // Open the Side Nav (only if it isn't already), and remember how it was
+        const alreadyOpen = SideNav.open;
 
-        // Open the Side Nav
-        if(!alreadyOpen) // Only open it if it isn't already
-            sidenav?.click();
+        if(!alreadyOpen)
+            await SideNav.set(true);
 
         // Click "show more" as many times as possible
         show_more: while(true
@@ -2784,9 +2829,9 @@ let Initialize = async(START_OVER = false) => {
         )
             element.click();
 
-        // Close the Side Nav
-        if(!alreadyOpen) // Only close it if it wasn't open in the first place
-            wait().then(() => sidenav?.click());
+        // Put the Side Nav back the way it was (#42: a stale toggle could leave it collapsed)
+        if(!alreadyOpen)
+            wait().then(() => SideNav.set(false));
     } // :__GetAllChannels__
 
     // Every channel
@@ -3797,6 +3842,8 @@ if(top == window) {
                                             parseBool(Settings.away_mode)
                                                 ? (false
                                                     || $.defined('#away-mode')
+                                                    // No player to put the button on (an offline channel)
+                                                    || $.nullish('[data-a-target="player-controls"i]')
 
                                                     || !NOT_LOADED_CORRECTLY.push('away_mode')
                                                 )
@@ -3833,6 +3880,8 @@ if(top == window) {
                                             parseBool(Settings.watch_time_placement)
                                                 ? (false
                                                     || $.defined('#tt-watch-time')
+                                                    // Placed next to the live timer; there's none when offline
+                                                    || $.nullish('.live-time')
 
                                                     || !NOT_LOADED_CORRECTLY.push('watch_time_placement')
                                                 )
@@ -3844,6 +3893,8 @@ if(top == window) {
                                             parseBool(Settings.points_receipt_placement)
                                                 ? (false
                                                     || $.defined('#tt-points-receipt')
+                                                    // Placed next to the live timer; there's none when offline
+                                                    || $.nullish('.live-time')
 
                                                     || !NOT_LOADED_CORRECTLY.push('points_receipt_placement')
                                                 )
@@ -3867,8 +3918,22 @@ if(top == window) {
                                             RestartJob(job, 'FAILED_TO_ACTIVATE');
 
                                     if(parseBool(Settings.recover_pages)) {
-                                        if(++RECOVERY_TRIALS > 10)
-                                            addReport(NOT_LOADED_CORRECTLY.map(fail => ({ [`fail-to-load-${ fail }`]: true })), true);
+                                        if(++RECOVERY_TRIALS <= 10)
+                                            return false;
+
+                                        // Reload once per page every 5 minutes at most; a page that still can't load its
+                                        // features after that would otherwise reload forever
+                                        const RELOADED = JSON.parse(sessionStorage.getItem('ttv-tools:reinit-reload') || '{}');
+
+                                        if(RELOADED.path == location.pathname && (+new Date - RELOADED.at) < 300_000) {
+                                            $warn(`Still not activated after a reload: ${ NOT_LOADED_CORRECTLY }. Giving up on this page.`);
+
+                                            return PAGE_IS_READY = !clearInterval(REINIT_JOBS);
+                                        }
+
+                                        sessionStorage.setItem('ttv-tools:reinit-reload', JSON.stringify({ path: location.pathname, at: +new Date }));
+                                        addReport(NOT_LOADED_CORRECTLY.map(fail => ({ [`fail-to-load-${ fail }`]: true })), true);
+
                                         return false;
                                     }
 

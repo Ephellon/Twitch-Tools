@@ -48,8 +48,9 @@ plugin({
 
         const live_time = $('.live-time');
 
+        // No live timer yet (an offline channel): wait for one quietly, then place once, instead of restarting every second
         if(nullish(live_time))
-            return RestartJob('watch_time_placement', 'missing:live_time');
+            return WaitForLiveTime('watch_time_placement');
 
         switch(placement) {
             // Option 1 "over" - video overlay, volume control area

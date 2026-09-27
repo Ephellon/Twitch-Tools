@@ -173,8 +173,12 @@ plugin({
 
                 const live_time = $('.live-time');
 
-                if(nullish(live_time))
-                    return RestartJob('points_receipt_placement', 'missing:live_time');
+                // No live timer yet (an offline channel): wait for one quietly, then place once, instead of restarting every second
+                if(nullish(live_time)) {
+                    StopWatch.stop('points_receipt_placement');
+
+                    return WaitForLiveTime('points_receipt_placement');
+                }
 
                 /**
                  * Converts an element's class list into a joined CSS selector string.

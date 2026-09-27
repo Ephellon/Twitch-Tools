@@ -47,18 +47,9 @@ plugin({
                 // removeFromSearch(['tt-err-chn']);
             } else if($.nullish('[id*="side"i][id*="nav"i] .side-nav-section[aria-label][tt-svg-label="followed"i] a[class*="side-nav-card"i]') && !/^User_Not_Logged_In_\d+$/.test(USERNAME)) {
                 wait(3000).then(() => {
-                    // Is the nav open?
-                    const alreadyOpen = $.defined('[data-a-target="side-nav-search-input"i], [data-a-target="side-nav-header-expanded"i]')
-                        , sidenav = $('[data-a-target="side-nav-arrow"i]')
-                            ?.closest('[class*="expand"i]')
-                            ?.querySelector('button');
-
-                    // Toggle the Side Nav
-                    if(alreadyOpen) {
-                        sidenav?.click();
-
-                        wait(1e3).then(() => sidenav?.click());
-                    }
+                    // Collapse and re-expand an open Side Nav so Twitch re-renders the followed channels
+                    if(SideNav.open)
+                        SideNav.set(false).then(() => wait(1e3)).then(() => SideNav.set(true));
 
                     if($.nullish('[id*="side"i][id*="nav"i] .side-nav-section[aria-label][tt-svg-label="followed"i] a[class*="side-nav-card"i]'))
                         return;
