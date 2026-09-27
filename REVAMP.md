@@ -25,10 +25,16 @@ Living plan for the multi-week revamp. One phase at a time; each phase ends in s
 - `pre-revamp` tag on `a51f2a8`.
 - Commands: `npm test`, `npm run lint`, `npm run build [-- --zip]`, `npm run lint:firefox`.
 
-### 1. Inventory (Offser-heavy)
-- Offser digests each `/*** Section` of `tools.js`/`chat.js` into a **feature catalog**: id, settings keys, timers, selectors, shared globals read/written, cross-feature calls, frame(s) it runs in.
-- Output: `docs/FEATURES.md` + `docs/ARCHITECTURE.md` (frames → scripts, Settings flow, background messaging, storage keys).
-- This catalog is the dependency map that drives Phases 3–4.
+### 1. Inventory ✅
+- [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md): what runs where, layers, the feature pattern, settings lifecycle, bootstrap, persistence, messaging.
+- [`docs/FEATURES.md`](docs/FEATURES.md): every Settings option → the code that reads it.
+- [`docs/sections/`](docs/sections/): per-file digests of all 110 chunks (purpose, triggers, definitions, dependencies, Twitch coupling, storage/messaging), from `gemma4:31b-cloud` plus script-extracted facts.
+- [`docs/triage/offser-bug-candidates.md`](docs/triage/offser-bug-candidates.md): 163 unverified bug candidates from 101 chunks — Phase 2 input.
+- Pipeline in `scripts/offser/` (reproducible).
+- Findings along the way:
+  - Settings read in code with no UI: `auto_badge`, `claim_reward`, `game_overview_card`, `phone_number`.
+  - `simplify_chat_reverse_emotes` has a control but is never read by name.
+  - `tools.js` ~L13811–14154 holds banner-only stubs for features that now live in `chat.js`.
 
 ### 2. Bug triage & fixes
 - Merge sources: CHANGELOG known issues, GitHub issues, Offser per-section bug scans (verified by me before touching code).
