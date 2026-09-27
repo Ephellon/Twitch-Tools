@@ -184,6 +184,9 @@ let Chat__Initialize = async(START_OVER = false) => {
     // Reocver Messages → src/plugins/chat/recover-messages.js
     await TTV.run('chat.recover_messages', PLUGIN_CONTEXT);
 
+    // The viewer's TTV DSL scripts
+    await TTV.run('chat.user_scripts', PLUGIN_CONTEXT);
+
 };
 // End of Chat__Initialize
 

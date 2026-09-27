@@ -31,3 +31,4 @@ import './recover-messages.js';
 import './safe-greedy-raiding.js';
 import './safe-point-watcher-helper.js';
 import './safe-soft-unban.js';
+import './user-scripts.js';
