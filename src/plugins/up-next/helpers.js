@@ -594,6 +594,9 @@ plugin({
                         currentTarget.setAttribute('paused', FIRST_IN_LINE_PAUSED = paused);
                         currentTarget.setAttribute('paused-at', FIRST_IN_LINE_PAUSED_AT = +new Date);
 
+                        // Who paused: a viewer's click is trusted; Auto-Focus clicks the button from script (#56)
+                        currentTarget.setAttribute('paused-by', paused? ['auto', 'user'][+event.isTrusted]: '');
+
                         if(defined(currentTarget.tooltip))
                             currentTarget.tooltip.innerHTML = `${ ['Pause','Resume'][+paused] } the queue`;
                     },

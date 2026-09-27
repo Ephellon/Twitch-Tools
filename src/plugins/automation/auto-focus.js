@@ -151,7 +151,8 @@ plugin({
                                     let button = $('#up-next-control'),
                                         paused = parseBool(button?.getAttribute('paused'));
 
-                                    if(!paused)
+                                    // Only undo a pause Auto-Focus made; a viewer's pause stays (#56)
+                                    if(!paused || button?.getAttribute('paused-by') == 'user')
                                         break __AutoFocus_Resume_UpNext__;
 
                                     button?.click();
