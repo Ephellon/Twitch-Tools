@@ -275,7 +275,7 @@ export default [
     },
     {
         // The DSL runs both as content scripts and under Node (its test runner)
-        files: [`${ ROOT }/dsl/**/*.js`],
+        files: [`${ ROOT }/dsl/**/*.js`, `${ ROOT }/dsl/**/*.mjs`],
         languageOptions: { globals: { ...globals.node, describe: 'readonly', it: 'readonly', assert: 'readonly' } },
     },
     {

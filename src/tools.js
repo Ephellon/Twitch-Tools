@@ -4712,6 +4712,12 @@ if(top == window) {
                         const usable = parseBool(channel.equals(CHANNEL));
 
                         switch(command.command) {
+
+                            // The signed-in viewer's state in this channel: keep their badges (TTV DSL `[badge]` at the top level)
+                            case 'USERSTATE': {
+                                Chat.viewerBadges = Object.keys(tags?.badges ?? {});
+                            } break;
+
                             // Successful login attempt
                             case '001': {
                                 socket.send(`JOIN ${ CHANNEL }`);
@@ -4862,6 +4868,9 @@ if(top == window) {
                                     subject,
                                     mentions,
                                     timestamp: new Date,
+
+                                    // An incoming raid: who, and with how many (TTV DSL `raid` events; never an `unraid`)
+                                    ...(msg_id == 'raid' ? { raider: (tags.msg_param_login ?? '').toLowerCase(), raid_size: parseInt(tags.msg_param_viewerCount) | 0 } : {}),
 
                                     // @TODO: see if there are extra `msg_id` values
                                     // msg_id,
