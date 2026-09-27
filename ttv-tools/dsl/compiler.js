@@ -972,8 +972,13 @@ if (typeof require === 'function' && typeof module === 'object') {
          * binding table and calls what it finds. No text ever becomes code. */
         [NodeType.JSInvokeExpression](node, scope) {
             let { runtime } = scope,
-                args = compileAll(node.arguments, scope),
                 { path } = node;
+
+            // No argument list at all: a constant read, `&Math.PI`.
+            if (null == node.arguments)
+                return async (context) => runtime.invokeJS(path, null, context, node.loc);
+
+            let args = compileAll(node.arguments, scope);
 
             return async (context) => {
                 let values = [];

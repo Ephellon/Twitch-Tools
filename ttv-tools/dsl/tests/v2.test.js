@@ -237,8 +237,8 @@
     // -- permissions --------------------------------------------------------
 
     describe('v2 / permissions', () => {
-        let bindings = { Date: { now: () => 1234 }, Math: { random: () => 0.5 } },
-            mapping = { 'Date.now': 'read:datetime' };
+        let bindings = { datetime: { now: () => 1234 } },
+            mapping = { 'datetime.now': 'read:datetime' };
 
         let source = fixture('permissions');
 
@@ -292,7 +292,7 @@
         });
 
         it('refuses a host path mapped to a permission nobody can grant', () => {
-            assert.throws(() => harness({ jsPermissions: { 'Date.now': 'read:clock' } }), /not on the permission list/);
+            assert.throws(() => harness({ jsPermissions: { 'datetime.now': 'read:clock' } }), /not on the permission list/);
         });
 
         it('requires a description on every `write` and `eval` grant', () => {
@@ -309,22 +309,22 @@
         });
 
         it('accumulates grants down the nesting tree, never sideways', async () => {
-            let { runtime, failures } = harness({ jsBindings: bindings, jsPermissions: { 'Math.random': 'read:html.text' } });
+            let { runtime, failures } = harness({ jsBindings: bindings, jsPermissions: mapping });
 
             await run([
-                'using * +read:html.text',
+                'using * +read:datetime',
                 '    using *',
                 '        await *',
-                '            POST `inner ${ &Math.random() }`',
+                '            POST `inner ${ &datetime.now() }`',
                 'using *',
                 '    await *',
-                '        POST `sibling ${ &Math.random() }`',
+                '        POST `sibling ${ &datetime.now() }`',
                 '',
             ].join('\n'), runtime, {});
 
             await runtime.dispatch({ a: 1 });
 
-            assert.deepEqual(sent(runtime), ['inner 0.5']);
+            assert.deepEqual(sent(runtime), ['inner 1234']);
             assert.ok(failures.some(entry => /DSLPermissionError/.test(entry)));
         });
 
@@ -340,35 +340,100 @@
     // -- host calls ---------------------------------------------------------
 
     describe('v2 / `&` host calls', () => {
+        let host = () => harness({ jsBindings: { datetime: { now: () => 1 } }, jsPermissions: { 'datetime.now': 'read:datetime' } });
+
         it('fails loudly when the host registered nothing', () => {
             let { runtime } = harness(),
-                context = runtime.createContext({ permissions: ['eval:js'] });
+                context = runtime.createContext({ permissions: ['read:datetime'] });
 
-            let error = assert.throws(() => runtime.invokeJS(['Date', 'now'], [], context), DSLRuntimeError);
+            let error = assert.throws(() => runtime.invokeJS(['datetime', 'now'], [], context), DSLRuntimeError);
 
             assert.match(error.message, /no host binding/i);
         });
 
-        it('calls a registered binding with its arguments', () => {
-            let { runtime } = harness({ jsBindings: { Math: { max: (...values) => Math.max(...values) } } }),
-                context = runtime.createContext({ permissions: ['eval:js'] });
+        it('calls a mapped binding under its own permission, not `eval:js`', () => {
+            let { runtime } = host();
 
-            assert.equal(runtime.invokeJS(['Math', 'max'], [1, 9, 3], context), 9);
+            assert.equal(runtime.invokeJS(['datetime', 'now'], [], runtime.createContext({ permissions: ['read:datetime'] })), 1);
+            assert.throws(() => runtime.invokeJS(['datetime', 'now'], [], runtime.createContext({ permissions: ['eval:js'] })), DSLPermissionError);
         });
 
-        it('defaults to requiring `eval:js`', () => {
-            let { runtime } = harness({ jsBindings: { Date: { now: () => 1 } } }),
-                context = runtime.createContext({ permissions: [] });
+        it('refuses to start with a bound function that has no permission', () => {
+            assert.throws(() => harness({ jsBindings: { datetime: { now: () => 1, zone: () => 'UTC' } }, jsPermissions: { 'datetime.now': 'read:datetime' } }), /map these in `jsPermissions`: &datetime\.zone/);
+        });
 
-            assert.throws(() => runtime.invokeJS(['Date', 'now'], [], context), DSLPermissionError);
+        it('refuses a host binding that shadows a built-in', () => {
+            assert.throws(() => harness({ jsBindings: { Math: { max: () => 0 } }, jsPermissions: { 'Math.max': 'eval:js' } }), /is a built-in|may not be called `Math`/);
         });
 
         it('refuses to walk through `constructor` or `__proto__`', () => {
-            let { runtime } = harness({ jsBindings: { Date: { now: () => 1 } } }),
-                context = runtime.createContext({ permissions: ['eval:js'] });
+            let { runtime } = host(),
+                context = runtime.createContext({ permissions: ['read:datetime', 'eval:js'] });
 
             for (let segment of ['constructor', '__proto__', 'prototype'])
-                assert.throws(() => runtime.invokeJS(['Date', segment, 'x'], [], context), /never allowed/i);
+                assert.throws(() => runtime.invokeJS(['datetime', segment, 'x'], [], context), /never allowed|no host binding/i);
+        });
+    });
+
+    describe('v2 / `eval:js`: the built-in set', () => {
+        let js = async (expression) => {
+            let { runtime, failures } = harness();
+
+            await run(`using +eval:js -- "maths"\n    await *\n        POST \`\${ ${ expression } }\`\n`, runtime, {});
+            await runtime.dispatch({ list: [3, 1, 2] });
+
+            return { texts: sent(runtime), failures };
+        };
+
+        it('calls static methods of Math, Number, Date, JSON and Array', async () => {
+            assert.deepEqual((await js('&Math.max(1, 9, 3)')).texts, ['9']);
+            assert.deepEqual((await js('&Number.parseInt("42px")')).texts, ['42']);
+            assert.deepEqual((await js('&Number.isInteger(4)')).texts, ['true']);
+            assert.deepEqual((await js('&Date.UTC(2020, 0, 1)')).texts, ['1577836800000']);
+            assert.deepEqual((await js('&JSON.parse(\'{"a":5}\').a')).texts, ['5']);
+            assert.deepEqual((await js('&Array.from(.list) % "-"')).texts, ['3-1-2']);
+        });
+
+        it('reads constants without parentheses', async () => {
+            assert.deepEqual((await js('&Number.MAX_SAFE_INTEGER')).texts, ['9007199254740991']);
+            assert.match((await js('&Math.PI')).texts[0], /^3\.14159/);
+        });
+
+        it('never hands a method over as a value, and never calls a constant', async () => {
+            assert.ok((await js('&Math.max')).failures.some(entry => /is a method; call it/.test(entry)));
+            assert.ok((await js('&Math.PI()')).failures.some(entry => /is a constant, not a method/.test(entry)));
+        });
+
+        it('reaches nothing outside the set: no prototypes, no other statics, no other globals', async () => {
+            for (let path of ['&Array.prototype', '&Date.prototype', '&Object.keys(.list)', '&Math.constructor',
+                '&Array.length', '&Date.name', '&Number.prototype',
+                '&Math.toString()', '&Array.valueOf()', '&JSON.__lookupGetter__("parse")', '&Math.hasOwnProperty("max")'])
+                assert.ok((await js(path)).failures.some(entry => /not part of the built-in set|no host binding|never allowed/i.test(entry)), path);
+        });
+
+        it('needs `eval:js`, and nothing else opens it', async () => {
+            let { runtime, failures } = harness();
+
+            await run('using +read:html.* +eval:calc -- "not js"\n    await *\n        POST `${ &Math.max(1, 2) }`\n', runtime, {});
+            await runtime.dispatch({});
+
+            assert.deepEqual(sent(runtime), []);
+            assert.ok(failures.some(entry => /not granted .\+eval:js/.test(entry)), failures.join('\n'));
+        });
+
+        it('lets through whatever a newer engine adds, since it is a blocklist', () => {
+            let { JS_BUILTINS, BLOCKED_STATICS } = globalThis.TTV_DSL.runtime;
+
+            for (let global of ['Math', 'Number', 'Date', 'JSON', 'Array'])
+                for (let name of Object.getOwnPropertyNames(globalThis[global]))
+                    assert.equal(name in JS_BUILTINS[global], !BLOCKED_STATICS.has(name), `${ global }.${ name }`);
+        });
+
+        it('caps `Array.from`', async () => {
+            assert.ok((await js('&Array.from(&JSON.parse(\'{"length":100000000}\'))')).failures.some(entry => /at most 10000 items/.test(entry)));
+
+            if (typeof Array.fromAsync === 'function')
+                assert.ok((await js('&Array.fromAsync(&JSON.parse(\'{"length":100000000}\'))')).failures.some(entry => /Array\.fromAsync` builds at most/.test(entry)));
         });
     });
 
@@ -1084,11 +1149,11 @@
     describe('v2 / `using` with no subject', () => {
         it('grants without changing the subject', async () => {
             let { runtime, clock } = harness({
-                jsBindings: { Clock: { time: () => '9:42pm' } },
-                jsPermissions: { 'Clock.time': 'read:datetime' },
+                jsBindings: { datetime: { time: () => '9:42pm' } },
+                jsPermissions: { 'datetime.time': 'read:datetime' },
             });
 
-            await run('await *\n    using +read:datetime\n        POST `${ .who } at ${ &Clock.time() }`\n', runtime, {});
+            await run('await *\n    using +read:datetime\n        POST `${ .who } at ${ &datetime.time() }`\n', runtime, {});
             await runtime.dispatch({ who: 'zip' });
 
             assert.deepEqual(sent(runtime), ['zip at 9:42pm']);

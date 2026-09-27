@@ -7,7 +7,7 @@
  *  |_|  /_/    \_\_|\_\______||_|    /_/    \_\\_____||______| (_)   \____/ |_____/
  */
 
-/** @file A small, dependency-free model of a page, exposing the `&Html.*` host calls that
+/** @file A small, dependency-free model of a page, exposing the `&html.*` host calls that
  * `HOST.md` specifies — so the `read:html.*`, `write:html.*` and `parse:html.*` permissions
  * can be exercised before a real host exists.
  *
@@ -36,17 +36,17 @@ globalThis.TTV_DSL ??= {};
     /** One compound selector: `tag#id.class[attr=value]`. */
     const SELECTOR_PART = /^([A-Za-z][\w-]*|\*)?((?:#[\w-]+|\.[\w-]+|\[[\w-]+(?:=(?:"[^"]*"|'[^']*'|[^\]]*))?\])*)$/;
 
-    /** Which permission each `&Html.*` call needs. The real host must use the same map. */
+    /** Which permission each `&html.*` call needs. The real host must use the same map. */
     const HTML_PERMISSIONS = Object.freeze({
-        'Html.text': 'read:html.text',
-        'Html.attr': 'read:html.attributes',
-        'Html.count': 'read:html.structure',
-        'Html.exists': 'read:html.structure',
-        'Html.setText': 'write:html.text',
-        'Html.setAttr': 'write:html.attributes',
-        'Html.parse': 'parse:html.structure',
-        'Html.parseText': 'parse:html.text',
-        'Html.parseAttrs': 'parse:html.attributes',
+        'html.text': 'read:html.text',
+        'html.attr': 'read:html.attributes',
+        'html.count': 'read:html.structure',
+        'html.exists': 'read:html.structure',
+        'html.setText': 'write:html.text',
+        'html.setAttr': 'write:html.attributes',
+        'html.parse': 'parse:html.structure',
+        'html.parseText': 'parse:html.text',
+        'html.parseAttrs': 'parse:html.attributes',
     });
 
     /** @param {String} text @return {String} */
@@ -108,7 +108,7 @@ globalThis.TTV_DSL ??= {};
     let textOf = (node) => ('text' === node.type? node.text: node.children.map(textOf).join(''));
 
     /** A plain, serializable copy: elements become `{ tag, attributes, children }` and text
-     * nodes become strings. This is the shape `&Html.parse` returns. */
+     * nodes become strings. This is the shape `&html.parse` returns. */
     let serialize = (node) => ('text' === node.type
         ? node.text
         : { tag: node.tag, attributes: Object.assign({}, node.attrs), children: node.children.map(serialize) });
@@ -212,16 +212,16 @@ globalThis.TTV_DSL ??= {};
     };
 
     /** Builds a fake page.
-     * @param {String} [html] - the page's markup
+     * @param {String} [markup] - the page's HTML
      * @return {{ root: Object, query: Function, bindings: Object, permissions: Object }}
      *   `bindings` and `permissions` drop straight into `createRuntime({ jsBindings,
      *   jsPermissions })`.
      */
-    let createFakePage = (html = '') => {
-        let root = parseHtml(html),
+    let createFakePage = (markup = '') => {
+        let root = parseHtml(markup),
             first = (selector) => (query(root, selector)[0] ?? null);
 
-        let Html = {
+        let html = {
             /** `read:html.text` — the text of the first match, or `""`. */
             text: (selector) => {
                 let element = first(selector);
@@ -276,7 +276,7 @@ globalThis.TTV_DSL ??= {};
             root,
             query: (selector) => query(root, selector),
             toHtml: () => toHtml(root),
-            bindings: { Html },
+            bindings: { html },
             permissions: HTML_PERMISSIONS,
         };
     };

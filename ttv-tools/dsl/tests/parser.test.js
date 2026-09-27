@@ -559,13 +559,13 @@
         });
 
         it('reads `&` as a path plus an argument list', () => {
-            assert.like(expression('&Date.now()'), {
+            assert.like(expression('&datetime.now()'), {
                 type: NodeType.JSInvokeExpression,
-                path: ['Date', 'now'],
+                path: ['datetime', 'now'],
                 arguments: [],
             });
 
-            assert.like(expression('&Date.now(123)'), { arguments: [{ type: NodeType.Literal, value: 123 }] });
+            assert.like(expression('&datetime.now(123)'), { arguments: [{ type: NodeType.Literal, value: 123 }] });
         });
 
         it('treats commas as optional separators inside a list', () => {

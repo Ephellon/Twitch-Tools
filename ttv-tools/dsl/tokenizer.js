@@ -85,7 +85,7 @@ if (typeof require === 'function' && typeof module === 'object') {
      * a different, malformed one (`+read:*`, `+read:html.*.x`, `+a:b:c`). */
     const PERMISSION_TAIL = /^[:.*A-Za-z0-9_]/;
 
-    /** A host-binding path: `&Date.now`, `&Intl.DateTimeFormat`. */
+    /** A host-binding path: `&datetime.now`, `&Intl.DateTimeFormat`. */
     const JS_PATH_PATTERN = /^&([A-Za-z_$][A-Za-z0-9_$]*(?:\.[A-Za-z_$][A-Za-z0-9_$]*)*)/;
 
     /** A `%` class run. The leading `%` belongs to the *first* class, so `%n%s` is two
@@ -515,7 +515,7 @@ if (typeof require === 'function' && typeof module === 'object') {
             // `$` outside a template was the v2 host-call head. Named here so the error
             // says what to write instead.
             if ('$' === character)
-                this.#fail('Unexpected "$"; host calls are written "&Date.now()"', start, start + 1);
+                this.#fail('Unexpected "$"; host calls are written "&datetime.now()"', start, start + 1);
 
             if ('%' === character)
                 return this.#scanPercent();
@@ -600,14 +600,14 @@ if (typeof require === 'function' && typeof module === 'object') {
             this.#emit(TokenType.PERMISSION, start, this.#index, grant[1]);
         }
 
-        /** `&Date.now` — the path only. The argument list is grammar, so the parser reads
+        /** `&datetime.now` — the path only. The argument list is grammar, so the parser reads
          * it; nothing here ever turns text into code. */
         #scanJSPath() {
             let start = this.#index,
                 path = this.#match(JS_PATH_PATTERN);
 
             if (!path)
-                this.#fail('Unexpected "&"; expected a host call like "&Date.now()"', start, start + 1);
+                this.#fail('Unexpected "&"; expected a host call like "&datetime.now()"', start, start + 1);
 
             this.#index += path[0].length;
             this.#emit(TokenType.JS_PATH, start, this.#index, path[1].split('.'));

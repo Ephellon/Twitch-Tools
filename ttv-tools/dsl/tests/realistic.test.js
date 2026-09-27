@@ -32,7 +32,7 @@
 
     /** The host wiring this script expects: a formatted-time helper behind `read:datetime`.
      *
-     * Deliberately *not* `Date.now` — a streamer wants "9:42pm" in chat, not a unix
+     * Deliberately *not* `datetime.now` — a streamer wants "9:42pm" in chat, not a unix
      * timestamp, so the realistic host binding is a formatter. Frozen output so the
      * assertion is stable.
      * @param {Object} [options]
@@ -51,8 +51,8 @@
             wallClock: () => 0,
             random: createSeededRandom(seed),
             realms: { TWITCH: realm },
-            jsBindings: (bindings? { Clock: { time: () => '9:42pm' } }: {}),
-            jsPermissions: (mapped? { 'Clock.time': 'read:datetime' }: {}),
+            jsBindings: (bindings? { datetime: { time: () => '9:42pm' } }: {}),
+            jsPermissions: (mapped? { 'datetime.time': 'read:datetime' }: {}),
             // A fault inside a detached timer loop is reported, not thrown.
             logger: { log() {}, warn() {}, error: (entry) => failures.push(String(entry)) },
         });
@@ -240,19 +240,10 @@
             return;
         }
 
-        it('refuses the nag when the host maps the path to something else', async () => {
-            // Unmapped, so `Clock.time` falls back to requiring `eval:js` — which the script
-            // never asked for. The raid handling is unaffected, which is the point of
-            // scoping the grant to the block that needs it.
-            let { runtime, clock, failures } = harness({ mapped: false });
-
-            await run(SOURCE, runtime, {});
-            await runtime.dispatch(RAID);
-            await clock.advance(30 * MINUTE);
-
-            assert.equal(runtime.sink.length, 2, 'the raid shoutout and welcome should still have gone out');
-            assert.ok(failures.some(entry => /DSLPermissionError/.test(entry)), failures.join('\n'));
-            assert.ok(failures.some(entry => /\+eval:js/.test(entry)), failures.join('\n'));
+        it('refuses to start a host that binds the clock without mapping it', () => {
+            // There is no fallback permission any more: an unmapped host call is a host bug,
+            // and it is caught before any script runs.
+            assert.throws(() => harness({ mapped: false }), /map these in `jsPermissions`: &datetime\.time/);
         });
 
         it('fails loudly when the host registered no binding at all', async () => {
@@ -262,7 +253,7 @@
             await clock.advance(30 * MINUTE);
 
             assert.equal(runtime.sink.length, 0);
-            assert.ok(failures.some(entry => /No host binding for `\&Clock\.time`/.test(entry)), failures.join('\n'));
+            assert.ok(failures.some(entry => /No host binding for `\&datetime\.time`/.test(entry)), failures.join('\n'));
         });
     });
 })();

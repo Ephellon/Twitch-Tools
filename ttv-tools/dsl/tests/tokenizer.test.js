@@ -423,9 +423,9 @@
         });
 
         it('reads "&" as a dotted path, and points the v2 "$:" spelling at it', () => {
-            assert.deepEqual(first('&Date.now()\n').value, ['Date', 'now']);
+            assert.deepEqual(first('&datetime.now()\n').value, ['datetime', 'now']);
             assert.throws(() => tokenize('POST &\n'), DSLSyntaxError);
-            assert.throws(() => tokenize('POST $:Date.now()\n'), /written "&Date\.now\(\)"/);
+            assert.throws(() => tokenize('POST $:Date.now()\n'), /written "&datetime\.now\(\)"/);
         });
 
         it('decodes both Unicode escape spellings, in strings and templates', () => {

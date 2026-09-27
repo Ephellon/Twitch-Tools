@@ -171,8 +171,76 @@ if (typeof require === 'function' && typeof module === 'object')
         return (dot > colon && colon > -1? `${ name.slice(0, dot) }.*`: null);
     };
 
-    /** The permission a `&` path requires when the host has not said otherwise. */
-    const DEFAULT_JS_PERMISSION = 'eval:js';
+    /** The permission the built-in JavaScript surface requires. */
+    const BUILTIN_JS_PERMISSION = 'eval:js';
+
+    /** The most elements `&Array.from` will build. Without a cap, `Array.from(JSON.parse(
+     * '{"length":1e9}'))` would exhaust memory in one call. */
+    const MAX_ARRAY_FROM = 10000;
+
+    /** The static members of a built-in global that are never reachable. A **blocklist**,
+     * not an allowlist: names on these globals are only ever added, never changed, so
+     * whatever a browser adds later (`Math.f16round`, `JSON.rawJSON`) becomes available
+     * without an edit here. What must never be reachable is the short list below — the
+     * prototype and the function object's own plumbing. Symbol-keyed members are out of
+     * reach regardless, because a path segment cannot name one.
+     * @type {Set<String>}
+     */
+    const BLOCKED_STATICS = Object.freeze(new Set(['prototype', 'constructor', 'length', 'name', 'caller', 'arguments']));
+
+    /** How big an array-building call's input may be. */
+    let checkArraySize = (label, value) => {
+        let size = (null == value? 0: (typeof value === 'string'? value.length: Number(value.length ?? value.size ?? 0)));
+
+        if (!(size <= MAX_ARRAY_FROM))
+            throw new DSLRuntimeError(`\`&${ label }\` builds at most ${ MAX_ARRAY_FROM } items`);
+    };
+
+    /** Members that need a guard around them, by `Global.name`. */
+    const GUARDED_STATICS = Object.freeze({
+        // Without a cap, `Array.from(JSON.parse('{"length":1e9}'))` exhausts memory in one call.
+        'Array.from': (value) => (checkArraySize('Array.from', value), Array.from(value)),
+        'Array.fromAsync': (value) => (checkArraySize('Array.fromAsync', value), Array.fromAsync(value)),
+    });
+
+    /** Copies a global's static members, minus {@link BLOCKED_STATICS}: constants by value,
+     * methods as wrappers called on their owner.
+     * @param {String} label - the global's name, for {@link GUARDED_STATICS}
+     * @param {Object} owner
+     * @return {Object}
+     */
+    let expose = (label, owner) => {
+        // No prototype: `toString`, `valueOf`, `__lookupGetter__` and the rest of
+        // `Object.prototype` must not be reachable through a built-in table.
+        let table = Object.create(null);
+
+        for (let name of Object.getOwnPropertyNames(owner)) {
+            if (BLOCKED_STATICS.has(name))
+                continue;
+
+            let value = owner[name],
+                guarded = GUARDED_STATICS[`${ label }.${ name }`];
+
+            table[name] = (guarded ?? (typeof value === 'function'? (...args) => value.apply(owner, args): value));
+        }
+
+        return Object.freeze(table);
+    };
+
+    /** What `eval:js` grants: the static members of five globals, minus the blocklist.
+     * A method is only ever *called*; a constant is only ever *read*.
+     * @type {Object<String, Object>}
+     */
+    const JS_BUILTINS = Object.freeze({
+        Math: expose('Math', Math),
+        Number: expose('Number', Number),
+        Date: expose('Date', Date),
+        JSON: expose('JSON', JSON),
+        Array: expose('Array', Array),
+    });
+
+    /** @param {Object} object @param {String} key @return {Boolean} an own property only */
+    let owns = (object, key) => Object.prototype.hasOwnProperty.call(object, key);
 
     /** Property names a host path may never traverse. Not a substitute for the host simply
      * not registering dangerous objects — but walking into `constructor` is the one mistake
@@ -508,11 +576,12 @@ if (typeof require === 'function' && typeof module === 'object')
      * @param {Object} [options.logger] - `{ log, warn, error }`
      * @param {{ steps: Number, wallMs: Number }} [options.limits]
      * @param {Object} [options.jsBindings] - the object `&Path.fn()` walks. **Empty by
-     *   default**, deliberately: a script naming `&Date.now` should fail as loudly as one
+     *   default**, deliberately: a script naming `&datetime.now` should fail as loudly as one
      *   naming `DISCORD` until the host has decided to expose it.
      * @param {Object<String, String>} [options.jsPermissions] - dotted path -> required
-     *   permission, e.g. `{ 'Date.now': 'read:datetime' }`. Unlisted paths require `eval:js`.
-     *   Every value must be on the permission list, or no script could ever be granted it.
+     *   permission, e.g. `{ 'datetime.now': 'read:datetime' }`. **Every** function the host
+     *   binds must be listed, and every value must be on the permission list; either mistake
+     *   is refused here, before a script can run.
      * @param {Array<String>} [options.permissions] - extra permissions for the list, added
      *   to {@link DEFAULT_PERMISSIONS}
      * @return {Object}
@@ -532,11 +601,39 @@ if (typeof require === 'function' && typeof module === 'object')
     } = {}) => {
         let catalog = Object.freeze(new Set([...DEFAULT_PERMISSIONS, ...extraPermissions]));
 
-        // A host path mapped to a permission nobody can grant is a host bug; say so at
-        // start-up rather than at the first call.
-        for (let [path, needed] of Object.entries(jsPermissions))
+        // Host mistakes are refused at start-up rather than at the first call: a path
+        // mapped to a permission nobody can grant, a binding that shadows a built-in, and a
+        // bound function with no permission at all.
+        for (let [path, needed] of Object.entries(jsPermissions)) {
             if (!catalog.has(needed))
                 throw new DSLRuntimeError(`\`&${ path }\` is mapped to \`${ needed }\`, which is not on the permission list`);
+
+            if (owns(JS_BUILTINS, path.split('.')[0]))
+                throw new DSLRuntimeError(`\`&${ path }\` is a built-in; it always needs \`eval:js\` and cannot be remapped`);
+        }
+
+        for (let name of Object.keys(jsBindings))
+            if (owns(JS_BUILTINS, name))
+                throw new DSLRuntimeError(`A host binding may not be called \`${ name }\`; \`&${ name }.*\` is the built-in`);
+
+        let unmapped = [],
+            collect = (value, path, depth) => {
+                if (typeof value === 'function') {
+                    if (!owns(jsPermissions, path))
+                        unmapped.push(path);
+
+                    return;
+                }
+
+                if (null != value && typeof value === 'object' && depth < 4)
+                    for (let key of Object.keys(value))
+                        collect(value[key], (path? `${ path }.${ key }`: key), depth + 1);
+            };
+
+        collect(jsBindings, '', 0);
+
+        if (unmapped.length)
+            throw new DSLRuntimeError(`Every host call needs a permission; map these in \`jsPermissions\`: ${ unmapped.map(path => `&${ path }`).join(', ') }`);
 
         let sink = [],
             budget = Object.assign({}, DEFAULT_LIMITS, limits),
@@ -789,12 +886,24 @@ if (typeof require === 'function' && typeof module === 'object')
              * @return {*}
              */
             invokeJS(path, args, context, loc) {
-                let key = path.join('.');
+                let key = path.join('.'),
+                    builtin = owns(JS_BUILTINS, path[0]),
+                    reading = (null == args);
 
-                runtime.requirePermission((jsPermissions[key] ?? DEFAULT_JS_PERMISSION), context, loc);
+                if (builtin) {
+                    if (2 !== path.length || !owns(JS_BUILTINS[path[0]], path[1]))
+                        throw new DSLRuntimeError(`\`&${ key }\` is not part of the built-in set. Available: ${ Object.keys(JS_BUILTINS[path[0]]).map(name => `&${ path[0] }.${ name }`).join(', ') }`, loc);
+
+                    runtime.requirePermission(BUILTIN_JS_PERMISSION, context, loc);
+                } else {
+                    if (!owns(jsPermissions, key))
+                        throw new DSLRuntimeError(`No host binding for \`&${ key }\`. Registered: ${ Object.keys(jsPermissions).map(name => `&${ name }`).join(', ') || 'none' }`, loc);
+
+                    runtime.requirePermission(jsPermissions[key], context, loc);
+                }
 
                 let holder = null,
-                    target = jsBindings;
+                    target = (builtin? JS_BUILTINS: jsBindings);
 
                 for (let segment of path) {
                     if (FORBIDDEN_SEGMENTS.has(segment))
@@ -802,15 +911,27 @@ if (typeof require === 'function' && typeof module === 'object')
 
                     let container = (null != target && (typeof target === 'object' || typeof target === 'function'));
 
-                    if (!container || !(segment in target))
-                        throw new DSLRuntimeError(`No host binding for \`&${ key }\`. Registered: ${ Object.keys(jsBindings).join(', ') || 'none' }`, loc);
+                    if (!container || !owns(target, segment))
+                        throw new DSLRuntimeError(`No host binding for \`&${ key }\`. Registered: ${ Object.keys(jsPermissions).map(name => `&${ name }`).join(', ') || 'none' }`, loc);
 
                     holder = target;
                     target = target[segment];
                 }
 
+                // A method is only ever called and a constant only ever read, so no function
+                // value — and no live object — ever lands in a script.
+                if (reading) {
+                    if (typeof target === 'function')
+                        throw new DSLRuntimeError(`\`&${ key }\` is a method; call it: \`&${ key }( ... )\``, loc);
+
+                    if (null != target && typeof target === 'object')
+                        throw new DSLRuntimeError(`\`&${ key }\` is not a constant`, loc);
+
+                    return target;
+                }
+
                 if (typeof target !== 'function')
-                    throw new DSLRuntimeError(`\`&${ key }\` is not callable`, loc);
+                    throw new DSLRuntimeError(`\`&${ key }\` is a constant, not a method; read it without parentheses: \`&${ key }\``, loc);
 
                 return target.apply(holder, args);
             },
@@ -948,7 +1069,10 @@ if (typeof require === 'function' && typeof module === 'object')
         PERCENT_CLASS_SOURCE,
         PERCENT_ZERO_WIDTH,
         PERCENT_DEFAULT,
-        DEFAULT_JS_PERMISSION,
+        BUILTIN_JS_PERMISSION,
+        JS_BUILTINS,
+        MAX_ARRAY_FROM,
+        BLOCKED_STATICS,
         DEFAULT_PERMISSIONS,
     };
 

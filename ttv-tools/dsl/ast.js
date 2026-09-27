@@ -86,7 +86,7 @@ globalThis.TTV_DSL ??= {};
         AssignmentExpression: 'AssignmentExpression',
         /** `_`, `__this__`, `__self__`, `__me__` — the current subject itself. */
         This: 'This',
-        /** `&Date.now( ... )`. `path` is the dotted segments; resolution is a property
+        /** `&datetime.now( ... )`. `path` is the dotted segments; resolution is a property
          * lookup against a host table, never compilation of text. */
         JSInvokeExpression: 'JSInvokeExpression',
         /** `<subject> %n%s <replacement>`. `letters` is the class run, `[]` for a bare `%`. */

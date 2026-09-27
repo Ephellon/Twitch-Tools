@@ -140,7 +140,7 @@ globalThis.TTV_DSL ??= {};
         COLON: 'COLON',
         /** `+read:datetime` — a permission grant. `value` is the bare name. */
         PERMISSION: 'PERMISSION',
-        /** `&Date.now` — a dotted host-binding path. `value` is the array of segments. */
+        /** `&datetime.now` — a dotted host-binding path. `value` is the array of segments. */
         JS_PATH: 'JS_PATH',
         /** `--` followed by whitespace — introduces the description at the end of a `using`
          * header: `using +eval:calc -- "why this block needs it"`. */

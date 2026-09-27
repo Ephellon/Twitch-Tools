@@ -2,10 +2,10 @@
 
 using [vip] +read:datetime
     await 1:00
-        // The host maps `Date.now` to `read:datetime`, which this header granted.
-        POST `granted: ${ &Date.now() }`
+        // The host maps `datetime.now` to `read:datetime`, which this header granted.
+        POST `granted: ${ &datetime.now() }`
 
-using [moderator] +eval:calc -- "Arithmetic, once it exists"
+using [moderator] +eval:calc -- "Arithmetic in calc( )"
     await 1:10
         // `Math.random` is unmapped, so it needs `eval:js`. `+eval:calc` is a different
         // permission, not a smaller or larger one, so this fails loudly.

@@ -639,7 +639,7 @@ same position, with strictly more information; only its class changed from
 `&Path.fn( ... )` calls a function the **host** has published to the script.
 
 ```
-POST `!lurk What time is it? It's ${ &Date.now() }`
+POST `!lurk What time is it? It's ${ &datetime.now() }`
 POST `${ &Math.max(1, 9, 3) }`
 ```
 
@@ -654,22 +654,44 @@ substitute for the host simply not registering dangerous objects, but walking in
 `constructor` is the one mistake that would turn a property lookup back into code
 evaluation.
 
-**No bindings are registered by default.** `&Date.now()` fails as loudly as `DISCORD` does
-(§11) until the host opts in — a script should not silently acquire capabilities because the
-name happened to exist in JavaScript.
+**No host bindings are registered by default.** `&datetime.now()` fails as loudly as
+`DISCORD` does (§11) until the host opts in — a script should not silently acquire
+capabilities because the name happened to exist in JavaScript.
 
-Every path maps to a required permission (§6.8). The host supplies the map; anything
-unlisted requires `eval:js`:
+Every host path maps to a required permission (§6.8), and the host must map **every**
+function it binds — `createRuntime` refuses to start otherwise. There is no fallback:
 
 ```js
 createRuntime({
-    jsBindings: { Date: { now: () => Date.now() } },
-    jsPermissions: { 'Date.now': 'read:datetime' },
+    jsBindings: { datetime: { now: () => Date.now() } },
+    jsPermissions: { 'datetime.now': 'read:datetime' },
 });
 ```
 
-An unregistered path, a path that resolves to a non-function, and a missing permission are
-`DSLRuntimeError`, `DSLRuntimeError` and `DSLPermissionError` respectively.
+An unregistered path and a missing permission are `DSLRuntimeError` and
+`DSLPermissionError` respectively.
+
+**Call or read, never hand over** *(v2.1)*. With parentheses glued on, `&x.y( ... )` calls a
+method; without, `&x.y` reads a constant. Reading a method, or calling a constant, is an
+error — so a function value never becomes a script value.
+
+#### The built-in set, `eval:js` *(v2.1)*
+
+Five globals are built in, under `eval:js`, and nothing else is. The host cannot extend,
+remap or shadow them.
+
+Every **own static member** of `Math`, `Number`, `Date`, `JSON` and `Array` is reachable
+— constants read (`&Math.PI`), methods called (`&Math.max(1, 2)`, `&Date.now()`,
+`&JSON.parse(text)`, `&Array.from(list)`) — **except** a short blocklist: `prototype`,
+`constructor`, `length`, `name`, `caller`, `arguments`. Nothing inherited (`toString`,
+`valueOf`, …) is reachable, and symbol-keyed members cannot be named.
+
+It is a blocklist on purpose: names on these globals are only ever added, never changed, so
+whatever an engine adds later (`Math.f16round`, `JSON.rawJSON`) is available without an
+edit. `Array.from` and `Array.fromAsync` are capped at 10,000 items, since an array-like
+with a huge `length` would otherwise exhaust memory in one call.
+
+`eval:js` grants this set **only**; it never opens a host binding.
 
 ---
 
@@ -883,7 +905,7 @@ under the subject already in force**:
 ```
 using +read:datetime
     await 30:00
-        POST `it is ${ &Clock.time() }`
+        POST `it is ${ &datetime.time() }`
 ```
 
 This is what lets a permission be scoped to one block without also changing what `.prop`
@@ -964,7 +986,7 @@ made for what it does rather than what it returns:
 ```
 using +write:html.text -- "shows the last raider on the page"
     await (.raider is SOMETHING)
-        &Html.setText("#last-raid", .raider)
+        &html.setText("#last-raid", .raider)
 ```
 
 That, a verb, and an assignment are the only expressions allowed to stand alone; any other
@@ -1076,12 +1098,12 @@ A `using` header may carry grants, spelled `+action:resource[.part…][.*]`:
 ```
 using [vip] +read:datetime +eval:calc -- "Prints the time; calc is reserved for later"
     await 5:00
-        POST `It's ${ &Date.now() }`
+        POST `It's ${ &datetime.now() }`
 ```
 
 Permissions are checked by **host calls** (§5.12): the host maps each `&Path` it exposes to
-the permission it needs, and an unmapped path needs `eval:js`. Nothing else in the language
-checks a grant.
+the permission it needs, and must map every one. The built-in JavaScript set (§5.12) needs
+`eval:js`. Nothing else in the language checks a grant.
 
 #### The permission list *(v2.1)*
 
@@ -1096,7 +1118,7 @@ that, a typo like `+read:htlm.*` would be accepted and silently grant nothing.
 | `write:html.text` · `write:html.attributes` | changing the page |
 | `parse:html.text` · `parse:html.attributes` · `parse:html.structure` | turning HTML text the script already has into serializable data |
 | `eval:calc` | arithmetic (reserved; §14.2) |
-| `eval:js` | any host call the host did not map to something narrower |
+| `eval:js` | the built-in `Math` / `Number` / `Date` / `JSON` / `Array` set (§5.12) — never a host binding |
 
 A host may add to the list (`createRuntime({ permissions: [...] })`). A host path mapped to
 a permission that is not on the list is refused when the runtime is created, since no script
@@ -1595,7 +1617,7 @@ New in v2, with no v1 entry to answer to:
   instead (§5.9). A bare `%` means `%n%s`.
 - **`|` as a `where` alias** — Same token type, so precedence and AST shape cannot drift
   (§5.10). Likewise `of` for `<|`, which v1 documented but never implemented.
-- **Host JavaScript calls** — `&Date.now()` walks a host-supplied binding table. Property
+- **Host JavaScript calls** — `&datetime.now()` walks a host-supplied binding table. Property
   lookup and call, never code from text; nothing registered by default (§5.12).
 - **Single-quoted strings** — `'text'` is the same literal as `"text"` (§3.1).
 - **Optional commas** — Ignorable separators inside lists, `using` headers and `&Path.fn(...)` argument
@@ -1646,6 +1668,12 @@ From writing `realistic.ttv` and ranking what fought back:
   `any from` takes any value (§8).
 - **Host calls could not stand alone** — Resolved: a line may be a host call, for calls made
   for their effect (§6.6).
+- **`eval:js` was a catch-all for unmapped host calls** — Resolved. It covers only the static
+  members of `Math` / `Number` / `Date` / `JSON` / `Array`, minus a blocklist (§5.12); every host binding must be
+  mapped, and `createRuntime` refuses to start otherwise. Constants are read (`&Math.PI`),
+  methods called (`&Math.max(1, 2)`). **Behaviour change.**
+- **Native host calls are lower-case**, keyed by permission resource: `&html.*`,
+  `&datetime.*` (HOST.md §7).
 - **Permissions are a fixed list** with `action:resource.part` names and an explicit
   one-level `.*`; unknown grants fail at compile time, and `write`/`eval` grants need a
   `-- "description"` (§6.8). **Behaviour change:** `+a:b:c` and off-list names are errors.
@@ -1722,8 +1750,8 @@ let runtime = TTV_DSL.createRuntime({
 
     // Nothing here is registered by default. A script naming a path the host has not
     // published fails loudly rather than silently acquiring the capability (§5.12).
-    jsBindings: { Date: { now: () => Date.now() } },
-    jsPermissions: { 'Date.now': 'read:datetime' },
+    jsBindings: { datetime: { now: () => Date.now() } },
+    jsPermissions: { 'datetime.now': 'read:datetime' },
 });
 
 let context = await TTV_DSL.run(scriptText, runtime);
@@ -1741,5 +1769,5 @@ in a browser with plain `<script>` tags. Neither requires a build step or `node_
 
 `dsl/playground.html` is an editor with highlighting and live diagnostics, the permission
 report from `TTV_DSL.grants`, a fake clock, a fake channel, an event composer and a fake page
-for `&Html.*`. Browsers refuse `<script src>` over `file://` in some configurations; any
+for `&html.*`. Browsers refuse `<script src>` over `file://` in some configurations; any
 static server works, e.g. `python -m http.server --directory ttv-tools/dsl`.

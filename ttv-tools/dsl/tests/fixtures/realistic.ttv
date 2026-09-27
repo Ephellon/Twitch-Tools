@@ -86,4 +86,4 @@ await (.command is SOMETHING)
 using +read:datetime
 
     await 30:00
-        POST `it is ${ &Clock.time() } and i said i would end at nine. send help`
+        POST `it is ${ &datetime.time() } and i said i would end at nine. send help`

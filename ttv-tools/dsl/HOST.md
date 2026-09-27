@@ -42,16 +42,17 @@ context.stop();                               // cancels every timer and handler
 | `verbs` | `POST`, `REPLY` into `runtime.sink` | `{ NAME(context, value) }` — what statements like `POST` do (§5). |
 | `constants` | `{}` | values bare upper-case names resolve to, e.g. `USERNAME`. |
 | `jsBindings` | `{}` | the object `&Path.fn()` walks (§7). **Empty by default.** |
-| `jsPermissions` | `{}` | `{ 'Path.fn': 'permission' }`. Unmapped paths need `eval:js`. |
+| `jsPermissions` | `{}` | `{ 'path.fn': 'permission' }`. **Every** bound function must be listed. |
 | `permissions` | — | extra names for the permission list (§6). |
 | `clock` | real timers | `{ now, setTimeout, clearTimeout }`. |
-| `wallClock` | `Date.now` | wall time for the budget. |
+| `wallClock` | `datetime.now` | wall time for the budget. |
 | `random` | `Math.random` | `[0, 1)`, for `any from`. |
 | `logger` | `console` | `{ log, warn, error }`. |
 | `limits` | `{ steps: 100000, wallMs: 30000 }` | per-turn budget. |
 
-Every `jsPermissions` value must be on the permission list; `createRuntime` throws
-otherwise, since no script could ever be granted it.
+`createRuntime` throws — before any script runs — when a `jsPermissions` value is not on
+the permission list, when a bound function has no entry in `jsPermissions`, or when a
+binding is named after a built-in (`Math`, `Number`, `Date`, `JSON`, `Array`; §7.3).
 
 ## 3. Realms
 
@@ -133,7 +134,7 @@ using +write:html.text -- "renames the stream title for mods"
 | `write:html.text` · `.attributes` | changing the page |
 | `parse:html.text` · `.attributes` · `.structure` | markup the script already has → serializable data |
 | `eval:calc` | `calc( ... )` arithmetic |
-| `eval:js` | any host call not mapped to something narrower |
+| `eval:js` | the built-in JavaScript set only (§7.3) — never a host binding |
 
 A grant ending in `.*` covers exactly one more level. `write` and `eval` grants always carry
 a `-- "description"`.
@@ -143,36 +144,47 @@ a `-- "description"`.
 ```js
 {
     blocks: [ { permissions: ['write:html.text'], description: 'renames …', line: 4 }, … ],
-    calls:  [ { path: 'Html.setText', line: 6 }, … ],
+    calls:  [ { path: 'html.setText', line: 6 }, … ],
 }
 ```
 
 Show each block's permissions with its description. `calls` lets the host warn about paths
-it has not registered, or that map to `eval:js`, before anything runs.
+it has not registered before anything runs.
 
 ## 7. Host calls (`&Path.fn()`)
 
-`&Html.text("h1")` looks up `jsBindings.Html.text` and calls it with the evaluated
+`&html.text("h1")` looks up `jsBindings.html.text` and calls it with the evaluated
 arguments. No text is ever evaluated as code, and `constructor` / `prototype` /
 `__proto__` can never be walked. A call may return a value or a promise; either is
 awaited. A call may stand alone on a line, for calls made for what they do.
 
-### 7.1 `Html` — the page
+**Naming.** Native calls are **lower-case**, and the top-level key is the permission's
+resource: `read:html.*` / `write:html.*` / `parse:html.*` cover the calls under the `html`
+key the host passes in, `read:datetime` covers `datetime`, and `eval:calc` covers the
+built-in `calc( ... )`, which needs no binding at all. A host-specific extra needs its own
+permission on the list (add one with `permissions`); there is no fallback. `eval:js` is not
+a catch-all — it covers only the built-in set (§7.3).
+
+A method is only ever **called** and a constant only ever **read** — `&x.y( ... )` versus
+`&x.y`, the parentheses glued on. So no function value, and no live host object, ever lands
+in a script: reading a method or calling a constant is an error.
+
+### 7.1 `html` — the page
 
 The host must provide these names with these semantics and this permission map
 (`TTV_DSL.fakePage.HTML_PERMISSIONS`). `fake-page.js` is the reference implementation.
 
 | Call | Permission | Returns |
 | :--- | :--- | :--- |
-| `Html.text(selector)` | `read:html.text` | text of the first match, or `""` |
-| `Html.attr(selector, name)` | `read:html.attributes` | attribute of the first match, or `""` |
-| `Html.count(selector)` | `read:html.structure` | number of matches |
-| `Html.exists(selector)` | `read:html.structure` | `true` / `false` |
-| `Html.setText(selector, text)` | `write:html.text` | number of elements changed (all matches) |
-| `Html.setAttr(selector, name, value)` | `write:html.attributes` | number of elements changed |
-| `Html.parse(markup)` | `parse:html.structure` | `[{ tag, attributes, children }]`, text children as strings |
-| `Html.parseText(markup)` | `parse:html.text` | the markup's text |
-| `Html.parseAttrs(markup)` | `parse:html.attributes` | the first element's attributes |
+| `html.text(selector)` | `read:html.text` | text of the first match, or `""` |
+| `html.attr(selector, name)` | `read:html.attributes` | attribute of the first match, or `""` |
+| `html.count(selector)` | `read:html.structure` | number of matches |
+| `html.exists(selector)` | `read:html.structure` | `true` / `false` |
+| `html.setText(selector, text)` | `write:html.text` | number of elements changed (all matches) |
+| `html.setAttr(selector, name, value)` | `write:html.attributes` | number of elements changed |
+| `html.parse(markup)` | `parse:html.structure` | `[{ tag, attributes, children }]`, text children as strings |
+| `html.parseText(markup)` | `parse:html.text` | the markup's text |
+| `html.parseAttrs(markup)` | `parse:html.attributes` | the first element's attributes |
 
 Selectors are CSS. The fake page supports tags, `#id`, `.class`, `[attr]`, `[attr=value]`
 and the descendant combinator; the real host should accept whatever `querySelectorAll`
@@ -186,7 +198,26 @@ decision. Restricting `write:html.*` to extension-owned regions is recommended.
 
 | Call | Permission | Returns |
 | :--- | :--- | :--- |
-| `Clock.time()` | `read:datetime` | the local time, formatted for chat (e.g. `"9:42pm"`) |
+| `datetime.time()` | `read:datetime` | the local time, formatted for chat (e.g. `"9:42pm"`) |
+
+### 7.3 Built-ins — `eval:js`
+
+The language itself provides a small slice of JavaScript, under `eval:js`: the static
+members of five globals, minus a blocklist. The host cannot add to it, remap it, or bind
+anything under these names.
+
+Every **own static member** of `Math`, `Number`, `Date`, `JSON` and `Array` is reachable
+— constants read (`&Math.PI`), methods called (`&Math.max(1, 2)`, `&Date.now()`,
+`&JSON.parse(text)`, `&Array.from(list)`) — **except** a short blocklist: `prototype`,
+`constructor`, `length`, `name`, `caller`, `arguments`. Nothing inherited (`toString`,
+`valueOf`, …) is reachable, and symbol-keyed members cannot be named.
+
+It is a blocklist on purpose: names on these globals are only ever added, never changed, so
+whatever an engine adds later (`Math.f16round`, `JSON.rawJSON`) is available without an
+edit. `Array.from` and `Array.fromAsync` are capped at 10,000 items, since an array-like
+with a huge `length` would otherwise exhaust memory in one call.
+
+Anything else — `&Object.keys`, `&Math.toString`, `&Array.prototype` — is refused.
 
 ## 8. Testing a host
 

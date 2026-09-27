@@ -1,6 +1,6 @@
 /*** /dsl/tests/host.test.js - The host contract, exercised against the fake page
  *
- * `HOST.md` promises a set of `&Html.*` calls, the permission each one needs, and a way for
+ * `HOST.md` promises a set of `&html.*` calls, the permission each one needs, and a way for
  * a host to see what a script will ask for before running it. These tests hold the fake page
  * to that promise, so the real host has a working reference to match.
  */
@@ -63,10 +63,10 @@
         });
 
         it('decodes entities and keeps void elements childless', () => {
-            let { Html } = page.bindings;
+            let { html } = page.bindings;
 
-            assert.equal(Html.text('h1'), 'Stream & chill');
-            assert.equal(Html.attr('img', 'alt'), 'Kappa');
+            assert.equal(html.text('h1'), 'Stream & chill');
+            assert.equal(html.attr('img', 'alt'), 'Kappa');
             assert.equal(page.query('img')[0].children.length, 0);
         });
 
@@ -81,7 +81,7 @@
     describe('host / reading the page', () => {
         it('reads text, attributes and structure under the matching grants', async () => {
             let { texts, failures } = await script('using +read:html.*', [
-                'POST `${ &Html.text("li.mod") } / ${ &Html.attr("li.mod", "data-user") } / ${ &Html.count(".msg") }`',
+                'POST `${ &html.text("li.mod") } / ${ &html.attr("li.mod", "data-user") } / ${ &html.count(".msg") }`',
             ]);
 
             assert.deepEqual(failures, []);
@@ -89,7 +89,7 @@
         });
 
         it('refuses a read the block was not granted', async () => {
-            let { texts, failures } = await script('using +read:html.text', ['POST `${ &Html.attr("img", "src") }`']);
+            let { texts, failures } = await script('using +read:html.text', ['POST `${ &html.attr("img", "src") }`']);
 
             assert.deepEqual(texts, []);
             assert.ok(failures.some(entry => /not granted .\+read:html\.attributes/.test(entry)), failures.join('\n'));
@@ -98,24 +98,24 @@
 
     describe('host / writing the page', () => {
         it('lets a host call stand alone as a statement', () => {
-            assert.like(parse('&Html.setText("h1", "hi")\n').body[0], { type: 'ExpressionStatement', expression: { type: 'JSInvokeExpression' } });
+            assert.like(parse('&html.setText("h1", "hi")\n').body[0], { type: 'ExpressionStatement', expression: { type: 'JSInvokeExpression' } });
         });
 
         it('changes text and attributes under a described `write` grant', async () => {
             let { page, failures } = await script('using +write:html.* -- "renames the stream title"', [
-                '&Html.setText("h1", "Now: speedruns")',
-                '&Html.setAttr("li.mod", "data-flagged", "yes")',
+                '&html.setText("h1", "Now: speedruns")',
+                '&html.setAttr("li.mod", "data-flagged", "yes")',
             ]);
 
             assert.deepEqual(failures, []);
-            assert.equal(page.bindings.Html.text('h1'), 'Now: speedruns');
-            assert.equal(page.bindings.Html.attr('li.mod', 'data-flagged'), 'yes');
+            assert.equal(page.bindings.html.text('h1'), 'Now: speedruns');
+            assert.equal(page.bindings.html.attr('li.mod', 'data-flagged'), 'yes');
         });
 
         it('leaves the page alone without the grant', async () => {
-            let { page, failures } = await script('using +read:html.*', ['&Html.setText("h1", "defaced")']);
+            let { page, failures } = await script('using +read:html.*', ['&html.setText("h1", "defaced")']);
 
-            assert.equal(page.bindings.Html.text('h1'), 'Stream & chill');
+            assert.equal(page.bindings.html.text('h1'), 'Stream & chill');
             assert.ok(failures.some(entry => /not granted .\+write:html\.text/.test(entry)), failures.join('\n'));
         });
     });
@@ -123,18 +123,18 @@
     describe('host / parsing markup', () => {
         it('turns markup into serializable data', async () => {
             let { page } = harness(),
-                { Html } = page.bindings,
-                tree = Html.parse('<p class="a">x<b>y</b></p>');
+                { html } = page.bindings,
+                tree = html.parse('<p class="a">x<b>y</b></p>');
 
             assert.deepEqual(tree, [{ tag: 'p', attributes: { class: 'a' }, children: ['x', { tag: 'b', attributes: {}, children: ['y'] }] }]);
             assert.deepEqual(JSON.parse(JSON.stringify(tree)), tree);
-            assert.equal(Html.parseText('<p>a <i>b</i></p>'), 'a b');
-            assert.deepEqual(Html.parseAttrs('<a href="/x" target=_blank>'), { href: '/x', target: '_blank' });
+            assert.equal(html.parseText('<p>a <i>b</i></p>'), 'a b');
+            assert.deepEqual(html.parseAttrs('<a href="/x" target=_blank>'), { href: '/x', target: '_blank' });
         });
 
         it('parses under `parse:html.*`, not under `read:html.*`', async () => {
-            let allowed = await script('using +parse:html.*', ['POST `${ &Html.parseText("<b>ok</b>") }`']),
-                refused = await script('using +read:html.*', ['POST `${ &Html.parseText("<b>ok</b>") }`']);
+            let allowed = await script('using +parse:html.*', ['POST `${ &html.parseText("<b>ok</b>") }`']),
+                refused = await script('using +read:html.*', ['POST `${ &html.parseText("<b>ok</b>") }`']);
 
             assert.deepEqual(allowed.texts, ['ok']);
             assert.deepEqual(refused.texts, []);
@@ -146,10 +146,10 @@
             let report = globalThis.TTV_DSL.grants([
                 'using +read:html.*',
                 '    await *',
-                '        POST `${ &Html.text("h1") }`',
+                '        POST `${ &html.text("h1") }`',
                 'using [moderator] +write:html.text -- "renames the title for mods"',
                 '    await *',
-                '        &Html.setText("h1", "hi")',
+                '        &html.setText("h1", "hi")',
                 'using -- "just a label"',
                 '    POST `x`',
                 '',
@@ -160,7 +160,7 @@
                 { permissions: ['write:html.text'], description: 'renames the title for mods', line: 4 },
                 { permissions: [], description: 'just a label', line: 7 },
             ]);
-            assert.deepEqual(report.calls, [{ path: 'Html.text', line: 3 }, { path: 'Html.setText', line: 6 }]);
+            assert.deepEqual(report.calls, [{ path: 'html.text', line: 3 }, { path: 'html.setText', line: 6 }]);
         });
     });
 })();

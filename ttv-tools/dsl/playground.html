@@ -314,7 +314,7 @@
             </section>
 
             <section>
-                <h2>Fake page <span style="text-transform: none">(for <code>&amp;Html.*</code>)</span></h2>
+                <h2>Fake page <span style="text-transform: none">(for <code>&amp;html.*</code>)</span></h2>
                 <textarea class="plain" id="page" spellcheck="false"></textarea>
                 <div class="row"><label>after the script ran:</label></div>
                 <div class="page-preview" id="page-preview"></div>
@@ -390,11 +390,11 @@
                     'using +eval:calc +read:html.* -- "doubles the raid size; reads the title"',
                     '    await (.raider is SOMETHING)',
                     '        POST `that is ${ calc(.raid_size * 2) } half-gremlins`',
-                    '        POST `current title: ${ &Html.text("h1") }`',
+                    '        POST `current title: ${ &html.text("h1") }`',
                     '',
                     'using +write:html.text -- "shows the last raider on the page"',
                     '    await (.raider is SOMETHING)',
-                    '        &Html.setText("#last-raid", .raider)',
+                    '        &html.setText("#last-raid", .raider)',
                     '',
                 ].join('\n'),
             };
@@ -538,6 +538,8 @@
                         html += template(source, token);
                     else if (TokenType.STRING === token.type)
                         html += stringText(source.slice(start, end));
+                    else if (TokenType.JS_PATH === token.type)
+                        html += `<span class="t-atomic">&amp;</span><span class="t-selector">${ escape(source.slice(start + 1, end)) }</span>`;
                     else {
                         let name = classFor(token),
                             text = escape(source.slice(start, end));
@@ -615,8 +617,8 @@
                     random: createSeededRandom(Date.now() % 100000),
                     realms: { TWITCH: realm },
                     constants: { USERNAME: name },
-                    jsBindings: Object.assign({ Clock: { time: () => new Date().toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' }) } }, page.bindings),
-                    jsPermissions: Object.assign({ 'Clock.time': 'read:datetime' }, page.permissions),
+                    jsBindings: Object.assign({ datetime: { time: () => new Date().toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' }) } }, page.bindings),
+                    jsPermissions: Object.assign({ 'datetime.time': 'read:datetime' }, page.permissions),
                     logger: {
                         log: (entry) => log($('output'), escape(String(entry)), 'info'),
                         warn: (entry) => log($('output'), escape(String(entry)), 'warn'),

@@ -426,7 +426,7 @@ if (typeof require === 'function' && typeof module === 'object') {
                 throw error;
             }
 
-            // A host call may stand alone too: `&Html.setText("#title", "hi")` is done for
+            // A host call may stand alone too: `&html.setText("#title", "hi")` is done for
             // what it does, exactly as a verb is.
             if (NodeType.AssignmentExpression !== expression.type && NodeType.JSInvokeExpression !== expression.type) {
                 this.#index = before;
@@ -985,7 +985,7 @@ if (typeof require === 'function' && typeof module === 'object') {
             return this.#fail(`Expected an expression, found ${ this.#describe(token) }`);
         }
 
-        /** `&Date.now( <arg> , <arg> )`.
+        /** `&datetime.now( <arg> , <arg> )`.
          *
          * The path was lexed as one token and the arguments are ordinary expressions. There
          * is no string anywhere in this construct that becomes code: the compiler hands the
@@ -993,6 +993,10 @@ if (typeof require === 'function' && typeof module === 'object') {
          * naming a path the host never registered fails loudly, exactly as `DISCORD` does. */
         #parseJSInvoke() {
             let token = this.#next();
+
+            // `&Math.PI` — no parentheses glued on — reads a constant. `&Math.max(...)` calls.
+            if (!(this.#at(TokenType.LPAREN) && this.#peek().loc.start === token.loc.end))
+                return AST.jsInvokeExpression(token.value, null, token.loc);
 
             this.#expect(TokenType.LPAREN, '`(` after a `&` host call');
 
