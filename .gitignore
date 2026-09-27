@@ -1,3 +1,5 @@
+# Build output
+/dist
 # Ignore these folders
 /.bin
 /.docs

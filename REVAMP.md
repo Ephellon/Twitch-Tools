@@ -18,11 +18,12 @@ Living plan for the multi-week revamp. One phase at a time; each phase ends in s
 
 ## Phases
 
-### 0. Baseline & tooling
-- `.editorconfig`, ESLint (flat config, browser + webextensions globals) and Prettier **config only** — no mass reformat until Phase 4 moves the code anyway.
-- GitHub Action: run `dsl/tests/run.js`, lint, and build `ttv-tools.zip` as a release asset (then drop the zip from git).
-- esbuild script: `src/` → `dist/chrome/` + `dist/firefox/` (manifest per target); vendored `ext/` copied as-is.
-- Tag the current state (`pre-revamp`) as a rollback point.
+### 0. Baseline & tooling ✅
+- `.editorconfig`; ESLint flat config (`eslint.config.mjs`) with `@stylistic` rules matching the hand style. Cross-file globals are derived from `manifest.json` + `settings.html`, so no hand-kept list. Legacy findings are warnings; `npm run format -- <file>` applies the style to one file.
+- `scripts/build.mjs`: `ttv-tools/` → `dist/chrome/` + `dist/firefox/` (Firefox manifest rewritten), `--zip` writes `dist/ttv-tools.zip` + `dist/ttv-tools-firefox.zip` with a built-in zip writer (no platform `zip` needed, forward-slash paths).
+- `.github/workflows/ci.yml`: DSL tests, lint, build, `web-ext lint` on every push/PR; attaches both zips when a release is published. `ttv-tools.zip` removed from git.
+- `pre-revamp` tag on `a51f2a8`.
+- Commands: `npm test`, `npm run lint`, `npm run build [-- --zip]`, `npm run lint:firefox`.
 
 ### 1. Inventory (Offser-heavy)
 - Offser digests each `/*** Section` of `tools.js`/`chat.js` into a **feature catalog**: id, settings keys, timers, selectors, shared globals read/written, cross-feature calls, frame(s) it runs in.
@@ -31,6 +32,10 @@ Living plan for the multi-week revamp. One phase at a time; each phase ends in s
 
 ### 2. Bug triage & fixes
 - Merge sources: CHANGELOG known issues, GitHub issues, Offser per-section bug scans (verified by me before touching code).
+- Seeded by Phase 0:
+  - ESLint: `no-dupe-keys` (tools.js 11574 `user2`, time-zone table), `no-unsafe-optional-chaining` (tools.js 11282, 11897), `getter-return` (tools.js 4447), `no-unassigned-vars` (`FIRST_IN_LINE_WARNING_TEXT_UPDATE`), `no-fallthrough` (core.js 704, tools.js 1175), `no-unreachable` ×12, and ~139 `no-undef` (e.g. `tab` in background.js, `streamer`/`video`/`action` in tools.js, `RestartJob`/`TTV_IRC` visibility).
+  - core.js 2497: `let browser` shadows the global, so the `browser` namespace is never detected.
+  - Old release zips used Windows `\` paths and shipped a local `-test.js`.
 - Fix only bugs that are isolated now; defer ones entangled with shared state to Phase 4 when the feature is moved.
 
 ### 3. Core extraction + plugin contract
@@ -81,6 +86,6 @@ All Offser output is treated as a draft — verified against the code before it 
 ## Decisions
 
 - **Plugins:** both — built-in features become plugins (Phases 3–4), user plugins via TTV DSL (Phase 7).
-- **Build step:** allowed — esbuild bundles `src/` into the loadable extension folder; plugins use real `import`s. Output stays load-unpacked friendly.
+- **Build step:** allowed. Source stays in `ttv-tools/` (still loads unpacked as-is); `scripts/build.mjs` produces `dist/`. esbuild joins in Phase 3 when plugins get real `import`s.
 - **Browsers:** Chrome + Firefox — build emits a Chrome MV3 manifest and a Firefox variant (`browser_specific_settings`, background `scripts` fallback); `chrome.*` calls go through one compat shim.
-- **Formatting:** Prettier configured to match the existing hand style (4 spaces, `if(`, trailing-`?`/`:` ternaries where Prettier allows), applied per file as it moves; ESLint for correctness.
+- **Formatting:** match the hand style, applied per file as it moves. Prettier can't print `if(` or trailing `?`/`:` ternaries, so ESLint `@stylistic` does the formatting instead.
