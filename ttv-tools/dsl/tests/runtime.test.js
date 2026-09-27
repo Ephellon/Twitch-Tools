@@ -330,7 +330,7 @@
         it('runs a `using` body once per subject that resolves', async () => {
             let { runtime } = harness();
 
-            await run('using <moderator>\n    await (.message is *)\n        REPLY `mod`\nusing <subscriber>\n    await (.message is *)\n        REPLY `sub`\n', runtime);
+            await run('using [moderator]\n    await (.message is *)\n        REPLY `mod`\nusing [subscriber]\n    await (.message is *)\n        REPLY `sub`\n', runtime);
             await runtime.dispatch({ message: 'hi' });
 
             // The current channel holds `moderator` but not `subscriber`.

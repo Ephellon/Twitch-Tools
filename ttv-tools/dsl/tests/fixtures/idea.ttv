@@ -59,13 +59,13 @@ await * with (#live is true)
                 "gamble":
                     REPLY any from (
                         `You lost. End of story :)`
-                        `Congration. You'd done it. +${ any from(1 .. 10) }`
+                        `Congration. You'd done it. +${ * from(1 .. 10) }`
                     )
 
                 "whoami":
                     REPLY `${ .sender }, silly`
 
-    using <moderator>
+    using [moderator]
         await (5:00 -> wait_time)
             any from (
                 `can I mod today?`
@@ -73,9 +73,9 @@ await * with (#live is true)
                 'who needs ban?'
             ) -> mod_msg
 
-        POST `${ mod_msg } (${ wait_time })`
+            POST `${ mod_msg } (${ wait_time })`
 
-    using <subscriber>
+    using [subscriber]
         await 5:00
             POST any from (
                 , `burger`
@@ -85,7 +85,7 @@ await * with (#live is true)
                 ,
             )
 
-    using <vip> +read:datetime +eval:calc
+    using [vip] +read:datetime +eval:calc
         await 5:00
             POST any from (
                 `!lurk`
@@ -93,13 +93,13 @@ await * with (#live is true)
                 `!lurk into the shadows`
                 `!lurk watching tv`
                 `${ #name } is stinky :P`
-                `!lurk What time is it? It's ${ $:Date.now() }`
+                `!lurk What time is it? It's ${ &Date.now() }`
                     // Invoke JavaScript's native `Date.now` with an empty list `()`
-                    // `$:Date.now(123)` → `(123) → JavaScriptArray[123]` → `JavaScriptInvoke(["Date", "now"], [123])`
+                    // `&Date.now(123)` → `(123) → JavaScriptArray[123]` → `JavaScriptInvoke(["Date", "now"], [123])`
                         // Where `JavaScriptInvoke` is in the form `ƒ JavaScriptInvoke(path:Array<String>, arguments?:Array<any>) → void`
             )
 
-    using <viewer> <everyone> <anyone> <all>
+    using [viewer everyone anyone all]
         await 5:00
             POST any from (
                 `!lurk homework :P`

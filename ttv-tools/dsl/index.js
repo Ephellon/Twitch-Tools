@@ -28,7 +28,7 @@ if (typeof require === 'function' && typeof module === 'object')
     const DSL = globalThis.TTV_DSL;
 
     /** Bumped whenever the language itself changes, independent of the extension version. */
-    DSL.version = '2.0.0';
+    DSL.version = '2.1.0';
 
     /** The file extension a script is stored under. */
     DSL.extension = '.ttv';

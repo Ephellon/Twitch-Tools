@@ -1,5 +1,5 @@
 (* ==========================================================================
-   TTV DSL - grammar v2
+   TTV DSL - grammar v2.1
    Companion to dsl/SPEC.md. ISO-style EBNF.
 
      =    definition        |    alternation      { }  zero or more
@@ -12,6 +12,11 @@
    v2 is a strict syntactic SUPERSET of v1: every v1 production below is
    unchanged in what it accepts, and every v1 script still parses. New
    productions are marked (v2).
+
+   v2.1 is NOT a superset of v2: `else`, `above` and `below` became keywords.
+   Productions it added or changed are marked (v2.1). Its behaviour changes
+   (`*` matching empty, the arrows as synonyms, bare `%`) are semantic and are
+   listed in SPEC 14.1a.
    ========================================================================== *)
 
 
@@ -25,13 +30,14 @@ statement      = await_stmt
                | using_stmt
                | if_stmt
                | when_stmt          (* v2 *)
+               | else_stmt          (* v2.1 *)
                | with_stmt          (* v2 *)
                | goto_stmt
                | verb_stmt
                | expr_stmt ;        (* v2 *)
 
-(* Every block-opening statement may omit its block - except if_stmt, when_stmt
-   and with_stmt, which require one. That rule is enforced by the parser, not
+(* Every block-opening statement may omit its block - except if_stmt, when_stmt,
+   else_stmt and with_stmt, which require one. That rule is enforced by the parser, not
    expressible here. *)
 block          = INDENT , statement , { statement } , DEDENT ;
 
@@ -43,13 +49,25 @@ block          = INDENT , statement , { statement } , DEDENT ;
    part of the syntax. This is NOT with_stmt - that one starts a line. *)
 await_stmt     = "await" , expression , [ "with" , expression ] , NEWLINE , [ block ] ;
 
-(* Juxtaposed subjects mean "any of these": using <viewer> <everyone> <all>
+(* Juxtaposed subjects are separate subjects, one run each:
+   using [viewer] [everyone]. One bracket, [viewer everyone], is one subject
+   meaning "any of these" - see badge_sel.
    (v2) PERMISSION grants may be interleaved with them anywhere on the line,
-   and commas between any of it are optional noise. *)
+   and commas between any of it are optional noise.
+   (v2.1) Subjects are optional: a header of only grants and/or `+scope` runs
+   its body once under the current subject. It must still carry SOMETHING - a
+   bare `using` is an error. `+scope[:local|global|universal]` is a PERMISSION
+   token the parser diverts: legal only in a using_stmt at the top level, at
+   most once, and never added to the grant set.
+   (v2.1) An optional `-- "description"` ends the header. It is recorded, never
+   evaluated, and may stand alone. *)
 using_stmt     = "using" ,
-                 ( expression | PERMISSION | "," ) ,
-                 { expression | PERMISSION | "," } ,
+                 ( ( { "," } , ( expression | PERMISSION ) ,
+                     { expression | PERMISSION | "," } , [ description ] )
+                 | description ) ,
                  NEWLINE , [ block ] ;
+
+description    = DESCRIBE , STRING ;
 
 (* (v2) An if_stmt may be continued by a chain when_stmt written as its next
    SIBLING. The parser folds that sibling into this node's `alternate`; the
@@ -72,6 +90,12 @@ when_switch    = "when" , expression , ( "is" | "in" ) , NEWLINE ,
 when_case      = expression , ":" , NEWLINE , block ;
 
 when_chain     = "when" , expression , NEWLINE , block ;
+
+(* (v2.1) The last branch of a chain, folded into its final `alternate` like a
+   when_chain. A bare `else` takes NO condition and nothing may follow it in the
+   same chain. `else if <test>` is a second spelling of when_chain - same node,
+   and it may be followed. `else when` is an error. *)
+else_stmt      = "else" , [ "if" , expression ] , NEWLINE , block ;
 
 (* (v2) The block form. Branches on the RESULT, not on the syntax: a boolean
    runs the block once under the current subject, anything else iterates. *)
@@ -103,6 +127,9 @@ expression     = assign_expr ;
    non-chaining - `a -> b -> c` is a parse error - which is why this is
    [ ... ] and not { ... }.
 
+   (v2.1) The two arrows are SYNONYMS. Where the name lands is decided by the
+   script's `+scope` mode (SPEC 9.2), never by the arrow.
+
    VAR_NAME must contain an interior underscore (`mod_msg`), which is what
    distinguishes a variable from a host constant. Checked at the BINDING site
    only; a reference site checks nothing. *)
@@ -117,8 +144,15 @@ and_expr       = cmp_expr , { "and" , cmp_expr } ;
 
    (v2) `is` additionally REJECTS an operand that is a template carrying an
    interpolation. A template with no `${ }` is just text and is accepted. That
-   restriction is semantic, not syntactic, so it is not written here. *)
-cmp_expr       = pct_expr , [ ( "is" | "in" ) , pct_expr ] ;
+   restriction is semantic, not syntactic, so it is not written here.
+
+   (v2.1) `is [or] above|below` is the numeric comparison. It shares this
+   level and its non-associativity. `is or` means nothing else - `or` never
+   starts an operand - so the inclusive spelling steals no existing sentence. *)
+cmp_expr       = pct_expr , [ cmp_op , pct_expr ] ;
+
+cmp_op         = "is" , [ [ "or" ] , ( "above" | "below" ) ]
+               | "in" ;
 
 (* (v2) `%` sits between the comparisons and the pipe: looser than `<|` so
    `1st <| .links % ','` joins what the pipe selected, tighter than `is` so a
@@ -144,7 +178,13 @@ range_expr     = unary_expr , [ ( ".." | "..." ) , unary_expr ] ;
 (* (v2) `=` is a PREFIX on an operand, not a binary operator: it makes the
    comparison that operand takes part in case-sensitive. *)
 unary_expr     = ( "not" | "-" | "=" ) , unary_expr
-               | primary ;
+               | member_expr ;
+
+(* (v2.1) `.raider.last.category`. A context_sel counts as a member access only
+   when it is GLUED to what precedes it - no whitespace - so `using .a .b` is
+   still two subjects. The adjacency test is the parser's; it cannot be written
+   in EBNF. *)
+member_expr    = primary , { context_sel } ;
 
 primary        = literal
                | selector
@@ -182,7 +222,8 @@ this_expr      = "_" | "__this__" | "__self__" | "__me__" ;
    (v2) A comma is an ADDITIONAL separator, never a required one. Leading,
    trailing and repeated commas collapse to nothing; two items on one line are
    still two items, comma or no comma. *)
-any_from       = "any" , "from" , "(" ,
+(* (v2.1) `* from` is the same construct: `*` is ANYTHING. *)
+any_from       = ( "any" | "*" ) , "from" , "(" ,
                    { NEWLINE | "," } ,
                    expression , { { NEWLINE | "," } , expression } ,
                    { NEWLINE | "," } ,
@@ -201,9 +242,11 @@ literal        = STRING
 
 boolean        = "true" | "false" ;
 
-(* Always the wildcard. The DSL has no multiplication operator; see SPEC 3.7.
-   As a when_case label it is the default case, for free. *)
-wildcard       = "*" ;
+(* Always a presence test, never multiplication; see SPEC 3.7.
+   (v2.1) `*` is ANYTHING - present, empty values included. SOMETHING (present
+   and non-empty) and NOTHING (absent or empty) are resolved by the PARSER from
+   UPPER_IDENT, so a host constant cannot shadow them. *)
+wildcard       = "*" | "ANYTHING" | "SOMETHING" | "NOTHING" ;
 
 identifier     = IDENT | UPPER_IDENT ;
 
@@ -216,7 +259,6 @@ selector       = self_sel
                | realm_sel
                | badge_sel
                | user_sel
-               | emote_sel
                | context_sel ;
 
 (* A bare "/" means the same as a bare "#": the channel in scope. *)
@@ -231,11 +273,15 @@ channel_sel    = "/" , PATH ;
 
 realm_sel      = UPPER_IDENT , "/" , PATH ;
 
-badge_sel      = "<" , BADGE_NAME , ">" ;
+(* (v2.1) ONE token. `[vip moderator]` - commas optional - resolves ONCE, to
+   the first listed badge held: "any of these". One line; `[]` is an error.
+   `<moderator>` and `--moderator` are lexical errors naming this spelling. *)
+badge_sel      = "[" , BADGE_NAME , { [ "," ] , BADGE_NAME } , "]" ;
 
 user_sel       = "@" , PATH ;
 
-emote_sel      = ":" , EMOTE_NAME , ":" ;
+(* (v2.1) There is no emote selector. An emote is text: 'kappa'. The old
+   `:kappa:` is a lexical error that says so. *)
 
 context_sel    = "." , IDENT ;
 
@@ -297,12 +343,12 @@ context_sel    = "." , IDENT ;
 
   PERMISSION  = "+" [A-Za-z_][A-Za-z0-9_]* ( ":" [A-Za-z0-9_]+ )*    (* v2 *)
                 (* consumes its own ":" segments, which is the only reason
-                   `+eval:calc` never reaches the emote branch. A "+" with no
+                   `+eval:calc` never reaches the case-label branch. A "+" with no
                    valid name is a HARD ERROR naming the absence of arithmetic. *)
 
-  JS_PATH     = "$:" [A-Za-z_$][A-Za-z0-9_$]*
+  JS_PATH     = "&" [A-Za-z_$][A-Za-z0-9_$]*
                        ( "." [A-Za-z_$][A-Za-z0-9_$]* )*             (* v2 *)
-                (* value is the segment ARRAY. A bare "$" outside a template is
+                (* (v2.1) was "$:". Value is the segment ARRAY. A "$" outside a template is
                    a hard error. *)
 
   PCT_RUN     = "%" ( CLS ( "%" CLS )* )?                            (* v2 *)
@@ -311,15 +357,21 @@ context_sel    = "." , IDENT ;
                 (* the leading "%" belongs to the FIRST class, so "%n%s" is two
                    classes and a bare "%" is zero - which is how "%" alone can
                    mean the default run without a second spelling. Value is the
-                   letter array, empty for a bare "%". *)
+                   letter array, empty for a bare "%".
+                   (v2.1) The default run is `\s*\n\s*` - any whitespace run
+                   containing a newline - NOT "%n%s", which is `\n+\s+`. *)
 
   VAR_NAME    = [A-Za-z0-9]+ ( "_" [A-Za-z0-9]+ )+                   (* v2 *)
                 (* NOT a lexical class - the lexer emits IDENT and the PARSER
                    applies this pattern, at binding sites only. It cannot be
                    lexical: `USERNAME` and `mod_msg` are the same token. *)
 
-  EMOTE_NAME  = [A-Za-z0-9_]+          (* reached only via ":" *)
-  BADGE_NAME  = [A-Za-z0-9_-]+         (* reached only via "<", after "<|" *)
+  BADGE_NAME  = [A-Za-z][A-Za-z0-9_-]*   (* reached only inside "[ ]" *)
+
+  DESCRIBE    = "--" (?=\s|$)                                        (* v2.1 *)
+                (* only when whitespace or end of input follows; "--name"
+                   glued is the retired badge spelling, and anything else is
+                   a hard error naming the absence of decrement *)
   PATH        = [A-Za-z0-9_.-]+        (* channel names and realm snowflakes *)
   IDENT       = [A-Za-z_][A-Za-z0-9_]*
   UPPER_IDENT = [A-Z][A-Z0-9_]*        (* an IDENT flagged isUpper *)
@@ -327,11 +379,12 @@ context_sel    = "." , IDENT ;
   KEYWORD     = await | with | using | if | goto | any | from
               | where | of | is | in | and | or | not | true | false
               | when                                                 (* v2 *)
+              | else | above | below                               (* v2.1 *)
 
-  RESERVED    = else | elif | elseif | switch | case | default | calc
+  RESERVED    = elif | elseif | switch | case | default | calc
                 (* (v2) reserved for ONE purpose: to produce a diagnostic that
-                   names `when` (or, for `calc`, the arithmetic reservation)
-                   instead of a generic "expected a statement" *)
+                   names `when` / `else` (or, for `calc`, the arithmetic
+                   reservation) instead of a generic "expected a statement" *)
 
   PUNCTUATOR  = "..." | ".." | "<|" | "=>" | "->" | "(" | ")" | "*"
               | "-" | "=" | "," | "|"
@@ -342,7 +395,7 @@ context_sel    = "." , IDENT ;
                    reaches here, which is what makes a bare "|" safe to add.
                    Context-sensitive lexemes are handled by dedicated branches
                    that run first: "//", "/*", "\"", "'", "`", ":", "<", ".",
-                   "#", "/", "@", "+", "$", "%" and a leading digit. *)
+                   "#", "/", "@", "+", "&", "$", "%", "--" and a leading digit. *)
 
   COLON       = ":" that is neither a DURATION nor an EMOTE          (* v2 *)
                 (* v1 refused this in the lexer. v2 cannot: a when_case label is
@@ -363,7 +416,7 @@ context_sel    = "." , IDENT ;
   Hard lexical errors: leading whitespace mixing tabs and spaces; a dedent that
   matches no enclosing level; an unterminated string or template; an
   unterminated "/*"; an unclosed "(" at EOF; an unmatched ")"; a bare "<", ".",
-  "@", "+" or "$" with no valid continuation.
+  "@", "+", "&" or "--" with no valid continuation; any "$" outside a template.
 
   NO LONGER a lexical error, as of v2: a bare ":" (see COLON) and an
   unterminated "${" (see RAW_OPEN).

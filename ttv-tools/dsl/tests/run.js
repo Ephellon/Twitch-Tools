@@ -38,6 +38,7 @@ const TESTS = [
     'parser.test.js',
     'runtime.test.js',
     'v2.test.js',
+    'realistic.test.js',
 ];
 
 for (let name of MODULES)

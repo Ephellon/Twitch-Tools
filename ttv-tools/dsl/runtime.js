@@ -128,10 +128,16 @@ if (typeof require === 'function' && typeof module === 'object')
     /** Classes that match a *position* rather than a character, and so cannot be quantified. */
     const PERCENT_ZERO_WIDTH = Object.freeze(new Set(['b', 'B']));
 
-    /** What a bare `%` expands to. */
-    const PERCENT_DEFAULT = Object.freeze(['n', 's']);
+    /** What a bare `%` matches: any whitespace run that contains at least one newline.
+     *
+     * Not `%n%s`. Concatenation would make that `\n+\s+` — a newline *followed by* more
+     * whitespace — so a lone `\n` or a `\r\n` would slip through. And not every whitespace
+     * run either: the spaces *within* a line are content, and collapsing them would turn
+     * `help → this` into `help·→·this`. A bare `%` flattens line breaks and the padding
+     * around them, and nothing else. */
+    const PERCENT_DEFAULT = '\\s*\\n\\s*';
 
-    /** The permission a `$:` path requires when the host has not said otherwise. */
+    /** The permission a `&` path requires when the host has not said otherwise. */
     const DEFAULT_JS_PERMISSION = 'eval:js';
 
     /** Property names a host path may never traverse. Not a substitute for the host simply
@@ -154,7 +160,7 @@ if (typeof require === 'function' && typeof module === 'object')
      *    yields `a · b`. An operator that quietly added spaces would be impossible to turn
      *    off.
      * @param {String|Array<String>} value - already rendered by the caller
-     * @param {Array<String>} letters - the class run; empty means `%n%s`
+     * @param {Array<String>} letters - the class run; empty means {@link PERCENT_DEFAULT}
      * @param {String} replacement
      * @return {String}
      */
@@ -168,10 +174,7 @@ if (typeof require === 'function' && typeof module === 'object')
         // spelling stays legal even though the trim it asks for is already unconditional.
         let run = (letters ?? []).filter(letter => 'c' !== letter);
 
-        if (!run.length)
-            run = PERCENT_DEFAULT;
-
-        let source = '';
+        let source = (run.length? '': PERCENT_DEFAULT);
 
         for (let letter of run) {
             let piece = PERCENT_CLASS_SOURCE[letter];
@@ -319,7 +322,7 @@ if (typeof require === 'function' && typeof module === 'object')
                 return this.channel(path);
             },
 
-            /** `<badge>` — does the subject carry this badge? */
+            /** `[badge]` — does the subject carry this badge? */
             badge(name, subject) {
                 let badges = (subject?.badges ?? []);
 
@@ -331,11 +334,6 @@ if (typeof require === 'function' && typeof module === 'object')
                 let users = (subject?.users ?? {});
 
                 return (users[name] ?? { name });
-            },
-
-            /** `:emote:` */
-            emote(name) {
-                return { name };
             },
 
             /** Where `goto` lands. Recorded rather than performed. */
@@ -395,8 +393,8 @@ if (typeof require === 'function' && typeof module === 'object')
      * @param {Function} [options.random] - returns `[0, 1)`
      * @param {Object} [options.logger] - `{ log, warn, error }`
      * @param {{ steps: Number, wallMs: Number }} [options.limits]
-     * @param {Object} [options.jsBindings] - the object `$:Path.fn()` walks. **Empty by
-     *   default**, deliberately: a script naming `$:Date.now` should fail as loudly as one
+     * @param {Object} [options.jsBindings] - the object `&Path.fn()` walks. **Empty by
+     *   default**, deliberately: a script naming `&Date.now` should fail as loudly as one
      *   naming `DISCORD` until the host has decided to expose it.
      * @param {Object<String, String>} [options.jsPermissions] - dotted path -> required
      *   permission, e.g. `{ 'Date.now': 'read:datetime' }`. Unlisted paths require `eval:js`.
@@ -624,7 +622,7 @@ if (typeof require === 'function' && typeof module === 'object')
              *
              * Resolution is a walk over a plain object the host supplied, followed by a
              * call. At no point does a string become code: there is no `eval` and no
-             * `new Function` in this language's implementation, and `$:` is the construct
+             * `new Function` in this language's implementation, and `&` is the construct
              * that would most obviously have wanted one.
              * @param {Array<String>} path
              * @param {Array<*>} args
@@ -642,19 +640,19 @@ if (typeof require === 'function' && typeof module === 'object')
 
                 for (let segment of path) {
                     if (FORBIDDEN_SEGMENTS.has(segment))
-                        throw new DSLRuntimeError(`\`$:${ key }\` walks through ${ JSON.stringify(segment) }, which is never allowed`, loc);
+                        throw new DSLRuntimeError(`\`&${ key }\` walks through ${ JSON.stringify(segment) }, which is never allowed`, loc);
 
                     let container = (null != target && (typeof target === 'object' || typeof target === 'function'));
 
                     if (!container || !(segment in target))
-                        throw new DSLRuntimeError(`No host binding for \`$:${ key }\`. Registered: ${ Object.keys(jsBindings).join(', ') || 'none' }`, loc);
+                        throw new DSLRuntimeError(`No host binding for \`&${ key }\`. Registered: ${ Object.keys(jsBindings).join(', ') || 'none' }`, loc);
 
                     holder = target;
                     target = target[segment];
                 }
 
                 if (typeof target !== 'function')
-                    throw new DSLRuntimeError(`\`$:${ key }\` is not callable`, loc);
+                    throw new DSLRuntimeError(`\`&${ key }\` is not callable`, loc);
 
                 return target.apply(holder, args);
             },
@@ -724,7 +722,7 @@ if (typeof require === 'function' && typeof module === 'object')
     let createContext = (runtime, { subject, channel, realm, permissions = [] }) => {
         let signal = createSignal();
 
-        let make = (subjects, envs, currentChannel, currentRealm, granted) => ({
+        let make = (subjects, envs, currentChannel, currentRealm, granted, hold, route) => ({
             runtime,
             signal,
             subjects,
@@ -732,6 +730,16 @@ if (typeof require === 'function' && typeof module === 'object')
             permissions: granted,
             channel: currentChannel,
             realm: currentRealm,
+
+            /** The installation of the nearest enclosing `await`, or null at the top level.
+             * A nested `await` asks it whether it has already been installed, and whether
+             * the enclosing `with (...)` scopes still admit an event. */
+            hold,
+
+            /** Which loop iteration this context sits in, below `hold`: `/0/2` is the
+             * third item of a `with` inside the first subject of a `using`. Lets a nested
+             * `await` install once per iteration rather than once in total. */
+            route,
 
             /** The innermost bound subject. */
             get subject() {
@@ -743,12 +751,13 @@ if (typeof require === 'function' && typeof module === 'object')
              * @param {Object} [options]
              * @return {Object}
              */
-            child(value, { channel: nextChannel, realm: nextRealm, permissions: nextPermissions } = {}) {
+            child(value, { channel: nextChannel, realm: nextRealm, permissions: nextPermissions, hold: nextHold, route: nextRoute } = {}) {
                 let resolved = (nextChannel !== undefined
                     ? nextChannel
                     : (isChannelLike(value)? value: (value?.channel ?? currentChannel)));
 
-                return make(subjects.concat([value]), envs.concat([new Map()]), resolved, (nextRealm ?? currentRealm), (nextPermissions ?? granted));
+                return make(subjects.concat([value]), envs.concat([new Map()]), resolved, (nextRealm ?? currentRealm), (nextPermissions ?? granted),
+                    (nextHold !== undefined? nextHold: hold), (nextRoute ?? route));
             },
 
             onAbort: (handler) => signal.onAbort(handler),
@@ -757,7 +766,7 @@ if (typeof require === 'function' && typeof module === 'object')
             stop: () => signal.abort(),
         });
 
-        return make([subject], [new Map()], channel, realm, Object.freeze(new Set(permissions)));
+        return make([subject], [new Map()], channel, realm, Object.freeze(new Set(permissions)), null, '');
     };
 
     /** @param {*} value @return {Boolean} true when the value looks like a channel record */

@@ -64,7 +64,7 @@
         });
 
         it('parses several juxtaposed `using` subjects as a list', () => {
-            assert.like(statement('using <viewer> <everyone> <anyone> <all>\n'), {
+            assert.like(statement('using [viewer] [everyone] [anyone] [all]\n'), {
                 type: NodeType.UsingStatement,
                 subjects: [
                     { type: NodeType.Selector, kind: 'badge', name: 'viewer' },
@@ -180,9 +180,8 @@
             assert.like(expression('#'), { type: NodeType.Selector, kind: 'channel' });
             assert.like(expression('#name'), { type: NodeType.Selector, kind: 'prop', name: 'name' });
             assert.like(expression('/shroud'), { type: NodeType.Selector, kind: 'channel', name: 'shroud' });
-            assert.like(expression('<moderator>'), { type: NodeType.Selector, kind: 'badge', name: 'moderator' });
+            assert.like(expression('[moderator]'), { type: NodeType.Selector, kind: 'badge', name: 'moderator' });
             assert.like(expression('@ephellon'), { type: NodeType.Selector, kind: 'user', name: 'ephellon' });
-            assert.like(expression(':kappa:'), { type: NodeType.Selector, kind: 'emote', name: 'kappa' });
             assert.like(expression('.sender'), { type: NodeType.Selector, kind: 'context', name: 'sender' });
         });
 
@@ -362,17 +361,17 @@
     // -- v2 -----------------------------------------------------------------
 
     describe('parser / variables and the two arrows', () => {
-        it('reads `-> name` as an assignment expression bound locally', () => {
+        it('reads `-> name` as an assignment expression', () => {
             assert.like(expression('(`hi` -> mod_msg)'), {
                 type: NodeType.AssignmentExpression,
                 name: 'mod_msg',
-                scope: 'local',
+                arrow: '->',
                 value: { type: NodeType.TemplateLiteral },
             });
         });
 
-        it('reads `=> name` as an assignment expression bound in the parent', () => {
-            assert.like(expression('(`hi` => mod_msg)'), { type: NodeType.AssignmentExpression, scope: 'parent' });
+        it('reads `=> name` as the same assignment, keeping only the spelling', () => {
+            assert.like(expression('(`hi` => mod_msg)'), { type: NodeType.AssignmentExpression, arrow: '=>' });
         });
 
         it('accepts an assignment as a whole statement, but not a bare expression', () => {
@@ -451,12 +450,12 @@
             assert.throws(() => parse('await *\n    POST `a`\n    when .a is "y"\n        POST `b`\n'), /but there is none here/i);
         });
 
-        it('points `else` and friends at `when`', () => {
-            for (let word of ['else', 'elif', 'elseif'])
-                assert.throws(() => parse(`await *\n    ${ word } .a is "x"\n        POST \`a\`\n`), /use `when` for the next condition/i);
+        it('points `elif` and friends at `when` and `else`', () => {
+            for (let word of ['elif', 'elseif'])
+                assert.throws(() => parse(`await *\n    ${ word } .a is "x"\n        POST \`a\`\n`), /use `when <test>` for the next condition, or `else`/i);
 
             assert.throws(() => parse('await *\n    switch .a\n        POST `a`\n'), /when <expression> is/i);
-            assert.throws(() => parse('await *\n    default\n        POST `a`\n'), /case of `\*` is the default/i);
+            assert.throws(() => parse('await *\n    default\n        POST `a`\n'), /put an `else` after/i);
         });
 
         it('points `calc` at the reservation note', () => {
@@ -470,7 +469,7 @@
 
     describe('parser / permissions', () => {
         it('collects `+name` grants off a `using` header', () => {
-            assert.like(statement('using <vip> +read:datetime +eval:calc\n    POST `a`\n'), {
+            assert.like(statement('using [vip] +read:datetime +eval:calc\n    POST `a`\n'), {
                 type: NodeType.UsingStatement,
                 permissions: ['read:datetime', 'eval:calc'],
                 subjects: [{ type: NodeType.Selector, kind: 'badge', name: 'vip' }],
@@ -478,7 +477,7 @@
         });
 
         it('allows grants interleaved with subjects', () => {
-            assert.like(statement('using <vip> +a:b <moderator>\n    POST `a`\n'), {
+            assert.like(statement('using [vip] +a:b [moderator]\n    POST `a`\n'), {
                 permissions: ['a:b'],
                 subjects: [{ name: 'vip' }, { name: 'moderator' }],
             });
@@ -542,14 +541,14 @@
             assert.ok(parse('await (.a is `plain`)\n'));
         });
 
-        it('reads `$:` as a path plus an argument list', () => {
-            assert.like(expression('$:Date.now()'), {
+        it('reads `&` as a path plus an argument list', () => {
+            assert.like(expression('&Date.now()'), {
                 type: NodeType.JSInvokeExpression,
                 path: ['Date', 'now'],
                 arguments: [],
             });
 
-            assert.like(expression('$:Date.now(123)'), { arguments: [{ type: NodeType.Literal, value: 123 }] });
+            assert.like(expression('&Date.now(123)'), { arguments: [{ type: NodeType.Literal, value: 123 }] });
         });
 
         it('treats commas as optional separators inside a list', () => {
@@ -568,7 +567,6 @@
         it('names every reading of ":" when a bare one turns up', () => {
             let error = assert.throws(() => parse('await :\n'), DSLParseError);
 
-            assert.match(error.message, /emote/i);
             assert.match(error.message, /duration/i);
             assert.match(error.message, /`when` case label/i);
         });

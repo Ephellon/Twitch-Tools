@@ -35,10 +35,24 @@ if (typeof require === 'function' && typeof module === 'object') {
 (() => {
     const { DSLRuntimeError, DSLLimitError, DSLError } = globalThis.TTV_DSL.errors;
     const { NodeType } = globalThis.TTV_DSL.ast;
-    const { VARIABLE_PATTERN } = globalThis.TTV_DSL.tokens;
+    const { VARIABLE_PATTERN, DEFAULT_SCOPE_MODE } = globalThis.TTV_DSL.tokens;
 
-    /** The value `*` evaluates to. A symbol, so no script-visible value can impersonate it. */
+    /** The value `*` / `ANYTHING` evaluates to. A symbol, so no script-visible value can
+     * impersonate it. */
     const WILDCARD = Symbol('TTV_DSL.wildcard');
+
+    /** `SOMETHING` — present and not empty. */
+    const SOMETHING = Symbol('TTV_DSL.something');
+
+    /** `NOTHING` — absent, `""` or `[]`. */
+    const NOTHING = Symbol('TTV_DSL.nothing');
+
+    /** The three presence tests, by the `kind` a `Wildcard` node carries. */
+    const PRESENCE = Object.freeze({ anything: WILDCARD, something: SOMETHING, nothing: NOTHING });
+
+    /** Property names a member read may never traverse — the same set the host-path walk
+     * refuses, for the same reason: a read of `constructor` hands back a function. */
+    const FORBIDDEN_MEMBERS = Object.freeze(new Set(['__proto__', 'prototype', 'constructor']));
 
     /** Distinguishes "this name is bound to `undefined`" from "this name is not bound".
      * Never escapes this module. */
@@ -64,11 +78,76 @@ if (typeof require === 'function' && typeof module === 'object') {
     /** @param {*} value @return {Boolean} */
     let isEmpty = (value) => (null == value || '' === value || (Array.isArray(value) && !value.length));
 
-    /** Truthiness, DSL-flavoured: an empty list is false, and the wildcard is always true.
+    /** @param {*} value @return {Boolean} */
+    let isPresence = (value) => (WILDCARD === value || SOMETHING === value || NOTHING === value);
+
+    /** Answers a presence test against a value.
+     * @param {Symbol} test - `WILDCARD`, `SOMETHING` or `NOTHING`
      * @param {*} value
      * @return {Boolean}
      */
-    let truthy = (value) => (WILDCARD === value? true: (Array.isArray(value)? value.length > 0: !!value));
+    let present = (test, value) => {
+        if (NOTHING === test)
+            return isEmpty(value);
+
+        if (SOMETHING === test)
+            return !isEmpty(value);
+
+        // `ANYTHING` — any value at all, `""` and `[]` included; only absence fails.
+        return (null != value);
+    };
+
+    /** Truthiness, DSL-flavoured: an empty list is false, `*` / `SOMETHING` are true and
+     * `NOTHING` is false.
+     * @param {*} value
+     * @return {Boolean}
+     */
+    let truthy = (value) => {
+        if (isPresence(value))
+            return (NOTHING !== value);
+
+        return (Array.isArray(value)? value.length > 0: !!value);
+    };
+
+    /** Reads a value as a number for `above` / `below`.
+     *
+     * Numbers and durations (already milliseconds) pass through; a string is read as a
+     * number, then as a duration (`"5:00"`, `"90s"`). Anything else — a missing value, a
+     * boolean, a list, an unreadable string — is `NaN`, which every comparison answers
+     * `false` to. Never an error: a comparison against a value that is not there is a
+     * question with the answer "no".
+     * @param {*} value
+     * @param {Object} runtime
+     * @return {Number}
+     */
+    let toNumber = (value, runtime) => {
+        value = unwrap(value);
+
+        if (typeof value === 'number')
+            return value;
+
+        if (typeof value !== 'string' || !value.trim().length)
+            return NaN;
+
+        let number = Number(value.trim());
+
+        if (!Number.isNaN(number))
+            return number;
+
+        try {
+            return runtime.parseDuration(value);
+        } catch {
+            return NaN;
+        }
+    };
+
+    /** The four numeric comparisons, keyed by the operator the parser recorded. */
+    const COMPARISONS = Object.freeze({
+        'above': (left, right) => (left > right),
+        'below': (left, right) => (left < right),
+        'or above': (left, right) => (left >= right),
+        'or below': (left, right) => (left <= right),
+    });
 
     /** Renders a value for interpolation and for message text.
      * @param {*} value
@@ -83,6 +162,12 @@ if (typeof require === 'function' && typeof module === 'object') {
 
         if (WILDCARD === value)
             return '*';
+
+        if (SOMETHING === value)
+            return 'SOMETHING';
+
+        if (NOTHING === value)
+            return 'NOTHING';
 
         if (Array.isArray(value))
             return value.map(stringify).join(', ');
@@ -109,11 +194,11 @@ if (typeof require === 'function' && typeof module === 'object') {
             let exactLeft = unwrap(left),
                 exactRight = unwrap(right);
 
-            if (WILDCARD === exactRight)
-                return !isEmpty(exactLeft);
+            if (isPresence(exactRight))
+                return present(exactRight, exactLeft);
 
-            if (WILDCARD === exactLeft)
-                return !isEmpty(exactRight);
+            if (isPresence(exactLeft))
+                return present(exactLeft, exactRight);
 
             if (null == exactLeft || null == exactRight)
                 return (exactLeft === exactRight);
@@ -121,11 +206,11 @@ if (typeof require === 'function' && typeof module === 'object') {
             return (stringify(exactLeft) === stringify(exactRight));
         }
 
-        if (WILDCARD === right)
-            return !isEmpty(left);
+        if (isPresence(right))
+            return present(right, left);
 
-        if (WILDCARD === left)
-            return !isEmpty(right);
+        if (isPresence(left))
+            return present(left, right);
 
         if (typeof left === 'string' && typeof right === 'string')
             return (left.toLowerCase() === right.toLowerCase());
@@ -150,11 +235,11 @@ if (typeof require === 'function' && typeof module === 'object') {
             let exactNeedle = unwrap(needle),
                 exactHaystack = unwrap(haystack);
 
+            if (isPresence(exactHaystack))
+                return present(exactHaystack, exactNeedle);
+
             if (null == exactHaystack)
                 return false;
-
-            if (WILDCARD === exactHaystack)
-                return !isEmpty(exactNeedle);
 
             if (typeof exactHaystack === 'string')
                 return exactHaystack.includes(stringify(exactNeedle));
@@ -168,11 +253,11 @@ if (typeof require === 'function' && typeof module === 'object') {
             return false;
         }
 
+        if (isPresence(haystack))
+            return present(haystack, needle);
+
         if (null == haystack)
             return false;
-
-        if (WILDCARD === haystack)
-            return !isEmpty(needle);
 
         if (typeof haystack === 'string')
             return haystack.toLowerCase().includes(stringify(needle).toLowerCase());
@@ -201,7 +286,7 @@ if (typeof require === 'function' && typeof module === 'object') {
      * @param {Object} runtime - from `createRuntime`
      * @return {Function} `async (context) => value`
      */
-    let compile = (node, runtime) => compileNode(node, { runtime, depth: 0, parentDepth: null, permissions: EMPTY_PERMISSIONS });
+    let compile = (node, runtime) => compileNode(node, { runtime, depth: 0, parentDepth: null, permissions: EMPTY_PERMISSIONS, mode: DEFAULT_SCOPE_MODE });
 
     /** The grant set a program starts with: nothing. */
     const EMPTY_PERMISSIONS = Object.freeze(new Set());
@@ -224,10 +309,9 @@ if (typeof require === 'function' && typeof module === 'object') {
 
     /** Opens a nested lexical scope — one deeper subject slot.
      *
-     * `parentDepth` is what makes `=>` mean something: it remembers the slot one level out,
-     * so a binding can be placed where later *siblings* will still see it. At the top level
-     * it stays null, which is the only reason `=>` can be rejected at compile time instead
-     * of silently writing into nowhere.
+     * `parentDepth` remembers the slot one level out, which is where a `+scope:global`
+     * binding lands so that later *siblings* still see it. `mode` is the `+scope` rule in
+     * force, inherited unchanged by every nested scope.
      * @param {Object} scope
      * @param {Object} [extra] - fields to override, e.g. a widened permission set
      * @return {Object}
@@ -237,13 +321,41 @@ if (typeof require === 'function' && typeof module === 'object') {
         depth: scope.depth + 1,
         parentDepth: scope.depth,
         permissions: scope.permissions,
+        mode: scope.mode,
     }, extra);
+
+    /** Which env slot a binding made in `scope` writes to. Both arrows ask the same
+     * question; only the `+scope` mode answers it.
+     *
+     * | mode        | slot          | visible to                                   |
+     * |-------------|---------------|----------------------------------------------|
+     * | `local`     | `depth`       | this block and what it nests                 |
+     * | `global`    | `parentDepth` | this block, its siblings, and what they nest |
+     * | `universal` | `0`           | every block in the script                    |
+     *
+     * At the top level there is no parent, so `global` falls back to the top slot — which
+     * is already visible to everything.
+     * @param {Object} scope
+     * @return {Number}
+     */
+    let bindingSlot = (scope) => {
+        switch (scope.mode) {
+            case 'local':
+                return scope.depth;
+
+            case 'universal':
+                return 0;
+
+            default:
+                return (scope.parentDepth ?? scope.depth);
+        }
+    };
 
     /** Reads a variable by walking outward from the scope it was referenced in.
      *
      * Slots are shared by reference between sibling subtrees (see `runtime.createContext`),
      * so an outward walk is all that separates "visible to my descendants" from "visible to
-     * my later siblings too" — the two arrows differ only in which slot they wrote to.
+     * my later siblings too" — the `+scope` modes differ only in which slot they write to.
      * @return {*} the bound value, or `UNBOUND`
      */
     let readVariable = (context, depth, name) => {
@@ -279,6 +391,66 @@ if (typeof require === 'function' && typeof module === 'object') {
 
         return value;
     };
+
+    /** Decides whether an `await` statement, reached with `context`, should install.
+     *
+     * At the top level there is no enclosing `await`, and every execution installs — the
+     * top level only runs once. Inside another `await`'s body, the body re-runs every time
+     * that `await` fires; installing again each time would pile up handlers without bound.
+     * So a nested `await` installs **once per site** — per statement, per loop iteration —
+     * and every later arrival only refreshes the context the installed handler builds on,
+     * so its outer `.prop`s read the most recent outer event.
+     * @param {Object} node - the `AwaitStatement`
+     * @param {Object} context
+     * @return {?Object} a fresh site `{ base }` to install on, or null when already installed
+     */
+    let claimSite = (node, context) => {
+        let hold = context.hold;
+
+        if (!hold)
+            return { base: context };
+
+        let routes = hold.sites.get(node);
+
+        if (!routes)
+            hold.sites.set(node, routes = new Map());
+
+        let site = routes.get(context.route);
+
+        if (site) {
+            site.base = context;
+
+            return null;
+        }
+
+        routes.set(context.route, site = { base: context });
+
+        return site;
+    };
+
+    /** Builds the installation record an `await` hands to its body.
+     *
+     * `admits(event)` is the `with (...)` rule: an `await ... with (<filter>)` keeps its
+     * filter in force for everything nested inside it, so a nested handler only fires while
+     * every enclosing filter still holds — which is what makes `await * with (#live is true)`
+     * mean "while live". The *trigger* is deliberately not re-checked: `await (.command is
+     * "start")` around a nested `await` means "after `!start`", and re-testing the trigger
+     * against every later event would make that nested handler unreachable.
+     * @param {?Object} parent - the enclosing installation
+     * @param {?Function} filter - the compiled `with` filter, if any
+     * @param {Object} site - `{ base }`, whose `base` may be refreshed later
+     * @return {Object}
+     */
+    let installation = (parent, filter, site) => ({
+        sites: new Map(),
+
+        async admits(event) {
+            if (parent && !(await parent.admits(event)))
+                return false;
+
+            return (!filter || truthy(await filter(site.base.child(event))));
+        },
+    });
 
     /** Runs a list of statement closures in order, charging one step each. */
     let sequence = (statements, runtime, loc) => async (context) => {
@@ -342,8 +514,16 @@ if (typeof require === 'function' && typeof module === 'object') {
                     bind = (binding? compileNode(binding, scope): null);
 
                 return async (context) => {
+                    let site = claimSite(node, context);
+
+                    if (!site)
+                        return;
+
                     if (bind)
                         await bind(context);
+
+                    let parent = context.hold,
+                        own = installation(parent, filter, site);
 
                     let loop = async () => {
                         while (!context.signal.aborted) {
@@ -355,7 +535,13 @@ if (typeof require === 'function' && typeof module === 'object') {
                             runtime.beginTurn();
                             runtime.step(node.loc);
 
-                            let child = context.child({ at: runtime.now(), kind: 'tick' }, { channel: context.channel });
+                            let tick = { at: runtime.now(), kind: 'tick' },
+                                base = site.base;
+
+                            if (parent && !(await parent.admits(tick)))
+                                continue;
+
+                            let child = base.child(tick, { channel: base.channel, hold: own, route: '' });
 
                             if (filter && !truthy(await filter(child)))
                                 continue;
@@ -372,6 +558,14 @@ if (typeof require === 'function' && typeof module === 'object') {
             let condition = compileNode(node.subject, nested);
 
             return async (context) => {
+                let site = claimSite(node, context);
+
+                if (!site)
+                    return;
+
+                let parent = context.hold,
+                    own = installation(parent, filter, site);
+
                 let off = runtime.subscribe(async (event) => {
                     if (context.signal.aborted)
                         return;
@@ -381,7 +575,10 @@ if (typeof require === 'function' && typeof module === 'object') {
                         runtime.beginTurn();
                         runtime.step(node.loc);
 
-                        let child = context.child(event);
+                        if (parent && !(await parent.admits(event)))
+                            return;
+
+                        let child = site.base.child(event, { hold: own, route: '' });
 
                         if (!truthy(await condition(child)))
                             return;
@@ -401,10 +598,13 @@ if (typeof require === 'function' && typeof module === 'object') {
         },
 
         /** `using` binds each subject in turn and runs the body under it. Several subjects
-         * on one line mean "any of these", so the body runs once per subject that resolves. */
+         * on one line mean "any of these", so the body runs once per subject that resolves.
+         * With no subject at all — `using +read:datetime`, `using +scope:local` — the body
+         * runs once under the subject already in force. */
         [NodeType.UsingStatement](node, scope) {
             let { runtime } = scope,
-                subjects = compileAll(node.subjects, scope);
+                subjects = compileAll(node.subjects, scope),
+                keep = !subjects.length;
 
             // Grants accumulate strictly downward: a block sees its own plus every
             // ancestor's, and never a sibling's. The union is computed once, here, and
@@ -412,28 +612,52 @@ if (typeof require === 'function' && typeof module === 'object') {
             let own = (node.permissions ?? []),
                 granted = (own.length? Object.freeze(new Set([...scope.permissions, ...own])): scope.permissions);
 
-            let nested = inner(scope, { permissions: granted }),
+            let nested = inner(scope, { permissions: granted, mode: (node.scopeMode ?? scope.mode) }),
                 body = compileNode(node.body, nested);
 
+            // A badge is a *gate*, not a subject. `using [moderator]` asks "does the sender
+            // hold this?" and, if so, runs the body under the subject already in force — so
+            // `.command` inside it still reads the message. Rebinding the subject to the
+            // badge name instead would make every `.prop` inside read off a string.
+            let gates = node.subjects.map(entry => (NodeType.Selector === entry.type && 'badge' === entry.kind));
+
             return async (context) => {
-                for (let resolve of subjects) {
+                if (keep) {
+                    runtime.step(node.loc);
+
+                    if (body)
+                        await body(context.child(context.subject, { channel: context.channel, permissions: granted }));
+
+                    return;
+                }
+
+                for (let index = 0; index < subjects.length; ++index) {
                     if (context.signal.aborted)
                         return;
 
                     runtime.step(node.loc);
 
-                    let value = await resolve(context);
+                    let value = await subjects[index](context),
+                        route = `${ context.route }/${ index }`;
 
                     // A badge the viewer does not hold, or a channel that does not exist,
                     // simply contributes no iteration.
                     if (null == value)
                         continue;
 
+                    if (!body)
+                        continue;
+
+                    if (gates[index]) {
+                        await body(context.child(context.subject, { channel: context.channel, permissions: granted, route }));
+
+                        continue;
+                    }
+
                     if (WILDCARD === value)
                         value = (context.subject ?? context.channel);
 
-                    if (body)
-                        await body(context.child(value, { permissions: granted }));
+                    await body(context.child(value, { permissions: granted, route }));
                 }
             };
         },
@@ -546,14 +770,28 @@ if (typeof require === 'function' && typeof module === 'object') {
                     return;
                 }
 
-                for (let item of toList(value)) {
+                let items = toList(value);
+
+                for (let index = 0; index < items.length; ++index) {
                     if (context.signal.aborted)
                         return;
 
                     runtime.step(node.loc);
 
-                    await body(context.child(item));
+                    // Routed by position, so a nested `await` installs once per slot — the
+                    // count stays bounded by the longest list seen, not by how often it ran.
+                    await body(context.child(items[index], { route: `${ context.route }/w${ index }` }));
                 }
+            };
+        },
+
+        /** `else` — reached only as some chain's final `alternate`, so it has no test. */
+        [NodeType.ElseClause](node, scope) {
+            let body = compileNode(node.body, scope);
+
+            return async (context) => {
+                if (body)
+                    await body(context);
             };
         },
 
@@ -609,6 +847,18 @@ if (typeof require === 'function' && typeof module === 'object') {
                 case 'in':
                     return async (context) => contains(await left(context), await right(context));
 
+                case 'above':
+                case 'below':
+                case 'or above':
+                case 'or below': {
+                    let { runtime } = scope,
+                        compare = COMPARISONS[node.operator];
+
+                    // `NaN` on either side answers every comparison `false`, which is the
+                    // whole of the missing-value rule.
+                    return async (context) => compare(toNumber(await left(context), runtime), toNumber(await right(context), runtime));
+                }
+
                 default:
                     throw new DSLRuntimeError(`Unsupported operator ${ JSON.stringify(node.operator) }`, node.loc);
             }
@@ -626,18 +876,15 @@ if (typeof require === 'function' && typeof module === 'object') {
             return async (context) => -Number(await argument(context));
         },
 
-        /** `<value> -> name` / `<value> => name`.
+        /** `<value> -> name` / `<value> => name` — synonyms. Where the name lands is the
+         * `+scope` mode's decision, not the arrow's (see {@link bindingSlot}).
          *
          * Evaluates to the value it bound, which is the whole reason this is an expression:
          * `await (5:00 -> wait_time)` has to hand the duration on after recording it. */
         [NodeType.AssignmentExpression](node, scope) {
             let value = compileNode(node.value, scope),
-                slot = ('parent' === node.scope? scope.parentDepth: scope.depth);
-
-            if (null == slot)
-                throw new DSLRuntimeError('`=>` has no parent scope here; use `->`', node.loc);
-
-            let { name } = node;
+                slot = bindingSlot(scope),
+                { name } = node;
 
             return async (context) => {
                 let result = await value(context);
@@ -656,7 +903,7 @@ if (typeof require === 'function' && typeof module === 'object') {
             return async (context) => context.subjects[depth];
         },
 
-        /** `$:Path.fn( ... )`. The path is data all the way down: the runtime walks a host
+        /** `&Path.fn( ... )`. The path is data all the way down: the runtime walks a host
          * binding table and calls what it finds. No text ever becomes code. */
         [NodeType.JSInvokeExpression](node, scope) {
             let { runtime } = scope,
@@ -686,6 +933,26 @@ if (typeof require === 'function' && typeof module === 'object') {
                     text = stringify(await replacement(context));
 
                 return runtime.percent((Array.isArray(value)? value.map(stringify): stringify(value)), letters, text, node.loc);
+            };
+        },
+
+        /** `.raider.name` — reads a property off whatever the expression produced. A missing
+         * link anywhere in the chain reads as empty, exactly as `.prop` on a null subject
+         * does. */
+        [NodeType.MemberExpression](node, scope) {
+            let object = compileNode(node.object, scope),
+                { property } = node;
+
+            if (FORBIDDEN_MEMBERS.has(property))
+                throw new DSLRuntimeError(`\`.${ property }\` may never be read`, node.loc);
+
+            return async (context) => {
+                let value = unwrap(await object(context));
+
+                if (null == value || typeof value !== 'object')
+                    return undefined;
+
+                return value[property];
             };
         },
 
@@ -821,8 +1088,10 @@ if (typeof require === 'function' && typeof module === 'object') {
             };
         },
 
-        [NodeType.Wildcard]() {
-            return async () => WILDCARD;
+        [NodeType.Wildcard](node) {
+            let value = (PRESENCE[node.kind] ?? WILDCARD);
+
+            return async () => value;
         },
 
         [NodeType.Duration](node) {
@@ -890,21 +1159,54 @@ if (typeof require === 'function' && typeof module === 'object') {
                     return (null == target? undefined: target[name]);
                 };
 
-            case 'realm':
+            case 'realm': {
+                // An unregistered realm fails only the block that names it: it is reported
+                // once and resolves to nothing, so a `using` over it contributes no
+                // iteration and every sibling block still installs. Throwing instead would
+                // take the whole enclosing body down with it.
+                let reported = false;
+
                 return async (context) => {
+                    if (!context.runtime.hasRealm(node.realm)) {
+                        if (!reported) {
+                            reported = true;
+
+                            let error = new DSLRuntimeError(`Unknown realm ${ JSON.stringify(node.realm) }; this block is skipped`, loc);
+
+                            context.runtime.logger.error(error.codeFrame? error.codeFrame(): error);
+                        }
+
+                        return null;
+                    }
+
                     let realm = context.runtime.realm(node.realm, loc);
 
                     return (realm.subject? realm.subject(node.path): null);
                 };
+            }
 
-            case 'badge':
-                return async (context) => (context.realm?.badge?.(name, badgeHolder(context)) ?? null);
+            case 'badge': {
+                // `[vip moderator]` means "any of these": the first held badge answers, and
+                // the list as a whole resolves once — so a `using` over it runs its body
+                // once, not once per badge the viewer happens to hold.
+                let names = (node.names ?? [name]);
+
+                return async (context) => {
+                    let holder = badgeHolder(context);
+
+                    for (let entry of names) {
+                        let held = context.realm?.badge?.(entry, holder);
+
+                        if (null != held)
+                            return held;
+                    }
+
+                    return null;
+                };
+            }
 
             case 'user':
                 return async (context) => (context.realm?.user?.(name, (context.channel ?? context.realm?.current)) ?? null);
-
-            case 'emote':
-                return async (context) => (context.realm?.emote?.(name) ?? null);
 
             default:
                 throw new DSLRuntimeError(`Unknown selector kind ${ JSON.stringify(node.kind) }`, loc);
@@ -927,7 +1229,7 @@ if (typeof require === 'function' && typeof module === 'object') {
         return context;
     };
 
-    globalThis.TTV_DSL.compiler = { compile, run, WILDCARD, Exact, truthy, equals, contains, stringify, at, toList };
+    globalThis.TTV_DSL.compiler = { compile, run, WILDCARD, SOMETHING, NOTHING, Exact, truthy, equals, contains, stringify, at, toList, toNumber };
     globalThis.TTV_DSL.compile = compile;
     globalThis.TTV_DSL.run = run;
 })();

@@ -56,6 +56,10 @@ globalThis.TTV_DSL ??= {};
         /** `with (<expr>)` + block — the statement form. Distinct from the `filter` an
          * `await` carries on its own line, which is not a node of its own. */
         WithStatement: 'WithStatement',
+        /** `else` + block — the last branch of an `if`/`when` chain. Like the chain form of
+         * `when`, it is written as a sibling and folded into the chain's final `alternate`
+         * by the parser. */
+        ElseClause: 'ElseClause',
         /** A statement that is only there for its value's side effect. Restricted to an
          * `AssignmentExpression`: a bare expression on a line is still an error. */
         ExpressionStatement: 'ExpressionStatement',
@@ -80,11 +84,14 @@ globalThis.TTV_DSL ??= {};
         AssignmentExpression: 'AssignmentExpression',
         /** `_`, `__this__`, `__self__`, `__me__` — the current subject itself. */
         This: 'This',
-        /** `$:Date.now( ... )`. `path` is the dotted segments; resolution is a property
+        /** `&Date.now( ... )`. `path` is the dotted segments; resolution is a property
          * lookup against a host table, never compilation of text. */
         JSInvokeExpression: 'JSInvokeExpression',
         /** `<subject> %n%s <replacement>`. `letters` is the class run, `[]` for a bare `%`. */
         PercentExpression: 'PercentExpression',
+        /** `.raider.name` — a property read off whatever the expression before it produced.
+         * Only formed when the `.name` is glued to what precedes it. */
+        MemberExpression: 'MemberExpression',
 
         /** Any sigil: `#`, `#prop`, `/name`, `REALM/id`, `<badge>`, `@user`, `:emote:`, `.prop`. */
         Selector: 'Selector',
@@ -96,7 +103,8 @@ globalThis.TTV_DSL ??= {};
          * Not a sigil — sigils name things *in* a channel, an identifier names a value the
          * host has published to the script. */
         Identifier: 'Identifier',
-        /** `*`. Always the wildcard — never multiplication. */
+        /** `*` / `ANYTHING`, `SOMETHING`, `NOTHING` — a presence test, told apart by `kind`.
+         * `*` is always this — never multiplication. */
         Wildcard: 'Wildcard',
         /** `15:00` / `1:30:00`, normalized to milliseconds. */
         Duration: 'Duration',
@@ -109,7 +117,6 @@ globalThis.TTV_DSL ??= {};
         REALM: 'realm',
         BADGE: 'badge',
         USER: 'user',
-        EMOTE: 'emote',
         CONTEXT: 'context',
     });
 
@@ -132,6 +139,7 @@ globalThis.TTV_DSL ??= {};
         [NodeType.WhenStatement]: ['discriminant', 'cases', 'body', 'alternate'],
         [NodeType.WhenCase]: ['test', 'body'],
         [NodeType.WithStatement]: ['filter', 'body'],
+        [NodeType.ElseClause]: ['body'],
         [NodeType.ExpressionStatement]: ['expression'],
 
         [NodeType.BinaryExpression]: ['left', 'right'],
@@ -143,6 +151,7 @@ globalThis.TTV_DSL ??= {};
         [NodeType.AssignmentExpression]: ['value'],
         [NodeType.JSInvokeExpression]: ['arguments'],
         [NodeType.PercentExpression]: ['subject', 'replacement'],
+        [NodeType.MemberExpression]: ['object'],
 
         [NodeType.TemplateLiteral]: ['expressions'],
 
@@ -191,8 +200,11 @@ globalThis.TTV_DSL ??= {};
          * @param {?Object} body
          * @param {Object} loc
          * @param {Array<String>} [permissions] - `+name` grants from the header
+         * @param {?String} [scopeMode] - from `+scope[:mode]`; null when the header has none
+         * @param {?String} [description] - from a trailing `-- "..."`; null when absent
          */
-        usingStatement: (subjects, body, loc, permissions = []) => node(NodeType.UsingStatement, { subjects, body, permissions }, loc),
+        usingStatement: (subjects, body, loc, permissions = [], scopeMode = null, description = null) =>
+            node(NodeType.UsingStatement, { subjects, body, permissions, scopeMode, description }, loc),
 
         /**
          * @param {Object} test
@@ -232,6 +244,12 @@ globalThis.TTV_DSL ??= {};
          * @param {Object} loc
          */
         withStatement: (filter, body, loc) => node(NodeType.WithStatement, { filter, body }, loc),
+
+        /**
+         * @param {?Object} body
+         * @param {Object} loc
+         */
+        elseClause: (body, loc) => node(NodeType.ElseClause, { body }, loc),
 
         /**
          * @param {Object} expression
@@ -332,8 +350,9 @@ globalThis.TTV_DSL ??= {};
 
         /**
          * @param {Object} loc
+         * @param {String} [kind = 'anything'] - `'anything'`, `'something'` or `'nothing'`
          */
-        wildcard: (loc) => node(NodeType.Wildcard, {}, loc),
+        wildcard: (loc, kind = 'anything') => node(NodeType.Wildcard, { kind }, loc),
 
         /**
          * @param {Number} milliseconds
@@ -343,11 +362,13 @@ globalThis.TTV_DSL ??= {};
 
         /**
          * @param {String} name - already validated to carry an interior underscore
-         * @param {String} scope - `'local'` for `->`, `'parent'` for `=>`
+         * @param {String} arrow - `'->'` or `'=>'`; the two are synonyms, and the spelling is
+         *   kept only so tooling can round-trip it. Where the name lands is decided by the
+         *   enclosing `+scope` mode, never by the arrow.
          * @param {Object} value
          * @param {Object} loc
          */
-        assignmentExpression: (name, scope, value, loc) => node(NodeType.AssignmentExpression, { name, scope, value }, loc),
+        assignmentExpression: (name, arrow, value, loc) => node(NodeType.AssignmentExpression, { name, arrow, value }, loc),
 
         /**
          * @param {Object} loc
@@ -368,6 +389,13 @@ globalThis.TTV_DSL ??= {};
          * @param {Object} loc
          */
         percentExpression: (subject, letters, replacement, loc) => node(NodeType.PercentExpression, { subject, letters, replacement }, loc),
+
+        /**
+         * @param {Object} object
+         * @param {String} property
+         * @param {Object} loc
+         */
+        memberExpression: (object, property, loc) => node(NodeType.MemberExpression, { object, property }, loc),
     };
 
     /**

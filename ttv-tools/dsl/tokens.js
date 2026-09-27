@@ -55,9 +55,15 @@ globalThis.TTV_DSL ??= {};
         FALSE: 'FALSE',
         /** `when` — both the switch head and the `if`-chain continuation. */
         WHEN: 'WHEN',
+        /** `else` — the unconditional last branch of an `if`/`when` chain. Takes no test of
+         * its own, so `else if` and `else when` are errors rather than shorthands. */
+        ELSE: 'ELSE',
+        /** `above` / `below` — the numeric comparisons. Only legal after `is` or `is or`
+         * (`.raid_size is or above 50` is `>=`); the lexeme says which one. */
+        COMPARE: 'COMPARE',
         /** A word reserved purely so that using it produces a *helpful* error instead of a
-         * generic one: `else`, `elif`, `elseif`, `switch`, `case`, `default`, `calc`. The
-         * parser keys its diagnostic off the lexeme. */
+         * generic one: `elif`, `elseif`, `switch`, `case`, `default`, `calc`. The parser keys
+         * its diagnostic off the lexeme. */
         RESERVED: 'RESERVED',
 
         // -- literals ---------------------------------------------------------
@@ -83,12 +89,11 @@ globalThis.TTV_DSL ??= {};
         SELECTOR_CHANNEL: 'SELECTOR_CHANNEL',
         /** `DISCORD/123`: a realm-qualified subject; `value` is `{ realm, path }`. */
         SELECTOR_REALM: 'SELECTOR_REALM',
-        /** `<moderator>`: a badge on the current channel. */
+        /** `[moderator]` / `[vip moderator]`: badges the subject in scope may hold. `value`
+         * is the list of names; several mean "any of these". */
         SELECTOR_BADGE: 'SELECTOR_BADGE',
         /** `@user`: a user in the current channel. */
         SELECTOR_USER: 'SELECTOR_USER',
-        /** `:kappa:`: an emote in the current channel. */
-        SELECTOR_EMOTE: 'SELECTOR_EMOTE',
         /** `.prop`: a property of the nearest enclosing `using`/`await`/`where` subject. */
         SELECTOR_CONTEXT: 'SELECTOR_CONTEXT',
 
@@ -124,8 +129,11 @@ globalThis.TTV_DSL ??= {};
         COLON: 'COLON',
         /** `+read:datetime` — a permission grant. `value` is the bare name. */
         PERMISSION: 'PERMISSION',
-        /** `$:Date.now` — a dotted host-binding path. `value` is the array of segments. */
+        /** `&Date.now` — a dotted host-binding path. `value` is the array of segments. */
         JS_PATH: 'JS_PATH',
+        /** `--` followed by whitespace — introduces the description at the end of a `using`
+         * header: `using +eval:calc -- "why this block needs it"`. */
+        DESCRIBE: 'DESCRIBE',
 
         /** A bare word. Carries an `isUpper` flag; the *parser* decides verb-vs-constant
          * by position, which keeps the verb registry open-ended. */
@@ -159,13 +167,18 @@ globalThis.TTV_DSL ??= {};
         true: TokenType.TRUE,
         false: TokenType.FALSE,
         when: TokenType.WHEN,
+        else: TokenType.ELSE,
 
-        // Reserved solely to produce a better error than "expected a statement". `when`
-        // covers every branching shape this language has, and `calc` is the placeholder
-        // arithmetic will eventually be spelled with; a script that reaches for the
-        // JavaScript-shaped word should be told where to look instead of being told that
-        // its own variable name is unparseable.
-        else: TokenType.RESERVED,
+        // `is above 50` / `is or above 50`. The inclusive form reuses `or` rather than
+        // minting `above_or`, so the line reads as the sentence it is.
+        above: TokenType.COMPARE,
+        below: TokenType.COMPARE,
+
+        // Reserved solely to produce a better error than "expected a statement". `when` and
+        // `else` cover every branching shape this language has, and `calc` is the
+        // placeholder arithmetic will eventually be spelled with; a script that reaches for
+        // the JavaScript-shaped word should be told where to look instead of being told
+        // that its own variable name is unparseable.
         elif: TokenType.RESERVED,
         elseif: TokenType.RESERVED,
         switch: TokenType.RESERVED,
@@ -294,12 +307,31 @@ globalThis.TTV_DSL ??= {};
         TokenType.IF,
         TokenType.GOTO,
         TokenType.WHEN,
+        TokenType.ELSE,
         TokenType.WITH,
     ]));
 
     /** Names that denote the current subject rather than a host constant. All four are
      * read-only: none may appear on the right of a binding arrow. */
     const THIS_ALIASES = Object.freeze(new Set(['_', '__this__', '__self__', '__me__']));
+
+    /** The presence tests, by the `kind` their `Wildcard` node carries. `*` is `ANYTHING`.
+     *
+     * | word        | matches                                 |
+     * |-------------|-----------------------------------------|
+     * | `ANYTHING`  | any value at all, including `""` / `[]` |
+     * | `SOMETHING` | a value that is not `""` / `[]`         |
+     * | `NOTHING`   | no value, `""` or `[]`                  |
+     */
+    const PRESENCE_WORDS = Object.freeze({
+        ANYTHING: 'anything',
+        SOMETHING: 'something',
+        NOTHING: 'nothing',
+    });
+
+    /** What `+scope` may be set to, and what a bare `+scope` means. See SPEC §5.5. */
+    const SCOPE_MODES = Object.freeze(new Set(['local', 'global', 'universal']));
+    const DEFAULT_SCOPE_MODE = 'global';
 
     /** The shape a *variable* name must have: at least one interior underscore.
      *
@@ -322,7 +354,6 @@ globalThis.TTV_DSL ??= {};
         [TokenType.SELECTOR_REALM]: 'realm',
         [TokenType.SELECTOR_BADGE]: 'badge',
         [TokenType.SELECTOR_USER]: 'user',
-        [TokenType.SELECTOR_EMOTE]: 'emote',
         [TokenType.SELECTOR_CONTEXT]: 'context',
     });
 
@@ -362,6 +393,9 @@ globalThis.TTV_DSL ??= {};
         STATEMENT_KEYWORDS,
         SELECTOR_KINDS,
         THIS_ALIASES,
+        PRESENCE_WORDS,
+        SCOPE_MODES,
+        DEFAULT_SCOPE_MODE,
         VARIABLE_PATTERN,
         PERCENT_CLASSES,
         Associativity,

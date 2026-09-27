@@ -58,10 +58,19 @@ if (typeof require === 'function' && typeof module === 'object') {
      * ids are frequently long numeric snowflakes. */
     const PATH_PATTERN = /^[A-Za-z0-9_.-]+/;
 
-    /** A badge name, e.g. `<moderator>`, `<sub-gifter>`. */
-    const BADGE_PATTERN = /^<([A-Za-z0-9_-]+)>/;
+    /** A badge list, e.g. `[moderator]`, `[vip moderator]`, `[vip, sub-gifter]`. One line
+     * only; the names are split out by {@link BADGE_NAME_PATTERN}. */
+    const BADGE_LIST_PATTERN = /^\[([^\]\n]*)\]/;
 
-    /** An emote, e.g. `:kappa:`, `:pog_champ:`. */
+    /** One badge name inside `[ ... ]`. */
+    const BADGE_NAME_PATTERN = /^[A-Za-z][A-Za-z0-9_-]*$/;
+
+    /** The two retired badge spellings, `<moderator>` (v2) and `--moderator` (v2.1 draft),
+     * recognized only to point at `[moderator]`. */
+    const OLD_BADGE_PATTERN = /^(?:<([A-Za-z0-9_-]+)>|--([A-Za-z][A-Za-z0-9_-]*))/;
+
+    /** The retired emote spelling, `:kappa:`. Emotes are plain text now — `'kappa'` — so
+     * this is recognized only to say so. */
     const EMOTE_PATTERN = /^:([A-Za-z0-9_]+):/;
 
     /** A permission grant: `+read`, `+read:datetime`, `+eval:calc`.
@@ -71,8 +80,8 @@ if (typeof require === 'function' && typeof module === 'object') {
      * colon-something. */
     const PERMISSION_PATTERN = /^\+([A-Za-z_][A-Za-z0-9_]*(?::[A-Za-z0-9_]+)*)/;
 
-    /** A host-binding path: `$:Date.now`, `$:Intl.DateTimeFormat`. */
-    const JS_PATH_PATTERN = /^\$:([A-Za-z_$][A-Za-z0-9_$]*(?:\.[A-Za-z_$][A-Za-z0-9_$]*)*)/;
+    /** A host-binding path: `&Date.now`, `&Intl.DateTimeFormat`. */
+    const JS_PATH_PATTERN = /^&([A-Za-z_$][A-Za-z0-9_$]*(?:\.[A-Za-z_$][A-Za-z0-9_$]*)*)/;
 
     /** A `%` class run. The leading `%` belongs to the *first* class, so `%n%s` is two
      * classes and a bare `%` is zero — which is what lets `%` alone mean "the default run"
@@ -442,10 +451,20 @@ if (typeof require === 'function' && typeof module === 'object') {
             if ('-' === character && ORDINAL_PATTERN.test(this.#source.slice(start)))
                 return this.#scanNumeric();
 
-            if (':' === character)
-                return this.#scanEmote();
+            // `-- "..."` describes a `using` header. `--moderator`, glued, was briefly the
+            // badge spelling. Both are caught before the punctuator table so `--` never
+            // reads as two unary minuses.
+            if ('-' === character && '-' === this.#source[start + 1])
+                return this.#scanDoubleDash();
 
-            // `<` is the pipe operator, a badge selector, or nothing.
+            // `[moderator]` / `[vip moderator]`.
+            if ('[' === character)
+                return this.#scanBadge();
+
+            if (':' === character)
+                return this.#scanColon();
+
+            // `<` is the pipe operator, or nothing.
             if ('<' === character)
                 return this.#scanAngle();
 
@@ -467,9 +486,14 @@ if (typeof require === 'function' && typeof module === 'object') {
             if ('+' === character)
                 return this.#scanPermission();
 
-            // `$` outside a template is only ever the head of a host-binding path.
-            if ('$' === character)
+            // `&` is only ever the head of a host-binding path.
+            if ('&' === character)
                 return this.#scanJSPath();
+
+            // `$` outside a template was the v2 host-call head. Named here so the error
+            // says what to write instead.
+            if ('$' === character)
+                this.#fail('Unexpected "$"; host calls are written "&Date.now()"', start, start + 1);
 
             if ('%' === character)
                 return this.#scanPercent();
@@ -520,27 +544,21 @@ if (typeof require === 'function' && typeof module === 'object') {
             this.#emit(TokenType.NUMBER, start, this.#index, Number(number[0]));
         }
 
-        /** `:emote:`, or a bare `:`.
+        /** A bare `:` — a `when` case label.
          *
-         * A `:` now has four jobs — duration, emote, permission segment and `when` case
-         * label — and only two of them are decidable here. Durations are claimed at the
-         * leading digit and permissions at the leading `+`, so what reaches this branch is
-         * either an emote or a case label. Rather than guess, the tokenizer emits `COLON`
-         * on a miss and lets the parser, which knows what it was expecting, produce the
-         * diagnostic. */
-        #scanEmote() {
+         * Durations are claimed at the leading digit and permission segments at the leading
+         * `+`, so a `:` that reaches this branch can only be a case label. The one exception
+         * is the retired `:kappa:` emote spelling, which is refused with a pointer at the
+         * plain-text form. */
+        #scanColon() {
             let start = this.#index,
                 emote = this.#match(EMOTE_PATTERN);
 
-            if (!emote) {
-                ++this.#index;
-                this.#emit(TokenType.COLON, start, this.#index);
+            if (emote)
+                this.#fail(`Emotes are plain text: write '${ emote[1] }', not ":${ emote[1] }:"`, start, start + emote[0].length);
 
-                return;
-            }
-
-            this.#index += emote[0].length;
-            this.#emit(TokenType.SELECTOR_EMOTE, start, this.#index, emote[1]);
+            ++this.#index;
+            this.#emit(TokenType.COLON, start, this.#index);
         }
 
         /** `+read:datetime` — a permission grant. Legal only in a `using` header, but that
@@ -557,14 +575,14 @@ if (typeof require === 'function' && typeof module === 'object') {
             this.#emit(TokenType.PERMISSION, start, this.#index, grant[1]);
         }
 
-        /** `$:Date.now` — the path only. The argument list is grammar, so the parser reads
+        /** `&Date.now` — the path only. The argument list is grammar, so the parser reads
          * it; nothing here ever turns text into code. */
         #scanJSPath() {
             let start = this.#index,
                 path = this.#match(JS_PATH_PATTERN);
 
             if (!path)
-                this.#fail('Unexpected "$"; expected a host call like "$:Date.now()"', start, start + 1);
+                this.#fail('Unexpected "&"; expected a host call like "&Date.now()"', start, start + 1);
 
             this.#index += path[0].length;
             this.#emit(TokenType.JS_PATH, start, this.#index, path[1].split('.'));
@@ -584,7 +602,7 @@ if (typeof require === 'function' && typeof module === 'object') {
             this.#emit(TokenType.PERCENT, start, this.#index, letters);
         }
 
-        /** `<|` (pipe) or `<badge>`. */
+        /** `<|` (pipe). */
         #scanAngle() {
             let start = this.#index;
 
@@ -595,13 +613,60 @@ if (typeof require === 'function' && typeof module === 'object') {
                 return;
             }
 
-            let badge = this.#match(BADGE_PATTERN);
+            if (this.#match(OLD_BADGE_PATTERN))
+                return this.#failOldBadge();
 
-            if (!badge)
-                this.#fail('Unexpected "<"; expected the pipe operator "<|" or a badge like "<moderator>"', start);
+            this.#fail('Unexpected "<"; expected the pipe operator "<|"', start);
+        }
 
-            this.#index += badge[0].length;
-            this.#emit(TokenType.SELECTOR_BADGE, start, this.#index, badge[1]);
+        /** `--` + whitespace is a description marker; anything glued to it is refused. */
+        #scanDoubleDash() {
+            let start = this.#index,
+                next = this.#source[start + 2];
+
+            if (undefined === next || /\s/.test(next)) {
+                this.#index += 2;
+                this.#emit(TokenType.DESCRIBE, start, this.#index);
+
+                return;
+            }
+
+            return this.#failOldBadge();
+        }
+
+        /** Refuses a retired badge spelling, naming the current one. */
+        #failOldBadge() {
+            let start = this.#index,
+                old = this.#match(OLD_BADGE_PATTERN);
+
+            if (!old)
+                this.#fail('Unexpected "--"; TTV DSL has no decrement', start, start + 2);
+
+            let name = (old[1] ?? old[2]);
+
+            this.#fail(`Badges are written "[${ name }]", not "${ old[0] }"`, start, start + old[0].length);
+        }
+
+        /** `[moderator]` / `[vip moderator]` / `[vip, sub-gifter]` — one token whose value
+         * is the list of names. Several names mean "any of these". */
+        #scanBadge() {
+            let start = this.#index,
+                list = this.#match(BADGE_LIST_PATTERN);
+
+            if (!list)
+                this.#fail('Unclosed "["; a badge list is written "[moderator]" or "[vip moderator]" on one line', start, start + 1);
+
+            let names = list[1].split(/[\s,]+/).filter(entry => entry.length > 0);
+
+            if (!names.length)
+                this.#fail('Empty badge list; write a badge name inside, e.g. "[moderator]"', start, start + list[0].length);
+
+            for (let name of names)
+                if (!BADGE_NAME_PATTERN.test(name))
+                    this.#fail(`${ JSON.stringify(name) } is not a badge name`, start, start + list[0].length);
+
+            this.#index += list[0].length;
+            this.#emit(TokenType.SELECTOR_BADGE, start, this.#index, names);
         }
 
         /** `...`, `..`, or `.prop`. */
