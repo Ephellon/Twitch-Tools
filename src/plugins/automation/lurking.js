@@ -58,6 +58,15 @@ plugin({
                 goto(parseURL(scapeGoat.href).addSearch({ tool: 'away-mode--scape-goat' }).href);
             }
 
+            // Twitch can reset the volume (player reload, ad break) without the viewer touching it (#26);
+            // while Lurking still owns the volume, put it back
+            if(defined(button) && AwayModeStatus && MAINTAIN_VOLUME_CONTROL && parseBool(Settings.away_mode__volume_control)) {
+                let target = parseFloat(Settings.away_mode__volume);
+
+                if(!Number.isNaN(target) && Math.abs(GetVolume() - target) > 0.01)
+                    SetVolume(target);
+            }
+
             return StopWatch.stop('away_mode');
         }
 
