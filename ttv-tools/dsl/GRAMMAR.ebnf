@@ -341,10 +341,16 @@ context_sel    = "." , IDENT ;
                 (* the lookahead permits a following ".", so 1..9 scans as
                    NUMBER "1", RANGE_EXCLUSIVE, NUMBER "9" *)
 
-  PERMISSION  = "+" [A-Za-z_][A-Za-z0-9_]* ( ":" [A-Za-z0-9_]+ )*    (* v2 *)
-                (* consumes its own ":" segments, which is the only reason
-                   `+eval:calc` never reaches the case-label branch. A "+" with no
-                   valid name is a HARD ERROR naming the absence of arithmetic. *)
+  PERMISSION  = "+" ACTION ( ":" PART ( "." PART )* ( "." "*" )? )?  (* v2.1 *)
+  ACTION      = [A-Za-z_][A-Za-z0-9_]*
+  PART        = [A-Za-z0-9_]+
+                (* consumes its own ":", which is the only reason `+eval:calc`
+                   never reaches the case-label branch. A "+" with no valid name
+                   is a HARD ERROR naming the absence of arithmetic, and so is
+                   one followed directly by ":", ".", "*" or a word character
+                   (`+read:*`, `+a:b:c`). Whether the name is on the permission
+                   list, and whether a write/eval grant carries a description,
+                   is checked later - see SPEC 6.8. *)
 
   JS_PATH     = "&" [A-Za-z_$][A-Za-z0-9_$]*
                        ( "." [A-Za-z_$][A-Za-z0-9_$]* )*             (* v2 *)

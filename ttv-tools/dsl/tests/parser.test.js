@@ -469,7 +469,7 @@
 
     describe('parser / permissions', () => {
         it('collects `+name` grants off a `using` header', () => {
-            assert.like(statement('using [vip] +read:datetime +eval:calc\n    POST `a`\n'), {
+            assert.like(statement('using [vip] +read:datetime +eval:calc -- "why"\n    POST `a`\n'), {
                 type: NodeType.UsingStatement,
                 permissions: ['read:datetime', 'eval:calc'],
                 subjects: [{ type: NodeType.Selector, kind: 'badge', name: 'vip' }],

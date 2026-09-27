@@ -612,6 +612,11 @@ if (typeof require === 'function' && typeof module === 'object') {
             let own = (node.permissions ?? []),
                 granted = (own.length? Object.freeze(new Set([...scope.permissions, ...own])): scope.permissions);
 
+            // Against the fixed list, at compile time: a mistyped grant stops the script
+            // before anything runs, instead of silently granting nothing.
+            for (let grant of own)
+                runtime.checkGrant(grant, node.loc);
+
             let nested = inner(scope, { permissions: granted, mode: (node.scopeMode ?? scope.mode) }),
                 body = compileNode(node.body, nested);
 

@@ -73,12 +73,17 @@ if (typeof require === 'function' && typeof module === 'object') {
      * this is recognized only to say so. */
     const EMOTE_PATTERN = /^:([A-Za-z0-9_]+):/;
 
-    /** A permission grant: `+read`, `+read:datetime`, `+eval:calc`.
+    /** A permission grant: `+action:resource[.part...][.*]` — `+read:datetime`,
+     * `+write:html.attributes`, `+read:html.*`. Also `+scope[:mode]`, which the parser
+     * diverts.
      *
-     * The `:` segments are consumed *here*, by this pattern, which is the only reason the
-     * emote branch never sees them — `+eval:calc` would otherwise scan as `+`, then a
-     * colon-something. */
-    const PERMISSION_PATTERN = /^\+([A-Za-z_][A-Za-z0-9_]*(?::[A-Za-z0-9_]+)*)/;
+     * The `:` is consumed *here*, by this pattern, which is the only reason the case-label
+     * branch never sees it. `*` may only be the last part, after a `.`. */
+    const PERMISSION_PATTERN = /^\+([A-Za-z_][A-Za-z0-9_]*(?::[A-Za-z0-9_]+(?:\.[A-Za-z0-9_]+)*(?:\.\*)?)?)/;
+
+    /** What may not directly follow a scanned permission: anything that would have made it
+     * a different, malformed one (`+read:*`, `+read:html.*.x`, `+a:b:c`). */
+    const PERMISSION_TAIL = /^[:.*A-Za-z0-9_]/;
 
     /** A host-binding path: `&Date.now`, `&Intl.DateTimeFormat`. */
     const JS_PATH_PATTERN = /^&([A-Za-z_$][A-Za-z0-9_$]*(?:\.[A-Za-z_$][A-Za-z0-9_$]*)*)/;
@@ -570,6 +575,9 @@ if (typeof require === 'function' && typeof module === 'object') {
 
             if (!grant)
                 this.#fail('Unexpected "+"; TTV DSL has no arithmetic. `+name` grants a permission and is only legal in a `using` header.', start, start + 1);
+
+            if (PERMISSION_TAIL.test(this.#source.slice(start + grant[0].length)))
+                this.#fail('Malformed permission; write `+action:resource`, with parts separated by "." and an optional final ".*" — e.g. "+read:html.*"', start, start + grant[0].length + 1);
 
             this.#index += grant[0].length;
             this.#emit(TokenType.PERMISSION, start, this.#index, grant[1]);

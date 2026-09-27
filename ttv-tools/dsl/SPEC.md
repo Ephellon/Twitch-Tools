@@ -1000,14 +1000,43 @@ elif .a is "x"
 
 ### 6.8 Permissions *(v2)*
 
-A `using` header may carry `+name` or `+name:sub` grants:
+A `using` header may carry grants, spelled `+action:resource[.part…][.*]`:
 
 ```
-using [vip] +read:datetime +eval:calc
+using [vip] +read:datetime +eval:calc -- "Prints the time; calc is reserved for later"
     await 5:00
         POST `It's ${ &Date.now() }`
 ```
 
+Permissions are checked by **host calls** (§5.12): the host maps each `&Path` it exposes to
+the permission it needs, and an unmapped path needs `eval:js`. Nothing else in the language
+checks a grant.
+
+#### The permission list *(v2.1)*
+
+The list of permissions is **fixed**. A grant that is not on it — or a `.*` that matches
+nothing on it — is a `DSLPermissionError` **at compile time**, before anything runs. Without
+that, a typo like `+read:htlm.*` would be accepted and silently grant nothing.
+
+| Permission | Covers |
+| :--- | :--- |
+| `read:datetime` | the clock |
+| `read:html.text` · `read:html.attributes` · `read:html.structure` | reading the page |
+| `write:html.text` · `write:html.attributes` | changing the page |
+| `parse:html.text` · `parse:html.attributes` · `parse:html.structure` | turning HTML text the script already has into serializable data |
+| `eval:calc` | arithmetic (reserved; §14.2) |
+| `eval:js` | any host call the host did not map to something narrower |
+
+A host may add to the list (`createRuntime({ permissions: [...] })`). A host path mapped to
+a permission that is not on the list is refused when the runtime is created, since no script
+could ever be granted it.
+
+#### `write` and `eval` grants need a description *(v2.1)*
+
+Any `+write:…` or `+eval:…` grant must come with a `-- "…"` description in the same header
+(§6.3) — it is a parse error otherwise. These are the grants that change the page or run
+code, and the description is what a host shows the viewer when asking them to allow it.
+`read` and `parse` grants need none.
 Grants may be interleaved with subjects anywhere on the line, and a header may carry grants
 and no subject at all (§6.3). `+scope` looks like a grant but is not one — it sets the
 binding rule (§9.2), is never added to the grant set, and so can never satisfy a check for a
@@ -1022,19 +1051,22 @@ error naming the absence of arithmetic.
 A block holds its own grants plus every ancestor's. It never sees a sibling's. The union is
 computed once at compile time and carried as a frozen `Set`.
 
-#### Matching is exact
+#### Matching is exact, or one written-out level
 
-`Set.has`, and nothing else. There is **no prefix logic anywhere**, and that absence is the
-feature:
+A grant covers a permission in exactly two cases: it **is** that permission, or it is the
+permission's parent followed by `.*` — `+read:html.*` covers `read:html.text` and
+`read:html.attributes`. That is all. There is **no implicit prefix logic**, and that absence
+is the feature:
 
-- `+eval` does **not** grant `eval:calc`. A grant that silently widens is a grant nobody can
-  audit — writing `+eval` to get "just the small one" would quietly hand over everything
-  under it.
-- `+eval:calc` does **not** grant `eval`. The narrow spelling is the one a cautious author
-  reached for on purpose, and promoting it would defeat that.
+- `+read:html` does **not** grant `read:html.text`. Only `.*` widens, and only because the
+  script wrote it out — the grant says how far it reaches.
+- `+read:html.*` reaches **one** level: not `read:html.text.inner`, and never across actions
+  (`write:html.text`) or into another resource.
+- `+eval:calc` and `+eval:js` are unrelated permissions. Neither implies the other.
 
-Write out every permission you want. There is a regression test asserting both directions,
-specifically so that a future implementer cannot "helpfully" add prefix matching.
+`*` may only be the last part, after a `.`: `+read:*`, `+read:html.*.text` and `+a:b:c` are
+lexical errors. There are regression tests for every case above, so that a future
+implementer cannot "helpfully" add prefix matching.
 
 A missing grant raises **`DSLPermissionError`**, which is split out of `DSLRuntimeError` for
 the same reason `DSLLimitError` is: a host wants to treat "this script asked for a
@@ -1502,6 +1534,9 @@ From writing `realistic.ttv` and ranking what fought back:
   means "while live" (§6.1). **Behaviour change.**
 - **An unknown realm broke its whole enclosing body** — Resolved. It now fails only its own
   block (§4).
+- **Permissions are a fixed list** with `action:resource.part` names and an explicit
+  one-level `.*`; unknown grants fail at compile time, and `write`/`eval` grants need a
+  `-- "description"` (§6.8). **Behaviour change:** `+a:b:c` and off-list names are errors.
 - **Granting a permission forced a subject scope** — Resolved. A `using` may carry grants
   or `+scope` and no subject (§6.3).
 

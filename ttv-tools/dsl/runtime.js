@@ -137,6 +137,40 @@ if (typeof require === 'function' && typeof module === 'object')
      * around them, and nothing else. */
     const PERCENT_DEFAULT = '\\s*\\n\\s*';
 
+    /** Every permission a script may grant, unless the host extends the list.
+     *
+     * The list is **fixed** so a typo fails: without it, `+read:htlm.*` would be accepted and
+     * silently grant nothing. `action:resource.part`; a grant may end in `.*` to cover
+     * exactly one more level of whatever is listed here.
+     * @type {Array<String>}
+     */
+    const DEFAULT_PERMISSIONS = Object.freeze([
+        'read:datetime',
+        'read:html.text',
+        'read:html.attributes',
+        'read:html.structure',
+        'write:html.text',
+        'write:html.attributes',
+        'parse:html.text',
+        'parse:html.attributes',
+        'parse:html.structure',
+        'eval:calc',
+        'eval:js',
+    ]);
+
+    /** The grant a wildcard would need to cover `name`: `read:html.attributes` →
+     * `read:html.*`. Null when `name` has no `.` below its resource, so nothing can cover it
+     * but itself.
+     * @param {String} name
+     * @return {?String}
+     */
+    let wildcardFor = (name) => {
+        let colon = name.indexOf(':'),
+            dot = name.lastIndexOf('.');
+
+        return (dot > colon && colon > -1? `${ name.slice(0, dot) }.*`: null);
+    };
+
     /** The permission a `&` path requires when the host has not said otherwise. */
     const DEFAULT_JS_PERMISSION = 'eval:js';
 
@@ -398,6 +432,9 @@ if (typeof require === 'function' && typeof module === 'object')
      *   naming `DISCORD` until the host has decided to expose it.
      * @param {Object<String, String>} [options.jsPermissions] - dotted path -> required
      *   permission, e.g. `{ 'Date.now': 'read:datetime' }`. Unlisted paths require `eval:js`.
+     *   Every value must be on the permission list, or no script could ever be granted it.
+     * @param {Array<String>} [options.permissions] - extra permissions for the list, added
+     *   to {@link DEFAULT_PERMISSIONS}
      * @return {Object}
      */
     let createRuntime = ({
@@ -411,7 +448,16 @@ if (typeof require === 'function' && typeof module === 'object')
         limits = {},
         jsBindings = {},
         jsPermissions = {},
+        permissions: extraPermissions = [],
     } = {}) => {
+        let catalog = Object.freeze(new Set([...DEFAULT_PERMISSIONS, ...extraPermissions]));
+
+        // A host path mapped to a permission nobody can grant is a host bug; say so at
+        // start-up rather than at the first call.
+        for (let [path, needed] of Object.entries(jsPermissions))
+            if (!catalog.has(needed))
+                throw new DSLRuntimeError(`\`&${ path }\` is mapped to \`${ needed }\`, which is not on the permission list`);
+
         let sink = [],
             budget = Object.assign({}, DEFAULT_LIMITS, limits),
             listeners = new Set(),
@@ -610,12 +656,43 @@ if (typeof require === 'function' && typeof module === 'object')
              * @throws {DSLPermissionError}
              */
             requirePermission(name, context, loc) {
-                if (context?.permissions?.has(name))
+                let granted = context?.permissions,
+                    wildcard = wildcardFor(name);
+
+                // Exact, or one explicit `.*` one level up — and nothing else. `+eval` does not
+                // grant `eval:calc`, and `+read:html.*` does not reach `read:html.a.b`.
+                if (granted?.has(name) || (null !== wildcard && granted?.has(wildcard)))
                     return true;
 
                 let held = [...(context?.permissions ?? [])].sort();
 
                 throw new DSLPermissionError(`This block was not granted \`+${ name }\`. Add it to the enclosing \`using\` header. Granted here: ${ held.map(entry => `+${ entry }`).join(' ') || 'nothing' }`, loc);
+            },
+
+            /** The permission list this runtime accepts. */
+            permissions: catalog,
+
+            /** Checks that a `using` header's grant is on the list. Called by the compiler,
+             * so a typo stops the script before anything runs.
+             * @param {String} grant - without the `+`
+             * @param {Object} [loc]
+             * @throws {DSLPermissionError}
+             */
+            checkGrant(grant, loc) {
+                if (grant.endsWith('.*')) {
+                    let prefix = grant.slice(0, -1);
+
+                    for (let entry of catalog)
+                        if (entry.startsWith(prefix) && !entry.slice(prefix.length).includes('.'))
+                            return true;
+
+                    throw new DSLPermissionError(`\`+${ grant }\` matches nothing on the permission list. Known: ${ [...catalog].map(entry => `+${ entry }`).join(' ') }`, loc);
+                }
+
+                if (catalog.has(grant))
+                    return true;
+
+                throw new DSLPermissionError(`Unknown permission \`+${ grant }\`. Known: ${ [...catalog].map(entry => `+${ entry }`).join(' ') }`, loc);
             },
 
             /** Calls a host binding named by a dotted path.
@@ -790,6 +867,7 @@ if (typeof require === 'function' && typeof module === 'object')
         PERCENT_ZERO_WIDTH,
         PERCENT_DEFAULT,
         DEFAULT_JS_PERMISSION,
+        DEFAULT_PERMISSIONS,
     };
 
     globalThis.TTV_DSL.createRuntime = createRuntime;

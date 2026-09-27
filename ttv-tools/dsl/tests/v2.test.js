@@ -24,7 +24,7 @@
     /** A runtime on a fake clock, with whatever host bindings the test needs.
      * @return {{ runtime, clock, realm, failures }}
      */
-    let harness = ({ seed = 1, jsBindings, jsPermissions, constants, channels } = {}) => {
+    let harness = ({ seed = 1, jsBindings, jsPermissions, permissions, constants, channels } = {}) => {
         let clock = createFakeClock(0),
             failures = [],
             realm = createTwitchRealm({
@@ -40,12 +40,26 @@
             constants: Object.assign({ USERNAME: 'ephellon' }, constants),
             jsBindings,
             jsPermissions,
+            permissions,
             // Faults inside a detached timer loop are reported, not thrown, so a test that
             // wants to assert on one has to collect them here.
             logger: { log() {}, warn() {}, error: (entry) => failures.push(String(entry)) },
         });
 
         return { runtime, clock, realm, failures };
+    };
+
+    /** Asserts that a promise rejects with a message matching `pattern`. */
+    let rejects = async (promise, pattern) => {
+        try {
+            await promise;
+        } catch (error) {
+            assert.match(String(error?.message ?? error), pattern);
+
+            return error;
+        }
+
+        throw new Error(`Expected a rejection matching ${ pattern }, but it resolved`);
     };
 
     /** @return {Array<String>} the text of everything sent */
@@ -241,31 +255,64 @@
                 assert.equal(failures.filter(entry => /DSLPermissionError/.test(entry)).length, 2);
             });
 
-        // The regression that matters. Nothing in the runtime does prefix matching, and
-        // nothing ever should: a grant that silently widens is a grant nobody can audit.
-        it('does not let `+eval` stand in for `eval:calc`, in either direction', async () => {
-            let { runtime, failures } = harness({ jsBindings: bindings, jsPermissions: { 'Math.random': 'eval:calc' } });
+        // The regression that matters. Nothing matches by prefix, and nothing ever should: a
+        // grant that silently widens is a grant nobody can audit. The only widening is a
+        // `.*` the script wrote out, and it reaches exactly one level.
+        it('never widens a grant it was not told to', () => {
+            let { runtime } = harness(),
+                context = (...granted) => runtime.createContext({ permissions: granted });
 
-            await run('using * +eval\n    await *\n        POST `${ &Math.random() }`\n', runtime, {});
-            await runtime.dispatch({ a: 1 });
+            // Siblings under one action are unrelated.
+            assert.throws(() => runtime.requirePermission('eval:js', context('eval:calc')), DSLPermissionError);
+            assert.throws(() => runtime.requirePermission('eval:calc', context('eval:js')), DSLPermissionError);
 
+            // A bare resource is not a wildcard.
+            assert.throws(() => runtime.requirePermission('read:html.text', context('read:html')), DSLPermissionError);
+
+            // `.*` covers one level down, and only under its own action.
+            assert.equal(runtime.requirePermission('read:html.text', context('read:html.*')), true);
+            assert.throws(() => runtime.requirePermission('read:html.text.inner', context('read:html.*')), DSLPermissionError);
+            assert.throws(() => runtime.requirePermission('write:html.text', context('read:html.*')), DSLPermissionError);
+        });
+
+        it('rejects a grant that is not on the permission list, at compile time', async () => {
+            let { runtime } = harness();
+
+            await rejects(run('using +read:htlm.*\n    POST `a`\n', runtime, {}), /matches nothing on the permission list/);
+            await rejects(run('using +read:html.everything\n    POST `a`\n', runtime, {}), /Unknown permission `\+read:html.everything`/);
             assert.equal(sent(runtime).length, 0);
-            assert.ok(failures.some(entry => /not granted .\+eval:calc/.test(entry)), failures.join('\n'));
+        });
 
-            let narrow = harness({ jsBindings: bindings, jsPermissions: { 'Math.random': 'eval' } });
+        it('lets the host extend the list', async () => {
+            let { runtime } = harness({ permissions: ['read:chat.history'] });
 
-            await run('using * +eval:calc\n    await *\n        POST `${ &Math.random() }`\n', narrow.runtime, {});
-            await narrow.runtime.dispatch({ a: 1 });
+            await run('using +read:chat.*\n    POST `ok`\n', runtime, {});
 
-            assert.equal(sent(narrow.runtime).length, 0);
-            assert.ok(narrow.failures.some(entry => /not granted .\+eval\b/.test(entry)), narrow.failures.join('\n'));
+            assert.deepEqual(sent(runtime), ['ok']);
+        });
+
+        it('refuses a host path mapped to a permission nobody can grant', () => {
+            assert.throws(() => harness({ jsPermissions: { 'Date.now': 'read:clock' } }), /not on the permission list/);
+        });
+
+        it('requires a description on every `write` and `eval` grant', () => {
+            assert.throws(() => parse('using +write:html.text\n    POST `a`\n'), /`\+write:html.text` needs a description/);
+            assert.throws(() => parse('using +read:datetime +eval:js\n    POST `a`\n'), /`\+eval:js` needs a description/);
+            assert.like(parse('using +write:html.* -- "restyles the chat"\n    POST `a`\n').body[0], { permissions: ['write:html.*'] });
+            // `read` and `parse` do not need one.
+            assert.like(parse('using +read:html.* +parse:html.text\n    POST `a`\n').body[0], { description: null });
+        });
+
+        it('rejects malformed permission spellings in the tokenizer', () => {
+            for (let source of ['using +read:*\n', 'using +read:html.*.text\n', 'using +a:b:c\n', 'using +read:html*\n'])
+                assert.throws(() => parse(source), /Malformed permission/);
         });
 
         it('accumulates grants down the nesting tree, never sideways', async () => {
-            let { runtime, failures } = harness({ jsBindings: bindings, jsPermissions: { 'Math.random': 'a:b' } });
+            let { runtime, failures } = harness({ jsBindings: bindings, jsPermissions: { 'Math.random': 'read:html.text' } });
 
             await run([
-                'using * +a:b',
+                'using * +read:html.text',
                 '    using *',
                 '        await *',
                 '            POST `inner ${ &Math.random() }`',

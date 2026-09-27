@@ -74,6 +74,10 @@ if (typeof require === 'function' && typeof module === 'object') {
         calc: 'arithmetic is not implemented; `calc( ... )` is reserved for a future version and will require the `eval:calc` permission',
     };
 
+    /** Actions whose grants must carry a `-- "description"`: they change the page or run
+     * code, and a host asking the viewer to allow them needs something to show. */
+    const DESCRIBED_ACTIONS = new Set(['write', 'eval']);
+
     /** The one diagnostic the tokenizer can no longer produce for `:`, now that a bare colon
      * is a real token. Spelled out here because the parser is the only place that knows all
      * four readings were on the table. */
@@ -455,7 +459,8 @@ if (typeof require === 'function' && typeof module === 'object') {
             let subjects = [],
                 permissions = [],
                 scopeMode = null,
-                description = null;
+                description = null,
+                dangerous = null;
 
             // Several subjects may sit on one line — `using <viewer> <everyone> <all>` —
             // with juxtaposition meaning "any of these". Grants may be interleaved with
@@ -495,11 +500,19 @@ if (typeof require === 'function' && typeof module === 'object') {
                     else
                         permissions.push(grant.value);
 
+                    if (null === dangerous && DESCRIBED_ACTIONS.has(grant.value.split(':')[0]))
+                        dangerous = grant;
+
                     continue;
                 }
 
                 subjects.push(this.#parseExpression());
             }
+
+            // A grant that can change the page or run code has to say why, in the header
+            // itself — that text is what a host shows when it asks the viewer to allow it.
+            if (null !== dangerous && null === description)
+                this.#fail(`\`+${ dangerous.value }\` needs a description saying why: end the header with \`-- "..."\``, dangerous);
 
             // A header with no subject keeps the current one. That is what lets a grant or
             // a `+scope` switch stand on its own, without dragging a subject change in.

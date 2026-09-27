@@ -85,7 +85,7 @@ await * with (#live is true)
                 ,
             )
 
-    using [vip] +read:datetime +eval:calc
+    using [vip] +read:datetime +eval:calc -- "Prints the time in a lurk message; calc is reserved for later"
         await 5:00
             POST any from (
                 `!lurk`
