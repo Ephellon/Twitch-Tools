@@ -55,9 +55,38 @@ globalThis.TTV_DSL ??= {};
         FALSE: 'FALSE',
         /** `when` — both the switch head and the `if`-chain continuation. */
         WHEN: 'WHEN',
+        /** `define name(params) [with +perm ...]` — a function. */
+        DEFINE: 'DEFINE',
+        /** `return [<value>]` — only inside a `define`. */
+        RETURN: 'RETURN',
+        /** `for [as label:] start; stop[; step]` or `for [as label:] <list>`. */
+        FOR: 'FOR',
+        /** `break [label]` — leave a loop. */
+        BREAK: 'BREAK',
+        /** `renew [label]` — start a loop's next iteration (a `continue`). */
+        RENEW: 'RENEW',
+        /** `;` — separates the parts of a `for` header, and nothing else. */
+        SEMICOLON: 'SEMICOLON',
+        /** `$` — the innermost loop's counter. */
+        COUNTER: 'COUNTER',
+        /** `calc` — opens an arithmetic group: `calc( .raid_size * 2 + 1 )`. */
+        CALC: 'CALC',
+        /** `+ - * / % **` — an arithmetic operator. Only ever emitted **inside** the
+         * parentheses of a `calc( ... )`; everywhere else those characters keep their
+         * ordinary meanings. `value` is the operator. */
+        ARITH: 'ARITH',
+        /** `after <duration>` — a one-shot timer. `await <duration>` repeats; `after` fires
+         * once. */
+        AFTER: 'AFTER',
+        /** `else` — the unconditional last branch of an `if`/`when` chain. Takes no test of
+         * its own, so `else if` and `else when` are errors rather than shorthands. */
+        ELSE: 'ELSE',
+        /** `above` / `below` — the numeric comparisons. Only legal after `is` or `is or`
+         * (`.raid_size is or above 50` is `>=`); the lexeme says which one. */
+        COMPARE: 'COMPARE',
         /** A word reserved purely so that using it produces a *helpful* error instead of a
-         * generic one: `else`, `elif`, `elseif`, `switch`, `case`, `default`, `calc`. The
-         * parser keys its diagnostic off the lexeme. */
+         * generic one: `elif`, `elseif`, `switch`, `case`, `default`. The parser keys its
+         * diagnostic off the lexeme. */
         RESERVED: 'RESERVED',
 
         // -- literals ---------------------------------------------------------
@@ -83,12 +112,11 @@ globalThis.TTV_DSL ??= {};
         SELECTOR_CHANNEL: 'SELECTOR_CHANNEL',
         /** `DISCORD/123`: a realm-qualified subject; `value` is `{ realm, path }`. */
         SELECTOR_REALM: 'SELECTOR_REALM',
-        /** `<moderator>`: a badge on the current channel. */
+        /** `[moderator]` / `[vip moderator]`: badges the subject in scope may hold. `value`
+         * is the list of names; several mean "any of these". */
         SELECTOR_BADGE: 'SELECTOR_BADGE',
         /** `@user`: a user in the current channel. */
         SELECTOR_USER: 'SELECTOR_USER',
-        /** `:kappa:`: an emote in the current channel. */
-        SELECTOR_EMOTE: 'SELECTOR_EMOTE',
         /** `.prop`: a property of the nearest enclosing `using`/`await`/`where` subject. */
         SELECTOR_CONTEXT: 'SELECTOR_CONTEXT',
 
@@ -115,6 +143,9 @@ globalThis.TTV_DSL ??= {};
         /** `%`, `%n%s`, `%d%s` … — the regex-replacement operator. `value` is the array of
          * class letters, empty for a bare `%`. */
         PERCENT: 'PERCENT',
+        /** `~` / `as` — the format operator: `wait_time ~ "hh?:mm:ss"`, or
+         * `wait_time as "hh?:mm:ss"`. */
+        FORMAT: 'FORMAT',
         /** `,` — an *optional* item separator. Never required, never meaningful between
          * statements. */
         COMMA: 'COMMA',
@@ -124,8 +155,11 @@ globalThis.TTV_DSL ??= {};
         COLON: 'COLON',
         /** `+read:datetime` — a permission grant. `value` is the bare name. */
         PERMISSION: 'PERMISSION',
-        /** `$:Date.now` — a dotted host-binding path. `value` is the array of segments. */
+        /** `&datetime.now` — a dotted host-binding path. `value` is the array of segments. */
         JS_PATH: 'JS_PATH',
+        /** `--` followed by whitespace — introduces the description at the end of a `using`
+         * header: `using +eval:calc -- "why this block needs it"`. */
+        DESCRIBE: 'DESCRIBE',
 
         /** A bare word. Carries an `isUpper` flag; the *parser* decides verb-vs-constant
          * by position, which keeps the verb registry open-ended. */
@@ -147,10 +181,12 @@ globalThis.TTV_DSL ??= {};
         any: TokenType.ANY,
         from: TokenType.FROM,
         where: TokenType.WHERE,
-        // `of` and `<|` are one operator with two spellings, as are `where` and `|`. Both
-        // pairs share a token type rather than being normalized later, so neither spelling
-        // can ever drift from the other in precedence or meaning.
+        // `of` and `<|` are one operator with two spellings, as are `where` and `|`, and
+        // `as` and `~`. Each pair shares a token type rather than being normalized later, so
+        // neither spelling can ever drift from the other in precedence or meaning. The word
+        // is for readers who want the line to read as a sentence; the symbol for brevity.
         of: TokenType.PIPE,
+        as: TokenType.FORMAT,
         is: TokenType.IS,
         in: TokenType.IN,
         and: TokenType.AND,
@@ -159,19 +195,30 @@ globalThis.TTV_DSL ??= {};
         true: TokenType.TRUE,
         false: TokenType.FALSE,
         when: TokenType.WHEN,
+        after: TokenType.AFTER,
+        define: TokenType.DEFINE,
+        return: TokenType.RETURN,
+        for: TokenType.FOR,
+        break: TokenType.BREAK,
+        renew: TokenType.RENEW,
+        else: TokenType.ELSE,
 
-        // Reserved solely to produce a better error than "expected a statement". `when`
-        // covers every branching shape this language has, and `calc` is the placeholder
-        // arithmetic will eventually be spelled with; a script that reaches for the
-        // JavaScript-shaped word should be told where to look instead of being told that
-        // its own variable name is unparseable.
-        else: TokenType.RESERVED,
+        // `is above 50` / `is or above 50`. The inclusive form reuses `or` rather than
+        // minting `above_or`, so the line reads as the sentence it is.
+        above: TokenType.COMPARE,
+        below: TokenType.COMPARE,
+
+        // Reserved solely to produce a better error than "expected a statement". `when` and
+        // `else` cover every branching shape this language has, and `calc` is the
+        // placeholder arithmetic will eventually be spelled with; a script that reaches for
+        // the JavaScript-shaped word should be told where to look instead of being told
+        // that its own variable name is unparseable.
         elif: TokenType.RESERVED,
         elseif: TokenType.RESERVED,
         switch: TokenType.RESERVED,
         case: TokenType.RESERVED,
         default: TokenType.RESERVED,
-        calc: TokenType.RESERVED,
+        calc: TokenType.CALC,
     });
 
     /** Every reserved word as a `Set`, for membership tests. */
@@ -207,6 +254,8 @@ globalThis.TTV_DSL ??= {};
         { lexeme: '-', type: TokenType.MINUS },
         { lexeme: '=', type: TokenType.EXACT },
         { lexeme: ',', type: TokenType.COMMA },
+        { lexeme: '~', type: TokenType.FORMAT },
+        { lexeme: ';', type: TokenType.SEMICOLON },
         // `|` is spelled differently from `where` and means exactly `where`. Mapping it to
         // the same token type — rather than giving it its own — is what guarantees the two
         // spellings can never drift apart in precedence, associativity or AST shape.
@@ -240,7 +289,7 @@ globalThis.TTV_DSL ??= {};
      * | 1 | `or`          | left  | logical disjunction                |
      * | 2 | `and`         | left  | logical conjunction                |
      * | 3 | `is` / `in`   | none  | equality / membership              |
-     * | 4 | `%…`          | left  | regex replacement / list join      |
+     * | 4 | `%…`, `~`/`as`| left  | replacement, list join / format    |
      * | 5 | `<|`          | left  | pipe                               |
      * | 6 | `where` (`|`) | left  | filter                             |
      * | 7 | `..` / `...`  | none  | exclusive / inclusive range        |
@@ -274,6 +323,7 @@ globalThis.TTV_DSL ??= {};
         [TokenType.IS]: { precedence: 3, associativity: Associativity.NONE, lexeme: 'is' },
         [TokenType.IN]: { precedence: 3, associativity: Associativity.NONE, lexeme: 'in' },
         [TokenType.PERCENT]: { precedence: 4, associativity: Associativity.LEFT, lexeme: '%' },
+        [TokenType.FORMAT]: { precedence: 4, associativity: Associativity.LEFT, lexeme: '~' },
         [TokenType.PIPE]: { precedence: 5, associativity: Associativity.LEFT, lexeme: '<|' },
         [TokenType.WHERE]: { precedence: 6, associativity: Associativity.LEFT, lexeme: 'where' },
         [TokenType.RANGE_EXCLUSIVE]: { precedence: 7, associativity: Associativity.NONE, lexeme: '..' },
@@ -294,6 +344,13 @@ globalThis.TTV_DSL ??= {};
         TokenType.IF,
         TokenType.GOTO,
         TokenType.WHEN,
+        TokenType.AFTER,
+        TokenType.DEFINE,
+        TokenType.RETURN,
+        TokenType.FOR,
+        TokenType.BREAK,
+        TokenType.RENEW,
+        TokenType.ELSE,
         TokenType.WITH,
     ]));
 
@@ -301,15 +358,33 @@ globalThis.TTV_DSL ??= {};
      * read-only: none may appear on the right of a binding arrow. */
     const THIS_ALIASES = Object.freeze(new Set(['_', '__this__', '__self__', '__me__']));
 
-    /** The shape a *variable* name must have: at least one interior underscore.
+    /** The presence tests, by the `kind` their `Wildcard` node carries. `*` is `ANYTHING`.
      *
-     * This is the whole disambiguation between a variable and a host constant, and it is
-     * enforced at the binding site only. `USERNAME` and `mod_msg` are lexically identical —
-     * nothing but this pattern tells them apart — so a reference site cannot reject
-     * anything without also rejecting one of the two legitimate readings. `_x`, `x_` and
-     * `x` all fail it, which is exactly why `_`, `__this__` and friends can never be
-     * mistaken for variables. */
-    const VARIABLE_PATTERN = /^[A-Za-z0-9]+(?:_[A-Za-z0-9]+)+$/;
+     * | word        | matches                                 |
+     * |-------------|-----------------------------------------|
+     * | `ANYTHING`  | any value at all, including `""` / `[]` |
+     * | `SOMETHING` | a value that is not `""` / `[]`         |
+     * | `NOTHING`   | no value, `""` or `[]`                  |
+     */
+    const PRESENCE_WORDS = Object.freeze({
+        ANYTHING: 'anything',
+        SOMETHING: 'something',
+        NOTHING: 'nothing',
+    });
+
+    /** What `+scope` may be set to, and what a bare `+scope` means. See SPEC §5.5. */
+    const SCOPE_MODES = Object.freeze(new Set(['local', 'global', 'universal']));
+    const DEFAULT_SCOPE_MODE = 'global';
+
+    /** The shape a *variable* (or function, or parameter) name must have: at least one
+     * lower-case letter.
+     *
+     * This is the whole disambiguation between a name the script made and a name the host
+     * published. ALL-CAPS is reserved for host constants (`USERNAME`) and verbs (`POST`) —
+     * and must be, because `CLKFMT "..."` at the start of a line already reads as a verb
+     * call. Anything with a lower-case letter in it — `clkFmt`, `mils`, `raid_title` — is
+     * the script's own. `_`, `__this__` and friends are refused as binding targets by name. */
+    const VARIABLE_PATTERN = /^(?=[A-Za-z0-9_]*[a-z])[A-Za-z_][A-Za-z0-9_]*$/;
 
     /** The class letters a `%` run may carry, plus `c` (the always-on trim flag). */
     const PERCENT_CLASSES = Object.freeze(new Set(['0', 'a', 'A', 'b', 'B', 'd', 'D', 'f', 'n', 'r', 's', 'S', 't', 'v', 'w', 'W', 'c']));
@@ -322,7 +397,6 @@ globalThis.TTV_DSL ??= {};
         [TokenType.SELECTOR_REALM]: 'realm',
         [TokenType.SELECTOR_BADGE]: 'badge',
         [TokenType.SELECTOR_USER]: 'user',
-        [TokenType.SELECTOR_EMOTE]: 'emote',
         [TokenType.SELECTOR_CONTEXT]: 'context',
     });
 
@@ -362,6 +436,9 @@ globalThis.TTV_DSL ??= {};
         STATEMENT_KEYWORDS,
         SELECTOR_KINDS,
         THIS_ALIASES,
+        PRESENCE_WORDS,
+        SCOPE_MODES,
+        DEFAULT_SCOPE_MODE,
         VARIABLE_PATTERN,
         PERCENT_CLASSES,
         Associativity,

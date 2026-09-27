@@ -24,7 +24,7 @@
     /** A runtime on a fake clock, with whatever host bindings the test needs.
      * @return {{ runtime, clock, realm, failures }}
      */
-    const harness = ({ seed = 1, jsBindings, jsPermissions, constants, channels } = {}) => {
+    const harness = ({ seed = 1, jsBindings, jsPermissions, permissions, constants, channels } = {}) => {
         const clock = createFakeClock(0)
             , failures = []
             , realm = createTwitchRealm({
@@ -40,12 +40,26 @@
             constants: Object.assign({ USERNAME: 'ephellon' }, constants),
             jsBindings,
             jsPermissions,
+            permissions,
             // Faults inside a detached timer loop are reported, not thrown, so a test that
             // wants to assert on one has to collect them here.
             logger: { log() {}, warn() {}, error: (entry) => failures.push(String(entry)) },
         });
 
         return { runtime, clock, realm, failures };
+    };
+
+    /** Asserts that a promise rejects with a message matching `pattern`. */
+    const rejects = async(promise, pattern) => {
+        try {
+            await promise;
+        } catch(error) {
+            assert.match(String(error?.message ?? error), pattern);
+
+            return error;
+        }
+
+        throw new Error(`Expected a rejection matching ${ pattern }, but it resolved`);
     };
 
     /** @return {Array<String>} the text of everything sent */
@@ -59,7 +73,7 @@
         if(null === source)
             it.skip('runs variables.ttv', 'no filesystem in this runtime');
         else
-            it('makes `=>` visible to later siblings and `->` visible only downward', async() => {
+            it('shares a binding with siblings under the default `+scope:global`, whichever arrow made it', async() => {
                 const { runtime, clock } = harness();
 
                 await run(source, runtime, { channel: runtime.defaultRealm.current });
@@ -67,18 +81,72 @@
 
                 assert.deepEqual(sent(runtime), [
                     'first: checked in',
-                    // The `=>` binding made one block's work visible to the next.
+                    // One block's binding is visible to the next sibling.
                     'second: checked in',
-                    // A `->` binding reaches its own descendants.
-                    'nested: local only',
+                    // ...and to what that block nests.
+                    'nested: also shared',
                     // Never bound at all: empty, not an error.
                     'missing: []',
-                    // Still visible: `=>` put it where every sibling can see it.
-                    'sibling: checked in',
-                    // NOT visible: `->` put it in a scope this block was never inside.
-                    'leaked: []',
+                    // `->` made this one, and it is shared exactly as `=>` would have been.
+                    'sibling: also shared',
                 ]);
             });
+
+        /** One script, three modes. `sib_note` is bound in an `await` body and read by that
+         * body's child and by a sibling `await`; `deep_note` is bound one `using` deeper and
+         * read by the sibling, which is a cousin of where it was made. */
+        const modes = (mode) => [
+            `using ${ mode }`,
+            '    await 1:00',
+            '        `a` -> sib_note',
+            '        using *',
+            '            `b` => deep_note',
+            '            POST `inner: [${ sib_note }]`',
+            '    await 1:10',
+            '        POST `sibling: [${ sib_note }] deep: [${ deep_note }]`',
+            '',
+        ].join('\n');
+
+        for(const [mode, expected] of [
+            // Locked to the block that bound it and what that block nests.
+            ['+scope:local', ['inner: [a]', 'sibling: [] deep: []']],
+            // Shared one level out: siblings see it, a cousin two levels away does not.
+            ['+scope:global', ['inner: [a]', 'sibling: [a] deep: []']],
+            // A bare `+scope` is `global`.
+            ['+scope', ['inner: [a]', 'sibling: [a] deep: []']],
+            // Everything sees everything.
+            ['+scope:universal', ['inner: [a]', 'sibling: [a] deep: [b]']],
+        ])
+            it(`decides where both arrows bind under \`${ mode }\``, async() => {
+                const { runtime, clock } = harness();
+
+                await run(modes(mode), runtime, { channel: runtime.defaultRealm.current });
+                await clock.advance(75000);
+
+                assert.deepEqual(sent(runtime), expected);
+            });
+
+        it('binds at the top level, where there is no parent to write into', async() => {
+            const { runtime, clock } = harness();
+
+            await run('`hi` => mod_msg\nawait 1:00\n    POST `${ mod_msg }`\n', runtime, {});
+            await clock.advance(61000);
+
+            assert.deepEqual(sent(runtime), ['hi']);
+        });
+
+        it('refuses `+scope` anywhere but a top-level `using`, and refuses unknown modes', () => {
+            assert.throws(() => parse('await *\n    using +scope:local\n        POST `a`\n'), /top-level `using`/i);
+            assert.throws(() => parse('using +scope:galactic\n    POST `a`\n'), /Unknown scope mode "galactic"/);
+            assert.throws(() => parse('using +scope +scope:local\n    POST `a`\n'), /only be given once/i);
+        });
+
+        it('never treats `+scope` as a grant', () => {
+            assert.like(parse('using +scope:local +read:datetime\n    POST `a`\n').body[0], {
+                permissions: ['read:datetime'],
+                scopeMode: 'local',
+            });
+        });
 
         it('binds through an `await` duration without turning it into an event-await', async() => {
             const { runtime, clock } = harness();
@@ -94,13 +162,6 @@
             assert.deepEqual(sent(runtime), ['waited 60000']);
         });
 
-        it('refuses `=>` where there is no parent scope', () => {
-            const { runtime } = harness()
-                , program = parse('`hi` => mod_msg\n');
-
-            assert.throws(() => globalThis.TTV_DSL.compile(program, runtime), /no parent scope/i);
-        });
-
         it('reads an unbound variable as empty but an unknown constant as an error', async() => {
             const { runtime, failures } = harness();
 
@@ -109,8 +170,8 @@
 
             assert.deepEqual(sent(runtime), ['[]']);
 
-            // A name with no interior underscore can only be a constant, and an unknown
-            // constant still fails loudly — that is what the underscore rule buys.
+            // An ALL-CAPS name can only be a constant, and an unknown constant still fails
+            // loudly — that is what reserving ALL-CAPS for the host buys.
             await run('await *\n    POST `${ NOPE }`\n', runtime, {});
             await runtime.dispatch({ sender: 'a' });
 
@@ -176,8 +237,8 @@
     // -- permissions --------------------------------------------------------
 
     describe('v2 / permissions', () => {
-        const bindings = { Date: { now: () => 1234 }, Math: { random: () => 0.5 } }
-            , mapping = { 'Date.now': 'read:datetime' };
+        const bindings = { datetime: { now: () => 1234 } }
+            , mapping = { 'datetime.now': 'read:datetime' };
 
         const source = fixture('permissions');
 
@@ -194,43 +255,76 @@
                 assert.equal(failures.filter(entry => /DSLPermissionError/.test(entry)).length, 2);
             });
 
-        // The regression that matters. Nothing in the runtime does prefix matching, and
-        // nothing ever should: a grant that silently widens is a grant nobody can audit.
-        it('does not let `+eval` stand in for `eval:calc`, in either direction', async() => {
-            const { runtime, failures } = harness({ jsBindings: bindings, jsPermissions: { 'Math.random': 'eval:calc' } });
+        // The regression that matters. Nothing matches by prefix, and nothing ever should: a
+        // grant that silently widens is a grant nobody can audit. The only widening is a
+        // `.*` the script wrote out, and it reaches exactly one level.
+        it('never widens a grant it was not told to', () => {
+            const { runtime } = harness()
+                , context = (...granted) => runtime.createContext({ permissions: granted });
 
-            await run('using * +eval\n    await *\n        POST `${ $:Math.random() }`\n', runtime, {});
-            await runtime.dispatch({ a: 1 });
+            // Siblings under one action are unrelated.
+            assert.throws(() => runtime.requirePermission('eval:js', context('eval:calc')), DSLPermissionError);
+            assert.throws(() => runtime.requirePermission('eval:calc', context('eval:js')), DSLPermissionError);
 
+            // A bare resource is not a wildcard.
+            assert.throws(() => runtime.requirePermission('read:html.text', context('read:html')), DSLPermissionError);
+
+            // `.*` covers one level down, and only under its own action.
+            assert.equal(runtime.requirePermission('read:html.text', context('read:html.*')), true);
+            assert.throws(() => runtime.requirePermission('read:html.text.inner', context('read:html.*')), DSLPermissionError);
+            assert.throws(() => runtime.requirePermission('write:html.text', context('read:html.*')), DSLPermissionError);
+        });
+
+        it('rejects a grant that is not on the permission list, at compile time', async() => {
+            const { runtime } = harness();
+
+            await rejects(run('using +read:htlm.*\n    POST `a`\n', runtime, {}), /matches nothing on the permission list/);
+            await rejects(run('using +read:html.everything\n    POST `a`\n', runtime, {}), /Unknown permission `\+read:html.everything`/);
             assert.equal(sent(runtime).length, 0);
-            assert.ok(failures.some(entry => /not granted .\+eval:calc/.test(entry)), failures.join('\n'));
+        });
 
-            const narrow = harness({ jsBindings: bindings, jsPermissions: { 'Math.random': 'eval' } });
+        it('lets the host extend the list', async() => {
+            const { runtime } = harness({ permissions: ['read:chat.history'] });
 
-            await run('using * +eval:calc\n    await *\n        POST `${ $:Math.random() }`\n', narrow.runtime, {});
-            await narrow.runtime.dispatch({ a: 1 });
+            await run('using +read:chat.*\n    POST `ok`\n', runtime, {});
 
-            assert.equal(sent(narrow.runtime).length, 0);
-            assert.ok(narrow.failures.some(entry => /not granted .\+eval\b/.test(entry)), narrow.failures.join('\n'));
+            assert.deepEqual(sent(runtime), ['ok']);
+        });
+
+        it('refuses a host path mapped to a permission nobody can grant', () => {
+            assert.throws(() => harness({ jsPermissions: { 'datetime.now': 'read:clock' } }), /not on the permission list/);
+        });
+
+        it('requires a description on every `write` and `eval` grant', () => {
+            assert.throws(() => parse('using +write:html.text\n    POST `a`\n'), /`\+write:html.text` needs a description/);
+            assert.throws(() => parse('using +read:datetime +eval:js\n    POST `a`\n'), /`\+eval:js` needs a description/);
+            assert.like(parse('using +write:html.* -- "restyles the chat"\n    POST `a`\n').body[0], { permissions: ['write:html.*'] });
+            // `read` and `parse` do not need one.
+            assert.like(parse('using +read:html.* +parse:html.text\n    POST `a`\n').body[0], { description: null });
+        });
+
+        it('rejects malformed permission spellings in the tokenizer', () => {
+            for(const source of ['using +read:*\n', 'using +read:html.*.text\n', 'using +a:b:c\n', 'using +read:html*\n'])
+                assert.throws(() => parse(source), /Malformed permission/);
         });
 
         it('accumulates grants down the nesting tree, never sideways', async() => {
-            const { runtime, failures } = harness({ jsBindings: bindings, jsPermissions: { 'Math.random': 'a:b' } });
+            const { runtime, failures } = harness({ jsBindings: bindings, jsPermissions: mapping });
 
             await run([
-                'using * +a:b',
+                'using * +read:datetime',
                 '    using *',
                 '        await *',
-                '            POST `inner ${ $:Math.random() }`',
+                '            POST `inner ${ &datetime.now() }`',
                 'using *',
                 '    await *',
-                '        POST `sibling ${ $:Math.random() }`',
+                '        POST `sibling ${ &datetime.now() }`',
                 '',
             ].join('\n'), runtime, {});
 
             await runtime.dispatch({ a: 1 });
 
-            assert.deepEqual(sent(runtime), ['inner 0.5']);
+            assert.deepEqual(sent(runtime), ['inner 1234']);
             assert.ok(failures.some(entry => /DSLPermissionError/.test(entry)));
         });
 
@@ -245,45 +339,117 @@
 
     // -- host calls ---------------------------------------------------------
 
-    describe('v2 / `$:` host calls', () => {
+    describe('v2 / `&` host calls', () => {
+        const host = () => harness({ jsBindings: { datetime: { now: () => 1 } }, jsPermissions: { 'datetime.now': 'read:datetime' } });
+
         it('fails loudly when the host registered nothing', () => {
             const { runtime } = harness()
-                , context = runtime.createContext({ permissions: ['eval:js'] });
+                , context = runtime.createContext({ permissions: ['read:datetime'] });
 
-            const error = assert.throws(() => runtime.invokeJS(['Date', 'now'], [], context), DSLRuntimeError);
+            const error = assert.throws(() => runtime.invokeJS(['datetime', 'now'], [], context), DSLRuntimeError);
 
             assert.match(error.message, /no host binding/i);
         });
 
-        it('calls a registered binding with its arguments', () => {
-            const { runtime } = harness({ jsBindings: { Math: { max: (...values) => Math.max(...values) } } })
-                , context = runtime.createContext({ permissions: ['eval:js'] });
+        it('calls a mapped binding under its own permission, not `eval:js`', () => {
+            const { runtime } = host();
 
-            assert.equal(runtime.invokeJS(['Math', 'max'], [1, 9, 3], context), 9);
+            assert.equal(runtime.invokeJS(['datetime', 'now'], [], runtime.createContext({ permissions: ['read:datetime'] })), 1);
+            assert.throws(() => runtime.invokeJS(['datetime', 'now'], [], runtime.createContext({ permissions: ['eval:js'] })), DSLPermissionError);
         });
 
-        it('defaults to requiring `eval:js`', () => {
-            const { runtime } = harness({ jsBindings: { Date: { now: () => 1 } } })
-                , context = runtime.createContext({ permissions: [] });
+        it('refuses to start with a bound function that has no permission', () => {
+            assert.throws(() => harness({ jsBindings: { datetime: { now: () => 1, zone: () => 'UTC' } }, jsPermissions: { 'datetime.now': 'read:datetime' } }), /map these in `jsPermissions`: &datetime\.zone/);
+        });
 
-            assert.throws(() => runtime.invokeJS(['Date', 'now'], [], context), DSLPermissionError);
+        it('refuses a host binding that shadows a built-in', () => {
+            assert.throws(() => harness({ jsBindings: { Math: { max: () => 0 } }, jsPermissions: { 'Math.max': 'eval:js' } }), /is a built-in|may not be called `Math`/);
         });
 
         it('refuses to walk through `constructor` or `__proto__`', () => {
-            const { runtime } = harness({ jsBindings: { Date: { now: () => 1 } } })
-                , context = runtime.createContext({ permissions: ['eval:js'] });
+            const { runtime } = host()
+                , context = runtime.createContext({ permissions: ['read:datetime', 'eval:js'] });
 
             for(const segment of ['constructor', '__proto__', 'prototype'])
-                assert.throws(() => runtime.invokeJS(['Date', segment, 'x'], [], context), /never allowed/i);
+                assert.throws(() => runtime.invokeJS(['datetime', segment, 'x'], [], context), /never allowed|no host binding/i);
+        });
+    });
+
+    describe('v2 / `eval:js`: the built-in set', () => {
+        const js = async(expression) => {
+            const { runtime, failures } = harness();
+
+            await run(`using +eval:js -- "maths"\n    await *\n        POST \`\${ ${ expression } }\`\n`, runtime, {});
+            await runtime.dispatch({ list: [3, 1, 2] });
+
+            return { texts: sent(runtime), failures };
+        };
+
+        it('calls static methods of Math, Number, Date, JSON and Array', async() => {
+            assert.deepEqual((await js('&Math.max(1, 9, 3)')).texts, ['9']);
+            assert.deepEqual((await js('&Number.parseInt("42px")')).texts, ['42']);
+            assert.deepEqual((await js('&Number.isInteger(4)')).texts, ['true']);
+            assert.deepEqual((await js('&Date.UTC(2020, 0, 1)')).texts, ['1577836800000']);
+            assert.deepEqual((await js('&JSON.parse(\'{"a":5}\').a')).texts, ['5']);
+            assert.deepEqual((await js('&Array.from(.list) % "-"')).texts, ['3-1-2']);
+        });
+
+        it('reads constants without parentheses', async() => {
+            assert.deepEqual((await js('&Number.MAX_SAFE_INTEGER')).texts, ['9007199254740991']);
+            assert.match((await js('&Math.PI')).texts[0], /^3\.14159/);
+        });
+
+        it('never hands a method over as a value, and never calls a constant', async() => {
+            assert.ok((await js('&Math.max')).failures.some(entry => /is a method; call it/.test(entry)));
+            assert.ok((await js('&Math.PI()')).failures.some(entry => /is a constant, not a method/.test(entry)));
+        });
+
+        it('reaches nothing outside the set: no prototypes, no other statics, no other globals', async() => {
+            for(const path of ['&Array.prototype', '&Date.prototype', '&Object.keys(.list)', '&Math.constructor',
+                '&Array.length', '&Date.name', '&Number.prototype',
+                '&Math.toString()', '&Array.valueOf()', '&JSON.__lookupGetter__("parse")', '&Math.hasOwnProperty("max")'])
+                assert.ok((await js(path)).failures.some(entry => /not part of the built-in set|no host binding|never allowed/i.test(entry)), path);
+        });
+
+        it('needs `eval:js`, and nothing else opens it', async() => {
+            const { runtime, failures } = harness();
+
+            await run('using +read:html.* +eval:calc -- "not js"\n    await *\n        POST `${ &Math.max(1, 2) }`\n', runtime, {});
+            await runtime.dispatch({});
+
+            assert.deepEqual(sent(runtime), []);
+            assert.ok(failures.some(entry => /not granted .\+eval:js/.test(entry)), failures.join('\n'));
+        });
+
+        it('lets through whatever a newer engine adds, since it is a blocklist', () => {
+            const { JS_BUILTINS, BLOCKED_STATICS } = globalThis.TTV_DSL.runtime;
+
+            for(const global of ['Math', 'Number', 'Date', 'JSON', 'Array'])
+                for(const name of Object.getOwnPropertyNames(globalThis[global]))
+                    assert.equal(name in JS_BUILTINS[global], !BLOCKED_STATICS.has(name), `${ global }.${ name }`);
+        });
+
+        it('caps `Array.from`', async() => {
+            assert.ok((await js('&Array.from(&JSON.parse(\'{"length":100000000}\'))')).failures.some(entry => /at most 10000 items/.test(entry)));
+
+            if(typeof Array.fromAsync === 'function')
+                assert.ok((await js('&Array.fromAsync(&JSON.parse(\'{"length":100000000}\'))')).failures.some(entry => /Array\.fromAsync` builds at most/.test(entry)));
         });
     });
 
     // -- % ------------------------------------------------------------------
 
     describe('v2 / the `%` operator', () => {
-        it('expands a bare `%` to `%n%s`', () => {
+        it('matches, with a bare `%`, any whitespace run containing a newline', () => {
             assert.equal(percent('a\n   b', [], '·'), 'a·b');
-            assert.equal(percent('a\n   b', ['n', 's'], '·'), 'a·b');
+            assert.equal(percent('a  \n\n  b', [], '·'), 'a·b');
+            // The two shapes `%n%s` (\n+\s+) would have let through.
+            assert.equal(percent('a\nb', [], '·'), 'a·b');
+            assert.equal(percent('a\r\nb', [], '·'), 'a·b');
+            // Spaces within a line are content, not a line break.
+            assert.equal(percent('a  b\nc', [], '·'), 'a  b·c');
+            // Spelled out, `%n%s` still means exactly what it concatenates to.
+            assert.equal(percent('a\nb', ['n', 's'], '·'), 'a\nb');
         });
 
         it('trims before replacing, always', () => {
@@ -445,6 +611,572 @@
             await runtime.dispatch({ x: 1 });
 
             assert.deepEqual(sent(runtime), ['a']);
+        });
+    });
+
+    // -- batch 3: else, comparisons, presence, members, bare `using` -------
+
+    /** Runs a script and fires the given events at it, in order.
+     * @return {Promise<Array<String>>} everything sent */
+    const fire = async(source, events) => {
+        const { runtime } = harness();
+
+        await run(source, runtime, { channel: runtime.defaultRealm.current });
+
+        for(const event of events)
+            await runtime.dispatch(event);
+
+        return sent(runtime);
+    };
+
+    describe('v2 / `else`', () => {
+        const chain = [
+            'await *',
+            '    if .n is "a"',
+            '        POST `first`',
+            '    when .n is "b"',
+            '        POST `second`',
+            '    else',
+            '        POST `neither`',
+            '',
+        ].join('\n');
+
+        it('runs only when every branch before it declined', async() => {
+            assert.deepEqual(await fire(chain, [{ n: 'a' }, { n: 'b' }, { n: 'c' }]), ['first', 'second', 'neither']);
+        });
+
+        it('closes a switch-form `when` too', async() => {
+            const source = 'await *\n    when .n is\n        "a":\n            POST `a`\n    else\n        POST `other`\n';
+
+            assert.deepEqual(await fire(source, [{ n: 'a' }, { n: 'z' }]), ['a', 'other']);
+        });
+
+        it('accepts `else if` as another spelling of a chain `when`', async() => {
+            const source = [
+                'await *',
+                '    if .n is "a"',
+                '        POST `first`',
+                '    else if .n is "b"',
+                '        POST `second`',
+                '    when .n is "c"',
+                '        POST `third`',
+                '    else',
+                '        POST `none`',
+                '',
+            ].join('\n');
+
+            assert.deepEqual(await fire(source, [{ n: 'a' }, { n: 'b' }, { n: 'c' }, { n: 'd' }]), ['first', 'second', 'third', 'none']);
+        });
+
+        it('refuses `else when`, and `else if` after a bare `else`', () => {
+            assert.throws(() => parse('await *\n    if .a\n        POST `a`\n    else when .b\n        POST `b`\n'), /`else when` is not a thing/);
+            assert.throws(() => parse('await *\n    if .a\n        POST `a`\n    else\n        POST `b`\n    else if .c\n        POST `c`\n'), /cannot follow `else`/);
+        });
+
+        it('must be last, and must continue something', () => {
+            assert.throws(() => parse('await *\n    if .a\n        POST `a`\n    else\n        POST `b`\n    when .c\n        POST `c`\n'), /cannot follow `else`/);
+            assert.throws(() => parse('await *\n    else\n        POST `b`\n'), /`else` continues the `if` or `when` before it/);
+        });
+    });
+
+    describe('v2 / `* from`', () => {
+        it('is `any from`', () => {
+            const { NodeType } = globalThis.TTV_DSL.ast;
+
+            assert.like(parse('await *\n    POST * from (`a`, `b`)\n').body[0].body.body[0].argument, {
+                type: NodeType.AnyFromExpression,
+                items: [{ type: NodeType.TemplateLiteral }, { type: NodeType.TemplateLiteral }],
+            });
+        });
+
+        it('leaves a lone `*` alone', async() => {
+            assert.deepEqual(await fire('await *\n    if .v is *\n        POST `yes`\n', [{ v: '' }]), ['yes']);
+        });
+    });
+
+    describe('v2 / `above` and `below`', () => {
+        const rows = [
+            ['above', [false, false, true]],
+            ['or above', [false, true, true]],
+            ['below', [true, false, false]],
+            ['or below', [true, true, false]],
+        ];
+
+        for(const [word, expected] of rows)
+            it(`reads \`is ${ word }\` as a numeric comparison`, async() => {
+                const source = `await *\n    if .size is ${ word } 50\n        POST \`\${ .size }\`\n`;
+
+                assert.deepEqual(await fire(source, [{ size: 49 }, { size: 50 }, { size: 51 }]), [49, 50, 51].filter((_, index) => expected[index]).map(String));
+            });
+
+        it('coerces numeric strings and durations, and treats the unreadable as NaN (always false)', async() => {
+            const source = [
+                'await *',
+                '    if .v is above 1:00',
+                '        POST `above: ${ .v }`',
+                '    when .v is or below 1:00',
+                '        POST `at most: ${ .v }`',
+                '    else',
+                '        POST `neither: ${ .v }`',
+                '',
+            ].join('\n');
+
+            assert.deepEqual(await fire(source, [{ v: '61000' }, { v: '0:30' }, { v: 'lots' }, { v: true }, {}]), [
+                'above: 61000',
+                'at most: 0:30',
+                'neither: lots',
+                'neither: true',
+                'neither: ',
+            ]);
+        });
+
+        it('only follows `is`', () => {
+            assert.throws(() => parse('await *\n    if .a above 5\n        POST `a`\n'), /only follows `is`/);
+            assert.throws(() => parse('await *\n    if .a is above 5 is above 3\n        POST `a`\n'), /not associative/);
+        });
+
+        it('leaves plain `or` alone', async() => {
+            const source = 'await *\n    if .a is "x" or .a is "y"\n        POST `${ .a }`\n';
+
+            assert.deepEqual(await fire(source, [{ a: 'x' }, { a: 'y' }, { a: 'z' }]), ['x', 'y']);
+        });
+    });
+
+    describe('v2 / `ANYTHING`, `SOMETHING`, `NOTHING`', () => {
+        /** Which of four values each test accepts: absent, "", [], "zip". */
+        const probe = async(test) => {
+            const source = `await *\n    if .v is ${ test }\n        POST \`\${ .tag }\`\n`;
+
+            return fire(source, [{ tag: 'absent' }, { tag: 'empty', v: '' }, { tag: 'list', v: [] }, { tag: 'zip', v: 'zip' }]);
+        };
+
+        it('ANYTHING matches every present value, empty ones included', async() => {
+            assert.deepEqual(await probe('ANYTHING'), ['empty', 'list', 'zip']);
+        });
+
+        it('`*` is ANYTHING', async() => {
+            assert.deepEqual(await probe('*'), ['empty', 'list', 'zip']);
+        });
+
+        it('SOMETHING needs a non-empty value', async() => {
+            assert.deepEqual(await probe('SOMETHING'), ['zip']);
+        });
+
+        it('NOTHING is absence or emptiness', async() => {
+            assert.deepEqual(await probe('NOTHING'), ['absent', 'empty', 'list']);
+        });
+
+        it('cannot be shadowed by a host constant', async() => {
+            const { runtime } = harness({ constants: { NOTHING: 'gotcha' } });
+
+            await run('await *\n    if .v is NOTHING\n        POST `none`\n', runtime, {});
+            await runtime.dispatch({});
+
+            assert.deepEqual(sent(runtime), ['none']);
+        });
+    });
+
+    describe('v2 / `.a.b.c`', () => {
+        it('traverses nested properties', async() => {
+            const source = 'await *\n    POST `${ .raider.name } / ${ .raider.last.category }`\n';
+
+            assert.deepEqual(await fire(source, [{ raider: { name: 'shadyhen', last: { category: 'Elden Ring' } } }]), ['shadyhen / Elden Ring']);
+        });
+
+        it('reads a missing link as empty, not as an error', async() => {
+            assert.deepEqual(await fire('await *\n    POST `[${ .a.b.c }]`\n', [{ a: { b: null } }, {}]), ['[]', '[]']);
+        });
+
+        it('only joins glued segments; a space still separates subjects', () => {
+            const { NodeType } = globalThis.TTV_DSL.ast;
+
+            assert.like(parse('using .a.b\n    POST `x`\n').body[0].subjects, [{ type: NodeType.MemberExpression, property: 'b' }]);
+            assert.equal(parse('using .a .b\n    POST `x`\n').body[0].subjects.length, 2);
+        });
+
+        it('traverses off a variable, too', async() => {
+            const source = 'await *\n    .raider -> raid_info\n    POST `${ raid_info.name }`\n';
+
+            assert.deepEqual(await fire(source, [{ raider: { name: 'shadyhen' } }]), ['shadyhen']);
+        });
+
+        it('refuses `constructor` and friends', () => {
+            const { runtime } = harness();
+
+            assert.throws(() => globalThis.TTV_DSL.compile(parse('await *\n    POST `${ .a.constructor }`\n'), runtime), /may never be read/);
+        });
+    });
+
+    describe('v2 / `[badge ...]`', () => {
+        const channel = (badges) => ({ ginger_enby: { live: true, badges } });
+
+        /** @return {Promise<Array<String>>} what one event sent under the given badges */
+        const probe = async(header, badges) => {
+            const { runtime } = harness({ channels: channel(badges) });
+
+            await run(`await *\n    using ${ header }\n        POST \`ran\`\n`, runtime, { channel: runtime.defaultRealm.current });
+            await runtime.dispatch({ kind: 'x' });
+
+            return sent(runtime);
+        };
+
+        it('runs once when any listed badge is held, however many are', async() => {
+            assert.deepEqual(await probe('[vip moderator]', ['vip', 'moderator']), ['ran']);
+            assert.deepEqual(await probe('[vip moderator]', ['moderator']), ['ran']);
+        });
+
+        it('runs nothing when none is held', async() => {
+            assert.deepEqual(await probe('[vip moderator]', ['subscriber']), []);
+        });
+
+        it('still reads separate brackets as separate subjects, one run each', async() => {
+            assert.deepEqual(await probe('[vip] [moderator]', ['vip', 'moderator']), ['ran', 'ran']);
+        });
+    });
+
+    describe('v2 / `after`', () => {
+        it('fires once, not on repeat', async() => {
+            const { runtime, clock } = harness();
+
+            await run('after 5:00\n    POST `once`\n', runtime, {});
+            await clock.advance(30 * 60000);
+
+            assert.deepEqual(sent(runtime), ['once']);
+            assert.equal(clock.pending, 0);
+        });
+
+        it('schedules one per arrival inside a handler: "a minute after each raid"', async() => {
+            const { runtime, clock } = harness()
+                , source = 'await (.raider is SOMETHING)\n    .raider -> raid_name\n    after 1:00\n        POST `still here, ${ raid_name }?`\n';
+
+            await run(source, runtime, {});
+            await runtime.dispatch({ raider: 'a' });
+            await clock.advance(30000);
+            await runtime.dispatch({ raider: 'b' });
+            await clock.advance(60000);
+
+            assert.deepEqual(runtime.sink.map(entry => `${ entry.at } ${ entry.text }`), ['60000 still here, b?', '90000 still here, b?']);
+        });
+
+        it('takes any duration value, including a variable', async() => {
+            const { runtime, clock } = harness();
+
+            await run('(1:30 -> wait_time)\nafter wait_time\n    POST `waited`\n', runtime, {});
+            await clock.advance(89000);
+            assert.deepEqual(sent(runtime), []);
+            await clock.advance(1000);
+            assert.deepEqual(sent(runtime), ['waited']);
+        });
+
+        it('refuses something that is not a duration', async() => {
+            await rejects(run('after "soon"\n    POST `x`\n', harness().runtime, {}), /`after` needs a duration/);
+        });
+    });
+
+    describe('v2 / the `~` format operator', () => {
+        const { format } = globalThis.TTV_DSL.runtime;
+
+        it('renders durations through a clock pattern', () => {
+            assert.equal(format(300000, 'hh?:mm:ss'), '05:00');
+            assert.equal(format(3900000, 'hh?:mm:ss'), '01:05:00');
+            assert.equal(format(3900000, 'h:mm:ss'), '1:05:00');
+            assert.equal(format(65000, 'm:ss'), '1:05');
+        });
+
+        it('lets the largest unit absorb the overflow', () => {
+            assert.equal(format(90 * 60000, 'mm:ss'), '90:00');
+            assert.equal(format(90 * 60000, 'h:mm'), '1:30');
+        });
+
+        it('treats everything else as literal text, quoted text always, and rounds seconds down', () => {
+            assert.equal(format(61999, "m' min 's' sec'"), '1 min 1 sec');
+            assert.equal(format(61999, 'm:ss!'), '1:01!');
+            assert.equal(format(-65000, 'm:ss'), '-1:05');
+        });
+
+        it('renders a non-number as empty', () => {
+            assert.equal(format(NaN, 'mm:ss'), '');
+        });
+
+        it('is spelled `as` too, with identical meaning', async() => {
+            const { NodeType } = globalThis.TTV_DSL.ast
+                , symbol = parse('POST 5:00 ~ "mm:ss"\n').body[0].argument
+                , word = parse('POST 5:00 as "mm:ss"\n').body[0].argument;
+
+            assert.like(word, { type: NodeType.FormatExpression, subject: { milliseconds: 300000 }, pattern: { value: 'mm:ss' } });
+            assert.equal(symbol.type, word.type);
+
+            const { runtime } = harness();
+
+            await run('await *\n    POST `${ 5:00 as "mm:ss" } / ${ 90:00 ~ "h:mm" }`\n', runtime, {});
+            await runtime.dispatch({});
+
+            assert.deepEqual(sent(runtime), ['05:00 / 1:30']);
+        });
+
+        it('works in a template, the way it will be written', async() => {
+            const { runtime, clock } = harness();
+
+            await run('await (5:00 -> wait_time)\n    POST `waited ${ wait_time ~ "hh?:mm:ss" }`\n', runtime, {});
+            await clock.advance(300000);
+
+            assert.deepEqual(sent(runtime), ['waited 05:00']);
+        });
+    });
+
+    describe('v2 / `calc( ... )`', () => {
+        const calc = async(body, event = {}) => {
+            const { runtime, failures } = harness();
+
+            await run(`using +eval:calc -- "maths"\n    await *\n        POST \`\${ ${ body } }\`\n`, runtime, {});
+            await runtime.dispatch(event);
+
+            return { texts: sent(runtime), failures };
+        };
+
+        it('does JavaScript arithmetic on DSL values', async() => {
+            assert.deepEqual((await calc('calc(.raid_size * 2 + 1)', { raid_size: 21 })).texts, ['43']);
+            assert.deepEqual((await calc('calc(2 ** 3 ** 2)')).texts, ['512']);
+            assert.deepEqual((await calc('calc(7 % 3 - -1)')).texts, ['2']);
+        });
+
+        it('reads durations and numeric strings as numbers', async() => {
+            assert.deepEqual((await calc('calc(5:00 / 1000)')).texts, ['300']);
+            assert.deepEqual((await calc('calc(.n + 1)', { n: '41' })).texts, ['42']);
+        });
+
+        it('follows JavaScript on the edges: Infinity and NaN', async() => {
+            assert.deepEqual((await calc('calc(1 / 0)')).texts, ['Infinity']);
+            assert.deepEqual((await calc('calc(.missing + 1)')).texts, ['NaN']);
+        });
+
+        it('needs `eval:calc`', async() => {
+            const { runtime, failures } = harness();
+
+            await run('await *\n    POST `${ calc(1 + 1) }`\n', runtime, {});
+            await runtime.dispatch({});
+
+            assert.deepEqual(sent(runtime), []);
+            assert.ok(failures.some(entry => /not granted .\+eval:calc/.test(entry)), failures.join('\n'));
+        });
+
+        it('composes with `~`', async() => {
+            assert.deepEqual((await calc('calc(.mins * 60000) ~ "h:mm"', { mins: 95 })).texts, ['1:35']);
+        });
+    });
+
+    describe('v2 / lists', () => {
+        it('reads a group of two or more items as a list', async() => {
+            assert.deepEqual(await fire('await *\n    POST (`a`, `b`\n        `c`) % "+"\n', [{ x: 1 }]), ['a+b+c']);
+        });
+
+        it('keeps a one-item group transparent', () => {
+            const { NodeType } = globalThis.TTV_DSL.ast;
+
+            assert.like(parse('await (.a is "x")\n').body[0].subject, { type: NodeType.BinaryExpression });
+        });
+
+        it('binds a list once and picks from it in two places', async() => {
+            const source = [
+                '(`hi`, `hey`, `yo`) -> greet_list',
+                'await (.hello is SOMETHING)',
+                '    POST any from greet_list',
+                'await (.bye is SOMETHING)',
+                '    POST `${ * from greet_list } and bye`',
+                '',
+            ].join('\n');
+
+            const texts = await fire(source, [{ hello: 1 }, { bye: 1 }]);
+
+            assert.equal(texts.length, 2);
+            assert.ok(['hi', 'hey', 'yo'].includes(texts[0]), texts[0]);
+            assert.match(texts[1], /^(hi|hey|yo) and bye$/);
+        });
+
+        it('flattens ranges into the list', async() => {
+            assert.deepEqual(await fire('await *\n    POST (1 ... 3, 9) % ","\n', [{ x: 1 }]), ['1,2,3,9']);
+        });
+    });
+
+    describe('v2 / `using [badge]` is a gate, not a subject', () => {
+        it('keeps the message as the subject inside the gate', async() => {
+            const source = 'await (.command is SOMETHING)\n    using [moderator]\n        POST `${ .command } from ${ .sender } (${ _.sender })`\n';
+
+            assert.deepEqual(await fire(source, [{ command: 'so', sender: 'zip', badges: ['moderator'] }]), ['so from zip (zip)']);
+        });
+
+        it('still runs nothing for a sender without the badge', async() => {
+            const source = 'await (.command is SOMETHING)\n    using [moderator]\n        POST `${ .command }`\n';
+
+            assert.deepEqual(await fire(source, [{ command: 'so', badges: ['viewer'] }]), []);
+        });
+    });
+
+    describe('v2 / nested `await`s install once', () => {
+        it('does not pile up handlers as the outer `await` keeps firing', async() => {
+            const { runtime } = harness()
+                , source = 'await *\n    await (.command is "help")\n        POST `help`\n';
+
+            await run(source, runtime, {});
+
+            for(let index = 0; index < 5; ++index)
+                await runtime.dispatch({ n: index });
+
+            // The outer handler, plus exactly one nested one.
+            assert.equal(runtime.listenerCount, 2);
+
+            await runtime.dispatch({ command: 'help' });
+
+            assert.deepEqual(sent(runtime), ['help']);
+        });
+
+        it('does not pile up timers under a repeating timer', async() => {
+            const { runtime, clock } = harness()
+                , source = 'await 15:00\n    await 5:00\n        POST `tick`\n';
+
+            await run(source, runtime, {});
+            await clock.advance(60 * 60000);
+
+            // Installed on the first outer tick (15m), then every 5m: 20, 25, … 60.
+            assert.equal(sent(runtime).length, 9);
+            assert.equal(clock.pending, 2);
+        });
+
+        it('builds on the latest outer event, not the one that installed it', async() => {
+            const { runtime } = harness()
+                , source = [
+                    'using +scope:local',
+                    '    await (.room is SOMETHING)',
+                    '        .room -> room_name',
+                    '        await (.ping is SOMETHING)',
+                    '            POST `${ .ping } in ${ room_name }`',
+                    '',
+                ].join('\n');
+
+            await run(source, runtime, {});
+            await runtime.dispatch({ room: 'first' });
+            await runtime.dispatch({ room: 'second' });
+            await runtime.dispatch({ ping: 'hi' });
+
+            // Under `local`, `room_name` lives in the outer event's own scope. The nested
+            // handler was installed by the first event but reads through the second.
+            assert.deepEqual(sent(runtime), ['hi in second']);
+        });
+
+        it('does not re-check the trigger: "after !start", not "while !start"', async() => {
+            const source = 'await (.command is "start")\n    await (.message is SOMETHING)\n        POST `${ .message }`\n';
+
+            assert.deepEqual(await fire(source, [{ message: "too early" }, { command: 'start' }, { message: "now" }]), ['now']);
+        });
+
+        it('keeps a `with` filter in force for everything nested: "while live"', async() => {
+            const { runtime, realm } = harness()
+                , source = 'await * with (#live is true)\n    await (.message is SOMETHING)\n        POST `${ .message }`\n';
+
+            await run(source, runtime, { channel: realm.current });
+            await runtime.dispatch({ kind: 'hello' });
+            await runtime.dispatch({ message: "live one" });
+
+            realm.current.live = false;
+            await runtime.dispatch({ message: "offline" });
+
+            realm.current.live = true;
+            await runtime.dispatch({ message: "live again" });
+
+            assert.deepEqual(sent(runtime), ['live one', 'live again']);
+        });
+
+        it('installs once per `using` subject, not once in total', async() => {
+            const { runtime } = harness({ channels: { ginger_enby: { live: true, badges: ['vip', 'moderator'] } } })
+                , source = 'await *\n    using [vip] [moderator]\n        await (.ping is SOMETHING)\n            POST `pong`\n';
+
+            await run(source, runtime, { channel: runtime.defaultRealm.current });
+
+            for(let index = 0; index < 3; ++index)
+                await runtime.dispatch({ n: index });
+
+            assert.equal(runtime.listenerCount, 3);
+        });
+    });
+
+    describe('v2 / `-- "description"` on a `using` header', () => {
+        it('records the description and nothing else', () => {
+            assert.like(parse('using +eval:calc -- "Needed for the raid-size based timer"\n    POST `a`\n').body[0], {
+                permissions: ['eval:calc'],
+                description: "Needed for the raid-size based timer",
+            });
+        });
+
+        it('accepts single quotes, subjects and grants before it', () => {
+            assert.like(parse('using [vip] +read:datetime -- \'prints the time\'\n    POST `a`\n').body[0], {
+                subjects: [{ kind: 'badge', names: ['vip'] }],
+                permissions: ['read:datetime'],
+                description: "prints the time",
+            });
+        });
+
+        it('needs a quoted string, and must end the header', () => {
+            assert.throws(() => parse('using +eval -- why\n    POST `a`\n'), /must be followed by a quoted description/);
+            assert.throws(() => parse('using -- "why" +eval\n    POST `a`\n'), /ends the `using` header/);
+        });
+
+        it('is refused anywhere but a `using` header', () => {
+            assert.throws(() => parse('await *\n    POST -- "hi"\n'), /may only end a `using` header/);
+        });
+
+        it('changes nothing at run time', async() => {
+            const { runtime } = harness();
+
+            await run('using -- "just a label"\n    await *\n        POST `ran`\n', runtime, {});
+            await runtime.dispatch({ a: 1 });
+
+            assert.deepEqual(sent(runtime), ['ran']);
+        });
+    });
+
+    describe('v2 / an unknown realm fails only its own block', () => {
+        it('skips the block, reports once, and lets its siblings install', async() => {
+            const { runtime, failures } = harness()
+                , source = [
+                    'await *',
+                    '    using DISCORD/779741119520571456',
+                    '        POST `discord`',
+                    '    POST `twitch`',
+                    '',
+                ].join('\n');
+
+            await run(source, runtime, {});
+            await runtime.dispatch({ a: 1 });
+            await runtime.dispatch({ a: 2 });
+
+            assert.deepEqual(sent(runtime), ['twitch', 'twitch']);
+            assert.equal(failures.filter(entry => /Unknown realm "DISCORD"/.test(entry)).length, 1);
+        });
+    });
+
+    describe('v2 / tolerant parsing and templates', () => {
+        it('collects a lexical fault inside `${ ... }` instead of throwing', () => {
+            const { errors } = globalThis.TTV_DSL.parser.parseTolerant('await *\n    POST `a ${ $ } b`\n    POST `fine`\n');
+
+            assert.equal(errors.length, 1);
+        });
+    });
+
+    describe('v2 / `using` with no subject', () => {
+        it('grants without changing the subject', async() => {
+            const { runtime, clock } = harness({
+                jsBindings: { datetime: { time: () => '9:42pm' } },
+                jsPermissions: { 'datetime.time': 'read:datetime' },
+            });
+
+            await run('await *\n    using +read:datetime\n        POST `${ .who } at ${ &datetime.time() }`\n', runtime, {});
+            await runtime.dispatch({ who: 'zip' });
+
+            assert.deepEqual(sent(runtime), ['zip at 9:42pm']);
+        });
+
+        it('still needs something in the header', () => {
+            assert.throws(() => parse('using\n    POST `a`\n'), /needs a subject, a `\+permission`, `\+scope`, or a `-- "description"`/);
         });
     });
 })();

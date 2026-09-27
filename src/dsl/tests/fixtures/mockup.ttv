@@ -4,7 +4,7 @@ await * with (#live is true)
     // #prop → a property of this channel (same as `/#`)
     // /channel → the channel by the name "channel"
     // /channel#prop → a property of `channel`
-    // <badge> → a badge on this channel (`#<badge>`)
+    // [badge] → a badge on this channel
     // @user → a user named "user" on this channel (`#@user`)
     // :emote: → an emote on this channel (`#:emote:`)
     // .prop → property of parent `using` or `where` block
@@ -41,14 +41,14 @@ await * with (#live is true)
                     // .. → exclusive = 1..9; ... → inclusive = 1..10
                     `Congration. You'd done it. +${ any from(1 .. 10) }`
                 )
-    using <moderator>
+    using [moderator]
         await 5:00
             POST any from (
                 `can I mod today?`
                 `modCheck`
                 `who needs ban?`
             )
-    using <subscriber>
+    using [subscriber]
         await 5:00
             POST any from (
                 `burger`
@@ -58,7 +58,7 @@ await * with (#live is true)
                 `quessadilla`
                 `taco`
             )
-    using <vip>
+    using [vip]
         await 5:00
             POST any from (
                 `!lurk`
@@ -67,7 +67,7 @@ await * with (#live is true)
                 `!lurk watching tv`
                 `${ #name } is stinky :P`
             )
-    using <viewer> <everyone> <anyone> <all>
+    using [viewer] [everyone] [anyone] [all]
         await 5:00
             POST any from (
                 `!lurk homework :P`

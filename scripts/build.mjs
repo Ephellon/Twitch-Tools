@@ -39,6 +39,8 @@ const GECKO_MIN_VERSION = '142.0';
 const EXCLUDE = [
     /^dsl\/tests\//,
     /^dsl\/.+\.(md|ebnf)$/,
+    /^dsl\/(fake-page\.js|playground\.html)$/,   // Test and development aids
+    /^dsl\/host\//,                              // Host conformance suite and reference adapter
     /(^|\/)-[^/]*$/,            // Local scratch files, e.g. `-test.js` (see .gitignore)
     /(^|\/)\.[^/]*$/,           // Dotfiles
 ];

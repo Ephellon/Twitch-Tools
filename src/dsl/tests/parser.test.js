@@ -64,7 +64,7 @@
         });
 
         it('parses several juxtaposed `using` subjects as a list', () => {
-            assert.like(statement('using <viewer> <everyone> <anyone> <all>\n'), {
+            assert.like(statement('using [viewer] [everyone] [anyone] [all]\n'), {
                 type: NodeType.UsingStatement,
                 subjects: [
                     { type: NodeType.Selector, kind: 'badge', name: 'viewer' },
@@ -180,9 +180,8 @@
             assert.like(expression('#'), { type: NodeType.Selector, kind: 'channel' });
             assert.like(expression('#name'), { type: NodeType.Selector, kind: 'prop', name: 'name' });
             assert.like(expression('/shroud'), { type: NodeType.Selector, kind: 'channel', name: 'shroud' });
-            assert.like(expression('<moderator>'), { type: NodeType.Selector, kind: 'badge', name: 'moderator' });
+            assert.like(expression('[moderator]'), { type: NodeType.Selector, kind: 'badge', name: 'moderator' });
             assert.like(expression('@ephellon'), { type: NodeType.Selector, kind: 'user', name: 'ephellon' });
-            assert.like(expression(':kappa:'), { type: NodeType.Selector, kind: 'emote', name: 'kappa' });
             assert.like(expression('.sender'), { type: NodeType.Selector, kind: 'context', name: 'sender' });
         });
 
@@ -362,17 +361,17 @@
     // -- v2 -----------------------------------------------------------------
 
     describe('parser / variables and the two arrows', () => {
-        it('reads `-> name` as an assignment expression bound locally', () => {
+        it('reads `-> name` as an assignment expression', () => {
             assert.like(expression('(`hi` -> mod_msg)'), {
                 type: NodeType.AssignmentExpression,
                 name: 'mod_msg',
-                scope: 'local',
+                arrow: '->',
                 value: { type: NodeType.TemplateLiteral },
             });
         });
 
-        it('reads `=> name` as an assignment expression bound in the parent', () => {
-            assert.like(expression('(`hi` => mod_msg)'), { type: NodeType.AssignmentExpression, scope: 'parent' });
+        it('reads `=> name` as the same assignment, keeping only the spelling', () => {
+            assert.like(expression('(`hi` => mod_msg)'), { type: NodeType.AssignmentExpression, arrow: '=>' });
         });
 
         it('accepts an assignment as a whole statement, but not a bare expression', () => {
@@ -391,12 +390,12 @@
             });
         });
 
-        it('requires an interior underscore in a bound name', () => {
-            for(const name of ['x', '_x', 'x_', 'USERNAME'])
-                assert.throws(() => parse(`\`hi\` -> ${ name }\n`), /interior underscore/i);
+        it('requires a lower-case letter in a bound name; ALL-CAPS belongs to the host', () => {
+            for(const name of ['USERNAME', 'CLKFMT', 'A_B', 'X2'])
+                assert.throws(() => parse(`\`hi\` -> ${ name }\n`), /needs a lower-case letter/i);
 
-            assert.ok(parse('`hi` -> a_b\n'));
-            assert.ok(parse('`hi` -> mod_msg_2\n'));
+            for(const name of ['x', '_x', 'x_', 'clkFmt', 'mils', 'a_b', 'mod_msg_2', 'toReadable'])
+                assert.ok(parse(`\`hi\` -> ${ name }\n`), name);
         });
 
         it('refuses to bind a subject alias', () => {
@@ -451,26 +450,43 @@
             assert.throws(() => parse('await *\n    POST `a`\n    when .a is "y"\n        POST `b`\n'), /but there is none here/i);
         });
 
-        it('points `else` and friends at `when`', () => {
-            for(const word of ['else', 'elif', 'elseif'])
-                assert.throws(() => parse(`await *\n    ${ word } .a is "x"\n        POST \`a\`\n`), /use `when` for the next condition/i);
+        it('points `elif` and friends at `when` and `else`', () => {
+            for(const word of ['elif', 'elseif'])
+                assert.throws(() => parse(`await *\n    ${ word } .a is "x"\n        POST \`a\`\n`), /use `when <test>` for the next condition, or `else`/i);
 
             assert.throws(() => parse('await *\n    switch .a\n        POST `a`\n'), /when <expression> is/i);
-            assert.throws(() => parse('await *\n    default\n        POST `a`\n'), /case of `\*` is the default/i);
+            assert.throws(() => parse('await *\n    default\n        POST `a`\n'), /put an `else` after/i);
         });
 
-        it('points `calc` at the reservation note', () => {
-            assert.throws(() => parse('await *\n    POST calc(1)\n'), /arithmetic is not implemented/i);
+        it('parses `calc( ... )` with JavaScript precedence', () => {
+            assert.like(expression('calc(1 + 2 * 3 ** 2 ** 2)'), {
+                type: NodeType.CalcExpression,
+                expression: {
+                    operator: '+',
+                    right: { operator: '*', right: { operator: '**', right: { operator: '**' } } },
+                },
+            });
         });
 
-        it('points a binary `-` at the same note', () => {
-            assert.throws(() => parse('await *\n    POST 1 - 2\n'), /arithmetic is not implemented/i);
+        it('keeps `+ * / %` literal only inside `calc( ... )`', () => {
+            // Outside, `*` is still the wildcard and `/name` still a channel.
+            assert.like(expression('calc(.size * 2) is *'), { operator: 'is', right: { type: NodeType.Wildcard } });
+            assert.like(expression('calc((1 + 2) / #viewers % 7)'), { expression: { operator: '%', left: { operator: '/' } } });
+        });
+
+        it('refuses a unary sign as the base of `**`, as JavaScript does', () => {
+            assert.throws(() => expression('calc(-2 ** 2)'), /cannot be the base of `\*\*`/);
+            assert.like(expression('calc((-2) ** 2)'), { expression: { operator: '**' } });
+        });
+
+        it('points a binary `-` outside `calc` at `calc`', () => {
+            assert.throws(() => parse('await *\n    POST 1 - 2\n'), /only works inside `calc\( \.\.\. \)`/);
         });
     });
 
     describe('parser / permissions', () => {
         it('collects `+name` grants off a `using` header', () => {
-            assert.like(statement('using <vip> +read:datetime +eval:calc\n    POST `a`\n'), {
+            assert.like(statement('using [vip] +read:datetime +eval:calc -- "why"\n    POST `a`\n'), {
                 type: NodeType.UsingStatement,
                 permissions: ['read:datetime', 'eval:calc'],
                 subjects: [{ type: NodeType.Selector, kind: 'badge', name: 'vip' }],
@@ -478,7 +494,7 @@
         });
 
         it('allows grants interleaved with subjects', () => {
-            assert.like(statement('using <vip> +a:b <moderator>\n    POST `a`\n'), {
+            assert.like(statement('using [vip] +a:b [moderator]\n    POST `a`\n'), {
                 permissions: ['a:b'],
                 subjects: [{ name: 'vip' }, { name: 'moderator' }],
             });
@@ -542,14 +558,14 @@
             assert.ok(parse('await (.a is `plain`)\n'));
         });
 
-        it('reads `$:` as a path plus an argument list', () => {
-            assert.like(expression('$:Date.now()'), {
+        it('reads `&` as a path plus an argument list', () => {
+            assert.like(expression('&datetime.now()'), {
                 type: NodeType.JSInvokeExpression,
-                path: ['Date', 'now'],
+                path: ['datetime', 'now'],
                 arguments: [],
             });
 
-            assert.like(expression('$:Date.now(123)'), { arguments: [{ type: NodeType.Literal, value: 123 }] });
+            assert.like(expression('&datetime.now(123)'), { arguments: [{ type: NodeType.Literal, value: 123 }] });
         });
 
         it('treats commas as optional separators inside a list', () => {
@@ -568,7 +584,6 @@
         it('names every reading of ":" when a bare one turns up', () => {
             const error = assert.throws(() => parse('await :\n'), DSLParseError);
 
-            assert.match(error.message, /emote/i);
             assert.match(error.message, /duration/i);
             assert.match(error.message, /`when` case label/i);
         });

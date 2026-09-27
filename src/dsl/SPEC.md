@@ -1,4 +1,4 @@
-# TTV DSL — Language Specification v2
+# TTV DSL — Language Specification v2.1
 
 TTV DSL is an event-driven scripting language for the **TTV Tools** Chrome extension. It
 lets a viewer describe chat automation — "every five minutes, post one of these lines",
@@ -17,6 +17,32 @@ longer refused by the *tokenizer* — it is refused by the *parser*, with a bett
 variables (§9.2), permissions (§6.8), `when` (§6.7), the `%` operator (§5.9), `with` as a
 statement (§6.2), host calls (§5.12), and a handful of conveniences (§2.4, §2.6, §3.1,
 §3.2, §5.7, §5.8, §5.10).
+
+**v2.1 is not a superset of v2.** It came out of writing a real script (`realistic.ttv`)
+and fixing what fought back. These behaviours changed, all listed in §14.1a:
+
+- `*` now matches empty values too — it is `ANYTHING` (§3.7). The old meaning is `SOMETHING`.
+- `->` and `=>` are synonyms; a `+scope` mode decides where both bind, and the default
+  (`global`) shares a binding with siblings (§9.2). `=>` at the top level is no longer an
+  error.
+- A bare `%` matches any whitespace run containing a newline, not `%n%s` (§5.9).
+- `else`, `above` and `below` are keywords.
+- Badges are `[badge]` (or `[a b]`, "any of these"), emotes are plain text (`'kappa'`), and
+  host calls are `&Path.fn()`; `<badge>`, `--badge`, `:emote:` and `$:` are errors.
+- `using [badge]` is a gate that keeps the current subject (§6.3).
+- A nested `await` installs once, and an enclosing `await … with (…)` filter stays in force
+  for it (§6.1).
+
+It also adds `else` (§6.7), `is above` / `is below` / `is or above` / `is or below` (§5.4),
+`ANYTHING` / `SOMETHING` / `NOTHING` (§3.7), nested property reads `.a.b.c` (§5.13), a
+`using` with no subject (§6.3), `after` (§6.9), the `~` format operator (§5.14), arithmetic
+in `calc( ... )` (§5.15), lists (§8), host calls as statements (§6.6), functions — verbs the
+script defines (§6.10) — and loops (§6.11), with budget grants to pay for them (§12).
+Variable names no longer need an underscore: anything with a lower-case letter is the
+script's, ALL-CAPS is the host's (§9.3).
+
+What the language expects from whatever runs it — realms, events, verbs, host calls and the
+permission prompt — is specified separately, in **`HOST.md`**.
 
 - **Namespace:** `globalThis.TTV_DSL` — *not* `TTV_LANG`, and not `LANGUAGE`, which
   `ext/polyfill.js` already defines.
@@ -38,14 +64,15 @@ statement (§6.2), host calls (§5.12), and a handful of conveniences (§2.4, §
 
 ### Non-goals
 
-- General-purpose computation. There are no user-defined functions and no loop construct.
-  v2 adds variables (§9.2), but only so that a value computed once can be named; there is
-  still nowhere to put a *procedure*.
-- Arithmetic. There is no multiplication operator (see §3.7), subtraction is unclaimed, and
-  `calc` is reserved against the day it arrives (§14.2).
+- General-purpose computation for its own sake. Functions (§6.10) and loops (§6.11) exist
+  to keep chat scripts short, not to host algorithms: functions cannot install handlers or
+  see their caller's variables, arithmetic needs `calc( ... )` and `eval:calc` (§5.15), and
+  every step counts against a per-turn budget (§12).
 - Persistence. A script holds no state between runs.
-- Sandboxing against a hostile author. Scripts are written by the user, for the user; the
-  limits in §12 exist to catch mistakes, not attacks.
+- A security boundary against a determined attacker. Permissions (§6.8) and the host's
+  prompt (`HOST.md` §6) let a viewer see — and refuse — what a *shared* script asks for,
+  and the language never evaluates text as code; but the limits in §12 exist to catch
+  mistakes, and the host remains responsible for what it exposes.
 
 ---
 
@@ -116,7 +143,7 @@ one `DEDENT` per open block, and then `EOF`. An unclosed `(` at end of input is 
 ### 2.6 Commas *(v2)*
 
 A `,` is an **optional** item separator. It is legal — and entirely ignorable — inside
-`any from ( ... )`, inside a parenthesized group, in a `using` header, and in a `$(...)`
+`any from ( ... )`, inside a parenthesized group, in a `using` header, and in a `&Path.fn(...)`
 argument list. Leading, trailing and repeated commas collapse to nothing:
 
 ```
@@ -144,6 +171,11 @@ are the same literal — they scan through one routine with the quote as a param
 there is no way for them to drift apart. Recognized escapes are `\n`, `\r`, `\t`, `\b`,
 `\f`, `\v`, `\0`, and a backslash before any other character yields that character —
 so `\"`, `\'` and `\\` work as expected. A newline inside a string is an error.
+
+Unicode escapes use JavaScript's two spellings *(v2.1)*: `é` (exactly four hex digits)
+and `\u{1F49C}` (one to six, up to `10FFFF`). Anything else after `\u` is an error — in v2 a
+backslash before `u` was simply dropped, so `"é"` read as `u00e9`. The same escapes work
+in templates.
 
 ### 3.2 Template literals
 
@@ -245,8 +277,9 @@ as three tokens: number, wildcard, number.
 This is a deliberate reservation, not an oversight. `*` is by far the most common token in
 real scripts — `await *`, `using *`, `.message is *` — and making it context-dependent would
 mean the lexer had to know whether it sat in operand or operator position. The language gives
-up arithmetic it does not need in exchange for a wildcard that is unambiguous everywhere. A
-future version wanting multiplication should spell it `mul` or `×` rather than reclaiming `*`.
+up general arithmetic in exchange for a wildcard that is unambiguous everywhere.
+Multiplication lives inside `calc( ... )` (§5.15), where `*` is an operator; outside it,
+`*` is always the wildcard.
 
 As an operand, the wildcard means "anything present":
 
@@ -254,7 +287,25 @@ As an operand, the wildcard means "anything present":
 - `.command is *` — a command was issued.
 - `await *` — any event at all.
 
-Formally, `x is *` is true when `x` is not `null`, `undefined`, `""`, or an empty list.
+#### `ANYTHING`, `SOMETHING`, `NOTHING` *(v2.1)*
+
+`*` is one of three presence tests, and is another spelling of the first:
+
+| Test | `x is <test>` is true when `x` is… |
+| :--- | :--- |
+| `ANYTHING` (`*`) | any value at all — `""` and `[]` included. Only absence fails. |
+| `SOMETHING` | present **and** not `""` or `[]`. |
+| `NOTHING` | absent, `""`, or `[]`. |
+
+The difference between the first two is the one a real script trips on. Twitch delivers a
+bare `!so` with an **empty** argument, so `.argument is *` is true for it — something *was*
+sent, it just says nothing. "Did they give a name?" is `.argument is SOMETHING`.
+
+The three words are resolved by the parser, not the constant table, so a host constant
+cannot shadow them. They work with `in`, with `=` (§5.8) and as `when` case labels, exactly
+as `*` does. As a truth value, `ANYTHING` and `SOMETHING` are true and `NOTHING` is false.
+
+> **Changed in v2.1.** In v2, `x is *` meant what `SOMETHING` means now.
 
 ---
 
@@ -269,9 +320,8 @@ Every selector produces a `Selector` node tagged with a `kind`.
 | `/channel` | `/ginger_enby` | `channel` | The channel with that name. |
 | `/channel#prop` | `/ginger_enby#live` | `prop` | A property of a named channel. |
 | `REALM/path` | `DISCORD/779741119520571456` | `realm` | A realm-qualified subject. |
-| `<badge>` | `<moderator>` | `badge` | A badge, if the subject in scope holds it. |
+| `[badge …]` | `[moderator]`, `[vip moderator]` | `badge` | The first listed badge the subject in scope holds — "any of these". |
 | `@user` | `@ephellon` | `user` | A user in the channel in scope. |
-| `:emote:` | `:kappa:` | `emote` | An emote in the channel in scope. |
 | `.prop` | `.sender`, `.href` | `context` | A property of the enclosing subject (§9). |
 
 Notes:
@@ -279,12 +329,22 @@ Notes:
 - A bare `/` is equivalent to a bare `#`: the channel in scope.
 - `/channel#prop` is two tokens fused by the parser, and only when they are **adjacent** in
   the source. `/ginger_enby #name` with a space is two separate selectors — which is what
-  makes `using <viewer> <everyone>` work by juxtaposition.
+  makes `using [viewer] [everyone]` work by juxtaposition.
 - `REALM/path` requires the realm name to be all-caps and glued directly to the path. The
   tokenizer will not read `TWITCH// note` as a realm, because `//` is checked first.
-- `<badge>` resolves against the innermost subject that actually carries badges, falling
+- An **unregistered realm fails only its own block** *(v2.1)*. It is reported once and
+  resolves to nothing, so `using DISCORD/…` contributes no iteration and every sibling block
+  still installs. In v2 it threw, which took the whole enclosing body down with it.
+- `[badge …]` *(v2.1)* was `<badge>`. Several names in one bracket — `[vip moderator]`,
+  commas optional — resolve **once**, to the first one held, so `using [vip moderator]` runs
+  its body once for a viewer holding both. Separate brackets, `[vip] [moderator]`, are
+  separate subjects and run once each. The list is one line; `[]` is an error. `<badge>` and
+  the short-lived `--badge` are lexical errors that name the new spelling.
+- **Emotes have no sigil** *(v2.1)*. An emote is text in chat, so it is written as text:
+  `'kappa'`. `:kappa:` is a lexical error that says so.
+- A badge list resolves against the innermost subject that actually carries badges, falling
   back to the channel. Inside `await * with (...)` the subject is the *event*, and an event
-  has no badges, so `using <moderator>` there means the channel's badge — the reading the
+  has no badges, so `using [moderator]` there means the channel's badge — the reading the
   author intended.
 - A bare word that is not a keyword is an **identifier**, resolved against the host's
   constant table (`USERNAME`, and whatever else the extension publishes). An identifier is
@@ -304,13 +364,13 @@ Lowest (loosest) to highest (tightest):
 | 0 | `->`, `=>` | **non-chaining** | bind a name *(v2, §9.2)* |
 | 1 | `or` | left | logical disjunction |
 | 2 | `and` | left | logical conjunction |
-| 3 | `is`, `in` | **non-associative** | equality, membership |
-| 4 | `%…` | left | regex replacement / list join *(v2, §5.9)* |
+| 3 | `is`, `in`, `is [or] above/below` | **non-associative** | equality, membership, numeric comparison *(comparisons v2.1, §5.4)* |
+| 4 | `%…`, `~` / `as` | left | replacement / list join *(v2, §5.9)*, format *(v2.1, §5.14)* |
 | 5 | `<\|`, `of` | left | pipe |
 | 6 | `where`, `\|` | left | filter *(`\|` is v2, §5.10)* |
 | 7 | `..`, `...` | non-associative | exclusive, inclusive range |
 | 8 | `not`, `-`, `=` | prefix | unary negation, exact comparison *(`=` is v2, §5.8)* |
-| 9 | member / sigil access | — | tighter than every operator |
+| 9 | member / sigil access | — | tighter than every operator, including glued `.a.b` *(v2.1, §5.13)* |
 
 Row 0 is not a real row. Assignment is **not** in the operator table at all, because its
 right-hand side is a name rather than an expression — there is nothing for precedence
@@ -318,6 +378,9 @@ climbing to climb. The parser handles it as a tail pass gated on the outermost p
 level, which makes it the loosest construct in the language for free and keeps every other
 row in the table honest about being a binary operator over two expressions. It is listed
 here only so the reading order is complete.
+
+Arithmetic is not in this table either. Inside `calc( ... )` a separate, JavaScript-ordered
+grammar applies (§5.15); outside it, `+ * / %` are not arithmetic at all.
 
 ### 5.2 Why `where` binds tighter than `<|` (`of`)
 
@@ -376,12 +439,38 @@ await .a is .b is .c        // DSLParseError
 - **`is`** — equality. Strings compare **case-insensitively**, because every identifier this
   language compares (channel names, user names, commands) is case-insensitive on Twitch, and
   scripts are written by hand: `.sender is "Jjay_89"` must match `jjay_89`. Objects compare
-  by identity or by matching `name`. A wildcard operand means "is present" (§3.7).
+  by identity or by matching `name`. A presence operand (`*`, `SOMETHING`, `NOTHING`) asks
+  the presence question instead (§3.7).
 - **`in`** — membership. A string right-hand side means substring (case-insensitive), an
   array means "some element equals", an object means "has this key".
 - **`not`** — logical negation over the truthiness rule below.
-- **Truthiness** — an empty list is false, as are `null`, `undefined`, `""` and `0`. A
-  wildcard is always true.
+- **Truthiness** — an empty list is false, as are `null`, `undefined`, `""` and `0`. `*` and
+  `SOMETHING` are always true; `NOTHING` is always false.
+
+#### Numeric comparison *(v2.1)*
+
+```
+if .raid_size is above 50          // >
+if .raid_size is below 50          // <
+if .raid_size is or above 50       // >=
+if .raid_size is or below 50       // <=
+```
+
+The comparison word follows `is`; the inclusive form puts `or` between them, so the line
+reads as the sentence it is. `above` and `below` are keywords and are legal **only** after
+`is` / `is or` — `.size above 50` is an error that says the `is` is missing. `is or` means
+nothing else in the language (`or` never starts an operand), so this steals no existing
+spelling, and plain `a or b` is unchanged. The comparisons share `is`'s precedence and its
+non-associativity (§5.3).
+
+Both sides are read as numbers:
+
+- a number is itself; a duration (`1:00`) is its milliseconds;
+- a string is read as a number, then as a duration (`"61000"`, `"0:30"`, `"90s"`);
+- anything else — missing, a boolean, a list, an unreadable string — is `NaN`.
+
+`NaN` answers every comparison **false**. A comparison against a value that is not there is
+not an error; it is a question whose answer is "no".
 
 ### 5.5 Ranges
 
@@ -464,7 +553,14 @@ class sequence is replaced.
 
 The sequence is a run of `%X` pairs. The leading `%` belongs to the first class, so `%n%s`
 is two classes and a bare `%` is zero — which is how `%` alone can mean the default without
-a second spelling. A bare `%` expands to `%n%s`.
+a second spelling.
+
+**A bare `%` matches any whitespace run that contains a newline** — `\s*\n\s*` — so it
+flattens line breaks and the padding around them, and leaves the spaces *within* a line
+alone. *(Changed in v2.1.)* It used to expand to `%n%s`, which concatenates to `\n+\s+`: a
+newline *followed by* more whitespace. That let a lone `\n` and a `\r\n` slip through, which
+is not what "flatten this block" means to anyone reading it. `%n%s` spelled out still means
+exactly `\n+\s+`.
 
 | Sequence | Meaning | Regex | Zero-width |
 | :--- | :--- | :--- | :--- |
@@ -527,41 +623,37 @@ than by agreement — the two spellings cannot drift apart. Likewise `of` and `<
 
 See §5.2 for the precedence gotcha this inherits.
 
-### 5.11 The fourth job of `:` *(v2)*
+### 5.11 The jobs of `:` *(v2)*
 
-`:` now means four things: a duration (`15:00`), an emote (`:kappa:`), a permission segment
-(`+eval:calc`), and a `when` case label (`"help":`).
+`:` means three things: a duration (`15:00`), a permission segment (`+eval:calc`), and a
+`when` case label (`"help":`). *(v2.1 removed the fourth, the `:kappa:` emote.)*
 
-Three of those are decided lexically — durations are claimed at the leading digit,
-permissions at the leading `+` — which leaves the emote branch choosing between an emote and
-a case label. It cannot: a case label is a bare colon with nothing to pattern-match on.
-
-So the tokenizer no longer refuses a bare `:`. It emits a `COLON` token, and the **parser**
-produces the diagnostic, because only the parser knows which of the four readings was
-expected:
+Durations are claimed at the leading digit and permissions at the leading `+`, so a `:` that
+reaches its own branch is a case label. The tokenizer emits a `COLON` token, and the
+**parser** produces the diagnostic when one turns up somewhere else:
 
 ```
-DSLParseError: Unexpected ":"; expected an emote like ":kappa:", a duration like "15:00",
-or a `when` case label like `"help":`
+DSLParseError: Unexpected ":"; expected a duration like "15:00", or a `when` case label
+like `"help":`
 ```
 
 This is the only place where v2 changes a v1 behaviour. The fault is still reported, at the
 same position, with strictly more information; only its class changed from
 `DSLSyntaxError` to `DSLParseError`.
 
-### 5.12 Host JavaScript calls, `$(...)` *(v2)*
+### 5.12 Host JavaScript calls, `&Path.fn(...)` *(v2)*
 
-`$(Path.fn( ... ))` calls a function the **host** has published to the script.
+`&Path.fn( ... )` calls a function the **host** has published to the script.
 
 ```
-POST `!lurk What time is it? It's ${ $(Date.now()) }`
-POST `${ $(Math.max(1, 9, 3)) }`
+POST `!lurk What time is it? It's ${ &datetime.now() }`
+POST `${ &Math.max(1, 9, 3) }`
 ```
 
 The dotted path scans as a single token whose value is the segment array. The runtime walks
 a host-supplied binding table — a plain object — and calls what it finds. **At no point does
 a string become code.** There is no `eval` and no `new Function` anywhere in this
-implementation, and `$(...)` is the construct that would most obviously have wanted one. A path
+implementation, and `&Path.fn(...)` is the construct that would most obviously have wanted one. A path
 is data all the way down.
 
 Segments named `__proto__`, `prototype` or `constructor` are refused outright. That is not a
@@ -569,22 +661,120 @@ substitute for the host simply not registering dangerous objects, but walking in
 `constructor` is the one mistake that would turn a property lookup back into code
 evaluation.
 
-**No bindings are registered by default.** `$(Date.now())` fails as loudly as `DISCORD` does
-(§11) until the host opts in — a script should not silently acquire capabilities because the
-name happened to exist in JavaScript.
+**No host bindings are registered by default.** `&datetime.now()` fails as loudly as
+`DISCORD` does (§11) until the host opts in — a script should not silently acquire
+capabilities because the name happened to exist in JavaScript.
 
-Every path maps to a required permission (§6.8). The host supplies the map; anything
-unlisted requires `eval:js`:
+Every host path maps to a required permission (§6.8), and the host must map **every**
+function it binds — `createRuntime` refuses to start otherwise. There is no fallback:
 
 ```js
 createRuntime({
-    jsBindings: { Date: { now: () => Date.now() } },
-    jsPermissions: { 'Date.now': 'read:datetime' },
+    jsBindings: { datetime: { now: () => Date.now() } },
+    jsPermissions: { 'datetime.now': 'read:datetime' },
 });
 ```
 
-An unregistered path, a path that resolves to a non-function, and a missing permission are
-`DSLRuntimeError`, `DSLRuntimeError` and `DSLPermissionError` respectively.
+An unregistered path and a missing permission are `DSLRuntimeError` and
+`DSLPermissionError` respectively.
+
+**Call or read, never hand over** *(v2.1)*. With parentheses glued on, `&x.y( ... )` calls a
+method; without, `&x.y` reads a constant. Reading a method, or calling a constant, is an
+error — so a function value never becomes a script value.
+
+#### The built-in set, `eval:js` *(v2.1)*
+
+Five globals are built in, under `eval:js`, and nothing else is. The host cannot extend,
+remap or shadow them.
+
+Every **own static member** of `Math`, `Number`, `Date`, `JSON` and `Array` is reachable
+— constants read (`&Math.PI`), methods called (`&Math.max(1, 2)`, `&Date.now()`,
+`&JSON.parse(text)`, `&Array.from(list)`) — **except** a short blocklist: `prototype`,
+`constructor`, `length`, `name`, `caller`, `arguments`. Nothing inherited (`toString`,
+`valueOf`, …) is reachable, and symbol-keyed members cannot be named.
+
+It is a blocklist on purpose: names on these globals are only ever added, never changed, so
+whatever an engine adds later (`Math.f16round`, `JSON.rawJSON`) is available without an
+edit. `Array.from` and `Array.fromAsync` are capped at 10,000 items, since an array-like
+with a huge `length` would otherwise exhaust memory in one call.
+
+`eval:js` grants this set **only**; it never opens a host binding.
+
+---
+
+### 5.13 Nested properties, `.a.b.c` *(v2.1)*
+
+A `.name` **glued** to the expression before it reads a property off that expression's
+value:
+
+```
+POST `${ .raider.name } was playing ${ .raider.last.category }`
+.raider -> raid_info
+POST `${ raid_info.name }`
+```
+
+It works off anything — a `.prop`, a `#prop`, a variable, a `&Path.fn(...)` result, a
+parenthesized group. A missing link anywhere in the chain reads as empty, exactly as `.prop`
+on a subject with no such property does; it is never an error. `constructor`, `prototype`
+and `__proto__` may never be read.
+
+**Glued means no space.** `.raider .name` is still two separate subjects, which is what keeps
+`using .a .b` meaning "either of these". Member access binds tighter than every operator.
+
+### 5.14 The format operator, `~` *(v2.1)*
+
+`<value> ~ <pattern>` — or, spelled as a word, `<value> as <pattern>` — renders a duration
+as text:
+
+```
+POST `waited ${ wait_time ~ "hh?:mm:ss" }`      // 05:00, or 01:05:00 past the hour
+POST `waited ${ wait_time as "hh?:mm:ss" }`     // the same
+```
+
+`~` and `as` are one operator with two spellings, sharing a token type exactly as `<|`/`of`
+and `|`/`where` do: brevity for those who want it, a sentence for those who don't. Neither
+can drift from the other.
+
+| In the pattern | Means |
+| :--- | :--- |
+| `hh` `mm` `ss` | hours, minutes, seconds, padded to two digits |
+| `h` `m` `s` | the same, unpadded |
+| a unit then `?` | drop this unit — and the text straight after it — when it is zero and every unit before it was dropped |
+| `'text'` | literal text, always (so `m' min'` is not read as minutes-then-"in") |
+| anything else | literal |
+
+The **largest** unit present absorbs the overflow: `"mm:ss"` on ninety minutes is `90:00`.
+Seconds round down. The value is read as a number the way `above`/`below` read one (§5.4) —
+a duration is its milliseconds — and anything that is not a number renders as empty.
+
+`~` shares `%`'s precedence and is left-associative, so it formats what a pipe selected and
+a comparison sees the formatted text. Durations are the only thing it formats today; the
+pattern language leaves room for dates later.
+
+### 5.15 Arithmetic, `calc( ... )` *(v2.1)*
+
+Arithmetic lives inside `calc( ... )`, and only there:
+
+```
+using +eval:calc -- "scales the shoutout to the raid"
+    await (.raider is SOMETHING)
+        POST `that's ${ calc(.raid_size * 2 + 1) } half-gremlins`
+```
+
+Like CSS's `calc()`, the parentheses change what the characters inside mean: `+ - * / %`
+and `**` are operators there, with **JavaScript's** precedence and semantics — `**` binds
+tightest and is right-associative, then `* / %`, then `+ -`; `1 / 0` is `Infinity`. Outside
+the parentheses, `*` is still the wildcard, `+` a permission, `%` the replacement operator
+and `/` a channel.
+
+- Operands are ordinary values — numbers, durations (as milliseconds), variables, `.prop`,
+  `#prop`, host calls, and nested parentheses — read as numbers the way `above`/`below`
+  read them. Anything unreadable is `NaN`, and `NaN` spreads, as in JavaScript.
+- As in JavaScript, a unary sign cannot be the base of `**`: `-2 ** 2` is an error; write
+  `(-2) ** 2` or `-(2 ** 2)`.
+- Evaluating a `calc` needs the **`eval:calc`** permission, and like every `eval` grant it
+  needs a description.
+- A binary `-` outside `calc` is an error pointing here.
 
 ---
 
@@ -614,6 +804,53 @@ await (.message is *)
 
 The awaited expression is evaluated with the **event** as its subject, so `.sender` inside
 both the condition and the body refers to the event.
+
+#### Nested `await`s install once *(v2.1)*
+
+An `await`'s body re-runs every time it fires. Its plain statements run every time — that is
+the point of a handler — but an `await` **inside** it is installed only **once**, the first
+time it is reached. Reaching it again does not install a second copy; it only updates the
+context the installed handler builds on, so bindings the outer handler made are read from its
+**most recent** firing.
+
+```
+await 15:00
+    goto #                   // every 15 minutes
+    await 5:00               // installed on the first tick; then every 5 minutes, once
+        POST `modCheck`
+```
+
+"Once" is per statement **and per loop iteration**: an `await` inside `using [vip] [moderator]`
+installs once for each of the two subjects, and one inside `with (<list>)` once per list
+position. The number of handlers a script holds is therefore bounded by its source, never by
+how long it has run. (In v2 every firing installed another copy, so handlers and timers piled
+up and one command drew one reply per pile.)
+
+#### `with (…)` stays in force for what is nested *(v2.1)*
+
+The filter on `await … with (<filter>)` is re-checked every time a handler **nested inside
+it** fires, against that handler's event. So
+
+```
+await * with (#live is true)
+    await (.command is "help")
+        REPLY `...`
+```
+
+answers `!help` only **while** the channel is live — it stops when the stream goes offline
+and resumes when it comes back. That is the "binds a filter to a scope" reading.
+
+The **trigger** — the expression right after `await` — is *not* re-checked. It says when the
+nested handlers are installed, not when they may run:
+
+```
+await (.command is "start")
+    await (.message is SOMETHING)     // every message AFTER `!start`
+        REPLY `...`
+```
+
+Re-testing `.command is "start"` against each later message would make that inner handler
+unreachable.
 
 ### 6.2 `with`
 
@@ -663,13 +900,54 @@ subject that resolves to nothing — a badge the viewer does not hold, a channel
 exist — simply contributes no iteration.
 
 ```
-using <viewer> <everyone> <anyone> <all>
+using [viewer everyone anyone all]
     await 5:00
         POST `i have risen`
 ```
 
-Several selectors on one line therefore mean "any of these". `using *` binds whatever is
+Several selectors on one line are separate subjects, and the body runs once per one that
+resolves. To mean "any of these badges" — run once if any is held — list them in one
+bracket, as above. `using *` binds whatever is
 already in scope, which is how the mockup's `using *` means "each live channel".
+
+#### A `using` with no subject *(v2.1)*
+
+A header may carry only grants (§6.8) or only `+scope` (§9.2). The body then runs **once,
+under the subject already in force**:
+
+```
+using +read:datetime
+    await 30:00
+        POST `it is ${ &datetime.time() }`
+```
+
+This is what lets a permission be scoped to one block without also changing what `.prop`
+means inside it. A `using` with nothing at all in its header is still an error.
+
+#### Describing a `using` *(v2.1)*
+
+A header may end with `--` and a quoted string, saying what the block is for — usually why
+it asks for the grants it does:
+
+```
+using +eval:calc -- "Needed for the raid-size based timer"
+    await 5:00
+        ...
+```
+
+The description is recorded on the node (`description`) for a host to show — beside a
+permission prompt, say — and changes nothing at run time. It must be a plain quoted string,
+it must be the **last** thing on the header line, and there may be one. A header may carry a
+description and nothing else, which makes a labelled section. `--` anywhere else is an error,
+and `--name` glued together is the retired badge spelling.
+
+#### A badge is a gate *(v2.1)*
+
+`using [moderator]` asks whether the badge is held, and if it is, runs the body **under the
+subject already in force** — it does not rebind the subject to the badge. Inside an
+`await (.command is …)`, `.command`, `.argument` and `_` inside `using [moderator]` therefore
+still read the message. (In v2 the subject became the badge's name, so every `.prop` inside
+came back empty, silently.) Channels, realms and `*` still rebind as before.
 
 ### 6.4 `if`
 
@@ -683,8 +961,8 @@ enclosing `using`/`await`/`where` bound.
 
 An `if` that opens no indented body is a parse error.
 
-There is no `else` or `elif`. Use `when` (§6.7), which covers both that shape and the
-switch shape with one keyword.
+Further branches are `when <test>` siblings, and the last may be `else` (§6.7). There is
+no `elif`.
 
 ### 6.5 `goto`
 
@@ -695,7 +973,7 @@ goto 1st <| .links where ("twitch.tv" in .href)
 
 Navigation is delegated to the realm in scope.
 
-### 6.6 Verb calls
+### 6.6 Verb calls, and host calls as statements
 
 Any all-caps bare word in statement position is a verb call, optionally followed by an
 expression:
@@ -714,6 +992,18 @@ the host can register `WHISPER` without touching the language.
 Both built-in verbs **drop a blank message** rather than sending it: if the text matches
 `/^\s*$/` nothing is sent. `REPLY ""` is therefore a deliberate no-op, and is used in the
 mockup as one.
+
+**Host calls as statements** *(v2.1)*. A line may also be a host call on its own, for a call
+made for what it does rather than what it returns:
+
+```
+using +write:html.text -- "shows the last raider on the page"
+    await (.raider is SOMETHING)
+        &html.setText("#last-raid", .raider)
+```
+
+That, a verb, and an assignment are the only expressions allowed to stand alone; any other
+bare expression on a line is still an error (§9.2).
 
 ### 6.7 `when` *(v2)*
 
@@ -742,10 +1032,17 @@ The discriminant is evaluated once. Each label is compared against it with the o
 the head — `is` uses equality (§5.4), `in` uses membership — and the **first** match runs.
 At most one branch ever runs.
 
-A `*` label is the default, and needs no special handling anywhere: comparing anything
-against the wildcard already means "is present" (§3.7), which is precisely the question a
-default should ask. (One consequence: if the discriminant is empty, `*` does *not* match,
-because an empty value is not present.)
+A `*` label matches any present value (§3.7) — so it is *almost* a default, but not when
+the discriminant is missing entirely. The true default is an **`else` after the cases**, at
+the same indentation as the `when`:
+
+```
+when .command is
+    "help":
+        REPLY `try: help, gamble, whoami`
+else
+    REPLY `no idea what that is`
+```
 
 #### Chain form
 
@@ -756,17 +1053,40 @@ if .command is "help"
     REPLY `help`
 when .command is "gamble"
     REPLY `gamble`
-when .command is *
+else
     REPLY `something else`
 ```
 
-This is what the language has instead of `else if`. It is written as a sibling because that
+`else if <test>` is accepted as another spelling of it (below). It is written as a sibling because that
 is how it reads on the page, and because it keeps the off-side rule uniform — every branch
 of a chain sits at the same indentation, rather than marching rightward. The parser folds
 each chain `when` into the preceding statement's `alternate`, so three source statements
 become one tree.
 
 A chain `when` with no `if` or `when` before it is a parse error.
+
+#### `else` *(v2.1)*
+
+`else` + block, as the **last** sibling of a chain. It runs when every branch before it
+declined — for a switch-form `when`, when no case matched. Like a chain `when`, it is folded
+into the chain's final `alternate`.
+
+A bare `else` takes **no condition**. **`else if <test>`** is the one exception: it is
+another spelling of a chain `when <test>`, produces the same node, and may be followed by
+further branches like any chain `when`:
+
+```
+if so_target is SOMETHING
+    POST `everyone go follow @${ so_target }`
+else if last_raider is SOMETHING
+    POST `go follow @${ last_raider }`
+else
+    POST `give me a name`
+```
+
+`else when` is still an error — `when` already means "else if" on its own, so doubling it
+says nothing new. Nothing may follow a bare `else` in the same chain — a branch there could
+never run — and an `else` with no `if` or `when` before it is an error.
 
 #### Neither form rebinds the subject
 
@@ -775,26 +1095,59 @@ bound. A case body reads the same subject the head compared.
 
 #### The poisoned words
 
-`else`, `elif`, `elseif`, `switch`, `case` and `default` are reserved for exactly one
-purpose: so that using them produces a diagnostic that points at `when`, instead of a
-generic "expected a statement" that leaves the author guessing.
+`elif`, `elseif`, `switch`, `case` and `default` are reserved for exactly one purpose: so
+that using them produces a diagnostic that points at `when` and `else`, instead of a generic
+"expected a statement" that leaves the author guessing.
 
 ```
-else if .a is "x"
-→ `else` is not a keyword in TTV DSL; use `when` for the next condition
+elif .a is "x"
+→ `elif` is not a keyword in TTV DSL; use `when <test>` for the next condition, or `else` for the last one
 ```
 
 ### 6.8 Permissions *(v2)*
 
-A `using` header may carry `+name` or `+name:sub` grants:
+A `using` header may carry grants, spelled `+action:resource[.part…][.*]`:
 
 ```
-using <vip> +read:datetime +eval:calc
+using [vip] +read:datetime +eval:calc -- "Prints the time; calc is reserved for later"
     await 5:00
-        POST `It's ${ $(Date.now()) }`
+        POST `It's ${ &datetime.now() }`
 ```
 
-Grants may be interleaved with subjects anywhere on the line. They are read directly by the
+Permissions are checked by **host calls** (§5.12): the host maps each `&Path` it exposes to
+the permission it needs, and must map every one. The built-in JavaScript set (§5.12) needs
+`eval:js`. Nothing else in the language checks a grant.
+
+#### The permission list *(v2.1)*
+
+The list of permissions is **fixed**. A grant that is not on it — or a `.*` that matches
+nothing on it — is a `DSLPermissionError` **at compile time**, before anything runs. Without
+that, a typo like `+read:htlm.*` would be accepted and silently grant nothing.
+
+| Permission | Covers |
+| :--- | :--- |
+| `read:datetime` | the clock |
+| `read:html.text` · `read:html.attributes` · `read:html.structure` | reading the page |
+| `write:html.text` · `write:html.attributes` | changing the page |
+| `parse:html.text` · `parse:html.attributes` · `parse:html.structure` | turning HTML text the script already has into serializable data |
+| `eval:calc` | arithmetic (reserved; §14.2) |
+| `eval:js` | the built-in `Math` / `Number` / `Date` / `JSON` / `Array` set (§5.12) — never a host binding |
+| `eval:budget_1M` · `_10M` · `_100M` | raising the per-turn step budget (§12) |
+
+A host may add to the list (`createRuntime({ permissions: [...] })`). A host path mapped to
+a permission that is not on the list is refused when the runtime is created, since no script
+could ever be granted it.
+
+#### `write` and `eval` grants need a description *(v2.1)*
+
+Any `+write:…` or `+eval:…` grant must come with a `-- "…"` description in the same header
+(§6.3) — it is a parse error otherwise. These are the grants that change the page or run
+code, and the description is what a host shows the viewer when asking them to allow it.
+`read` and `parse` grants need none.
+Grants may be interleaved with subjects anywhere on the line, and a header may carry grants
+and no subject at all (§6.3). `+scope` looks like a grant but is not one — it sets the
+binding rule (§9.2), is never added to the grant set, and so can never satisfy a check for a
+permission called `scope`. They are read directly by the
 `using` parser rather than through the expression grammar, which is what makes a
 `+permission` illegal everywhere else — a `+` that reaches any other position is a parse
 error naming the `using` header, and a `+` that is not a permission at all is a *lexical*
@@ -805,25 +1158,125 @@ error naming the absence of arithmetic.
 A block holds its own grants plus every ancestor's. It never sees a sibling's. The union is
 computed once at compile time and carried as a frozen `Set`.
 
-#### Matching is exact
+#### Matching is exact, or one written-out level
 
-`Set.has`, and nothing else. There is **no prefix logic anywhere**, and that absence is the
-feature:
+A grant covers a permission in exactly two cases: it **is** that permission, or it is the
+permission's parent followed by `.*` — `+read:html.*` covers `read:html.text` and
+`read:html.attributes`. That is all. There is **no implicit prefix logic**, and that absence
+is the feature:
 
-- `+eval` does **not** grant `eval:calc`. A grant that silently widens is a grant nobody can
-  audit — writing `+eval` to get "just the small one" would quietly hand over everything
-  under it.
-- `+eval:calc` does **not** grant `eval`. The narrow spelling is the one a cautious author
-  reached for on purpose, and promoting it would defeat that.
+- `+read:html` does **not** grant `read:html.text`. Only `.*` widens, and only because the
+  script wrote it out — the grant says how far it reaches.
+- `+read:html.*` reaches **one** level: not `read:html.text.inner`, and never across actions
+  (`write:html.text`) or into another resource.
+- `+eval:calc` and `+eval:js` are unrelated permissions. Neither implies the other.
 
-Write out every permission you want. There is a regression test asserting both directions,
-specifically so that a future implementer cannot "helpfully" add prefix matching.
+`*` may only be the last part, after a `.`: `+read:*`, `+read:html.*.text` and `+a:b:c` are
+lexical errors. There are regression tests for every case above, so that a future
+implementer cannot "helpfully" add prefix matching.
 
 A missing grant raises **`DSLPermissionError`**, which is split out of `DSLRuntimeError` for
 the same reason `DSLLimitError` is: a host wants to treat "this script asked for a
 capability you did not give it" as a permissions prompt, not as a bug report. Because
 matching is exact, the error is a reliable signal that a grant is genuinely absent rather
 than merely written at the wrong granularity.
+
+### 6.9 `after` *(v2.1)*
+
+`after <duration>` waits **once**, then runs its body once:
+
+```
+after 1:00
+    POST `one minute in — say hi to chat`
+```
+
+`await 1:00` would repeat; `after` does not. The duration is any value, read when the
+statement is reached — `after wait_time` works — and something that is not a duration is a
+runtime error. `after ... with (<filter>)` checks the filter when the timer fires.
+
+Inside a handler, every arrival schedules its own `after`: `after 1:00` in a raid handler
+means "a minute after *each* raid". That cannot pile up — each timer fires and is done. Its
+body shares the enclosing handler's installation, so an `await` inside an `after` still
+installs once (§6.1), and an enclosing `with (...)` still has to hold when it fires.
+
+### 6.10 Functions, `define` and `return` *(v2.1)*
+
+A function is a **verb the script defines**. It is named in ALL-CAPS, like `POST`, and called
+the same way — its name, then its arguments, no parentheses:
+
+```
+define TOREADABLE(mils)
+    "hh?:mm:ss" -> clkFmt
+    return mils as clkFmt
+
+await (.raider is SOMETHING)
+    POST TOREADABLE 5:00                 // "05:00"
+    POST `took ${ TOREADABLE wait_time }`
+    TOREADABLE 5:00 -> readable          // alone on a line; the arrow binds the result
+    CLAMP .raid_size, 1, 100             // several arguments, comma-separated
+```
+
+**Defining.** `define NAME(param, ...)` + an indented body, **at the top level only**. The
+name is ALL-CAPS and may not be a verb or constant the host already provides; parameters are
+ordinary variable names (§9.3), each listed once. A function may be called before its
+definition, and may call itself — calls nest at most 100 deep.
+
+**Calling.** Arguments are separated by commas; a call with none is just the name. Alone on
+a line, the arguments take the rest of it, as a verb's does — except an arrow at the end,
+which binds the call's *result*. Inside an expression, the arguments stop before `%`,
+`~`/`as`, the comparisons, `and`/`or` and arrows, so `POST TOREADABLE x as "mm:ss"`
+formats the *result*. Parenthesize an argument to put any of those inside it. Passing more
+arguments than there are parameters is an error when the script compiles; fewer leave the
+rest empty.
+
+**`return <value>`** ends the call with that value; a call that reaches the end of its body
+returns empty. `return` outside a `define` is a parse error.
+
+**What a function can see.** Its parameters, its own locals and the host's constants — **not**
+the caller's variables. What it needs comes in as arguments. It does see the caller's
+subject and channel, so `.sender` and `POST` behave as they would at the call site.
+
+**What a function may do.** Compute, branch, loop, call verbs, call functions. It may **not**
+contain `await`, `after` or `using`: a function computes, it does not install handlers —
+installing on every call is the pile-up nested `await`s were fixed to avoid — and it does not
+change grants mid-call.
+
+**Permissions.** `define NAME(...) with +perm ...` lists what the function needs. A caller
+must hold **all** of them, or the call is refused; the function then runs holding **exactly**
+those, whatever else its caller holds. A function declaring nothing runs with nothing.
+
+```
+define ADD(a, b) with +eval:calc
+    return calc(a + b)
+```
+
+### 6.11 Loops, `for` / `break` / `renew` *(v2.1)*
+
+```
+for 0; 10; 2                 // start; stop; step — stop is excluded, like `..`
+    POST `${ $ }`            // $ is the innermost loop's counter: 0, 2, 4, 6, 8
+
+for as row: 0; 3             // a label names the loop — and its counter
+    for greet_list           // or walk a list: $ is each item
+        if $ is `hey`
+            renew            // next iteration (continue)
+        if row is 2
+            break row        // leave the loop named `row`
+        POST `${ row }: ${ $ }`
+```
+
+- **Numeric form** `start; stop[; step]`: numbers or durations. `stop` is excluded. `step`
+  defaults to 1 and may be negative to count down. A step of 0, or one pointing away from
+  `stop`, is an error rather than an empty or endless loop.
+- **List form** `for <value>`: each item in turn — a list, a range, anything `any from`
+  accepts.
+- **`$`** is the innermost loop's counter. A label (`for as name:`) also binds the counter
+  under that name, so an inner loop can read an outer one's. `$` outside a loop is a parse
+  error; `$name` is not a thing.
+- **`break [label]`** leaves the innermost loop, or the one named. **`renew [label]`** starts
+  its next iteration. A label that no enclosing loop carries is a parse error, and neither
+  can leave a function.
+- Every iteration costs a step, so a runaway loop is stopped by the budget (§12).
 
 ---
 
@@ -838,7 +1291,9 @@ There is no depth limit beyond the step budget.
 
 ## 8. `any from`
 
-`any from ( ... )` chooses one item at random.
+`any from ( ... )` chooses one item at random. `* from ( ... )` is the same construct
+*(v2.1)* — `*` is `ANYTHING` (§3.7). A `*` counts as `* from` only when `from` follows it
+directly; anywhere else it is the wildcard.
 
 **Items are separated by whitespace, not commas:**
 
@@ -862,6 +1317,22 @@ REPLY `Congration. You'd done it. +${ any from(1 .. 10) }`
 
 An empty `any from ()` is a parse error. The choice is drawn from the runtime's injected
 random source, which is what makes it testable.
+
+### Lists *(v2.1)*
+
+A parenthesized group holding **two or more** items is a list, with items separated exactly
+as in `any from` — by line or by optional comma. One item is still just a grouped value.
+
+```
+(`hi`, `hey`, `hello there`) -> greet_list
+
+await (.message is SOMETHING)
+    REPLY any from greet_list
+```
+
+`any from` and `* from` accept any value after `from`, not only a parenthesized group, so a
+list bound once can be picked from anywhere. Ranges contribute their members to a list just
+as they do to `any from`: `(1 ... 3, 9)` is `1, 2, 3, 9`. `%` joins a list (§5.9).
 
 ---
 
@@ -889,33 +1360,51 @@ await (.links is *)                                  <- depth 1: subject is the 
 link. Under a dynamic rule the filter would have to guess, and nested filters would shadow
 each other unpredictably.
 
-### 9.2 Variables and the two arrows *(v2)*
+### 9.2 Variables, the arrows, and `+scope` *(v2.1)*
 
-A value can be given a name. There are two arrows, and they differ only in **where** the
-name is written:
-
-```
-`can I mod today?` -> mod_msg     // this block, and everything inside it
-`can I mod today?` => mod_msg     // that, PLUS every later sibling and their insides
-```
-
-`->` binds into the **current** scope. `=>` binds into the **parent** scope, which is the
-same thing as saying "and my later siblings can see it too".
+A value can be given a name with either arrow. **`->` and `=>` are synonyms.**
 
 ```
-using *
+`can I mod today?` -> mod_msg
+`can I mod today?` => mod_msg     // identical
+```
+
+Where the name lands — and so who can read it — is decided once, for the whole script, by
+its **scope mode**, set with `+scope` in a top-level `using`:
+
+| Mode | A binding is visible to… |
+| :--- | :--- |
+| `+scope:local` | the block that made it, and what that block nests. The block is locked. |
+| `+scope:global` *(default)* | that, **plus** the block's siblings and what they nest. |
+| `+scope:universal` | every block in the script. |
+
+A bare `+scope` is `+scope:global`, and a script with no `+scope` at all runs under
+`global`. So the common case needs nothing:
+
+```
+await 1:00
+    `checked in` -> shift_note
+
+await 1:10
+    POST `${ shift_note }`        // visible: the blocks are siblings
+```
+
+`+scope` is legal **only** in a top-level `using`; anywhere deeper it is a parse error, as is
+an unknown mode or giving it twice. It applies to that `using`'s whole body:
+
+```
+using +scope:local
     await 1:00
-        `checked in` => shift_note     // written one level out
-
+        `a` -> sib_note
     await 1:10
-        POST `${ shift_note }`         // therefore visible here
+        POST `${ sib_note }`      // empty: `local` keeps it in the first block
 ```
 
-Had that been `->`, the second `await` would read empty: the binding would have gone into
-the first `await`'s own scope, which the second one was never inside.
-
-`=>` at the top level of a program is a **compile-time** error — there is no parent scope to
-write into, and failing loudly beats writing into nowhere.
+> **Changed in v2.1.** In v2 the two arrows differed — `->` wrote to the current scope and
+> `=>` to the parent — and `=>` at the top level was a compile error. Remembering which was
+> which, and wrapping scripts in a do-nothing `using *` so `=>` had a parent, were the two
+> things writing `realistic.ttv` found most annoying. Picking the rule once, per script,
+> removes both.
 
 #### Assignment is an expression
 
@@ -946,25 +1435,25 @@ That is the *only* expression allowed to stand alone as a statement. A bare expr
 line is still an error, because a language whose statements are verbs has no use for a value
 nobody reads — and accepting one would turn every misspelled verb into a silent no-op.
 
-### 9.3 The underscore rule *(v2)*
+### 9.3 Names: ALL-CAPS is the host's *(v2.1)*
 
-**A variable name must contain an interior underscore.** `mod_msg` and `wait_time` are
-names; `x`, `_x`, `x_` and `USERNAME` are not.
+**A variable name needs a lower-case letter.** `clkFmt`, `mils`, `x` and `mod_msg` are
+names; `USERNAME` and `CLKFMT` are not. The same rule covers parameters and loop labels.
 
-This is the entire mechanism that distinguishes a variable from a host constant, and it has
-to exist because the two are *lexically identical* — `USERNAME` and `mod_msg` are both just
-`IDENT`. The lexer cannot tell them apart and neither can a reference site.
+ALL-CAPS belongs to the host's constants and verbs — and to the script's own functions,
+which are verbs it defines (§6.10). It has to: `CLKFMT "..."` at the start of a line already
+reads as a verb call. That one fact is the whole distinction between a name the script made
+and a name the host published, because the lexer sees both as the same `IDENT`.
 
-So the rule is enforced at the **binding site only**:
+- Binding: the name must contain a lower-case letter, or it is a `DSLParseError`.
+- Reference: **nothing is rejected.** A name with a lower-case letter resolves
+  variable-first, then constant; an ALL-CAPS one is a constant (or a function call).
 
-- Binding: the name must match `[A-Za-z0-9]+(_[A-Za-z0-9]+)+`, or it is a `DSLParseError`.
-- Reference: **nothing is rejected.** A name with an interior underscore resolves
-  variable-first, then constant. A name without one can only be a constant.
+The subject aliases (§5.7) — `_`, `__this__`, `__self__`, `__me__` — are refused as binding
+targets by name.
 
-Enforcing only at creation is also why the subject aliases (§5.7) never collide with it:
-`_`, `__this__`, `__self__` and `__me__` are only ever *read*, so they can never trip a
-binding-site check. They are additionally refused as binding targets by name, so the error
-says what is actually wrong rather than complaining about underscores.
+> **Changed in v2.1.** v2 required an interior underscore (`mod_msg`), which made `mils` and
+> `clkFmt` illegal for no reason a reader could see.
 
 ### 9.4 Reading an unbound variable *(v2)*
 
@@ -974,7 +1463,7 @@ This mirrors `.prop` on a subject that has no such property, and it is load-bear
 than merely lenient. Consider:
 
 ```
-using <moderator>
+using [moderator]
     await (5:00 -> wait_time)
         any from ( ... ) -> mod_msg
 
@@ -999,11 +1488,14 @@ The interesting part is how a child scope is built: the array is copied with `co
 copies the **array** but leaves every ancestor `Map` shared **by reference**. So:
 
 - writing into `envs[depth]` lands in a `Map` only this subtree holds → visible downward
-  only;
+  only (`local`);
 - writing into `envs[parentDepth]` lands in a `Map` every sibling subtree is *already
-  holding* → visible to later siblings, cousins and nieces.
+  holding* → visible to siblings and what they nest (`global`; at the top level, where there
+  is no parent, it falls back to slot 0);
+- writing into `envs[0]` lands in the one `Map` every scope holds → visible everywhere
+  (`universal`).
 
-The two arrows are therefore the same operation against two different slot indices, and a
+The three modes are therefore the same operation against three different slot indices, and a
 read is a plain outward walk from the reference's own depth to zero, then the constant table.
 No scope-chain object, no runtime linking.
 
@@ -1023,15 +1515,22 @@ DSLSyntaxError: Indentation mixes tabs and spaces; pick one (2:1)
 
 | Class | Raised by | Meaning |
 | :--- | :--- | :--- |
-| `DSLSyntaxError` | tokenizer | Unscannable input: a stray character, bad indentation, an unterminated string or template, an unclosed bracket. |
-| `DSLParseError` | parser | Scannable but ungrammatical. |
-| `DSLRuntimeError` | runtime | An unknown verb, realm or identifier; a malformed range; an unregistered `$(...)` path. |
+| `DSLSyntaxError` | tokenizer | Unscannable input: a stray character, bad indentation, an unterminated string or template, an unclosed bracket, a malformed permission or Unicode escape, a retired spelling (`<badge>`, `:emote:`, `$:`). |
+| `DSLParseError` | parser | Scannable but ungrammatical — including a `write`/`eval` grant with no description, and `+scope` below the top level. |
+| `DSLRuntimeError` | runtime | An unknown verb or identifier; a malformed range; `after` given a non-duration; an unregistered `&` path, or one outside the built-in set; reading a method or calling a constant; and, from `createRuntime`, a host binding with no permission. |
 | `DSLLimitError` | runtime | A turn exceeded its step or time budget (§12). |
-| `DSLPermissionError` | runtime | A block reached for something its `using` header was not granted (§6.8). |
+| `DSLPermissionError` | compiler, runtime | At compile time, a grant not on the permission list; at run time, a block reaching for something its `using` header was not granted (§6.8). |
+
+An unregistered **realm** is reported as a `DSLRuntimeError` through the logger, once, and
+skips only the block that named it (§4) — it does not stop the script.
 
 `DSLSyntaxError`'s remit narrowed slightly in v2: a bare `:` (§5.11) and an unterminated
 `${` (§3.2) are no longer lexical faults. The first became a `DSLParseError` with a better
 message; the second became legal.
+
+Faults after a script has started — inside a handler or a timer — never throw out of
+`dispatch`: they go to the logger, and only the faulting handler stops. Only
+`DSLLimitError` stops the whole script.
 
 ### 10.1 Recovery
 
@@ -1062,6 +1561,11 @@ Everything a script can reach is injected into `createRuntime({ ... })`:
 | `random` | `() => [0, 1)` — drives `any from`. |
 | `logger` | `{ log, warn, error }`. |
 | `limits` | `{ steps, wallMs }`. |
+| `jsBindings` | What `&path.fn()` host calls reach (§5.12). Empty by default. |
+| `jsPermissions` | The permission each host call needs. Every bound function must be listed. |
+| `permissions` | Extra names for the permission list (§6.8). |
+
+The full contract — including event shapes and the permission prompt — is `HOST.md`.
 
 The injection is not ceremony. A fake clock and a seeded generator are what make
 `await 15:00` and `any from ( ... )` assertable: the whole test suite runs under Node in
@@ -1069,8 +1573,9 @@ milliseconds, with no browser and no Twitch connection.
 
 `TWITCH` ships as an in-memory stub. **`DISCORD` is deliberately unregistered** — the
 extension has no Discord integration today, and the mockup's `using DISCORD/...` is
-aspirational. A script naming an unregistered realm fails loudly rather than doing nothing
-quietly. A host that implements Discord registers it and the same script starts working.
+aspirational. A block naming an unregistered realm is skipped, with one error reported, and
+the rest of the script runs. A host that implements Discord registers it and the same
+script starts working.
 
 ---
 
@@ -1088,6 +1593,19 @@ allowing a tight loop inside a single handler to burn the entire allowance.
 | `steps` | 100000 | every statement, loop iteration and range element |
 | `wallMs` | 30000 | the same points, against `wallClock` |
 
+**Raising the budget** *(v2.1)*. A script that genuinely needs more — a long loop — may grant
+itself a larger step budget, like any other capability:
+
+```
+using +eval:budget_1M -- "walks the whole emote list"
+```
+
+`eval:budget_1M`, `eval:budget_10M` and `eval:budget_100M` raise the per-turn step limit to
+one, ten or a hundred million. The budget is **global**, so the grant applies to the whole
+script; the largest one wins. Like every `eval` grant it needs a description, and like every
+grant the host can show it to the viewer before the script runs. The time limit is
+unchanged.
+
 Elapsed time is measured with `wallClock`, never with `clock`: `clock` is the script's own
 sense of time, and a script that waits five minutes has not *executed* for five minutes.
 
@@ -1096,18 +1614,19 @@ sense of time, and a script that waits five minutes has not *executed* for five 
 ## 13. The annotated example
 
 ```
-// When any channel goes live... Defaults to Twitch if no realm is specified
+// While the channel is live... Defaults to Twitch if no realm is specified.
+// The `with` filter stays in force for every `await` nested below (§6.1).
 await * with (#live is true)
     // # → this channel (same as `/`)
     // #prop → a property of this channel (same as `/#`)
     // /channel → the channel by the name "channel"
     // /channel#prop → a property of `channel`
-    // <badge> → a badge on this channel (`#<badge>`)
+    // [badge] → the sender holds this badge; [a b] → any of these (§4)
     // @user → a user named "user" on this channel (`#@user`)
-    // :emote: → an emote on this channel (`#:emote:`)
     // .prop → property of parent `using` or `where` block
 
-    // Watch Discord for announcement messages
+    // Watch Discord for announcement messages. Until a host registers DISCORD, this one
+    // block is skipped and the rest still runs.
     // Shadyhen's `Skyward Sanctuary/Announcements`
     using DISCORD/779741119520571456
         await (.sender is "streamcord") and ("twitch.tv" in .content)
@@ -1119,6 +1638,7 @@ await * with (#live is true)
     using *
         await 15:00
             goto #
+            // Installed once, on the first tick — not again every 15 minutes (§6.1).
             await 5:00
                 // Only send the message(s) on this channel...
                 if #name is "ginger_enby"
@@ -1139,14 +1659,14 @@ await * with (#live is true)
                     // .. → exclusive = 1..9; ... → inclusive = 1..10
                     `Congration. You'd done it. +${ any from(1 .. 10) }`
                 )
-    using <moderator>
+    using [moderator]
         await 5:00
             POST any from (
                 `can I mod today?`
                 `modCheck`
                 `who needs ban?`
             )
-    using <subscriber>
+    using [subscriber]
         await 5:00
             POST any from (
                 `burger`
@@ -1156,7 +1676,7 @@ await * with (#live is true)
                 `quessadilla`
                 `taco`
             )
-    using <vip>
+    using [vip]
         await 5:00
             POST any from (
                 `!lurk`
@@ -1165,7 +1685,8 @@ await * with (#live is true)
                 `!lurk watching tv`
                 `${ #name } is stinky :P`
             )
-    using <viewer> <everyone> <anyone> <all>
+    // One bracket: runs once if any of these is held, not once per badge.
+    using [viewer everyone anyone all]
         await 5:00
             POST any from (
                 `!lurk homework :P`
@@ -1188,9 +1709,11 @@ Each entry keeps the title v1 filed it under.
 - **No variables or assignment** — Resolved. `expr -> name` binds into the current scope and
   `expr => name` into the parent, which is what makes a binding visible to later siblings
   (§9.2). Assignment is an expression, so `await (5:00 -> wait_time)` both binds and awaits.
+  *(Changed in v2.1: the arrows are synonyms and `+scope` decides where names bind.)*
 - **No `else` / `elif`** — Resolved by `when` (§6.7), which covers the chain shape *and* the
   switch shape with one keyword. `else`, `elif`, `elseif`, `switch`, `case` and `default`
-  are now reserved solely to produce an error that points at `when`.
+  are now reserved solely to produce an error that points at `when`. *(Changed in v2.1:
+  `else` and `else if` are real.)*
 - **`where` as a statement** — Resolved by `with` as a block statement (§6.2), which
   branches on its expression's *result*: a boolean runs the block once, anything else
   iterates it.
@@ -1203,7 +1726,7 @@ Each entry keeps the title v1 filed it under.
 - **No `Identifier` in the original node inventory** — Resolved without a sigil. A variable
   is told from a constant by its *shape*: a variable name must contain an interior
   underscore (§9.3). `mod_msg` is a name, `USERNAME` is a constant, and the rule is checked
-  only where a name is created.
+  only where a name is created. *(Changed in v2.1: a lower-case letter, not an underscore.)*
 - **No escape syntax inside templates for `${`** — Resolved. An **unterminated** `${` is
   literal text; a **matched** one is still an interpolation, and still an error if its
   contents are ungrammatical (§3.2). The escape idiom is `${ "${x}" }`.
@@ -1214,39 +1737,95 @@ New in v2, with no v1 entry to answer to:
 
 - **Permissions** — A `using` header may grant `+name` or `+name:sub`. Grants accumulate
   downward and match **exactly**: `+eval` does not grant `eval:calc`, and `+eval:calc` does
-  not grant `eval` (§6.8).
+  not grant `eval` (§6.8). *(Changed in v2.1: a fixed list, one-level `.*`, and required
+  descriptions.)*
 - **The `%` operator** — Trims, then replaces runs of named character classes; joins a list
-  instead (§5.9). A bare `%` means `%n%s`.
+  instead (§5.9). A bare `%` means `%n%s`. *(Changed in v2.1: `\s*\n\s*`.)*
 - **`|` as a `where` alias** — Same token type, so precedence and AST shape cannot drift
   (§5.10). Likewise `of` for `<|`, which v1 documented but never implemented.
-- **Host JavaScript calls** — `$(Date.now())` walks a host-supplied binding table. Property
-  lookup and call, never code from text; nothing registered by default (§5.12).
+- **Host JavaScript calls** — `$:Date.now()` walks a host-supplied binding table. Property
+  lookup and call, never code from text; nothing registered by default (§5.12). *(Changed
+  in v2.1: spelled `&`, natives lower-case, and `eval:js` limited to built-ins.)*
 - **Single-quoted strings** — `'text'` is the same literal as `"text"` (§3.1).
-- **Optional commas** — Ignorable separators inside lists, `using` headers and `$(...)` argument
+- **Optional commas** — Ignorable separators inside lists, `using` headers and `&Path.fn(...)` argument
   lists; never meaningful between statements (§2.6).
 - **Subject aliases** — `_`, `__this__`, `__self__` and `__me__` name the current subject
   (§5.7).
 - **The fourth job of `:`** — A bare `:` is a `when` case label, so the tokenizer no longer
   refuses it; the parser owns the diagnostic (§5.11). This is the only v1 behaviour v2
-  changed.
+  changed. *(v2.1 removed the emote job, leaving three.)*
+
+### 14.1a Changed in v2.1
+
+From writing `realistic.ttv` and ranking what fought back:
+
+- **`->` vs `=>` needed the scope tree in your head** — Resolved. They are synonyms; a
+  per-script `+scope:local|global|universal` decides where both bind, defaulting to
+  `global` (§9.2).
+- **`=>` forced a do-nothing wrapper `using *`** — Resolved by the same change: `global` at
+  the top level binds into slot 0, so there is always somewhere to write.
+- **No comparison operators** — Resolved. `is above`, `is below`, `is or above`,
+  `is or below`, over numbers and number-likes; anything unreadable is `NaN`, and `NaN` is
+  always false (§5.4).
+- **`.prop` read one level** — Resolved. A glued `.name` reads a property off any
+  expression: `.raider.last.category` (§5.13).
+- **`when true` as `else`** — Resolved. `else` is a keyword (§6.7), and `else if <test>` is
+  accepted as a spelling of `when <test>`. `else when` is an error.
+- **`* from ( ... )`** — New. Another spelling of `any from`: `*` is `ANYTHING`, so "anything
+  from" reads the same (§8).
+- **"Did they pass an argument?" was `is *`** — Resolved. `*` is `ANYTHING`; `SOMETHING` and
+  `NOTHING` join it (§3.7). **Behaviour change:** `*` now matches `""` and `[]`.
+- **Bare `%` missed a lone `\n`** — Resolved. A bare `%` matches `\s*\n\s*` (§5.9).
+  **Behaviour change.**
+- **`<badge>` became `[badge]`**, with `[a b]` meaning "any of these" and resolving once;
+  **`:emote:` became plain text**, `'kappa'`; and **`$:Path.fn()` became `&Path.fn()`**
+  (§4, §5.12). Every old spelling is a lexical error that names the new one.
+- **`-- "description"` on a `using` header** — New (§6.3).
+- **`using [badge]` rebound the subject to the badge** — Resolved. A badge is a gate; the
+  body runs under the unchanged subject (§6.3). **Behaviour change.**
+- **Nested `await`s re-installed on every firing** — Resolved. A nested `await` installs once
+  per site, and an enclosing `with (…)` stays in force for it: `await * with (#live is true)`
+  means "while live" (§6.1). **Behaviour change.**
+- **An unknown realm broke its whole enclosing body** — Resolved. It now fails only its own
+  block (§4).
+- **No user-defined functions** — Resolved: `define` makes a verb the script can call like
+  `POST` (§6.10).
+- **No loops** — Resolved: `for` over a numeric range or a list, with `$`, labels, `break`
+  and `renew` (§6.11); the budget can be raised with `+eval:budget_*` (§12).
+- **Variable names needed an interior underscore** — Replaced: any name with a lower-case
+  letter is a variable; ALL-CAPS is the host's, and the script's functions' (§9.3).
+- **One-shot timers** — Resolved by `after` (§6.9).
+- **Durations printed as milliseconds** — Resolved by the `~` format operator (§5.14).
+- **No arithmetic** — Resolved by `calc( ... )` (§5.15), gated on `eval:calc`.
+- **No way to share a list between blocks** — Resolved: a multi-item group is a list, and
+  `any from` takes any value (§8).
+- **Host calls could not stand alone** — Resolved: a line may be a host call, for calls made
+  for their effect (§6.6).
+- **`eval:js` was a catch-all for unmapped host calls** — Resolved. It covers only the static
+  members of `Math` / `Number` / `Date` / `JSON` / `Array`, minus a blocklist (§5.12); every host binding must be
+  mapped, and `createRuntime` refuses to start otherwise. Constants are read (`&Math.PI`),
+  methods called (`&Math.max(1, 2)`). **Behaviour change.**
+- **Native host calls are lower-case**, keyed by permission resource: `&html.*`,
+  `&datetime.*` (HOST.md §7).
+- **Permissions are a fixed list** with `action:resource.part` names and an explicit
+  one-level `.*`; unknown grants fail at compile time, and `write`/`eval` grants need a
+  `-- "description"` (§6.8). **Behaviour change:** `+a:b:c` and off-list names are errors.
+- **Granting a permission forced a subject scope** — Resolved. A `using` may carry grants
+  or `+scope` and no subject (§6.3).
 
 ### 14.2 Still open
 
-- **Multiplication.** `*` is permanently the wildcard (§3.7). Arithmetic, if it arrives,
-  needs different spelling — `mul`, `×`, or a `calc( ... )` form. `calc` is now reserved,
-  and produces an error saying so; using it will require the `eval:calc` permission.
-- **Subtraction.** `-` still parses only as a prefix operator. Binary `-` is unclaimed, and
-  a `-` after a complete expression now reports the arithmetic reservation rather than
-  "expected end of line".
-- **No user-defined functions**, and no way to share a list of replies between two blocks.
-  Variables (§9.2) name a *value*, not a procedure.
-- **No loops.** `await` is still the only repetition, and it is driven by time or events.
-- **DISCORD is unimplemented.** `idea.ttv` uses it; the runtime does not register it, and a
-  script naming it still fails loudly. Same posture as `$(...)` bindings (§5.12).
-- **`await` duration semantics are "repeat".** A one-shot delay has no spelling. `once`
-  or `after` is the obvious candidate.
-- **Error recovery granularity.** Recovery is still per line; a fault inside a long
-  `any from` discards the whole construct.
+- **DISCORD is unimplemented.** `idea.ttv` uses it; the runtime does not register it. A
+  script naming it has that one block skipped, with one error reported (§4).
+- **The host.** `HOST.md` specifies it; the extension, being rewritten, does not implement it
+  yet.
+
+Settled, and recorded so they are not reopened by accident:
+
+- **`+` and `?` are reserved** for a later, distinct use. They will not become shorthands for
+  `SOMETHING` / `NOTHING`.
+- **Error recovery stays per line.** A fault inside a long `any from` reports that fault and
+  discards the construct; the author is told exactly what was wrong, and that is the point.
 Not open, but easy to mistake for a bug, so recorded here too: **`where` and `|` bind
 tighter than `is`/`in`**, so a filter whose predicate contains a comparison must be
 parenthesized — `.links | ("twitch.tv" in .href)`. That is the canonical spelling and a
@@ -1254,11 +1833,11 @@ settled rule (§5.2), not a defect awaiting a fix.
 
 ---
 
-## 15. Integration (not in this slice)
+## 15. Integration
 
-This slice is additive and self-contained: it adds `dsl/` and touches nothing else. Wiring it
-into the extension is deliberately left for the next slice, and is recorded here so that work
-starts with no rediscovery cost.
+The host contract — options, realms, events, verbs, host calls, permission prompts — is
+**`HOST.md`**. This section keeps only the extension-specific wiring notes. `fake-page.js`
+and `playground.html` are a working host to compare against.
 
 ### 15.1 `manifest.json`
 
@@ -1269,6 +1848,8 @@ The DSL files must load **in dependency order**, before any script that calls in
 ```json
 "dsl/errors.js", "dsl/tokens.js", "dsl/tokenizer.js", "dsl/ast.js", "dsl/parser.js", "dsl/runtime.js", "dsl/compiler.js", "dsl/index.js"
 ```
+
+(`fake-page.js` is for tests and the playground; the extension does not load it.)
 
 No new permission is required. The compiler emits closures, never source text, so no
 `unsafe-eval` relaxation of `content_security_policy` is needed.
@@ -1289,7 +1870,7 @@ precisely so this step needs no changes to `dsl/`.
 
 ### 15.3 Host wiring
 
-The content script supplies the real implementations:
+See `HOST.md` for the full contract. In outline, the content script supplies:
 
 ```js
 let runtime = TTV_DSL.createRuntime({
@@ -1299,8 +1880,8 @@ let runtime = TTV_DSL.createRuntime({
 
     // Nothing here is registered by default. A script naming a path the host has not
     // published fails loudly rather than silently acquiring the capability (§5.12).
-    jsBindings: { Date: { now: () => Date.now() } },
-    jsPermissions: { 'Date.now': 'read:datetime' },
+    jsBindings: { datetime: { now: () => Date.now() } },
+    jsPermissions: { 'datetime.now': 'read:datetime' },
 });
 
 let context = await TTV_DSL.run(scriptText, runtime);
@@ -1313,3 +1894,10 @@ Chat messages are delivered with `runtime.dispatch(event)`; every live `await` s
 
 `node dsl/tests/run.js` runs the suite under Node. `dsl/tests/index.html` runs the same suite
 in a browser with plain `<script>` tags. Neither requires a build step or `node_modules`.
+
+### 15.5 Playground
+
+`dsl/playground.html` is an editor with highlighting and live diagnostics, the permission
+report from `TTV_DSL.grants`, a fake clock, a fake channel, an event composer and a fake page
+for `&html.*`. Browsers refuse `<script src>` over `file://` in some configurations; any
+static server works, e.g. `python -m http.server --directory ttv-tools/dsl`.

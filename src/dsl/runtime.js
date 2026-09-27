@@ -128,11 +128,129 @@ if(typeof require === 'function' && typeof module === 'object')
     /** Classes that match a *position* rather than a character, and so cannot be quantified. */
     const PERCENT_ZERO_WIDTH = Object.freeze(new Set(['b', 'B']));
 
-    /** What a bare `%` expands to. */
-    const PERCENT_DEFAULT = Object.freeze(['n', 's']);
+    /** What a bare `%` matches: any whitespace run that contains at least one newline.
+     *
+     * Not `%n%s`. Concatenation would make that `\n+\s+` — a newline *followed by* more
+     * whitespace — so a lone `\n` or a `\r\n` would slip through. And not every whitespace
+     * run either: the spaces *within* a line are content, and collapsing them would turn
+     * `help → this` into `help·→·this`. A bare `%` flattens line breaks and the padding
+     * around them, and nothing else. */
+    const PERCENT_DEFAULT = '\\s*\\n\\s*';
 
-    /** The permission a `$:` path requires when the host has not said otherwise. */
-    const DEFAULT_JS_PERMISSION = 'eval:js';
+    /** Every permission a script may grant, unless the host extends the list.
+     *
+     * The list is **fixed** so a typo fails: without it, `+read:htlm.*` would be accepted and
+     * silently grant nothing. `action:resource.part`; a grant may end in `.*` to cover
+     * exactly one more level of whatever is listed here.
+     * @type {Array<String>}
+     */
+    const DEFAULT_PERMISSIONS = Object.freeze([
+        'read:datetime',
+        'read:html.text',
+        'read:html.attributes',
+        'read:html.structure',
+        'write:html.text',
+        'write:html.attributes',
+        'parse:html.text',
+        'parse:html.attributes',
+        'parse:html.structure',
+        'eval:calc',
+        'eval:js',
+        'eval:budget_1M',
+        'eval:budget_10M',
+        'eval:budget_100M',
+    ]);
+
+    /** What each budget grant raises the per-turn step limit to. */
+    const BUDGET_GRANTS = Object.freeze({
+        'eval:budget_1M': 1e6,
+        'eval:budget_10M': 1e7,
+        'eval:budget_100M': 1e8,
+    });
+
+    /** The grant a wildcard would need to cover `name`: `read:html.attributes` →
+     * `read:html.*`. Null when `name` has no `.` below its resource, so nothing can cover it
+     * but itself.
+     * @param {String} name
+     * @return {?String}
+     */
+    const wildcardFor = (name) => {
+        const colon = name.indexOf(':')
+            , dot = name.lastIndexOf('.');
+
+        return (dot > colon && colon > -1 ? `${ name.slice(0, dot) }.*` : null);
+    };
+
+    /** The permission the built-in JavaScript surface requires. */
+    const BUILTIN_JS_PERMISSION = 'eval:js';
+
+    /** The most elements `&Array.from` will build. Without a cap, `Array.from(JSON.parse(
+     * '{"length":1e9}'))` would exhaust memory in one call. */
+    const MAX_ARRAY_FROM = 10000;
+
+    /** The static members of a built-in global that are never reachable. A **blocklist**,
+     * not an allowlist: names on these globals are only ever added, never changed, so
+     * whatever a browser adds later (`Math.f16round`, `JSON.rawJSON`) becomes available
+     * without an edit here. What must never be reachable is the short list below — the
+     * prototype and the function object's own plumbing. Symbol-keyed members are out of
+     * reach regardless, because a path segment cannot name one.
+     * @type {Set<String>}
+     */
+    const BLOCKED_STATICS = Object.freeze(new Set(['prototype', 'constructor', 'length', 'name', 'caller', 'arguments']));
+
+    /** How big an array-building call's input may be. */
+    const checkArraySize = (label, value) => {
+        const size = (null == value ? 0 : (typeof value === 'string' ? value.length : Number(value.length ?? value.size ?? 0)));
+
+        if(!(size <= MAX_ARRAY_FROM))
+            throw new DSLRuntimeError(`\`&${ label }\` builds at most ${ MAX_ARRAY_FROM } items`);
+    };
+
+    /** Members that need a guard around them, by `Global.name`. */
+    const GUARDED_STATICS = Object.freeze({
+        // Without a cap, `Array.from(JSON.parse('{"length":1e9}'))` exhausts memory in one call.
+        'Array.from': (value) => (checkArraySize('Array.from', value), Array.from(value)),
+        'Array.fromAsync': (value) => (checkArraySize('Array.fromAsync', value), Array.fromAsync(value)),
+    });
+
+    /** Copies a global's static members, minus {@link BLOCKED_STATICS}: constants by value,
+     * methods as wrappers called on their owner.
+     * @param {String} label - the global's name, for {@link GUARDED_STATICS}
+     * @param {Object} owner
+     * @return {Object}
+     */
+    const expose = (label, owner) => {
+        // No prototype: `toString`, `valueOf`, `__lookupGetter__` and the rest of
+        // `Object.prototype` must not be reachable through a built-in table.
+        const table = Object.create(null);
+
+        for(const name of Object.getOwnPropertyNames(owner)) {
+            if(BLOCKED_STATICS.has(name))
+                continue;
+
+            const value = owner[name]
+                , guarded = GUARDED_STATICS[`${ label }.${ name }`];
+
+            table[name] = (guarded ?? (typeof value === 'function' ? (...args) => value.apply(owner, args) : value));
+        }
+
+        return Object.freeze(table);
+    };
+
+    /** What `eval:js` grants: the static members of five globals, minus the blocklist.
+     * A method is only ever *called*; a constant is only ever *read*.
+     * @type {Object<String, Object>}
+     */
+    const JS_BUILTINS = Object.freeze({
+        Math: expose('Math', Math),
+        Number: expose('Number', Number),
+        Date: expose('Date', Date),
+        JSON: expose('JSON', JSON),
+        Array: expose('Array', Array),
+    });
+
+    /** @param {Object} object @param {String} key @return {Boolean} an own property only */
+    const owns = (object, key) => Object.prototype.hasOwnProperty.call(object, key);
 
     /** Property names a host path may never traverse. Not a substitute for the host simply
      * not registering dangerous objects — but walking into `constructor` is the one mistake
@@ -154,7 +272,7 @@ if(typeof require === 'function' && typeof module === 'object')
      *    yields `a · b`. An operator that quietly added spaces would be impossible to turn
      *    off.
      * @param {String|Array<String>} value - already rendered by the caller
-     * @param {Array<String>} letters - the class run; empty means `%n%s`
+     * @param {Array<String>} letters - the class run; empty means {@link PERCENT_DEFAULT}
      * @param {String} replacement
      * @return {String}
      */
@@ -166,12 +284,9 @@ if(typeof require === 'function' && typeof module === 'object')
 
         // `%c` is a flag, not a class. It is stripped here rather than rejected so that the
         // spelling stays legal even though the trim it asks for is already unconditional.
-        let run = (letters ?? []).filter(letter => 'c' !== letter);
+        const run = (letters ?? []).filter(letter => 'c' !== letter);
 
-        if(!run.length)
-            run = PERCENT_DEFAULT;
-
-        let source = '';
+        let source = (run.length ? '' : PERCENT_DEFAULT);
 
         for(const letter of run) {
             const piece = PERCENT_CLASS_SOURCE[letter];
@@ -183,6 +298,86 @@ if(typeof require === 'function' && typeof module === 'object')
         }
 
         return String(value).trim().replace(new RegExp(source, 'g'), replacement);
+    };
+
+    /** One piece of a `~` pattern: a `'quoted'` literal, or a unit with an optional `?`. */
+    const FORMAT_PIECE = /'([^']*)'|(hh|h|mm|m|ss|s)(\?)?/g;
+
+    /** Milliseconds per `~` unit letter. */
+    const FORMAT_SCALE = Object.freeze({ h: MS_PER_HOUR, m: MS_PER_MINUTE, s: MS_PER_SECOND });
+
+    /** `<duration> ~ <pattern>` — e.g. `300000 ~ "hh?:mm:ss"` → `"05:00"`.
+     *
+     * - `hh` / `mm` / `ss` pad to two digits; `h` / `m` / `s` do not.
+     * - The **largest** unit present absorbs the overflow: `"mm:ss"` on 90 minutes is
+     *   `"90:00"`, not `"30:00"`.
+     * - A unit followed by `?` is dropped when it is zero **and** every unit before it was
+     *   dropped too — together with the literal text straight after it. So `"hh?:mm:ss"`
+     *   reads `"05:00"` for five minutes and `"01:05:00"` for an hour more.
+     * - Everything else in the pattern is literal, and `'quoted'` text always is — so a
+     *   pattern can say `m' min'` without the `m` in "min" being read as minutes. Seconds
+     *   round down.
+     * - A value that is not a number (and so not a duration) renders as empty, like any
+     *   other missing value in an interpolation.
+     * @param {Number} value - milliseconds
+     * @param {String} pattern
+     * @return {String}
+     */
+    const format = (value, pattern) => {
+        if(!Number.isFinite(value))
+            return '';
+
+        let sign = (value < 0 ? '-' : '')
+            , remaining = Math.floor(Math.abs(value) / MS_PER_SECOND) * MS_PER_SECOND
+            , pieces = []
+            , last = 0;
+
+        // Split the pattern into literal text and unit tokens, in order.
+        for(const match of pattern.matchAll(FORMAT_PIECE)) {
+            if(match.index > last)
+                pieces.push({ text: pattern.slice(last, match.index) });
+
+            if(void null !== match[1])
+                pieces.push({ text: match[1] });
+            else
+                pieces.push({ unit: match[2], optional: !!match[3] });
+
+            last = match.index + match[0].length;
+        }
+
+        if(last < pattern.length)
+            pieces.push({ text: pattern.slice(last) });
+
+        let output = ''
+            , leading = true
+            , skipText = false;
+
+        for(const piece of pieces) {
+            if(void null !== piece.text) {
+                if(!skipText)
+                    output += piece.text;
+
+                skipText = false;
+
+                continue;
+            }
+
+            const scale = FORMAT_SCALE[piece.unit[0]]
+                , amount = Math.floor(remaining / scale);
+
+            remaining -= amount * scale;
+
+            if(piece.optional && leading && 0 === amount) {
+                skipText = true;
+
+                continue;
+            }
+
+            leading = false;
+            output += (2 === piece.unit.length ? String(amount).padStart(2, '0') : String(amount));
+        }
+
+        return sign + output;
     };
 
     /** A deterministic generator (mulberry32). Seeded, so a test that asserts which reply
@@ -319,7 +514,7 @@ if(typeof require === 'function' && typeof module === 'object')
                 return this.channel(path);
             },
 
-            /** `<badge>` — does the subject carry this badge? */
+            /** `[badge]` — does the subject carry this badge? */
             badge(name, subject) {
                 const badges = (subject?.badges ?? []);
 
@@ -331,11 +526,6 @@ if(typeof require === 'function' && typeof module === 'object')
                 const users = (subject?.users ?? {});
 
                 return (users[name] ?? { name });
-            },
-
-            /** `:emote:` */
-            emote(name) {
-                return { name };
             },
 
             /** Where `goto` lands. Recorded rather than performed. */
@@ -395,11 +585,15 @@ if(typeof require === 'function' && typeof module === 'object')
      * @param {Function} [options.random] - returns `[0, 1)`
      * @param {Object} [options.logger] - `{ log, warn, error }`
      * @param {{ steps: Number, wallMs: Number }} [options.limits]
-     * @param {Object} [options.jsBindings] - the object `$:Path.fn()` walks. **Empty by
-     *   default**, deliberately: a script naming `$:Date.now` should fail as loudly as one
+     * @param {Object} [options.jsBindings] - the object `&Path.fn()` walks. **Empty by
+     *   default**, deliberately: a script naming `&datetime.now` should fail as loudly as one
      *   naming `DISCORD` until the host has decided to expose it.
      * @param {Object<String, String>} [options.jsPermissions] - dotted path -> required
-     *   permission, e.g. `{ 'Date.now': 'read:datetime' }`. Unlisted paths require `eval:js`.
+     *   permission, e.g. `{ 'datetime.now': 'read:datetime' }`. **Every** function the host
+     *   binds must be listed, and every value must be on the permission list; either mistake
+     *   is refused here, before a script can run.
+     * @param {Array<String>} [options.permissions] - extra permissions for the list, added
+     *   to {@link DEFAULT_PERMISSIONS}
      * @return {Object}
      */
     const createRuntime = ({
@@ -413,7 +607,44 @@ if(typeof require === 'function' && typeof module === 'object')
         limits = {},
         jsBindings = {},
         jsPermissions = {},
+        permissions: extraPermissions = [],
     } = {}) => {
+        const catalog = Object.freeze(new Set([...DEFAULT_PERMISSIONS, ...extraPermissions]));
+
+        // Host mistakes are refused at start-up rather than at the first call: a path
+        // mapped to a permission nobody can grant, a binding that shadows a built-in, and a
+        // bound function with no permission at all.
+        for(const [path, needed] of Object.entries(jsPermissions)) {
+            if(!catalog.has(needed))
+                throw new DSLRuntimeError(`\`&${ path }\` is mapped to \`${ needed }\`, which is not on the permission list`);
+
+            if(owns(JS_BUILTINS, path.split('.')[0]))
+                throw new DSLRuntimeError(`\`&${ path }\` is a built-in; it always needs \`eval:js\` and cannot be remapped`);
+        }
+
+        for(const name of Object.keys(jsBindings))
+            if(owns(JS_BUILTINS, name))
+                throw new DSLRuntimeError(`A host binding may not be called \`${ name }\`; \`&${ name }.*\` is the built-in`);
+
+        const unmapped = []
+            , collect = (value, path, depth) => {
+                if(typeof value === 'function') {
+                    if(!owns(jsPermissions, path))
+                        unmapped.push(path);
+
+                    return;
+                }
+
+                if(null != value && typeof value === 'object' && depth < 4)
+                    for(const key of Object.keys(value))
+                        collect(value[key], (path ? `${ path }.${ key }` : key), depth + 1);
+            };
+
+        collect(jsBindings, '', 0);
+
+        if(unmapped.length)
+            throw new DSLRuntimeError(`Every host call needs a permission; map these in \`jsPermissions\`: ${ unmapped.map(path => `&${ path }`).join(', ') }`);
+
         let sink = []
             , budget = Object.assign({}, DEFAULT_LIMITS, limits)
             , listeners = new Set()
@@ -598,6 +829,7 @@ if(typeof require === 'function' && typeof module === 'object')
 
             parseDuration,
             percent,
+            format,
 
             /** Asserts that the block in scope was granted `name`.
              *
@@ -612,7 +844,12 @@ if(typeof require === 'function' && typeof module === 'object')
              * @throws {DSLPermissionError}
              */
             requirePermission(name, context, loc) {
-                if(context?.permissions?.has(name))
+                const granted = context?.permissions
+                    , wildcard = wildcardFor(name);
+
+                // Exact, or one explicit `.*` one level up — and nothing else. `+eval` does not
+                // grant `eval:calc`, and `+read:html.*` does not reach `read:html.a.b`.
+                if(granted?.has(name) || (null !== wildcard && granted?.has(wildcard)))
                     return true;
 
                 const held = [...(context?.permissions ?? [])].sort();
@@ -620,11 +857,37 @@ if(typeof require === 'function' && typeof module === 'object')
                 throw new DSLPermissionError(`This block was not granted \`+${ name }\`. Add it to the enclosing \`using\` header. Granted here: ${ held.map(entry => `+${ entry }`).join(' ') || 'nothing' }`, loc);
             },
 
+            /** The permission list this runtime accepts. */
+            permissions: catalog,
+
+            /** Checks that a `using` header's grant is on the list. Called by the compiler,
+             * so a typo stops the script before anything runs.
+             * @param {String} grant - without the `+`
+             * @param {Object} [loc]
+             * @throws {DSLPermissionError}
+             */
+            checkGrant(grant, loc) {
+                if(grant.endsWith('.*')) {
+                    const prefix = grant.slice(0, -1);
+
+                    for(const entry of catalog)
+                        if(entry.startsWith(prefix) && !entry.slice(prefix.length).includes('.'))
+                            return true;
+
+                    throw new DSLPermissionError(`\`+${ grant }\` matches nothing on the permission list. Known: ${ [...catalog].map(entry => `+${ entry }`).join(' ') }`, loc);
+                }
+
+                if(catalog.has(grant))
+                    return true;
+
+                throw new DSLPermissionError(`Unknown permission \`+${ grant }\`. Known: ${ [...catalog].map(entry => `+${ entry }`).join(' ') }`, loc);
+            },
+
             /** Calls a host binding named by a dotted path.
              *
              * Resolution is a walk over a plain object the host supplied, followed by a
              * call. At no point does a string become code: there is no `eval` and no
-             * `new Function` in this language's implementation, and `$:` is the construct
+             * `new Function` in this language's implementation, and `&` is the construct
              * that would most obviously have wanted one.
              * @param {Array<String>} path
              * @param {Array<*>} args
@@ -633,28 +896,52 @@ if(typeof require === 'function' && typeof module === 'object')
              * @return {*}
              */
             invokeJS(path, args, context, loc) {
-                const key = path.join('.');
+                const key = path.join('.')
+                    , builtin = owns(JS_BUILTINS, path[0])
+                    , reading = (null == args);
 
-                runtime.requirePermission((jsPermissions[key] ?? DEFAULT_JS_PERMISSION), context, loc);
+                if(builtin) {
+                    if(2 !== path.length || !owns(JS_BUILTINS[path[0]], path[1]))
+                        throw new DSLRuntimeError(`\`&${ key }\` is not part of the built-in set. Available: ${ Object.keys(JS_BUILTINS[path[0]]).map(name => `&${ path[0] }.${ name }`).join(', ') }`, loc);
+
+                    runtime.requirePermission(BUILTIN_JS_PERMISSION, context, loc);
+                } else {
+                    if(!owns(jsPermissions, key))
+                        throw new DSLRuntimeError(`No host binding for \`&${ key }\`. Registered: ${ Object.keys(jsPermissions).map(name => `&${ name }`).join(', ') || 'none' }`, loc);
+
+                    runtime.requirePermission(jsPermissions[key], context, loc);
+                }
 
                 let holder = null
-                    , target = jsBindings;
+                    , target = (builtin ? JS_BUILTINS : jsBindings);
 
                 for(const segment of path) {
                     if(FORBIDDEN_SEGMENTS.has(segment))
-                        throw new DSLRuntimeError(`\`$:${ key }\` walks through ${ JSON.stringify(segment) }, which is never allowed`, loc);
+                        throw new DSLRuntimeError(`\`&${ key }\` walks through ${ JSON.stringify(segment) }, which is never allowed`, loc);
 
                     const container = (null != target && (typeof target === 'object' || typeof target === 'function'));
 
-                    if(!container || !(segment in target))
-                        throw new DSLRuntimeError(`No host binding for \`$:${ key }\`. Registered: ${ Object.keys(jsBindings).join(', ') || 'none' }`, loc);
+                    if(!container || !owns(target, segment))
+                        throw new DSLRuntimeError(`No host binding for \`&${ key }\`. Registered: ${ Object.keys(jsPermissions).map(name => `&${ name }`).join(', ') || 'none' }`, loc);
 
                     holder = target;
                     target = target[segment];
                 }
 
+                // A method is only ever called and a constant only ever read, so no function
+                // value — and no live object — ever lands in a script.
+                if(reading) {
+                    if(typeof target === 'function')
+                        throw new DSLRuntimeError(`\`&${ key }\` is a method; call it: \`&${ key }( ... )\``, loc);
+
+                    if(null != target && typeof target === 'object')
+                        throw new DSLRuntimeError(`\`&${ key }\` is not a constant`, loc);
+
+                    return target;
+                }
+
                 if(typeof target !== 'function')
-                    throw new DSLRuntimeError(`\`$:${ key }\` is not callable`, loc);
+                    throw new DSLRuntimeError(`\`&${ key }\` is a constant, not a method; read it without parentheses: \`&${ key }\``, loc);
 
                 return target.apply(holder, args);
             },
@@ -724,7 +1011,7 @@ if(typeof require === 'function' && typeof module === 'object')
     const createContext = (runtime, { subject, channel, realm, permissions = [] }) => {
         const signal = createSignal();
 
-        const make = (subjects, envs, currentChannel, currentRealm, granted) => ({
+        const make = (subjects, envs, currentChannel, currentRealm, granted, hold, route, callDepth = 0) => ({
             runtime,
             signal,
             subjects,
@@ -732,6 +1019,19 @@ if(typeof require === 'function' && typeof module === 'object')
             permissions: granted,
             channel: currentChannel,
             realm: currentRealm,
+
+            /** The installation of the nearest enclosing `await`, or null at the top level.
+             * A nested `await` asks it whether it has already been installed, and whether
+             * the enclosing `with (...)` scopes still admit an event. */
+            hold,
+
+            /** Which loop iteration this context sits in, below `hold`: `/0/2` is the
+             * third item of a `with` inside the first subject of a `using`. Lets a nested
+             * `await` install once per iteration rather than once in total. */
+            route,
+
+            /** How many function calls deep this context is. */
+            callDepth,
 
             /** The innermost bound subject. */
             get subject() {
@@ -743,12 +1043,22 @@ if(typeof require === 'function' && typeof module === 'object')
              * @param {Object} [options]
              * @return {Object}
              */
-            child(value, { channel: nextChannel, realm: nextRealm, permissions: nextPermissions } = {}) {
+            child(value, { channel: nextChannel, realm: nextRealm, permissions: nextPermissions, hold: nextHold, route: nextRoute } = {}) {
                 const resolved = (nextChannel !== void null
                     ? nextChannel
                     : (isChannelLike(value) ? value : (value?.channel ?? currentChannel)));
 
-                return make(subjects.concat([value]), envs.concat([new Map()]), resolved, (nextRealm ?? currentRealm), (nextPermissions ?? granted));
+                return make(subjects.concat([value]), envs.concat([new Map()]), resolved, (nextRealm ?? currentRealm), (nextPermissions ?? granted),
+                    (nextHold !== void null ? nextHold : hold), (nextRoute ?? route), callDepth);
+            },
+
+            /** A fresh frame for a function call: same subject, channel and signal, but none
+             * of the caller's variables, and exactly the grants the function declared.
+             * @param {Set<String>} permissions
+             * @return {Object}
+             */
+            frame(permissions) {
+                return make([subjects[subjects.length - 1]], [new Map()], currentChannel, currentRealm, permissions, null, '', callDepth + 1);
             },
 
             onAbort: (handler) => signal.onAbort(handler),
@@ -757,7 +1067,7 @@ if(typeof require === 'function' && typeof module === 'object')
             stop: () => signal.abort(),
         });
 
-        return make([subject], [new Map()], channel, realm, Object.freeze(new Set(permissions)));
+        return make([subject], [new Map()], channel, realm, Object.freeze(new Set(permissions)), null, '');
     };
 
     /** @param {*} value @return {Boolean} true when the value looks like a channel record */
@@ -774,13 +1084,19 @@ if(typeof require === 'function' && typeof module === 'object')
         createSeededRandom,
         parseDuration,
         percent,
+        format,
         isChannelLike,
         flush,
         DEFAULT_LIMITS,
         PERCENT_CLASS_SOURCE,
         PERCENT_ZERO_WIDTH,
         PERCENT_DEFAULT,
-        DEFAULT_JS_PERMISSION,
+        BUILTIN_JS_PERMISSION,
+        BUDGET_GRANTS,
+        JS_BUILTINS,
+        MAX_ARRAY_FROM,
+        BLOCKED_STATICS,
+        DEFAULT_PERMISSIONS,
     };
 
     globalThis.TTV_DSL.createRuntime = createRuntime;

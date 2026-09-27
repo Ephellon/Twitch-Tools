@@ -30,6 +30,7 @@ const MODULES = [
     'parser.js',
     'runtime.js',
     'compiler.js',
+    'fake-page.js',
     'index.js',
 ];
 
@@ -38,6 +39,9 @@ const TESTS = [
     'parser.test.js',
     'runtime.test.js',
     'v2.test.js',
+    'realistic.test.js',
+    'host.test.js',
+    'functions.test.js',
 ];
 
 for(const name of MODULES)

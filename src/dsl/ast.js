@@ -36,6 +36,22 @@ globalThis.TTV_DSL ??= {};
         AwaitStatement: 'AwaitStatement',
         /** `using <subject> [<subject> ...]` + optional body. */
         UsingStatement: 'UsingStatement',
+        /** `define name(params) [with +perm ...]` + body. Top level only. */
+        DefineStatement: 'DefineStatement',
+        /** `return [<value>]`. */
+        ReturnStatement: 'ReturnStatement',
+        /** `for` — numeric (`start`, `stop`, `step`) or over a `list`. */
+        ForStatement: 'ForStatement',
+        /** `break [label]`. */
+        BreakStatement: 'BreakStatement',
+        /** `renew [label]`. */
+        RenewStatement: 'RenewStatement',
+        /** `name( ... )` — a call to a `define`d function. */
+        CallExpression: 'CallExpression',
+        /** `$` — the innermost loop's counter. */
+        Counter: 'Counter',
+        /** `after <duration> [with (<filter>)]` + body — a one-shot timer. */
+        AfterStatement: 'AfterStatement',
         /** `if <test>` + optional body, plus an optional `alternate` — the `when` that
          * follows it as a sibling. */
         IfStatement: 'IfStatement',
@@ -56,6 +72,10 @@ globalThis.TTV_DSL ??= {};
         /** `with (<expr>)` + block — the statement form. Distinct from the `filter` an
          * `await` carries on its own line, which is not a node of its own. */
         WithStatement: 'WithStatement',
+        /** `else` + block — the last branch of an `if`/`when` chain. Like the chain form of
+         * `when`, it is written as a sibling and folded into the chain's final `alternate`
+         * by the parser. */
+        ElseClause: 'ElseClause',
         /** A statement that is only there for its value's side effect. Restricted to an
          * `AssignmentExpression`: a bare expression on a line is still an error. */
         ExpressionStatement: 'ExpressionStatement',
@@ -80,13 +100,25 @@ globalThis.TTV_DSL ??= {};
         AssignmentExpression: 'AssignmentExpression',
         /** `_`, `__this__`, `__self__`, `__me__` — the current subject itself. */
         This: 'This',
-        /** `$:Date.now( ... )`. `path` is the dotted segments; resolution is a property
+        /** `&datetime.now( ... )`. `path` is the dotted segments; resolution is a property
          * lookup against a host table, never compilation of text. */
         JSInvokeExpression: 'JSInvokeExpression',
         /** `<subject> %n%s <replacement>`. `letters` is the class run, `[]` for a bare `%`. */
         PercentExpression: 'PercentExpression',
+        /** `.raider.name` — a property read off whatever the expression before it produced.
+         * Only formed when the `.name` is glued to what precedes it. */
+        MemberExpression: 'MemberExpression',
+        /** `<value> ~ <pattern>` — renders a value (a duration, for now) through a pattern. */
+        FormatExpression: 'FormatExpression',
+        /** `calc( ... )` — `expression` is an `ArithmeticExpression` tree. */
+        CalcExpression: 'CalcExpression',
+        /** `a + b`, `-a` inside `calc( ... )`. `left` is null for a unary operator. */
+        ArithmeticExpression: 'ArithmeticExpression',
+        /** `( a, b, c )` — a group holding two or more items is a list. One item is just a
+         * grouped expression, as before. */
+        ListExpression: 'ListExpression',
 
-        /** Any sigil: `#`, `#prop`, `/name`, `REALM/id`, `<badge>`, `@user`, `:emote:`, `.prop`. */
+        /** Any sigil: `#`, `#prop`, `/name`, `REALM/id`, `[badge ...]`, `@user`, `.prop`. */
         Selector: 'Selector',
         /** A backtick template. */
         TemplateLiteral: 'TemplateLiteral',
@@ -96,7 +128,8 @@ globalThis.TTV_DSL ??= {};
          * Not a sigil — sigils name things *in* a channel, an identifier names a value the
          * host has published to the script. */
         Identifier: 'Identifier',
-        /** `*`. Always the wildcard — never multiplication. */
+        /** `*` / `ANYTHING`, `SOMETHING`, `NOTHING` — a presence test, told apart by `kind`.
+         * `*` is always this — never multiplication. */
         Wildcard: 'Wildcard',
         /** `15:00` / `1:30:00`, normalized to milliseconds. */
         Duration: 'Duration',
@@ -109,7 +142,6 @@ globalThis.TTV_DSL ??= {};
         REALM: 'realm',
         BADGE: 'badge',
         USER: 'user',
-        EMOTE: 'emote',
         CONTEXT: 'context',
     });
 
@@ -124,6 +156,14 @@ globalThis.TTV_DSL ??= {};
         [NodeType.Block]: ['body'],
 
         [NodeType.AwaitStatement]: ['subject', 'filter', 'body'],
+        [NodeType.AfterStatement]: ['subject', 'filter', 'body'],
+        [NodeType.DefineStatement]: ['body'],
+        [NodeType.ReturnStatement]: ['argument'],
+        [NodeType.ForStatement]: ['start', 'stop', 'step', 'list', 'body'],
+        [NodeType.BreakStatement]: [],
+        [NodeType.RenewStatement]: [],
+        [NodeType.CallExpression]: ['arguments'],
+        [NodeType.Counter]: [],
         // `permissions` is a list of plain strings, not of nodes, so it stays off this table.
         [NodeType.UsingStatement]: ['subjects', 'body'],
         [NodeType.IfStatement]: ['test', 'body', 'alternate'],
@@ -132,6 +172,7 @@ globalThis.TTV_DSL ??= {};
         [NodeType.WhenStatement]: ['discriminant', 'cases', 'body', 'alternate'],
         [NodeType.WhenCase]: ['test', 'body'],
         [NodeType.WithStatement]: ['filter', 'body'],
+        [NodeType.ElseClause]: ['body'],
         [NodeType.ExpressionStatement]: ['expression'],
 
         [NodeType.BinaryExpression]: ['left', 'right'],
@@ -143,6 +184,11 @@ globalThis.TTV_DSL ??= {};
         [NodeType.AssignmentExpression]: ['value'],
         [NodeType.JSInvokeExpression]: ['arguments'],
         [NodeType.PercentExpression]: ['subject', 'replacement'],
+        [NodeType.MemberExpression]: ['object'],
+        [NodeType.FormatExpression]: ['subject', 'pattern'],
+        [NodeType.ListExpression]: ['items'],
+        [NodeType.CalcExpression]: ['expression'],
+        [NodeType.ArithmeticExpression]: ['left', 'right'],
 
         [NodeType.TemplateLiteral]: ['expressions'],
 
@@ -187,12 +233,63 @@ globalThis.TTV_DSL ??= {};
         awaitStatement: (subject, filter, body, loc) => node(NodeType.AwaitStatement, { subject, filter, body }, loc),
 
         /**
+         * @param {Object} subject - evaluates to a duration
+         * @param {?Object} filter
+         * @param {?Object} body
+         * @param {Object} loc
+         */
+        afterStatement: (subject, filter, body, loc) => node(NodeType.AfterStatement, { subject, filter, body }, loc),
+
+        /**
+         * @param {String} name
+         * @param {Array<String>} params
+         * @param {Array<String>} permissions - from `with +perm ...`
+         * @param {Object} body
+         * @param {Object} loc
+         */
+        defineStatement: (name, params, permissions, body, loc) => node(NodeType.DefineStatement, { name, params, permissions, body }, loc),
+
+        /**
+         * @param {?Object} argument
+         * @param {Object} loc
+         */
+        returnStatement: (argument, loc) => node(NodeType.ReturnStatement, { argument }, loc),
+
+        /**
+         * @param {?String} label
+         * @param {Object} parts - `{ start, stop, step }` for a numeric loop, `{ list }` otherwise
+         * @param {Object} body
+         * @param {Object} loc
+         */
+        forStatement: (label, { start = null, stop = null, step = null, list = null }, body, loc) =>
+            node(NodeType.ForStatement, { label, start, stop, step, list, body }, loc),
+
+        /** @param {?String} label @param {Object} loc */
+        breakStatement: (label, loc) => node(NodeType.BreakStatement, { label }, loc),
+
+        /** @param {?String} label @param {Object} loc */
+        renewStatement: (label, loc) => node(NodeType.RenewStatement, { label }, loc),
+
+        /**
+         * @param {String} callee
+         * @param {Array<Object>} args
+         * @param {Object} loc
+         */
+        callExpression: (callee, args, loc) => node(NodeType.CallExpression, { callee, arguments: args }, loc),
+
+        /** @param {Object} loc */
+        counter: (loc) => node(NodeType.Counter, {}, loc),
+
+        /**
          * @param {Array<Object>} subjects
          * @param {?Object} body
          * @param {Object} loc
          * @param {Array<String>} [permissions] - `+name` grants from the header
+         * @param {?String} [scopeMode] - from `+scope[:mode]`; null when the header has none
+         * @param {?String} [description] - from a trailing `-- "..."`; null when absent
          */
-        usingStatement: (subjects, body, loc, permissions = []) => node(NodeType.UsingStatement, { subjects, body, permissions }, loc),
+        usingStatement: (subjects, body, loc, permissions = [], scopeMode = null, description = null) =>
+            node(NodeType.UsingStatement, { subjects, body, permissions, scopeMode, description }, loc),
 
         /**
          * @param {Object} test
@@ -232,6 +329,12 @@ globalThis.TTV_DSL ??= {};
          * @param {Object} loc
          */
         withStatement: (filter, body, loc) => node(NodeType.WithStatement, { filter, body }, loc),
+
+        /**
+         * @param {?Object} body
+         * @param {Object} loc
+         */
+        elseClause: (body, loc) => node(NodeType.ElseClause, { body }, loc),
 
         /**
          * @param {Object} expression
@@ -332,8 +435,9 @@ globalThis.TTV_DSL ??= {};
 
         /**
          * @param {Object} loc
+         * @param {String} [kind = 'anything'] - `'anything'`, `'something'` or `'nothing'`
          */
-        wildcard: (loc) => node(NodeType.Wildcard, {}, loc),
+        wildcard: (loc, kind = 'anything') => node(NodeType.Wildcard, { kind }, loc),
 
         /**
          * @param {Number} milliseconds
@@ -342,12 +446,14 @@ globalThis.TTV_DSL ??= {};
         duration: (milliseconds, loc) => node(NodeType.Duration, { milliseconds }, loc),
 
         /**
-         * @param {String} name - already validated to carry an interior underscore
-         * @param {String} scope - `'local'` for `->`, `'parent'` for `=>`
+         * @param {String} name - already validated to carry a lower-case letter
+         * @param {String} arrow - `'->'` or `'=>'`; the two are synonyms, and the spelling is
+         *   kept only so tooling can round-trip it. Where the name lands is decided by the
+         *   enclosing `+scope` mode, never by the arrow.
          * @param {Object} value
          * @param {Object} loc
          */
-        assignmentExpression: (name, scope, value, loc) => node(NodeType.AssignmentExpression, { name, scope, value }, loc),
+        assignmentExpression: (name, arrow, value, loc) => node(NodeType.AssignmentExpression, { name, arrow, value }, loc),
 
         /**
          * @param {Object} loc
@@ -356,18 +462,52 @@ globalThis.TTV_DSL ??= {};
 
         /**
          * @param {Array<String>} path
-         * @param {Array<Object>} args
+         * @param {?Array<Object>} args - null for a constant read (`&Math.PI`)
          * @param {Object} loc
          */
         jsInvokeExpression: (path, args, loc) => node(NodeType.JSInvokeExpression, { path, arguments: args }, loc),
 
         /**
          * @param {Object} subject
-         * @param {Array<String>} letters - the class run; `[]` means the `%n%s` default
+         * @param {Array<String>} letters - the class run; `[]` means the default run
          * @param {Object} replacement
          * @param {Object} loc
          */
         percentExpression: (subject, letters, replacement, loc) => node(NodeType.PercentExpression, { subject, letters, replacement }, loc),
+
+        /**
+         * @param {Object} object
+         * @param {String} property
+         * @param {Object} loc
+         */
+        memberExpression: (object, property, loc) => node(NodeType.MemberExpression, { object, property }, loc),
+
+        /**
+         * @param {Object} subject
+         * @param {Object} pattern
+         * @param {Object} loc
+         */
+        formatExpression: (subject, pattern, loc) => node(NodeType.FormatExpression, { subject, pattern }, loc),
+
+        /**
+         * @param {Array<Object>} items - two or more
+         * @param {Object} loc
+         */
+        listExpression: (items, loc) => node(NodeType.ListExpression, { items }, loc),
+
+        /**
+         * @param {Object} expression
+         * @param {Object} loc
+         */
+        calcExpression: (expression, loc) => node(NodeType.CalcExpression, { expression }, loc),
+
+        /**
+         * @param {String} operator - `+ - * / % **`
+         * @param {?Object} left - null for unary `-` / `+`
+         * @param {Object} right
+         * @param {Object} loc
+         */
+        arithmeticExpression: (operator, left, right, loc) => node(NodeType.ArithmeticExpression, { operator, left, right }, loc),
     };
 
     /**

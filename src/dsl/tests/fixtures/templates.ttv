@@ -17,6 +17,6 @@ using *
         // Braces and a lone dollar sign that are NOT interpolations.
         POST `a { plain } brace, 100$ and a }`
         // An emote selector inside an interpolation.
-        REPLY `mood: ${ :kappa: }`
+        REPLY `mood: ${ 'kappa' }`
         // An interpolation whose expression itself contains a template.
         REPLY `nested: ${ any from (`${ .sender }!`) }`

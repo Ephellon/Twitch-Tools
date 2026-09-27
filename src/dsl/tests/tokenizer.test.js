@@ -55,9 +55,8 @@
             assert.equal(first('1:30:00\n').value, 5400000);
         });
 
-        it('reads :name: as an emote', () => {
-            assert.equal(first(':kappa:\n').type, TokenType.SELECTOR_EMOTE);
-            assert.equal(first(':kappa:\n').value, 'kappa');
+        it('points the retired :name: emote spelling at plain text', () => {
+            assert.throws(() => tokenize('POST :kappa:\n'), /Emotes are plain text: write 'kappa'/);
         });
 
         // v1 refused a bare `:` in the tokenizer. v2 cannot: a `when` case label is a bare
@@ -72,36 +71,54 @@
             assert.deepEqual(types('"help":\n'), [TokenType.STRING, TokenType.COLON, TokenType.NEWLINE, TokenType.EOF]);
         });
 
-        it('keeps the ":" of a permission out of the emote branch', () => {
-            assert.deepEqual(types('using <vip> +eval:calc\n'), [
+        it('keeps the ":" of a permission out of the case-label branch', () => {
+            assert.deepEqual(types('using [vip] +eval:calc\n'), [
                 TokenType.USING, TokenType.SELECTOR_BADGE, TokenType.PERMISSION,
                 TokenType.NEWLINE, TokenType.EOF,
             ]);
 
-            assert.equal(first('using <vip> +eval:calc\n', 2).value, 'eval:calc');
+            assert.equal(first('using [vip] +eval:calc\n', 2).value, 'eval:calc');
         });
 
-        it('does not mistake a duration for an emote, or the reverse', () => {
-            assert.deepEqual(types('await 5:00\nREPLY :pog:\n'), [
+        it('reads an emote as the plain string it is', () => {
+            assert.deepEqual(types('await 5:00\nREPLY \'pog\'\n'), [
                 TokenType.AWAIT, TokenType.DURATION, TokenType.NEWLINE,
-                TokenType.IDENT, TokenType.SELECTOR_EMOTE, TokenType.NEWLINE,
+                TokenType.IDENT, TokenType.STRING, TokenType.NEWLINE,
                 TokenType.EOF,
             ]);
         });
     });
 
-    describe('tokenizer / the two jobs of "<"', () => {
+    describe('tokenizer / "<|" and badge lists', () => {
         it('reads "<|" as the pipe operator', () => {
             assert.equal(first('1st <| .links\n', 1).type, TokenType.PIPE);
         });
 
-        it('reads "<name>" as a badge', () => {
-            assert.equal(first('using <moderator>\n', 1).type, TokenType.SELECTOR_BADGE);
-            assert.equal(first('using <moderator>\n', 1).value, 'moderator');
+        it('reads "[name]" as a one-badge list', () => {
+            assert.equal(first('using [moderator]\n', 1).type, TokenType.SELECTOR_BADGE);
+            assert.deepEqual(first('using [moderator]\n', 1).value, ['moderator']);
+            assert.deepEqual(first('using [sub-gifter]\n', 1).value, ['sub-gifter']);
         });
 
-        it('reads several badges on one line as separate tokens', () => {
-            assert.deepEqual(types('using <viewer> <everyone> <all>\n'), [
+        it('reads "[a b, c]" as one token carrying every name', () => {
+            assert.deepEqual(types('using [vip moderator, sub-gifter]\n'), [TokenType.USING, TokenType.SELECTOR_BADGE, TokenType.NEWLINE, TokenType.EOF]);
+            assert.deepEqual(first('using [vip moderator, sub-gifter]\n', 1).value, ['vip', 'moderator', 'sub-gifter']);
+        });
+
+        it('refuses an empty, unclosed or malformed badge list', () => {
+            assert.throws(() => tokenize('using []\n'), /Empty badge list/);
+            assert.throws(() => tokenize('using [vip\n'), /Unclosed "\["/);
+            assert.throws(() => tokenize('using [1st]\n'), /is not a badge name/);
+        });
+
+        it('points both retired badge spellings at "[name]"', () => {
+            assert.throws(() => tokenize('using <moderator>\n'), /Badges are written "\[moderator\]", not "<moderator>"/);
+            assert.throws(() => tokenize('using --moderator\n'), /Badges are written "\[moderator\]", not "--moderator"/);
+            assert.throws(() => tokenize('POST --1\n'), /no decrement/);
+        });
+
+        it('reads several bracketed badges on one line as separate tokens', () => {
+            assert.deepEqual(types('using [viewer] [everyone] [all]\n'), [
                 TokenType.USING,
                 TokenType.SELECTOR_BADGE, TokenType.SELECTOR_BADGE, TokenType.SELECTOR_BADGE,
                 TokenType.NEWLINE, TokenType.EOF,
@@ -405,9 +422,21 @@
             assert.match(error.message, /using. header/i);
         });
 
-        it('reads "$:" as a dotted path and refuses a bare "$"', () => {
-            assert.deepEqual(first('$:Date.now()\n').value, ['Date', 'now']);
-            assert.throws(() => tokenize('POST $\n'), DSLSyntaxError);
+        it('reads "&" as a dotted path, and points the v2 "$:" spelling at it', () => {
+            assert.deepEqual(first('&datetime.now()\n').value, ['datetime', 'now']);
+            assert.throws(() => tokenize('POST &\n'), DSLSyntaxError);
+            assert.throws(() => tokenize('POST $:Date.now()\n'), /written "&datetime\.now\(\)"/);
+        });
+
+        it('decodes both Unicode escape spellings, in strings and templates', () => {
+            assert.equal(first('"caf\\u00e9"\n').value, 'café');
+            assert.equal(first('\'\\u{1F49C}\'\n').value, '💜');
+            assert.deepEqual(first('`love \\u{1F49C}`\n').value.quasis, ['love 💜']);
+        });
+
+        it('refuses a malformed Unicode escape', () => {
+            for(const source of ['"\\u12"\n', '"\\u{}"\n', '"\\u{110000}"\n', '"\\uzzzz"\n'])
+                assert.throws(() => tokenize(source), /Malformed Unicode escape/);
         });
 
         it('reads single quotes exactly as double quotes', () => {
