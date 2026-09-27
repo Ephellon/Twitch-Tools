@@ -1507,6 +1507,9 @@ let Initialize = async(START_OVER = false) => {
         }
     }
 
+    // What plugins (src/plugins/) get from this scope; see docs/PLUGINS.md
+    let PLUGIN_CONTEXT = { StopWatch };
+
     // Initialize all settings/features //
 
 
@@ -3374,9 +3377,8 @@ let Initialize = async(START_OVER = false) => {
      *
      *
      */
-    // Features that have become plugins (src/plugins/) start here, where the first of them used to be:
-    // Auto-Join, Kill Extensions, View Mode (src/plugins/automation/)
-    TTV.start('main', { StopWatch });
+    // Auto-Join → src/plugins/automation/auto-join.js
+    await TTV.run('auto_accept_mature', PLUGIN_CONTEXT);
 
     /*** Auto-Focus
      *                    _              ______
@@ -9096,6 +9098,9 @@ let Initialize = async(START_OVER = false) => {
         RegisterJob('auto_follow_time');
     }
 
+    // Kill Extensions → src/plugins/automation/kill-extensions.js
+    await TTV.run('kill_extensions', PLUGIN_CONTEXT);
+
     /*** Parse Commands
      *      _____                       _____                                          _
      *     |  __ \                     / ____|                                        | |
@@ -11302,6 +11307,9 @@ let Initialize = async(START_OVER = false) => {
     if(true) {
         RegisterJob('common_phrase_translations');
     }
+
+    // View Mode → src/plugins/automation/view-mode.js
+    await TTV.run('view_mode', PLUGIN_CONTEXT);
 
     /*** Chat & Messaging
      *       _____ _           _              __  __                           _

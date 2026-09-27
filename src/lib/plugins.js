@@ -20,6 +20,8 @@ const PLUGINS = new Map;
  * @param {function} [definition.unhandler]         Undoes the job when the feature is turned off
  * @param {function} [definition.setup]             Runs once at start-up, before the job, when the feature is enabled
  * @param {function} [definition.enabled]           Whether to start; defaults to `parseBool(Settings[id])`
+ * @param {function} [definition.install]           A section moved verbatim from an initializer: it wires its own jobs
+ *                                                  (Handlers/Timers/RegisterJob) and runs whether or not it's enabled
  * @param {object}   [definition.settings]          The feature's settings and their defaults (used by the Settings page, Phase 5)
  */
 export function plugin(definition) {
@@ -40,24 +42,40 @@ export function plugin(definition) {
  * Called by the frame's initializer; `context` carries what plugins need from it (e.g. `StopWatch`).
  * @simply start(frame:string, context:object?) → undefined
  */
-export function start(frame, context = {}) {
-    for(let [id, feature] of PLUGINS) {
-        if(!feature.frames.includes(frame))
-            continue;
+export async function start(frame, context = {}) {
+    for(let [id, feature] of PLUGINS)
+        if(feature.frames.includes(frame) && !feature.started)
+            await run(id, context);
+}
 
-        Handlers[id] = (...args) => feature.handler(context, ...args);
+/**
+ * Wires and starts one plugin. Initializers call this where the feature's code used to be, so
+ * features keep their original order relative to the code that hasn't moved yet.
+ * @simply run(id:string, context:object?) → Promise~undefined
+ */
+export async function run(id, context = {}) {
+    let feature = PLUGINS.get(id);
 
-        if('timer' in feature)
-            Timers[id] = feature.timer;
+    if(!feature)
+        throw new Error(`No plugin "${ id }"`);
 
-        if(feature.unhandler)
-            Unhandlers[id] = (...args) => feature.unhandler(context, ...args);
+    feature.started = true;
 
-        if(feature.enabled(Settings)) {
-            feature.setup?.(context);
+    if(feature.install)
+        return await feature.install(context);
 
-            RegisterJob(id);
-        }
+    Handlers[id] = (...args) => feature.handler(context, ...args);
+
+    if('timer' in feature)
+        Timers[id] = feature.timer;
+
+    if(feature.unhandler)
+        Unhandlers[id] = (...args) => feature.unhandler(context, ...args);
+
+    if(feature.enabled(Settings)) {
+        feature.setup?.(context);
+
+        RegisterJob(id);
     }
 }
 

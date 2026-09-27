@@ -27,7 +27,7 @@ test('wires handler, timer and unhandler under the plugin id', async() => {
     let seen;
 
     plugin({ id: 'on', timer: 2_500, handler: (ctx, ...args) => (seen = [ctx, args]), unhandler: () => 'undone' });
-    start('main', context);
+    await start('main', context);
 
     assert.equal(globalThis.Timers.on, 2_500);
     globalThis.Handlers.on('a', 1);
@@ -42,7 +42,7 @@ test('starts only enabled plugins, running setup first', async() => {
     plugin({ id: 'on', handler() {}, setup: () => order.push('setup') });
     plugin({ id: 'off', handler() {}, setup: () => order.push('never') });
     globalThis.RegisterJob = id => order.push(`job:${ id }`);
-    start('main');
+    await start('main');
 
     assert.deepEqual(order, ['setup', 'job:on']);
     assert.equal(typeof globalThis.Handlers.off, 'function', 'a disabled plugin is still wired, so turning it on later works');
@@ -53,7 +53,7 @@ test('respects frames and custom enabled checks', async() => {
 
     plugin({ id: 'chatty', frames: ['chat'], handler() {} });
     plugin({ id: 'custom', handler() {}, enabled: settings => settings.off === false });
-    start('main');
+    await start('main');
 
     assert.equal(globalThis.Handlers.chatty, undefined);
     assert.deepEqual(registered, ['custom']);
@@ -64,4 +64,19 @@ test('refuses a duplicate id', async() => {
 
     plugin({ id: 'on', handler() {} });
     assert.throws(() => plugin({ id: 'on', handler() {} }), /already registered/);
+});
+
+test('run() starts one plugin; install() runs whether or not it is enabled', async() => {
+    const { plugin, run, start } = await load();
+    const seen = [];
+
+    plugin({ id: 'off', async install(context) { seen.push(['install', context.tag]) } });
+    plugin({ id: 'on', handler() {} });
+
+    await run('off', { tag: 'ctx' });
+    await start('main');
+
+    assert.deepEqual(seen, [['install', 'ctx']], 'start() skips plugins run() already started');
+    assert.deepEqual(registered, ['on']);
+    await assert.rejects(run('missing'), /No plugin "missing"/);
 });
