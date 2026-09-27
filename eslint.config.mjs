@@ -1,5 +1,5 @@
 /*** /eslint.config.mjs
- * Lints `ttv-tools/` and codifies the project's hand-written style.
+ * Lints `src/` and codifies the project's hand-written style.
  *
  * Content scripts that load together share one global scope, so a name declared at the top of
  * `core.js` is visible in `tools.js`. Rather than hand-maintain that list, the globals for each
@@ -16,17 +16,21 @@ import js from '@eslint/js';
 import globals from 'globals';
 import stylistic from '@stylistic/eslint-plugin';
 
-const ROOT = 'ttv-tools';
+const ROOT = 'src';
 const read = file => fs.readFileSync(path.join(ROOT, file), 'utf8');
 
 // Top-level names a classic script contributes to the shared global scope
+// Built bundles listed in the manifest → the ES-module entry they come from (see scripts/build.mjs)
+const BUNDLES = { 'lib.js': 'lib/index.js' };
+
 function declaredNames(file) {
     let names = new Set;
-    let source = read(file);
+    let module = file in BUNDLES;
+    let source = read(BUNDLES[file] ?? file);
     let program;
 
     try {
-        program = espree.parse(source, { ecmaVersion: 'latest', sourceType: 'script' });
+        program = espree.parse(source, { ecmaVersion: 'latest', sourceType: module? 'module': 'script' });
     } catch {
         return names;
     }
@@ -41,7 +45,9 @@ function declaredNames(file) {
         if(callee?.object?.name != 'Object' || !GLOBAL_OBJECTS.has(target?.name))
             return;
 
-        if(callee.property?.name == 'defineProperties' && what?.type == 'ObjectExpression')
+        if(callee.property?.name == 'assign' && what?.type == 'ObjectExpression')
+            what.properties.forEach(({ key }) => key && names.add(key.name ?? key.value));
+        else if(callee.property?.name == 'defineProperties' && what?.type == 'ObjectExpression')
             what.properties.forEach(({ key }) => key && names.add(key.name ?? key.value));
         else if(callee.property?.name == 'defineProperty' && typeof what?.value == 'string')
             names.add(what.value);
@@ -192,6 +198,11 @@ export default [
     {
         files: [`${ ROOT }/background.js`],
         languageOptions: { sourceType: 'module', globals: globals.serviceworker },
+    },
+    {
+        // ES modules bundled into lib.js; they share the page scope of the scripts loaded alongside it
+        files: [`${ ROOT }/lib/**/*.js`],
+        languageOptions: { sourceType: 'module', globals: sharedGlobals['lib.js'] },
     },
     {
         // The DSL runs both as content scripts and under Node (its test runner)

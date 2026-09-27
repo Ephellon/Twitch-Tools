@@ -19,7 +19,7 @@ key2chunks=collections.defaultdict(list)
 ids={i['id'] for s in settings for i in s['inputs']}
 src={}
 for c in chunks:
-    L=src.setdefault(c['file'],open('ttv-tools/'+c['file'],encoding='utf8').read().split('\n'))
+    L=src.setdefault(c['file'],open('src/'+c['file'],encoding='utf8').read().split('\n'))
     text='\n'.join(L[c['start']-1:c['end']])
     keys=set(c['facts']['Settings keys'])|{k for k in ids if '_' in k and re.search(r'\b'+re.escape(k)+r'\b',text)}
     if c['file']=='settings.js': continue

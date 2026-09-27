@@ -2,7 +2,7 @@ import os
 WORK=os.environ.get('OFFSER_WORK','.offser')
 os.makedirs(WORK,exist_ok=True)
 import json, re, os, sys, urllib.request
-ROOT='ttv-tools'
+ROOT='src'
 B='https://agent.ephellon.duckdns.org'; TOK=os.environ['OFFSER_TOKEN']
 MODEL=sys.argv[1] if len(sys.argv)>1 else 'gemma4:31b-cloud'
 ONLY=set(sys.argv[2].split(',')) if len(sys.argv)>2 else None

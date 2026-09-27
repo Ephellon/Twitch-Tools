@@ -5,12 +5,14 @@
         "build": "node scripts/build.mjs",
         "lint": "eslint",
         "format": "eslint --fix",
-        "test": "node ttv-tools/dsl/tests/run.js",
-        "lint:firefox": "web-ext lint --source-dir dist/firefox"
+        "test": "node src/dsl/tests/run.js",
+        "lint:firefox": "web-ext lint --source-dir dist/firefox",
+        "watch": "node scripts/build.mjs --watch"
     },
     "devDependencies": {
         "@eslint/js": "^10.0.1",
         "@stylistic/eslint-plugin": "^5.10.0",
+        "esbuild": "^0.28.2",
         "eslint": "^10.11.0",
         "globals": "^17.12.0",
         "web-ext": "^10.7.0"

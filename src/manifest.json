@@ -86,6 +86,7 @@
                 "ext/glyphs.js",
                 "ext/irc.js",
                 "core.js",
+                "lib.js",
                 "tools.js",
                 "chat.js",
                 "ext/tracking.js",

@@ -3,19 +3,29 @@
  *
  *     node scripts/build.mjs              → dist/chrome/, dist/firefox/
  *     node scripts/build.mjs --zip        → also dist/ttv-tools.zip, dist/ttv-tools-firefox.zip
+ *     node scripts/build.mjs --watch      → rebuild on every change under src/
  *
- * `ttv-tools/` stays the source of truth and still loads unpacked in Chrome as-is. The build
- * copies it (minus dev-only files), then rewrites `manifest.json` per target. Bundling with
- * esbuild joins this step once plugins land in Phase 3 (see REVAMP.md).
+ * Load `dist/chrome` (or `dist/firefox`) unpacked. The build copies `src/` (minus dev-only files and
+ * module sources), bundles each entry in BUNDLES with esbuild, then rewrites `manifest.json` per target.
  */
 
 import fs from 'node:fs';
 import path from 'node:path';
 import zlib from 'node:zlib';
+import * as esbuild from 'esbuild';
 
-const SOURCE = 'ttv-tools';
+const SOURCE = 'src';
 const OUTPUT = 'dist';
 const ZIP = process.argv.includes('--zip');
+const WATCH = process.argv.includes('--watch');
+
+// ES-module entry points (in SOURCE) → the classic script each becomes (in the extension)
+const BUNDLES = {
+    'lib/index.js': 'lib.js',
+};
+
+// Folders holding ES-module sources; only their bundles ship
+const MODULE_FOLDERS = /^(lib|plugins)\//;
 
 // Firefox needs a stable add-on ID; changing it after publishing orphans existing installs
 const GECKO_ID = 'ttv-tools@ephellon.github.io';
@@ -69,14 +79,49 @@ function listFiles(directory, base = directory) {
     });
 }
 
-const files = listFiles(SOURCE).filter(file => !EXCLUDE.some(pattern => pattern.test(file))).sort();
-const manifest = JSON.parse(fs.readFileSync(path.join(SOURCE, 'manifest.json'), 'utf8'));
+async function bundle() {
+    let output = {};
 
-fs.rmSync(OUTPUT, { recursive: true, force: true });
+    for(let [entry, file] of Object.entries(BUNDLES)) {
+        let { outputFiles: [result] } = await esbuild.build({
+            entryPoints: [path.join(SOURCE, entry)],
+            bundle: true,
+            format: 'iife',
+            target: ['chrome88', `firefox${ parseInt(GECKO_MIN_VERSION) }`],
+            charset: 'utf8',
+            legalComments: 'inline',
+            write: false,
+            outfile: file,
+            keepNames: true,            // Legacy code reads constructor and function names
+            logLevel: 'warning',
+        });
 
-for(let [target, transform] of Object.entries(TARGETS)) {
+        output[file] = Buffer.from(result.contents);
+    }
+
+    return output;
+}
+
+async function build() {
+    let files = listFiles(SOURCE).filter(file => !EXCLUDE.some(pattern => pattern.test(file)) && !MODULE_FOLDERS.test(file)).sort();
+    let manifest = JSON.parse(fs.readFileSync(path.join(SOURCE, 'manifest.json'), 'utf8'));
+    let bundles = await bundle();
+
+    fs.rmSync(OUTPUT, { recursive: true, force: true });
+
+    for(let [target, transform] of Object.entries(TARGETS))
+        write(target, transform, files, manifest, bundles);
+}
+
+function write(target, transform, files, manifest, bundles) {
     let directory = path.join(OUTPUT, target);
     let entries = [];
+
+    for(let [file, data] of Object.entries(bundles)) {
+        fs.mkdirSync(path.dirname(path.join(directory, file)), { recursive: true });
+        fs.writeFileSync(path.join(directory, file), data);
+        entries.push({ name: file, data });
+    }
 
     for(let file of files) {
         let data = file == 'manifest.json'?
@@ -96,6 +141,19 @@ for(let [target, transform] of Object.entries(TARGETS)) {
         fs.writeFileSync(path.join(OUTPUT, name), zip(entries));
         console.log(`${ target }: ${ path.join(OUTPUT, name) }`);
     }
+}
+
+await build();
+
+if(WATCH) {
+    let timer;
+
+    console.log(`Watching ${ SOURCE }/ for changes...`);
+
+    fs.watch(SOURCE, { recursive: true }, () => {
+        clearTimeout(timer);
+        timer = setTimeout(() => build().catch(error => console.error(error.message)), 200);
+    });
 }
 
 // Minimal ZIP writer (deflate, forward-slash paths) so the build needs no platform `zip` tool

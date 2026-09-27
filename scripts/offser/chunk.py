@@ -2,7 +2,7 @@ import os
 WORK=os.environ.get('OFFSER_WORK','.offser')
 os.makedirs(WORK,exist_ok=True)
 import re, json, os
-ROOT='ttv-tools'
+ROOT='src'
 FILES=['core.js','tools.js','chat.js','player.js','clips.js','settings.js','background.js']
 TARGET, MAX, MIN = 550, 800, 40
 marker=re.compile(r'^\s*/\*\*\* (.*)')

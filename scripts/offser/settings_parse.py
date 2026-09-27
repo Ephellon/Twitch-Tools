@@ -3,7 +3,7 @@ WORK=os.environ.get('OFFSER_WORK','.offser')
 os.makedirs(WORK,exist_ok=True)
 import re, json
 from html.parser import HTMLParser
-src=open('ttv-tools/settings.html',encoding='utf8').read()
+src=open('src/settings.html',encoding='utf8').read()
 class P(HTMLParser):
     def __init__(s):
         super().__init__(); s.group=None; s.sec=None; s.secs=[]; s.stack=[]; s.cap=None; s.buf=''; s.select=None; s.depth=0
@@ -40,7 +40,7 @@ json.dump(secs,open(WORK+'/settings.json','w'),indent=1)
 ids={i['id'] for x in secs for i in x['inputs']}
 code=set()
 for f in ['core.js','tools.js','chat.js','player.js','clips.js','background.js','settings.js']:
-    code|=set(re.findall(r'Settings\.([A-Za-z_]\w*)',open('ttv-tools/'+f,encoding='utf8').read()))
+    code|=set(re.findall(r'Settings\.([A-Za-z_]\w*)',open('src/'+f,encoding='utf8').read()))
 print(len(secs),'sections',len(ids),'input ids',len(code),'keys in code')
 print('in code not html:',sorted(code-ids)[:60])
 print('in html not code:',len(ids-code),sorted(ids-code)[:40])

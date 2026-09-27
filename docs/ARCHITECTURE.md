@@ -7,7 +7,7 @@ How TTV Tools is put together as of v5.35.3.3 (before the revamp). Written in Ph
 
 ## 1. What runs where
 
-`ttv-tools/manifest.json` injects a different set of **classic scripts** per page. Scripts in one set share a single global scope (the extension's isolated world), so a top-level `let` in `core.js` is visible in `tools.js`. Load order matters.
+`src/manifest.json` injects a different set of **classic scripts** per page. Scripts in one set share a single global scope (the extension's isolated world), so a top-level `let` in `core.js` is visible in `tools.js`. Load order matters.
 
 | Page (match) | Scripts, in order | Entry point |
 |---|---|---|
