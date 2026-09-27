@@ -140,6 +140,17 @@ async function build() {
         write(target, transform, files, manifest, bundles);
 }
 
+/**
+ * Reads a stylesheet, replacing each `/* @include path *\/` with that file (relative to SOURCE), so
+ * feature styles can live beside their plugins yet keep their place in the cascade.
+ * @param {string} file - The stylesheet, relative to SOURCE
+ * @returns {string} The stylesheet with its includes expanded
+ */
+function includeStyles(file) {
+    return fs.readFileSync(path.join(SOURCE, file), 'utf8')
+        .replace(/\/\* @include ([\w./-]+\.css) \*\//g, ($0, $1, $$, $_) => fs.readFileSync(path.join(SOURCE, $1), 'utf8').trimEnd());
+}
+
 function write(target, transform, files, manifest, bundles) {
     const directory = path.join(OUTPUT, target);
     const entries = [];
@@ -153,7 +164,9 @@ function write(target, transform, files, manifest, bundles) {
     for(const file of files) {
         const data = file == 'manifest.json'
             ? Buffer.from(JSON.stringify(transform(structuredClone(manifest)), null, 4) + '\n')
-            : fs.readFileSync(path.join(SOURCE, file));
+            : file.endsWith('.css')
+                ? Buffer.from(includeStyles(file))
+                : fs.readFileSync(path.join(SOURCE, file));
 
         fs.mkdirSync(path.dirname(path.join(directory, file)), { recursive: true });
         fs.writeFileSync(path.join(directory, file), data);

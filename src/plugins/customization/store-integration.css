@@ -1,0 +1,163 @@
+/*** /plugins/customization/store-integration.css
+ * Store Integration: "Buy on {store}". Included into extras.css at build time (see docs/STYLES.md).
+ */
+
+.tt-store-purchase--container {
+    background: var(--color-background-pill);
+    border-radius: var(--ttv-radius-xs);
+    border: 3px solid var(--color-background-pill);
+    color: var(--color-text-alt);
+    display: inline-block;
+    font-size: 12px;
+
+    margin: 0 0.25rem 0 0;
+    padding: 0;
+
+    height: -webkit-fit-content;
+    height:    -moz-fit-content;
+    height:         fit-content;
+    width: -webkit-fit-content;
+    width:    -moz-fit-content;
+    width:            fit-content;
+}
+
+.tt-store-purchase--price, .tt-store-purchase--handler {
+    box-shadow: var(--ttv-black-53) 2px 2px 10px;
+
+    float: left;
+    margin-left: 3px;
+}
+
+.tt-store-purchase--price {
+    border-radius: var(--ttv-radius-xs);
+    border: 0;
+    box-shadow: inset 0 0 20px 10px var(--color-background-alt);
+    color: var(--color-text-alt);
+    font-family: sans-serif;
+    font-size: 13px;
+    text-shadow: 1px 1px 3px var(--color-background-alt);
+
+    padding: 5px 12px 4px;
+
+    height: -webkit-fill-available;
+}
+
+.tt-store-purchase--handler {
+    height: -webkit-fill-available;
+}
+
+.tt-store-purchase--handler a {
+    transition: background var(--ttv-slower) ease 0s, box-shadow var(--ttv-slower) ease 0s;
+
+    background: -webkit-gradient(linear, left top, right top, color-stop(5%, var(--channel-color)), color-stop(95%, var(--channel-color-contrast)));
+    background: -o-linear-gradient(left, var(--channel-color) 5%, var(--channel-color-contrast) 95%);
+    background: linear-gradient(to right, var(--channel-color) 5%, var(--channel-color-contrast) 95%);
+    border-radius: var(--ttv-radius-xs);
+    box-shadow: var(--ttv-black-13) 0 0 20px 10px inset;
+    color: var(--ttv-surface-light-hover);
+    cursor: pointer;
+    display: inline-block;
+    font-size: 14px;
+    line-height: 2;
+    text-align: center;
+    text-decoration: none !important;
+    text-shadow: var(--ttv-black-27) 1px 1px 2px;
+    text-transform: unset;
+
+    padding: 0 11px;
+
+    height: -webkit-fill-available;
+}
+
+.is-steam .tt-store-purchase--handler a {
+    background: -webkit-gradient(linear, left top, right top, color-stop(5%, #00ccff), color-stop(95%, #3366ff));
+    background: -o-linear-gradient(left, #00ccff 5%, #3366ff 95%);
+    background: linear-gradient(to right, #00ccff 5%, #3366ff 95%);
+}
+
+.is-playstation .tt-store-purchase--handler a {
+    background: -webkit-gradient(linear, left top, right top, color-stop(5%, #00ffff), color-stop(95%, #0072ce));
+    background: -o-linear-gradient(left, #00ffff 5%, #0072ce 95%);
+    background: linear-gradient(to right, #00ffff 5%, #0072ce 95%);
+}
+
+.is-xbox .tt-store-purchase--handler a {
+    background: -webkit-gradient(linear, left top, right top, color-stop(5%, #44ff44), color-stop(95%, #107c10));
+    background: -o-linear-gradient(left, #44ff44 5%, #107c10 95%);
+    background: linear-gradient(to right, #44ff44 5%, #107c10 95%);
+}
+
+.is-nintendo .tt-store-purchase--handler a {
+    background: -webkit-gradient(linear, left top, right top, color-stop(5%, #e60012), color-stop(95%, #ac000d));
+    background: -o-linear-gradient(left, #e60012 5%, #ac000d 95%);
+    background: linear-gradient(to right, #e60012 5%, #ac000d 95%);
+}
+
+.is-epic .tt-store-purchase--handler a {
+    background: -webkit-gradient(linear, left top, right top, color-stop(5%, #a040f0), color-stop(95%, #9a29e9));
+    background: -o-linear-gradient(left, #a040f0 5%, #9a29e9 95%);
+    background: linear-gradient(to right, #a040f0 5%, #9a29e9 95%);
+}
+
+.tt-store-purchase--handler a:hover {
+    box-shadow: var(--ttv-black-53) 0 0 20px 10px inset;
+    color: var(--ttv-white);
+}
+
+[id^="tt-"][id$="-purchase"] {
+    display: none;
+}
+
+:is([data-mature-content], [data-version-name], [data-good-match]) {
+    max-width: 20rem;
+}
+
+:is([data-mature-content], [data-version-name])::before {
+    border-radius: var(--ttv-radius-xs);
+    border: 0;
+    color: var(--color-warn);
+    display: inline-block;
+    font-weight: bold;
+
+    transform: translate(0, -90%);
+    position: absolute;
+    padding: 0 0 0 3px;
+
+    width: -webkit-fit-content;
+    width:    -moz-fit-content;
+    width:            fit-content;
+}
+
+[data-mature-content]::before {
+    text-transform: uppercase;
+}
+
+[data-mature-content]:not([data-mature-content="false"i]):not([data-mature-content=""i]), [data-version-name]:not([data-version-name=""i]) {
+    padding-top: 1.5rem;
+}
+
+[data-mature-content]:not([data-mature-content="true"i]):not([data-mature-content="false"i]):not([data-mature-content=""i])::before {
+    content: attr(data-mature-content);
+}
+
+[data-version-name]:not([data-version-name=""i])::before {
+    content: attr(data-version-name);
+}
+
+[name][data-good-match="false"i]::after {
+    content: attr(name);
+
+    color: var(--color-border-overlay-warn);
+    display: block;
+    overflow: hidden;
+    -o-text-overflow: ellipsis;
+    text-overflow: ellipsis;
+
+    padding: 0 0 0 3px;
+
+    width: 100%;
+}
+
+[data-mature-content="true"i]::before {
+    content: "Mature 🔞️";
+}

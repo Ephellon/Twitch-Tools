@@ -1,0 +1,11 @@
+/*** /plugins/chat/recover-messages.css
+ * Recover Messages: resurrected messages. Included into extras.css at build time (see docs/STYLES.md).
+ */
+
+[data-resurrected="true"i] .text-fragment {
+    display: contents !important;
+}
+
+[data-resurrected="true"i]:not(:hover) {
+    --text-decoration: line-through;
+}

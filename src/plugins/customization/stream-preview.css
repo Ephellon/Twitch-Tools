@@ -1,0 +1,26 @@
+/*** /plugins/customization/stream-preview.css
+ * Stream Preview: blank-ad frame. Included into extras.css at build time (see docs/STYLES.md).
+ */
+
+.tt-stream-preview[blank-ad="true"i] {
+    border-radius: 5rem !important;
+
+    top: 5rem !important;
+
+    height: 5rem !important;
+    width: 5rem !important;
+}
+
+.tt-stream-preview[blank-ad="true"i]::before {
+    content: "Ad";
+
+    background: var(--color-twitch-purple);
+    border-radius: 5rem;
+    border: 2.5rem solid var(--color-twitch-purple);
+    opacity: 1;
+
+    transform: translate(-50%, -50%);
+    position: absolute;
+    left: 50%;
+    top: 50%;
+}

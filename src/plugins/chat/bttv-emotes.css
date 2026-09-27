@@ -1,0 +1,12 @@
+/*** /plugins/chat/bttv-emotes.css
+ * BetterTTV Emotes. Included into extras.css at build time (see docs/STYLES.md).
+ */
+
+.tt-emote-bttv {
+    display: -webkit-inline-box;
+    display: -ms-inline-flexbox;
+    display:         inline-flex;
+
+    height: 4rem;
+    width: 4rem;
+}

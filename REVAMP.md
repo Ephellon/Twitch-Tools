@@ -68,7 +68,13 @@ Living plan for the multi-week revamp. One phase at a time; each phase ends in s
 - Fixed along the way: the page ignored the declared defaults of three selects, because they were lost before first save. New installs now get your defaults: Accent Color twitch-purple, Next Channel random, notification sound "goes without saying". Eight settings (e.g. the Up Next minutes) were never saved on first run; content scripts now read their defaults.
 - Left for Phase 7: rows for user plugins, from the same `settings` declarations.
 
-### 6. Styling
+### 6. Styling ✅
+- **Tokens:** `src/tokens.css` (`--ttv-*`: palette, surfaces, radii, layers, timings, fonts) loads first on Twitch and on the Settings page. `extras.css` and `settings.css` use 238 of them, swapped only where the value matched exactly. See [docs/STYLES.md](docs/STYLES.md).
+- **Dedupe:** removed what `settings.css` repeated from `extras.css` wherever the cascade allowed it, plus 218 vendor prefixes and 9 `@-webkit-keyframes` that Chrome 88+/Firefox 142+ don't need.
+- **Per-plugin CSS:** 8 feature blocks moved beside their plugins (`<plugin>.css`); the build inlines them at `/* @include … */` markers, so the cascade order is unchanged.
+- **Tooltip `from: 'down'`:** resolved. Its placement fell through to the default one, which overrode it, so every direction already used one placement; the dead code is gone.
+- **Verified:** every element's computed style on the Settings page (dark, light, with sample popups and a tooltip) and on the stub channel page is unchanged. The built `extras.css` matches the old one, ignoring comments and whitespace.
+- Still open: the left navbar bounce (in the low-priority triage list). It depends on script timing on a live page, so it needs a live reproduction.
 - **Code style ✅ (side quest):** [docs/STYLEGUIDE.md](docs/STYLEGUIDE.md) is locked in, enforced by the house ESLint rules in `scripts/eslint/style.mjs`, and `npm run format` has been applied everywhere. Owner choices:
   - ternary `?`/`:` lead their lines;
   - declarations are comma-first;
@@ -100,7 +106,7 @@ All Offser output is treated as a draft — verified against the code before it 
 
 - **Reloads:** hidden tabs defer reloads until visible; background respawns are capped at one per tab per 2 min.
 - **Stop/Prevent Hosting:** removed in Phase 4 (Twitch dropped hosting in 2022).
-- **Tooltip `from: 'down'`:** revisit in Phase 6.
+- **Tooltip `from: 'down'`:** resolved in Phase 6 (dead placement code removed; behaviour unchanged).
 - **Version:** the revamp ships as **v6** (manifest bump happens at release, Phase 8).
 - **Plugins:** both — built-in features become plugins (Phases 3–4), user plugins via TTV DSL (Phase 7).
 - **Build step:** allowed. Source stays in `ttv-tools/` (still loads unpacked as-is); `scripts/build.mjs` produces `dist/`. esbuild joins in Phase 3 when plugins get real `import`s.

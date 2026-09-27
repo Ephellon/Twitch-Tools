@@ -1,0 +1,12 @@
+/*** /plugins/chat/rewards-calculator.css
+ * Rewards Calculator. Included into extras.css at build time (see docs/STYLES.md).
+ */
+
+[tt-rewards-calc]::before, [tt-rewards-calc]::after {
+    font-style: italic;
+    text-align: center;
+
+    width: -webkit-fill-available;
+    width:            -moz-available;
+    width:                   stretch;
+}

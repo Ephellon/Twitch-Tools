@@ -1,0 +1,16 @@
+/*** /plugins/automation/claim-reward.css
+ * Claim Reward: rewards on cooldown. Included into extras.css at build time (see docs/STYLES.md).
+ */
+
+.reward-list-item[timed-out]:not([timed-out=""])::before {
+    content: attr(timed-out);
+
+    display: block;
+    text-align: center;
+
+    transform: translate(0, 100%);
+    top: 1rem;
+    z-index: var(--ttv-layer-top);
+
+    width: inherit;
+}

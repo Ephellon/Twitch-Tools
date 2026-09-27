@@ -70,6 +70,8 @@ export default {
 };
 ```
 
+Styles that belong only to the feature go in `kill-extensions.css`, included into `extras.css` at a `/* @include … */` marker (see [Styles](STYLES.md)).
+
 Then add the plugin to `src/plugins/index.js`, which sets the order plugins start in:
 
 ```js

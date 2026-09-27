@@ -77,7 +77,7 @@ The owner can still reproduce these; none is fatal.
 
 1. **Auto DVR:** not a bug. `DVR_CLIP_PRECOMP_NAME` is a getter defined on `top` (tools.js L15542), and it already falls back to `new ClipName(2)`; the lint config now sees such globals. The master handler's undefined `body` is fixed. It had no prompt to look up.
 2. **Stop Hosting / Prevent Hosting:** to be removed in Phase 4. Twitch dropped hosting in 2022.
-3. **Tooltip `from: 'down'`** (core.js L696–705): unclear, so it is revisited in Phase 6 (styling).
+3. **Tooltip `from: 'down'`** (core.js): resolved in Phase 6. The 'down' placement fell through to the default one, which overrode it, so the dead branch was removed with no change in behaviour.
 4. **Frozen tabs in RAM Alarms:** they use the `high` tier's action (`ram_onhigh`, else `ignore`).
 
 ## Not bugs (false positives, by kind)

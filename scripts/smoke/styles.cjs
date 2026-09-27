@@ -2,6 +2,7 @@
 // alerts, prompts and tooltips shown, so two builds can be diffed for CSS refactors that must not change anything.
 //
 //   CHROMIUM=/path/to/chrome node scripts/smoke/styles.cjs dist/chrome out.txt [light]
+/* global Tooltip */
 const { chromium } = require('playwright-core');
 const path = require('path');
 const fs = require('fs');

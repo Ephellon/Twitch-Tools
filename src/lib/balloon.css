@@ -1,0 +1,11 @@
+/*** /lib/balloon.css
+ * Up Next panel (Balloon): pop-out buttons. Included into extras.css at build time (see docs/STYLES.md).
+ */
+
+.persistent-notification__popout {
+    opacity: 0;
+}
+
+.persistent-notification--hover .persistent-notification__popout, .persistent-notification:hover .persistent-notification__popout {
+    opacity: 1;
+}

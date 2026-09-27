@@ -1,0 +1,29 @@
+/*** /plugins/up-next/helpers.css
+ * Up Next: boost button. Included into extras.css at build time (see docs/STYLES.md).
+ */
+
+[up-next--container] button {
+    transition: border 1s ease 0s;
+}
+
+[up-next--container] button[allowed="false"i] {
+    border-color: var(--color-red) !important;
+}
+
+[up-next--container] button[allowed="true"i][speeding="true"i] {
+    animation: 2s linear 0s infinite normal none running spinning-border;
+
+    border-color: initial;
+    -webkit-border-image: conic-gradient(from var(--border-angle), var(--ttv-transparent), var(--color-yellow)) 1;
+    -moz-border-image: conic-gradient(from var(--border-angle), var(--ttv-transparent), var(--color-yellow)) 1;
+    -o-border-image: conic-gradient(from var(--border-angle), var(--ttv-transparent), var(--color-yellow)) 1;
+    border-image: conic-gradient(from var(--border-angle), var(--ttv-transparent), var(--color-yellow)) 1;
+    border-style: solid;
+    border-width: 1px;
+    box-sizing: content-box;
+}
+
+@keyframes up-next-speeding {
+    0% { border-color: var(--color-yellow) }
+    100% { border-color: transparent }
+}
