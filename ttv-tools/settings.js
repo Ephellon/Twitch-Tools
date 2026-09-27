@@ -1226,7 +1226,7 @@ $.all('#user_language_preference').map(select => {
         select.append(furnish('option', { value: code, innerHTML: `${ native } (${ regional }) &mdash; ${ latin }`.replace(/\s*\(\s*(?:undefined|null)?\s*\)/i, '') }));
     }
 
-    Storage.get({ user_language_preference }, ({ user_language_preference }) => {
+    Storage.get({ user_language_preference: '' }, ({ user_language_preference }) => {
         let lang = user_language_preference?.toLowerCase?.();
 
         $('option[selected]', select)?.removeAttribute?.('selected');
@@ -1805,7 +1805,7 @@ $('#sync-settings--upload-json-input').onchange = async event => {
 
             let value = data[ID];
 
-            switch(id) {
+            switch(ID) {
                 case 'filter_rules': {
                     RedoRuleElements(value, 'filter');
                 } break;
@@ -1837,7 +1837,7 @@ $('#sync-settings--upload-json-input').onchange = async event => {
                 } break;
 
                 case 'simplify_chat_font': {
-                    $(`#${ id }`).setAttribute('style', `font-family:${ value } !important`);
+                    $(`#${ ID }`).setAttribute('style', `font-family:${ value } !important`);
 
                     assignValue(element, value);
                 } break;
@@ -1967,7 +1967,7 @@ $('#sync-settings--download-json').onmouseup = async event => {
 
             default: {
                 if(nullish(element)) {
-                    settings.set(ID, 'X');
+                    settings[ID] = 'X';
                     continue;
                 }
 
@@ -2327,8 +2327,8 @@ setInterval(() => {
 
                     if(!isNaN(parseInt(value)))
                         value = parseInt(value).suffix('', 1);
-                    else if(!isNaN(parseValue(value)))
-                        value = parseValue(value).suffix('', 1);
+                    else if(!isNaN(parseFloat(value)))
+                        value = parseFloat(value).suffix('', 1);
 
                     self.closest('[fix-unit]').attr.fixedValue = value;
                 };
@@ -2411,7 +2411,7 @@ $.all('#search').map(input => {
             } break;
 
             case 'enter': {
-                $('#search-results [data-result="true"i]').dispatchEvent(new MouseEvent('mouseup'));
+                $('#search-results [data-result="true"i]')?.dispatchEvent(new MouseEvent('mouseup'));
             } break;
 
             default: {
@@ -2779,7 +2779,7 @@ document.body.onload = async() => {
 
         let detectedLanguage = '';
 
-        Storage.get({ user_language_preference }, ({ user_language_preference = '' }) => {
+        Storage.get({ user_language_preference: '' }, ({ user_language_preference = '' }) => {
             // if(/^[A-Z]+$/.test(user_language_preference))
                 detectedLanguage = user_language_preference;
         });
