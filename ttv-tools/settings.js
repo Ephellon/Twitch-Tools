@@ -1860,12 +1860,13 @@ $('#sync-settings--upload-json-input').onchange = async event => {
 
         $.all('[data-rest-id]').map(e => { delete e.dataset.restId });
 
-        PostSyncStatus(`Restored "${ file.name }". Save to keep these settings.`);
+        SaveSettings();
+
+        PostSyncStatus(`Restored and saved "${ file.name }".`);
     }).catch(e => {
         $warn(e);
         PostSyncStatus(`Failed to parse JSON file. See the console for more information.`);
     }).finally(() => {
-        // SaveSettings();
         currentTarget.nextElementSibling.classList.remove('spin');
     });
 };
