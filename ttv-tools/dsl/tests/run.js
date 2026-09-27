@@ -30,6 +30,7 @@ const MODULES = [
     'parser.js',
     'runtime.js',
     'compiler.js',
+    'highlight.js',
     'fake-page.js',
     'index.js',
 ];
@@ -43,6 +44,7 @@ const TESTS = [
     'host.test.js',
     'functions.test.js',
     'plugin.test.js',
+    'highlight.test.js',
 ];
 
 for (let name of MODULES)

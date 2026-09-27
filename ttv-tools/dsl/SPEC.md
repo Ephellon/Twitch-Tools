@@ -1673,8 +1673,29 @@ line and the block that line opened, and resumes. A script with three mistakes r
 errors rather than an avalanche. `TTV_DSL.parseTolerant(source)` returns
 `{ program, errors }`; `TTV_DSL.parse(source)` throws the first.
 
-`TTV_DSL.check(source)` returns a plain array of `{ name, message, loc, frame }` — the shape
-an editor wants.
+`TTV_DSL.check(source, { runtime })` returns a plain array of `{ name, message, loc, frame }`
+— the shape an editor wants, and a **stable** one: in source order, `[]` when clean. `loc` is
+`{ line, column, start, end }`; `line` and `column` are **1-based**, `start` and `end`
+**0-based** character offsets with `end` exclusive. `name` is the error class; `frame` is a
+ready excerpt with a caret line. *(v2.1)* A script that parses cleanly is also compiled —
+never run — so compile-time mistakes are reported too (an off-list permission, an undeclared
+`setting.name`, an unknown function, too many arguments), one at a time. Passing the host's
+`runtime` makes its extra permissions count; `check` never modifies it.
+
+### 10.2 Highlighting *(v2.1)*
+
+`TTV_DSL.highlight(source)` cuts a script into `{ type, text, start, end }` spans for an editor
+to colour. The spans cover **every character, in order**, with the same 0-based offsets as
+`check`; adjacent spans of one type are merged. It **never throws**: it uses the real
+tokenizer, a lexical fault marks the rest of its line `invalid` and scanning resumes on the
+next line, and brackets still open at the end of a half-typed script are closed virtually so
+the line keeps its colours. Template code inside `${ }` is coloured as code.
+
+`type` is one of a fixed list, exported as `TTV_DSL.HIGHLIGHT_TYPES`: `keyword`, `verb`,
+`string`, `template`, `number`, `duration`, `selector`, `sigil`, `operator`, `comment`,
+`identifier`, `punctuation`, `whitespace`, `invalid`. A sigil (`#`, `/`, `@`, `.`, `&`, `+`,
+`$`) is split from what it names, which is a `selector`. An ALL-CAPS word is a `verb` where it
+starts a line or when the script `define`s it; elsewhere it is an `identifier`.
 
 ---
 
@@ -1980,7 +2001,7 @@ The DSL files must load **in dependency order**, before any script that calls in
 `js` array gains, immediately before the first file that uses the DSL:
 
 ```json
-"dsl/errors.js", "dsl/tokens.js", "dsl/tokenizer.js", "dsl/ast.js", "dsl/parser.js", "dsl/runtime.js", "dsl/compiler.js", "dsl/index.js"
+"dsl/errors.js", "dsl/tokens.js", "dsl/tokenizer.js", "dsl/ast.js", "dsl/parser.js", "dsl/runtime.js", "dsl/compiler.js", "dsl/highlight.js", "dsl/index.js"
 ```
 
 (`fake-page.js` is for tests and the playground; the extension does not load it.)
@@ -1990,14 +2011,18 @@ No new permission is required. The compiler emits closures, never source text, s
 
 ### 15.2 `settings.html`
 
-The editor hook is a `<textarea>` plus a diagnostics panel:
+The editor hook is a `<textarea>` over a highlighted `<pre>`, plus a diagnostics panel:
 
-1. Add a `<textarea id="dsl-editor">` in a new settings section.
-2. On `input` (debounced), call `TTV_DSL.check(textarea.value)`.
-3. Render each returned `{ message, loc, frame }` into the panel; `loc.line` / `loc.column`
-   place the marker, and `frame` is a ready-made monospace excerpt.
-4. Persist the script text through the extension's existing settings storage, under a key
-   such as `dslScript`.
+1. Add a `<textarea id="dsl-editor">` in a new settings section, transparent, over a `<pre>`.
+2. On every `input`, render `TTV_DSL.highlight(textarea.value)` into the `<pre>` as
+   `<span class="ttv-dsl-<type>">` elements (§10.2). About 1 ms for a 500-line script.
+3. On `input` (debounced ~150 ms), call `TTV_DSL.check(textarea.value, { runtime })` and render
+   each `{ message, loc, frame }` into the panel; `loc.start`/`loc.end` underline the span,
+   `loc.line`/`loc.column` name it, and `frame` is a ready-made monospace excerpt.
+4. On save, call `TTV_DSL.inspect(source, { file })` for the plugin id, frames and settings
+   section (§6.12), and persist the script text through the extension's settings storage.
+
+`playground.html` is a working example of steps 1–3.
 
 Locations are already threaded through the tokenizer, the parser and template interpolations
 precisely so this step needs no changes to `dsl/`.
