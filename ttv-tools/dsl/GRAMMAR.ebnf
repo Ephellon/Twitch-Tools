@@ -162,7 +162,7 @@ cmp_op         = "is" , [ [ "or" ] , ( "above" | "below" ) ]
 (* (v2) `%` sits between the comparisons and the pipe: looser than `<|` so
    `1st <| .links % ','` joins what the pipe selected, tighter than `is` so a
    comparison sees the replaced text. *)
-pct_expr       = pipe_expr , { ( PCT_RUN | "~" ) , pipe_expr } ;   (* v2.1: "~" formats *)
+pct_expr       = pipe_expr , { ( PCT_RUN | "~" | "as" ) , pipe_expr } ;   (* v2.1: "~" / "as" format *)
 
 (* `<|` (also spelled `of`) is LOOSER than `where`, so pipe sits above where in
    the cascade:
@@ -411,7 +411,7 @@ context_sel    = "." , IDENT ;
   KEYWORD     = await | with | using | if | goto | any | from
               | where | of | is | in | and | or | not | true | false
               | when                                                 (* v2 *)
-              | else | above | below | after | calc                (* v2.1 *)
+              | else | above | below | after | calc | as           (* v2.1 *)
 
   RESERVED    = elif | elseif | switch | case | default
                 (* (v2) reserved for ONE purpose: to produce a diagnostic that

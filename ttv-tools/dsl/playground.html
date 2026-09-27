@@ -422,7 +422,7 @@
                 [TokenType.FORMAT]: 't-operator',
                 [TokenType.ARITH]: 't-operator',
                 [TokenType.PIPE]: 't-operator',
-                [TokenType.WHERE]: 't-keyword',
+                [TokenType.WHERE]: 't-operator',
                 [TokenType.ARROW_LOCAL]: 't-operator',
                 [TokenType.ARROW_PARENT]: 't-operator',
                 [TokenType.EXACT]: 't-operator',
@@ -485,7 +485,9 @@
                 if (ATOMIC_TYPES.has(token.type))
                     return 't-atomic';
 
-                if (KEYWORD_TYPES.has(token.type))
+                // A word spelling (`of`, `where`, `as`) colours as a keyword; its symbol twin
+                // (`<|`, `|`, `~`) shares the token type but colours as an operator.
+                if (KEYWORD_TYPES.has(token.type) && /^[a-z]/.test(token.lexeme ?? ''))
                     return 't-keyword';
 
                 if (TokenType.IDENT === token.type) {

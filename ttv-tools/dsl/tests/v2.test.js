@@ -898,6 +898,22 @@
             assert.equal(format(NaN, 'mm:ss'), '');
         });
 
+        it('is spelled `as` too, with identical meaning', async () => {
+            let { NodeType } = globalThis.TTV_DSL.ast,
+                symbol = parse('POST 5:00 ~ "mm:ss"\n').body[0].argument,
+                word = parse('POST 5:00 as "mm:ss"\n').body[0].argument;
+
+            assert.like(word, { type: NodeType.FormatExpression, subject: { milliseconds: 300000 }, pattern: { value: 'mm:ss' } });
+            assert.equal(symbol.type, word.type);
+
+            let { runtime } = harness();
+
+            await run('await *\n    POST `${ 5:00 as "mm:ss" } / ${ 90:00 ~ "h:mm" }`\n', runtime, {});
+            await runtime.dispatch({});
+
+            assert.deepEqual(sent(runtime), ['05:00 / 1:30']);
+        });
+
         it('works in a template, the way it will be written', async () => {
             let { runtime, clock } = harness();
 

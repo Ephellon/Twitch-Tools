@@ -362,7 +362,7 @@ Lowest (loosest) to highest (tightest):
 | 1 | `or` | left | logical disjunction |
 | 2 | `and` | left | logical conjunction |
 | 3 | `is`, `in`, `is [or] above/below` | **non-associative** | equality, membership, numeric comparison *(comparisons v2.1, §5.4)* |
-| 4 | `%…`, `~` | left | replacement / list join *(v2, §5.9)*, format *(v2.1, §5.14)* |
+| 4 | `%…`, `~` / `as` | left | replacement / list join *(v2, §5.9)*, format *(v2.1, §5.14)* |
 | 5 | `<\|`, `of` | left | pipe |
 | 6 | `where`, `\|` | left | filter *(`\|` is v2, §5.10)* |
 | 7 | `..`, `...` | non-associative | exclusive, inclusive range |
@@ -720,11 +720,17 @@ and `__proto__` may never be read.
 
 ### 5.14 The format operator, `~` *(v2.1)*
 
-`<value> ~ <pattern>` renders a duration as text:
+`<value> ~ <pattern>` — or, spelled as a word, `<value> as <pattern>` — renders a duration
+as text:
 
 ```
 POST `waited ${ wait_time ~ "hh?:mm:ss" }`      // 05:00, or 01:05:00 past the hour
+POST `waited ${ wait_time as "hh?:mm:ss" }`     // the same
 ```
+
+`~` and `as` are one operator with two spellings, sharing a token type exactly as `<|`/`of`
+and `|`/`where` do: brevity for those who want it, a sentence for those who don't. Neither
+can drift from the other.
 
 | In the pattern | Means |
 | :--- | :--- |

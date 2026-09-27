@@ -129,7 +129,8 @@ globalThis.TTV_DSL ??= {};
         /** `%`, `%n%s`, `%d%s` … — the regex-replacement operator. `value` is the array of
          * class letters, empty for a bare `%`. */
         PERCENT: 'PERCENT',
-        /** `~` — the format operator: `wait_time ~ "hh?:mm:ss"`. */
+        /** `~` / `as` — the format operator: `wait_time ~ "hh?:mm:ss"`, or
+         * `wait_time as "hh?:mm:ss"`. */
         FORMAT: 'FORMAT',
         /** `,` — an *optional* item separator. Never required, never meaningful between
          * statements. */
@@ -166,10 +167,12 @@ globalThis.TTV_DSL ??= {};
         any: TokenType.ANY,
         from: TokenType.FROM,
         where: TokenType.WHERE,
-        // `of` and `<|` are one operator with two spellings, as are `where` and `|`. Both
-        // pairs share a token type rather than being normalized later, so neither spelling
-        // can ever drift from the other in precedence or meaning.
+        // `of` and `<|` are one operator with two spellings, as are `where` and `|`, and
+        // `as` and `~`. Each pair shares a token type rather than being normalized later, so
+        // neither spelling can ever drift from the other in precedence or meaning. The word
+        // is for readers who want the line to read as a sentence; the symbol for brevity.
         of: TokenType.PIPE,
+        as: TokenType.FORMAT,
         is: TokenType.IS,
         in: TokenType.IN,
         and: TokenType.AND,
@@ -266,7 +269,7 @@ globalThis.TTV_DSL ??= {};
      * | 1 | `or`          | left  | logical disjunction                |
      * | 2 | `and`         | left  | logical conjunction                |
      * | 3 | `is` / `in`   | none  | equality / membership              |
-     * | 4 | `%…` / `~`    | left  | replacement, list join / format    |
+     * | 4 | `%…`, `~`/`as`| left  | replacement, list join / format    |
      * | 5 | `<|`          | left  | pipe                               |
      * | 6 | `where` (`|`) | left  | filter                             |
      * | 7 | `..` / `...`  | none  | exclusive / inclusive range        |
