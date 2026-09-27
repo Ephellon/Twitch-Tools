@@ -286,10 +286,12 @@ plugin({
 
         FIRST_IN_LINE_BOOST &&= ALL_FIRST_IN_LINE_JOBS.length > 0;
 
-        let filb = $('[speeding]');
+        // The boost button itself: `[speeding]` matched the Up Next toggle button first (the boost button
+        // marks it too), so once rushing ended this clicked the panel open and shut every second (#44)
+        let filb = $('#up-next-boost');
 
-        if(parseBool(filb?.getAttribute('speeding')) != parseBool(FIRST_IN_LINE_BOOST))
-            filb?.click?.();
+        if(defined(filb) && parseBool(filb.getAttribute('speeding')) != parseBool(FIRST_IN_LINE_BOOST))
+            filb.click();
 
         StopWatch.stop('first_in_line');
     },
