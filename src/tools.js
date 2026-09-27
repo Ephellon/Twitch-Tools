@@ -1721,15 +1721,11 @@ let Initialize = async(START_OVER = false) => {
             // There isn't a channel that fits the criteria
             if(parseBool(Settings.stay_live) && nullish(GetNextStreamer?.cachedStreamer) && online?.length) {
                 let preference = Settings.next_channel_preference,
-                    channels = (GetNextStreamer.cachedStreamer ??= randomChannel);
+                    channel = (GetNextStreamer.cachedStreamer ??= randomChannel);
 
-                if(!channels?.length)
-                    return randomChannel;
-
-                let [channel] = channels,
-                    { name } = channel;
-
-                $warn(`No channel fits the "${ preference }" criteria. Assuming a random channel ("${ name }") is desired:`, channel);
+                // `randomChannel` is one channel (not a list), so this warning never used to show
+                if(defined(channel))
+                    $warn(`No channel fits the "${ preference }" criteria. Assuming a random channel ("${ channel.name }") is desired:`, channel);
             }
 
             // @performance
