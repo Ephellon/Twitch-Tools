@@ -3855,6 +3855,11 @@ let Initialize = async(START_OVER = false) => {
                     if(parseBool(Settings.away_mode__volume_control))
                         SetVolume([InitialVolume, Settings.away_mode__volume][+enabled]);
 
+                    let controls = $(':is(video, [class*="video"i][class*="render"i]) ~ * .player-controls');
+
+                    if(defined(controls))
+                        controls.dataset.automatic = MAINTAIN_VOLUME_CONTROL && enabled && parseBool(Settings.away_mode__volume_control);
+
                     if(parseBool(Settings.away_mode__hide_chat))
                         ([
                             () => SetViewMode(InitialViewMode),
@@ -3885,7 +3890,7 @@ let Initialize = async(START_OVER = false) => {
             let controls = $(':is(video, [class*="video"i][class*="render"i]) ~ * .player-controls');
 
             if(defined(controls))
-                controls.dataset.automatic = MAINTAIN_VOLUME_CONTROL;
+                controls.dataset.automatic = MAINTAIN_VOLUME_CONTROL && enabled && parseBool(Settings.away_mode__volume_control);
 
             // Sets the size according to the video's physical size
             let size = (parseBool(Settings.low_data_mode)? getOffset($('video')).height.floorToNearest(100): -1);
@@ -3980,7 +3985,7 @@ let Initialize = async(START_OVER = false) => {
 
         // Set the color and control scheme
         when.defined(() => $(':is(video, [class*="video"i][class*="render"i]) ~ * .player-controls'))
-            .then(controls => controls.dataset.automatic = MAINTAIN_VOLUME_CONTROL);
+            .then(controls => controls.dataset.automatic = MAINTAIN_VOLUME_CONTROL && AwayModeStatus && parseBool(Settings.away_mode__volume_control));
 
         // Scheduling logic...
         when.defined(() => $('#away-mode'), 3000).then(awayMode => {
