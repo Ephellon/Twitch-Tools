@@ -5,7 +5,7 @@ Every feature is a plugin: one file under `src/plugins/<group>/`. Plugins come i
 - **Structured:** the feature describes its job, timer, clean-up and start-up code. This is the form for new code (below).
 - **Installed:** a feature moved verbatim from an initializer in Phase 4. Its `install(context)` runs the old section as-is, wiring its own `Handlers`/`Timers` and calling `RegisterJob`. Most plugins are this shape today. Convert one to the structured form when you next work on it.
 
-A plugin is one feature in one file under `src/plugins/<group>/`. It describes its job, timer, clean-up and start-up code once. `TTV.start()` then wires it into the job system in `core.js`, so it behaves like every legacy feature: toggling its setting starts or stops it (see [Architecture § 4](ARCHITECTURE.md#4-settings-lifecycle)).
+A structured plugin describes its job, timer, clean-up and start-up code once. `TTV.run()` then wires it into the job system in `core.js`, so it behaves like every legacy feature: toggling its setting starts or stops it (see [Architecture § 4](ARCHITECTURE.md#4-settings-lifecycle)).
 
 ## Example
 
@@ -60,7 +60,7 @@ import './automation/kill-extensions.js';
 | `setup(context)` | no | One-time start-up work. It replaces the legacy `__Label__: if(parseBool(Settings.id)) { … }` block, and like that block it only runs at page start |
 | `enabled(settings)` | no | Whether to start; defaults to `parseBool(settings[id])` |
 | `install(context)` | no | Installed form: runs the moved section verbatim, whether or not the feature is enabled. If present, the fields above are ignored |
-| `frames` | no | Where it runs: `main` (www.twitch.tv, top frame; the default), `chat`, `player`, `clips`. Only `main` is started today |
+| `frames` | no | Where `TTV.start(frame)` runs it: `main` (www.twitch.tv; the default), `chat`, `player`, `clips`. The bundle a plugin is in decides which pages load it (see below) |
 | `settings` | no | The settings it owns, with defaults; the Settings page will be generated from these in Phase 5 |
 
 ## Where plugins run
