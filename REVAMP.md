@@ -85,6 +85,7 @@ All Offser output is treated as a draft — verified against the code before it 
 
 ## Decisions
 
+- **Version:** the revamp ships as **v6** (manifest bump happens at release, Phase 8).
 - **Plugins:** both — built-in features become plugins (Phases 3–4), user plugins via TTV DSL (Phase 7).
 - **Build step:** allowed. Source stays in `ttv-tools/` (still loads unpacked as-is); `scripts/build.mjs` produces `dist/`. esbuild joins in Phase 3 when plugins get real `import`s.
 - **Browsers:** Chrome + Firefox — build emits a Chrome MV3 manifest and a Firefox variant (`browser_specific_settings`, background `scripts` fallback); `chrome.*` calls go through one compat shim.
