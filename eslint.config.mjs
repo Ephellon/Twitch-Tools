@@ -200,8 +200,8 @@ export default [
         languageOptions: { sourceType: 'module', globals: globals.serviceworker },
     },
     {
-        // ES modules bundled into lib.js; they share the page scope of the scripts loaded alongside it
-        files: [`${ ROOT }/lib/**/*.js`],
+        // ES modules bundled into lib.js (plugins included); they share the page scope of the scripts loaded alongside it
+        files: [`${ ROOT }/lib/**/*.js`, `${ ROOT }/plugins/**/*.js`],
         languageOptions: { sourceType: 'module', globals: sharedGlobals['lib.js'] },
     },
     {

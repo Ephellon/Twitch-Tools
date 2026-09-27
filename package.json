@@ -5,7 +5,7 @@
         "build": "node scripts/build.mjs",
         "lint": "eslint",
         "format": "eslint --fix",
-        "test": "node src/dsl/tests/run.js",
+        "test": "node src/dsl/tests/run.js && node --test \"src/lib/tests/*.test.mjs\"",
         "lint:firefox": "web-ext lint --source-dir dist/firefox",
         "watch": "node scripts/build.mjs --watch"
     },
@@ -15,6 +15,7 @@
         "esbuild": "^0.28.2",
         "eslint": "^10.11.0",
         "globals": "^17.12.0",
+        "playwright-core": "1.56",
         "web-ext": "^10.7.0"
     }
 }

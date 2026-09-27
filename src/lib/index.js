@@ -14,8 +14,13 @@ import { Chat } from './chat.js';
 import { parseCoin } from './currency.js';
 import { GetQuality, SetQuality, GetVolume, SetVolume, GetViewMode, SetViewMode } from './player.js';
 import { GetActivity, GetLanguage, ReloadPage } from './page.js';
+import { plugin, plugins, start } from './plugins.js';
+
+// Registers every plugin; tools.js starts them with `TTV.start('main', …)`
+import '../plugins/index.js';
 
 Object.assign(globalThis, {
+    TTV: { plugin, plugins, start },
     Balloon,
     ChatFooter,
     Card,

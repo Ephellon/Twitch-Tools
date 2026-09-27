@@ -45,21 +45,12 @@ Living plan for the multi-week revamp. One phase at a time; each phase ends in s
   - Old release zips used Windows `\` paths and shipped a local `-test.js`.
 - Fix only bugs that are isolated now; defer ones entangled with shared state to Phase 4 when the feature is moved.
 
-### 3. Core extraction + plugin contract
-- Split shared helpers (balloon, card, context menu, search, video quality/volume/view mode, SI parsing…) out of `tools.js` into `lib/*.js`.
-- Define the plugin contract, e.g.:
-  ```js
-  TTV.plugin({
-      id: 'auto_accept_mature',
-      frames: ['main'],
-      settings: { auto_accept_mature: { type: 'bool', default: true, label: '…', group: 'Automation' } },
-      timer: 5000,
-      handler() { … },
-      unhandler() { … },
-      init(ctx) { … },          // replaces the labeled __X__ block
-  });
-  ```
-- Loader keeps `RegisterJob`/`Limbo` semantics so behavior is unchanged.
+### 3. Core extraction + plugin contract ✅
+- Source moved to `src/`; load `dist/chrome` (`npm run build` / `npm run watch`).
+- Shared helpers moved verbatim from `tools.js` into `src/lib/` ES modules, bundled by esbuild into `lib.js`, and published on `globalThis` for the legacy scripts.
+- Plugin format: `TTV.plugin({ id, timer, handler, unhandler, setup, enabled, frames, settings })` in `src/lib/plugins.js`, started by `TTV.start('main', { StopWatch })` in `Initialize()`. See [`docs/PLUGINS.md`](docs/PLUGINS.md).
+- Pilot plugins: Auto-Join, Kill Extensions, View Mode (`src/plugins/automation/`).
+- Checks: registry unit tests (`src/lib/tests/`), plus a headless Chromium check that compares content-script output on a stubbed twitch.tv page before and after (local only; Twitch itself isn't reachable from CI).
 
 ### 4. Plugin migration (one feature per commit)
 - Move sections into `plugins/<group>/<id>.js`, apply the formatter as each file moves.

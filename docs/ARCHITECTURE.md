@@ -1,6 +1,8 @@
 # Architecture
 
-How TTV Tools is put together as of v5.35.3.3 (before the revamp). Written in Phase 1; see `REVAMP.md` for where it's heading.
+How TTV Tools is put together. Written in Phase 1 (v5.35.3.3) and updated as the revamp lands; see `REVAMP.md`.
+
+- [Writing a plugin](PLUGINS.md): the feature format introduced in Phase 3.
 
 - [Feature catalog](FEATURES.md): every Settings option → the code that reads it.
 - [Section digests](sections/): what each part of each file does.
@@ -11,7 +13,7 @@ How TTV Tools is put together as of v5.35.3.3 (before the revamp). Written in Ph
 
 | Page (match) | Scripts, in order | Entry point |
 |---|---|---|
-| `www.twitch.tv/*` | `ext/localforage` → `ext/polyfill` → `ext/resemble` → `ext/sortable` → `ext/glyphs` → `ext/irc` → **`core`** → **`tools`** → **`chat`** → `ext/tracking` → `ext/face` → `ext/eye` → `ext/mouth` (+ `core.css`, `extras.css`) | `Initialize()` in `tools.js`, `Chat__Initialize()` in `chat.js` |
+| `www.twitch.tv/*` | `ext/localforage` → `ext/polyfill` → `ext/resemble` → `ext/sortable` → `ext/glyphs` → `ext/irc` → **`core`** → **`lib`** (built) → **`tools`** → **`chat`** → `ext/tracking` → `ext/face` → `ext/eye` → `ext/mouth` (+ `core.css`, `extras.css`) | `Initialize()` in `tools.js`, `Chat__Initialize()` in `chat.js` |
 | `www.twitch.tv/popout/*` | same libs, **`core`** → **`chat`** | `Chat__Initialize()` |
 | `player.twitch.tv/*` | libs → **`core`** → **`player`** | `Player__Initialize()` |
 | `clips.twitch.tv/*` | libs → **`core`** → **`clips`** | `Clips__Initialize()` |
@@ -27,7 +29,9 @@ All content scripts run with `all_frames: true`. `tools.js` guards its bootstrap
 | Vendored libs | `ext/*.js` | `localforage` (IndexedDB), `Sortable`, `resemble` (image diff), face/eye/mouth tracking, `TTV_IRC` (chat IRC client), `Glyphs` (SVG icons) |
 | Language/DOM polyfill | `ext/polyfill.js` | Prototype extensions (`String..equals/unlike/contains`, `Array..contains/missing/random`, `Element..getElementByText`, `HTMLVideoElement..startRecording`…), `$`/`$.all`/`$.defined`, `parseURL`, `parseBool`, `furnish`, `LANGUAGE` |
 | Core | `core.js` | `UUID`, `nanoid`, `LZW`, `Tooltip`, `nullish`/`defined`/`empty`/`sated`, `when()` (poll-until promise family), `wait`/`delay`, `fetchURL`, **`Settings`**, **`Cache`**, extension-API aliases (`Runtime`, `Storage`, `Container`, `Manifest`), and the **job system** (`Jobs`, `Timers`, `Handlers`, `Unhandlers`, `Limbo`, `RegisterJob`, `UnregisterJob`, `RestartJob`, `DelayJob`) |
-| Main page | `tools.js` | UI primitives (`Balloon`, `ChatFooter`, `Card`, `ContextMenu`, `Search`, `Chat`), player helpers (`Get/SetQuality`, `Get/SetVolume`, `Get/SetViewMode`), page state (`STREAMER`, `STREAMERS`, `CHANNELS`, `SEARCH`, `NOTIFICATIONS`…), then ~99 features inside `Initialize()` |
+| Shared helpers (ES modules) | `lib/*.js` → `lib.js` | UI primitives (`Balloon`, `ChatFooter`, `Card`, `ContextMenu`, `Search`, `Chat`), player helpers (`Get/SetQuality`, `Get/SetVolume`, `Get/SetViewMode`), `parseCoin`, `GetActivity`/`GetLanguage`/`ReloadPage`, and the plugin registry (`TTV.plugin`, `TTV.start`). They are published on `globalThis` for the legacy scripts |
+| Plugins (ES modules) | `plugins/**` → `lib.js` | One file per migrated feature; see [PLUGINS.md](PLUGINS.md) |
+| Main page | `tools.js` | Page state (`STREAMER`, `STREAMERS`, `CHANNELS`, `SEARCH`, `NOTIFICATIONS`…), then ~99 features inside `Initialize()` |
 | Chat | `chat.js` | ~59 chat features inside `Chat__Initialize()`; a reduced `Chat__Initialize_Safe_Mode()` for banned / hidden chat |
 | Player, clips | `player.js`, `clips.js` | Small `*__Initialize()` for the embedded player and clip pages |
 | Settings UI | `settings.html/js/css` | Hand-written controls, `SaveSettings`/`LoadSettings`, JSON export/restore, translation |
@@ -112,7 +116,17 @@ Other background duties:
 - `windows.onFocusChanged` tracks the focused tab.
 - `Storage.onChanged` handles the update-available flags.
 
-## 8. Browser compatibility
+## 8. Build
+
+`src/` is not loadable by itself. `npm run build` (or `npm run watch`) writes `dist/chrome/` and `dist/firefox/`:
+
+1. It copies `src/`, except dev-only files and the ES-module folders (`lib/`, `plugins/`).
+2. esbuild bundles `lib/index.js` (which imports every plugin) into `lib.js`, an IIFE for Chrome 88+/Firefox 142+ that keeps function names.
+3. It writes `manifest.json` for each target.
+
+`--zip` adds the release zips.
+
+## 9. Browser compatibility
 
 - `core.js` and `background.js` pick `browser` or `chrome` as the API namespace. In `core.js` a local `let browser` shadows the global, so it always takes `chrome` (Phase 2 item).
 - `scripts/build.mjs` writes a Firefox manifest: background `scripts` instead of `service_worker`, a gecko ID, and no Chrome-only keys.

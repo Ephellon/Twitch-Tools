@@ -1509,6 +1509,7 @@ let Initialize = async(START_OVER = false) => {
 
     // Initialize all settings/features //
 
+
     let GLOBAL_TWITCH_API = (window.GLOBAL_TWITCH_API ??= {}),
         GLOBAL_EVENT_LISTENERS = (window.GLOBAL_EVENT_LISTENERS ??= {
             KEYDOWN_ALT_X: function Clip() {/* Managed by Twitch */},
@@ -3373,37 +3374,9 @@ let Initialize = async(START_OVER = false) => {
      *
      *
      */
-    /*** Auto-Join
-     *                    _                  _       _
-     *         /\        | |                | |     (_)
-     *        /  \  _   _| |_ ___ ______    | | ___  _ _ __
-     *       / /\ \| | | | __/ _ \______|   | |/ _ \| | '_ \
-     *      / ____ \ |_| | || (_) |    | |__| | (_) | | | | |
-     *     /_/    \_\__,_|\__\___/      \____/ \___/|_|_| |_|
-     *
-     *
-     */
-    let IGNORE_ZOOM_STATE = false;
-    Handlers.auto_accept_mature = () => {
-        $([
-            '[data-a-target*="mature"i]:is([data-a-target*="overlay"i], [data-a-target*="accept"i]) button',
-            '[data-a-target*="class"i]:is([data-a-target*="overlay"i], [data-a-target*="accept"i]) button',
-            '[data-a-target*="watchparty"i] button',
-            (IGNORE_ZOOM_STATE? '': '.home:not([user-intended="true"i]) [data-a-target^="home"i]')
-        ].filter(s => s.length).join(','))?.click();
-    };
-    Timers.auto_accept_mature = 5000;
-
-    __AutoMatureAccept__:
-    if(parseBool(Settings.auto_accept_mature)) {
-        RegisterJob('auto_accept_mature');
-
-        $.all(`[class*="info"i] [href$="${ STREAMER.name }"i] [class*="title"i], main [href$="${ STREAMER.name }"i]`).map(element => {
-            element.closest('div[class]').addEventListener('mousedown', async({ isTrusted, button = -1 }) => {
-                !button && (await when.defined(() => $('.home')))?.setAttribute?.('user-intended', IGNORE_ZOOM_STATE = isTrusted);
-            })
-        });
-    }
+    // Features that have become plugins (src/plugins/) start here, where the first of them used to be:
+    // Auto-Join, Kill Extensions, View Mode (src/plugins/automation/)
+    TTV.start('main', { StopWatch });
 
     /*** Auto-Focus
      *                    _              ______
@@ -9118,42 +9091,6 @@ let Initialize = async(START_OVER = false) => {
         RegisterJob('auto_follow_time');
     }
 
-    /*** Kill Extensions
-     *      _  ___ _ _   ______      _                 _
-     *     | |/ (_) | | |  ____|    | |               (_)
-     *     | ' / _| | | | |__  __  _| |_ ___ _ __  ___ _  ___  _ __  ___
-     *     |  < | | | | |  __| \ \/ / __/ _ \ '_ \/ __| |/ _ \| '_ \/ __|
-     *     | . \| | | | | |____ >  <| ||  __/ | | \__ \ | (_) | | | \__ \
-     *     |_|\_\_|_|_| |______/_/\_\\__\___|_| |_|___/_|\___/|_| |_|___/
-     *
-     *
-     */
-    Handlers.kill_extensions = () => {
-        new StopWatch('kill_extensions');
-
-        let extension_views = $.all('[class*="extension"i]:is([class*="view"i], [class*="popover"i])');
-
-        for(let view of extension_views)
-            view.modStyle('display:none!important');
-
-        StopWatch.stop('kill_extensions');
-    };
-    Timers.kill_extensions = 2_500;
-
-    Unhandlers.kill_extensions = () => {
-        let extension_views = $.all('[class^="extension-view"i]');
-
-        for(let view of extension_views)
-            view.removeAttribute('style');
-    };
-
-    __KillExtensions__:
-    if(parseBool(Settings.kill_extensions)) {
-        $remark("Adding extension killer...");
-
-        RegisterJob('kill_extensions');
-    }
-
     /*** Parse Commands
      *      _____                       _____                                          _
      *     |  __ \                     / ____|                                        | |
@@ -11420,24 +11357,6 @@ let Initialize = async(START_OVER = false) => {
     __CommonPhraseTranslations__:
     if(true) {
         RegisterJob('common_phrase_translations');
-    }
-
-    /*** View Mode
-     *     __      ___                 __  __           _
-     *     \ \    / (_)               |  \/  |         | |
-     *      \ \  / / _  _____      __ | \  / | ___   __| | ___
-     *       \ \/ / | |/ _ \ \ /\ / / | |\/| |/ _ \ / _` |/ _ \
-     *        \  /  | |  __/\ V  V /  | |  | | (_) | (_| |  __/
-     *         \/   |_|\___| \_/\_/   |_|  |_|\___/ \__,_|\___|
-     *
-     *
-     */
-    Handlers.view_mode = (mode = Settings.view_mode) => SetViewMode(mode);
-    Timers.view_mode = -2_500;
-
-    __ViewMode__:
-    if(parseBool(Settings.view_mode)) {
-        RegisterJob('view_mode');
     }
 
     /*** Chat & Messaging
