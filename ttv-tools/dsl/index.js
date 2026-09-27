@@ -108,6 +108,123 @@ if (typeof require === 'function' && typeof module === 'object')
             return [{ name: error.name, message: error.message, loc: error.loc, frame: error.codeFrame() }];
         }
     };
+
+    /** A script's plugin id when it has no header: its file name, cleaned to a settings key.
+     * @param {String} [file] - e.g. `raid-shoutouts.ttv` or a full path
+     * @return {String}
+     */
+    let idFromFile = (file) => {
+        let base = String(file ?? 'script').split(/[\\/]/).pop().replace(/\.ttv$/i, ''),
+            id = base.toLowerCase().replace(/[^a-z0-9_]+/g, '_').replace(/^_+|_+$/g, '');
+
+        return (/^[a-z]/.test(id)? id: `ttv_${ id || 'script' }`);
+    };
+
+    /** The `plugin` header of a script whose body does not scan, or null.
+     * @param {String} source
+     * @return {?Object}
+     */
+    let readHeaderAlone = (source) => {
+        let rows = String(source).split(/\r?\n/),
+            start = rows.findIndex(row => /^plugin\b/.test(row));
+
+        if (start < 0)
+            return null;
+
+        let end = start + 1;
+
+        while (end < rows.length && (/^\s/.test(rows[end]) || /^\s*($|\/\/)/.test(rows[end])))
+            ++end;
+
+        try {
+            return DSL.parse(rows.slice(start, end).join('\n') + '\n').body[0] ?? null;
+        } catch {
+            return null;
+        }
+    };
+
+    /** Reads a script's plugin metadata without running it — what the extension needs to
+     * register the script as a plugin and place its settings.
+     *
+     * `meta` is the plugin definition (`id`, `frames`) plus what a Settings section needs:
+     * `settings` in the `SETTINGS.md` schema — the enable toggle under `<id>`, every declared
+     * setting under `<id>__<name>` — and a ready-made `section`. `permissions` lists every
+     * granting block with its description, for the prompt. A script without a header gets
+     * defaults derived from `file`. `diagnostics` is `TTV_DSL.check`'s output; `meta` is still
+     * returned when there are diagnostics, as far as the header could be read.
+     * @param {String} source
+     * @param {{ file?: String }} [options]
+     * @return {{ meta: Object, diagnostics: Array<Object> }}
+     */
+    DSL.inspect = (source, { file } = {}) => {
+        let diagnostics = DSL.check(source),
+            header = null,
+            permissions = [];
+
+        try {
+            let { program } = DSL.parseTolerant(source);
+
+            header = program.body.find(statement => DSL.NodeType.PluginHeader === statement.type) ?? null;
+
+            DSL.walk(program, {
+                [DSL.NodeType.UsingStatement](node) {
+                    if (node.permissions.length)
+                        permissions.push({ permissions: node.permissions.slice(), description: node.description, line: node.loc?.line ?? null });
+                },
+            });
+        } catch (error) {
+            if (!(error instanceof DSL.errors.DSLError))
+                throw error;
+
+            // A lexical fault anywhere aborts the whole scan. The header is still worth
+            // having — the extension needs the id and settings to show the script as broken —
+            // so read the header lines on their own: from `plugin` to the first line back at
+            // the left margin.
+            header = readHeaderAlone(source);
+        }
+
+        let id = (header?.id ?? idFromFile(file)),
+            name = (header?.name ?? String(file ?? id).split(/[\\/]/).pop().replace(/\.ttv$/i, '')),
+            description = (header?.description ?? null),
+            frames = (header?.frames ?? ['chat']),
+            settings = { [id]: { type: 'checkbox', default: false } },
+            rows = [{ toggle: id }];
+
+        if (description)
+            rows.push({ text: description, tr: false });
+
+        for (let setting of (header?.settings ?? [])) {
+            let key = `${ id }__${ setting.name }`,
+                entry = { type: setting.type };
+
+            // A select marks its default on the option, as `SETTINGS.md` does; the others
+            // carry `default` themselves.
+            if ('select' === setting.type)
+                entry.options = setting.options.map(option => Object.assign({ value: option.value, label: option.label }, option.value === setting.default? { default: true }: {}));
+            else
+                entry.default = setting.default;
+
+            for (let field of ['min', 'max', 'step', 'unit', 'placeholder'])
+                if (field in setting)
+                    entry[field] = setting[field];
+
+            settings[key] = entry;
+            rows.push({ text: `${ setting.label ?? setting.name }: {{${ key }}}`, tr: false });
+        }
+
+        return {
+            meta: {
+                id,
+                name,
+                description,
+                frames,
+                settings,
+                section: { title: name, rows, settings },
+                permissions,
+            },
+            diagnostics,
+        };
+    };
 })();
 
 if (typeof module === 'object' && module?.exports)

@@ -22,7 +22,25 @@
 
 (* -- program and blocks -------------------------------------------------- *)
 
-program        = { statement } , EOF ;
+(* (v2.1) An optional plugin header comes first; see SPEC 6.12. *)
+program        = [ plugin_header ] , { statement } , EOF ;
+
+plugin_header  = "plugin" , PLUGIN_ID , [ DESCRIBE , STRING ] , NEWLINE ,
+                 [ INDENT , header_line , { header_line } , DEDENT ] ;
+header_line    = "about" , STRING , NEWLINE
+               | "frames" , FRAME , { "," , FRAME } , NEWLINE
+               | setting_decl ;
+setting_decl   = "setting" , SETTING_NAME , ":" , SETTING_TYPE , header_literal ,
+                 [ DESCRIBE , STRING ] , NEWLINE ,
+                 [ INDENT , setting_line , { setting_line } , DEDENT ] ;
+setting_line   = setting_item , { "," , setting_item } , NEWLINE ;
+setting_item   = ( "min" | "max" | "step" ) , header_literal
+               | ( "unit" | "placeholder" ) , STRING
+               | "option" , STRING , [ DESCRIBE , STRING ] ;
+header_literal = STRING | "true" | "false" | [ "-" ] , ( NUMBER | DURATION ) ;
+
+(* about / frames / min / max / step / unit / placeholder / option are
+   ordinary IDENTs, read contextually inside the header only. *)
 
 (* Blank and comment-only lines emit no tokens at all, so no production has to
    allow for them. *)
@@ -226,6 +244,7 @@ member_expr    = primary , { context_sel } ;
 call_expr      = FUNC_NAME , [ pipe_expr , { "," , pipe_expr } ] ;
 
 primary        = call_expr          (* v2.1 *)
+               | "setting" , CONTEXT_SEL    (* v2.1: `setting.name`, glued *)
                | "$"                (* v2.1: the innermost loop's counter *)
                | literal
                | selector
@@ -434,6 +453,10 @@ context_sel    = "." , IDENT ;
                    applies this rule, at binding sites only. v2 required an
                    interior underscore instead. *)
   FUNC_NAME   = an UPPER_IDENT named by a `define` in the same script  (* v2.1 *)
+  PLUGIN_ID   = [a-z][a-z0-9_]*                                      (* v2.1 *)
+  SETTING_NAME= [a-z][a-z0-9_]*                                      (* v2.1 *)
+  SETTING_TYPE= "checkbox" | "number" | "text" | "select"            (* v2.1 *)
+  FRAME       = "chat" | "main"                                      (* v2.1 *)
 
   BADGE_NAME  = [A-Za-z][A-Za-z0-9_-]*   (* reached only inside "[ ]" *)
 
@@ -450,6 +473,7 @@ context_sel    = "." , IDENT ;
               | when                                                 (* v2 *)
               | else | above | below | after | calc | as           (* v2.1 *)
               | define | return | for | break | renew             (* v2.1 *)
+              | plugin | setting                                   (* v2.1 *)
 
   RESERVED    = elif | elseif | switch | case | default
                 (* (v2) reserved for ONE purpose: to produce a diagnostic that

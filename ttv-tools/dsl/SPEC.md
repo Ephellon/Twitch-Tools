@@ -37,7 +37,8 @@ It also adds `else` (§6.7), `is above` / `is below` / `is or above` / `is or be
 `ANYTHING` / `SOMETHING` / `NOTHING` (§3.7), nested property reads `.a.b.c` (§5.13), a
 `using` with no subject (§6.3), `after` (§6.9), the `~` format operator (§5.14), arithmetic
 in `calc( ... )` (§5.15), lists (§8), host calls as statements (§6.6), functions — verbs the
-script defines (§6.10) — and loops (§6.11), with budget grants to pay for them (§12).
+script defines (§6.10) — and loops (§6.11), with budget grants to pay for them (§12), and a
+`plugin` header with typed settings (§6.12).
 Variable names no longer need an underscore: anything with a lower-case letter is the
 script's, ALL-CAPS is the host's (§9.3).
 
@@ -1278,6 +1279,136 @@ for as row: 0; 3             // a label names the loop — and its counter
   can leave a function.
 - Every iteration costs a step, so a runaway loop is stopped by the budget (§12).
 
+### 6.12 The plugin header, `plugin` and `setting` *(v2.1)*
+
+A `.ttv` script is registered as **one extension plugin**. Its header says what the plugin is
+called, where it runs and what the viewer can tune:
+
+```
+plugin raid_shoutouts -- "Raid shoutouts"
+    about "Shouts out raiders and lets mods re-shout them."
+    frames chat, main
+    setting delay: number 5 -- "Seconds before the shoutout"
+        min 0, max 60, step 1, unit "s"
+    setting loud: checkbox false -- "Shout in capitals"
+    setting greeting: text "welcome in!" -- "Greeting"
+        placeholder "what to say"
+    setting style: select "short" -- "Message length"
+        option "short" -- "Short"
+        option "long" -- "Long"
+
+await (.raider is SOMETHING)
+    if setting.loud
+        POST `${ setting.greeting } @${ .raider }!!`
+```
+
+**Placement.** `plugin` is the **first statement** of a script, at the top level, at most
+once (comments may precede it). A script without one is still valid; it gets default
+metadata (below).
+
+**The header line.** `plugin <id> [-- "Name"]`. The id is lower-case letters, digits and `_`,
+starting with a letter — it becomes the plugin's id, job name and the settings key of its
+enable toggle. The name is what the viewer sees; it defaults to the id.
+
+**Header lines** — only these, each at most once except `setting`:
+
+| Line | Meaning |
+| :--- | :--- |
+| `about "<text>"` | the description shown under the toggle |
+| `frames <frame>[, <frame>]` | where the script runs: `chat` (www.twitch.tv chat and pop-out chat) and/or `main` (the channel page). Default `chat`. |
+| `setting <name>: <type> <default> [-- "Label"]` | a value the viewer can tune — below |
+
+**Settings.** `<name>` is lower-case letters, digits and `_`, starting with a letter; each is
+declared once. `<default>` is a literal of the type's kind; the label defaults to the name.
+An indented block under a setting may carry, comma-separated or one per line:
+
+| Type | Default | Block may carry |
+| :--- | :--- | :--- |
+| `checkbox` | `true` / `false` | — |
+| `number` | a number or a duration (as milliseconds), may be negative | `min <n>`, `max <n>`, `step <n>` (above 0), `unit "<text>"` |
+| `text` | a quoted string | `placeholder "<text>"` |
+| `select` | a quoted string — one of the options | `option "<value>" [-- "Label"]`, at least one |
+
+A number's default must lie within its `min`/`max`, and `min` may not exceed `max`. A
+select's default must be one of its options.
+
+**Reading a setting: `setting.<name>`.** It evaluates to the value the host stored, or the
+declared default when there is none. Settings are **read-only** — the viewer owns them — and
+reading one the header does not declare is an error when the script compiles, naming the
+settings that do exist. `setting` is a keyword; `setting` on its own, or as an assignment
+target, is an error.
+
+**Permissions** are not restated in the header: the `using` grants (§6.8) already say what
+the script asks for, with their descriptions, and `TTV_DSL.inspect` collects them.
+
+#### `TTV_DSL.inspect(source, { file })`
+
+Reads the header without running anything, and returns `{ meta, diagnostics }`:
+
+```js
+{
+    id: 'raid_shoutouts',
+    name: 'Raid shoutouts',
+    description: 'Shouts out raiders and lets mods re-shout them.',
+    frames: ['chat', 'main'],
+    settings: {                                           // SETTINGS.md schema
+        raid_shoutouts: { type: 'checkbox', default: false },          // the enable toggle
+        raid_shoutouts__delay: { type: 'number', default: 5, min: 0, max: 60, step: 1, unit: 's' },
+        raid_shoutouts__loud: { type: 'checkbox', default: false },
+        raid_shoutouts__greeting: { type: 'text', default: 'welcome in!', placeholder: 'what to say' },
+        raid_shoutouts__style: { type: 'select', options: [
+            { value: 'short', label: 'Short', default: true },
+            { value: 'long', label: 'Long' },
+        ] },
+    },
+    section: {                                            // a ready SETTINGS.md section
+        title: 'Raid shoutouts',
+        rows: [
+            { toggle: 'raid_shoutouts' },
+            { text: 'Shouts out raiders and lets mods re-shout them.', tr: false },
+            { text: 'Seconds before the shoutout: {{raid_shoutouts__delay}}', tr: false },
+            …
+        ],
+        settings: /* the same object as above */,
+    },
+    permissions: [{ permissions: ['read:datetime'], description: null, line: 13 }],
+}
+```
+
+- **Keys.** The enable toggle is `<id>` and defaults to `false` — a script runs only once the
+  viewer turns it on. Each setting is stored under `<id>__<name>`, the `SETTINGS.md`
+  convention (`away_mode__volume`). A select marks its default on the option, as
+  `SETTINGS.md` does, instead of carrying `default` itself.
+- **Handing values back.** The host passes the stored values to the runtime by **short**
+  name — `createRuntime({ settings: { delay: 9, loud: true } })` — after applying any
+  `scale`. A name left out reads as its declared default.
+- **No header.** `meta` is derived from `file`: `My Raid-Bot.ttv` gives id `my_raid_bot` and
+  name `My Raid-Bot`; an id that would start with a digit gets a `ttv_` prefix. Frames
+  default to `['chat']`, and `settings` holds only the toggle.
+- **Diagnostics** are `TTV_DSL.check`'s. `meta` is returned even when there are some. When
+  the script's body does not even scan, the header lines are read on their own, so the
+  extension can still name and place a broken script.
+
+#### Errors
+
+| Mistake | Message |
+| :--- | :--- |
+| header not first, repeated, or nested | `` `plugin` must be the first statement of a script `` |
+| bad id | `` A plugin id is lower-case letters, digits and `_`, starting with a letter — e.g. `plugin raid_shoutouts`; found … `` |
+| other line in the header | `` A `plugin` header holds only `about`, `frames` and `setting` lines; found … `` |
+| `about` / `frames` twice | `` `about` is given twice `` |
+| unknown frame | `` Unknown frame "…"; a script runs in `chat`, `main` `` |
+| bad setting name | `` A setting name is lower-case letters, digits and `_`, starting with a letter; found … `` |
+| setting declared twice | `` Setting `…` is declared twice `` |
+| unknown type | `` Unknown setting type "…"; use `checkbox`, `number`, `text`, `select` `` |
+| default of the wrong kind | `` A `number` setting's default is a number; found … `` |
+| wrong block key | `` A `number` setting takes `min`, `max`, `step`, `unit` here; found … `` |
+| block key twice / option twice | `` `min` is given twice `` / `` Option "…" is listed twice `` |
+| number limits | `` Setting `…` has `min` above `max` `` · `` Setting `…` defaults to …, outside its `min`/`max` `` · `` `step` must be above 0 `` |
+| select | `` Select setting `…` needs at least one `option` `` · `` Select setting `…` defaults to "…", which is not one of its options `` |
+| undeclared read (compile time) | `` No setting named `…`; the `plugin` header declares `…`, `…` `` |
+| `setting` misused | `` A setting is read as `setting.name` `` |
+
 ---
 
 ## 7. Blocks and nesting
@@ -1788,6 +1919,9 @@ From writing `realistic.ttv` and ranking what fought back:
   means "while live" (§6.1). **Behaviour change.**
 - **An unknown realm broke its whole enclosing body** — Resolved. It now fails only its own
   block (§4).
+- **Scripts as extension plugins** — New: a `plugin` header declares the id, name,
+  frames and typed settings; `setting.name` reads a setting; `TTV_DSL.inspect` returns the
+  plugin definition and Settings section without running anything (§6.12).
 - **No user-defined functions** — Resolved: `define` makes a verb the script can call like
   `POST` (§6.10).
 - **No loops** — Resolved: `for` over a numeric range or a list, with `$`, labels, `break`

@@ -15,6 +15,7 @@ wins.
 ```js
 let runtime = TTV_DSL.createRuntime({ /* §2 */ });
 
+let { meta } = TTV_DSL.inspect(source, { file }); // plugin id, frames, settings (SPEC §6.12)
 let report = TTV_DSL.grants(source);          // §6 — before running: what will it ask for?
 let problems = TTV_DSL.check(source);         // diagnostics, for an editor
 
@@ -47,6 +48,7 @@ context.stop();                               // cancels every timer and handler
 | `jsBindings` | `{}` | the object `&Path.fn()` walks (§7). **Empty by default.** |
 | `jsPermissions` | `{}` | `{ 'path.fn': 'permission' }`. **Every** bound function must be listed. |
 | `permissions` | — | extra names for the permission list (§6). |
+| `settings` | `{}` | the script's stored plugin settings by **short** name (`delay`, not `raid__delay`), after any `scale`. Missing names read as their declared default. See SPEC §6.12. |
 | `clock` | real timers | `{ now, setTimeout, clearTimeout }`. |
 | `wallClock` | `datetime.now` | wall time for the budget. |
 | `random` | `Math.random` | `[0, 1)`, for `any from`. |

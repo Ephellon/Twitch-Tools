@@ -608,6 +608,7 @@ if (typeof require === 'function' && typeof module === 'object')
         jsBindings = {},
         jsPermissions = {},
         permissions: extraPermissions = [],
+        settings = {},
     } = {}) => {
         let catalog = Object.freeze(new Set([...DEFAULT_PERMISSIONS, ...extraPermissions]));
 
@@ -658,6 +659,10 @@ if (typeof require === 'function' && typeof module === 'object')
             limits: budget,
             logger,
             constants,
+
+            /** The script's plugin settings, by short name (`delay`, not `raid__delay`), as
+             * the host stored them. A name the host leaves out reads as its declared default. */
+            settings: Object.freeze(Object.assign({}, settings)),
             verbs: Object.assign(createDefaultVerbs(sink), verbs),
 
             /** @return {Number} */
