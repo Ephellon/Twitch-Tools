@@ -6,7 +6,7 @@ Write your own chat automation in the **TTV DSL** and run it inside TTV Tools. E
 
 Settings → **User Scripts**:
 
-- **New script** starts from a template.
+- **New script** starts from the Hello Bot example: commands, a remembered value, a random reply, a moderator-only line and a timed reminder.
 - **Import .ttv…** loads a script from a file.
 - **Edit** opens the editor. It highlights the script as you type, lists problems with their line and column, and won't save a script that has any.
 - **Approve…** appears when a script asks for permissions (below).

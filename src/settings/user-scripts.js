@@ -8,13 +8,51 @@ import { grantsOf, SCRIPTS_KEY, CONSENT_KEY } from '../lib/user-scripts.js';
 
 const STORAGE = (globalThis.browser ?? globalThis.chrome)?.storage?.local;
 
-const TEMPLATE = `plugin my_script -- "My script"
-    about "Replies when someone says !hello."
-    setting reply: text "Hi there!" -- "Reply"
-
-await (.command is "hello")
-    REPLY setting.reply
-`;
+// The starter script: what the language can do, in a few lines
+export const TEMPLATE = [
+    'plugin hello_bot -- "Hello Bot"',
+    '    about "Replies when someone says !hello, waves on !bye, and remembers who it greeted last."',
+    '    setting reply: text "Hi there!" -- "Reply with the following"',
+    '    setting reminders: checkbox true -- "Remind chat every 15 minutes"',
+    '',
+    '// Chat commands',
+    'await (.command is SOMETHING)',
+    '    when .command is',
+    '        "hello":',
+    '            // `!hello @zip` greets zip; a bare `!hello` replies to whoever asked',
+    '            if .argument is SOMETHING',
+    '                POST `${ setting.reply } ${ .argument }`',
+    '            else',
+    '                REPLY setting.reply',
+    '',
+    '            // Remembered for `!who` below',
+    '            .sender -> last_greeted',
+    '',
+    '        "bye":',
+    '            // A different goodbye each time',
+    '            REPLY any from (',
+    '                `See you later!`',
+    '                `Thanks for stopping by 💜`',
+    '                `Take care!`',
+    '            )',
+    '',
+    '        "who":',
+    '            if last_greeted is SOMETHING',
+    '                REPLY `The last person I said hi to was ${ last_greeted }.`',
+    '            else',
+    '                REPLY `Nobody has said !hello yet. Be the first!`',
+    '',
+    '// Moderators get a salute when they say hello',
+    'await (.command is "hello")',
+    '    using [moderator]',
+    '        POST `🛡️ ${ .sender } is on duty.`',
+    '',
+    '// Every 15 minutes, but only while the stream is live',
+    'await 15:00 with (#live is true)',
+    '    if setting.reminders',
+    "        POST `Type !hello and I'll say hi 🤖`",
+    '',
+].join('\n');
 
 /**
  * Reads extension storage.
@@ -99,7 +137,7 @@ function openEditor({ source, file, original, taken }) {
                     <textarea spellcheck="false" autocomplete="off" autocapitalize="off"></textarea>
                 </div>
                 <ul class="user-script-editor--problems"></ul>
-                <div class="user-script-editor--actions"><button class="cancel">Cancel</button> <button class="save">Save script</button></div>
+                <div class="user-script-editor--actions"><button class="cancel">Cancel</button> <button class="save">Save</button></div>
             </div>`;
 
         const textarea = overlay.querySelector('textarea')
@@ -271,7 +309,7 @@ export async function renderUserScripts({ ids, defaults }) {
 
     const picker = manager.querySelector('input[type="file"]');
 
-    manager.querySelector('.new').onclick = () => add(TEMPLATE, 'my-script.ttv');
+    manager.querySelector('.new').onclick = () => add(TEMPLATE, 'hello-bot.ttv');
     manager.querySelector('.import').onclick = () => picker.click();
     picker.onchange = async() => {
         const [file] = picker.files;

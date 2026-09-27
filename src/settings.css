@@ -2290,6 +2290,9 @@ code[fill], [code][fill], [type^="code"i][fill] {
 .user-script-editor--code pre {
     background: var(--ttv-surface-dark);
     pointer-events: none;
+
+    /* It follows the textarea's scroll position; a smooth scroll would lag behind it */
+    scroll-behavior: auto;
 }
 
 .user-script-editor--code textarea {
