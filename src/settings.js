@@ -1790,7 +1790,7 @@ $('#sync-settings--upload-json-input').onchange = async event => {
 
     const [file] = files;
 
-    file.text().then(json => {
+    file.text().then(async json => {
         const data = JSON.parse(json);
 
         reading: for(let index = 0; index < usable_settings.length; ++index) {
@@ -1858,12 +1858,15 @@ $('#sync-settings--upload-json-input').onchange = async event => {
 
         $.all('[data-rest-id]').map(e => { delete e.dataset.restId });
 
-        SaveSettings();
+        // SaveSettings() skips fields whose value fails the field's own checks (range, step, pattern)
+        let skipped = Object.keys(data).filter(id => $(`#${ id }:invalid`)).map(depadName);
 
-        PostSyncStatus(`Restored and saved "${ file.name }".`);
+        await SaveSettings();
+
+        PostSyncStatus(`Restored and saved "${ file.name }".${ skipped.length? ` Not saved (invalid values): ${ skipped.join(', ') }.`: '' }`);
     }).catch(e => {
         $warn(e);
-        PostSyncStatus(`Failed to parse JSON file. See the console for more information.`);
+        PostSyncStatus(`Failed to restore "${ file.name }": ${ e?.message ?? e }`);
     }).finally(() => {
         currentTarget.nextElementSibling.classList.remove('spin');
     });
