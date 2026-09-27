@@ -1,52 +1,49 @@
 /*** /plugins/chat/safe-greedy-raiding.js
  * Greedy Raiding.
- * Moved verbatim from chat.js (Chat__Initialize_Safe_Mode) in Phase 4; it wires its own jobs and settings.
+ * Moved from chat.js (Chat__Initialize_Safe_Mode) in Phase 4 and converted to the structured form (docs/PLUGINS.md).
  */
 
 import { plugin } from '../../lib/plugins.js';
 
+// The feature's state; init() resets it whenever the page (re)initializes
+let RAID_LOGGED;
+
 plugin({
     id: 'chat-safe.greedy_raiding',
+    job: 'greedy_raiding',
+    timer: 5000,
 
-    async install(context) {
-        // May not always fire, sometimes Twitch prevents banners from being displayed in iframes
-        let RAID_LOGGED = false;
-        Handlers.greedy_raiding = () => {
-            let raiding = $.defined('[data-test-selector="raid-banner"i]'),
-                atTop = (top == window);
-
-            if(RAID_LOGGED || atTop || !raiding)
-                return;
-            RAID_LOGGED ||= raiding;
-
-            let { current = false } = parseBool(parseURL(location).searchParameters);
-            let raid_banner = $.all('[data-test-selector="raid-banner"i] strong').map(strong => strong?.innerText),
-                [,from,] = location.pathname.split(/(?<!^)\//),
-                [to] = raid_banner.filter(name => !RegExp(`^${ from }$`, 'i').test(name));
-
-            // Already on the channeling that's raiding...
-            if(current)
-                return;
-
-            $warn(`There is a raid happening on another channel... ${ from } → ${ to } (${ raid_banner.join(' to ') })`);
-
-            Runtime.sendMessage({ action: 'LOG_RAID_EVENT', data: { from, to } }, async({ events }) => {
-                $warn(`${ from } has raided ${ events } time${ (events != 1? 's': '') } this week. Current raid: ${ to } @ ${ (new Date) }`);
-
-                let payable = $.defined('[data-test-selector*="balance-string"i]');
-
-                top.postMessage({ action: 'raid', from, to, events, payable }, location.origin);
-            });
-        };
-        Timers.greedy_raiding = 5000;
-
-        Unhandlers.greedy_raiding = () => {};
-
-        __GreedyRaiding__:
-        if(parseBool(Settings.greedy_raiding)) {
-            // $remark('[CHILD] Adding raid-watching logic...');
-
-            RegisterJob('greedy_raiding');
-        }
+    init() {
+        RAID_LOGGED = false;
     },
+
+    handler: () => {
+        let raiding = $.defined('[data-test-selector="raid-banner"i]'),
+            atTop = (top == window);
+
+        if(RAID_LOGGED || atTop || !raiding)
+            return;
+        RAID_LOGGED ||= raiding;
+
+        let { current = false } = parseBool(parseURL(location).searchParameters);
+        let raid_banner = $.all('[data-test-selector="raid-banner"i] strong').map(strong => strong?.innerText),
+            [,from,] = location.pathname.split(/(?<!^)\//),
+            [to] = raid_banner.filter(name => !RegExp(`^${ from }$`, 'i').test(name));
+
+        // Already on the channeling that's raiding...
+        if(current)
+            return;
+
+        $warn(`There is a raid happening on another channel... ${ from } → ${ to } (${ raid_banner.join(' to ') })`);
+
+        Runtime.sendMessage({ action: 'LOG_RAID_EVENT', data: { from, to } }, async({ events }) => {
+            $warn(`${ from } has raided ${ events } time${ (events != 1? 's': '') } this week. Current raid: ${ to } @ ${ (new Date) }`);
+
+            let payable = $.defined('[data-test-selector*="balance-string"i]');
+
+            top.postMessage({ action: 'raid', from, to, events, payable }, location.origin);
+        });
+    },
+
+    unhandler: () => {},
 });

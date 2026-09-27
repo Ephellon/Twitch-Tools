@@ -1,18 +1,21 @@
 /*** /plugins/chat/bttv-emotes.js
  * BetterTTV Emotes.
- * Moved verbatim from chat.js (Chat__Initialize) in Phase 4; it wires its own jobs and settings.
+ * Moved from chat.js (Chat__Initialize) in Phase 4 and converted to the structured form (docs/PLUGINS.md).
  */
 
 import { plugin } from '../../lib/plugins.js';
 
+// The feature's state; init() resets it whenever the page (re)initializes
+let BTTV_OWNERS, BTTV_LOADER, BTTV_LOADED_INDEX, BTTV_MAX_EMOTES, NON_EMOTE_PHRASES, QUEUED_EMOTES, CONVERT_TO_BTTV_EMOTE, LOAD_BTTV_EMOTES;
+
 plugin({
     id: 'chat.bttv_emotes',
+    job: 'bttv_emotes',
+    timer: 5_000,
 
-    async install(context) {
+    init(context) {
         context.BTTV_EMOTES = (top.BTTV_EMOTES ??= new Map);
-        let BTTV_OWNERS = (top.BTTV_OWNERS ??= new Map);
-
-        // Size limit per key is 5MiB
+        BTTV_OWNERS = top.BTTV_OWNERS ??= new Map;
         Cache.large.load(['BTTV_EMOTES', 'BTTV_OWNERS'], data => {
             Object.entries(data?.BTTV_EMOTES ?? {})
                 .map(([name, id]) => context.BTTV_EMOTES.set(name, `//cdn.betterttv.net/emote/${ id }/3x`));
@@ -27,9 +30,7 @@ plugin({
                         BTTV_OWNERS.set(emote, { name, displayName, providerId, userId });
                 });
         });
-
-        let BTTV_LOADER =
-        setInterval(() => {
+        BTTV_LOADER = setInterval(() => {
             let emotes = {};
             let emotesUUID = UUID.from([...context.BTTV_EMOTES.keys()].sort().join(',')).value;
             if(context.BTTV_EMOTES.uuid != emotesUUID) {
@@ -50,12 +51,11 @@ plugin({
                 Cache.large.save({ BTTV_OWNERS: owners });
             }
         }, 30_000);
-
-        let BTTV_LOADED_INDEX = 0;
-        let BTTV_MAX_EMOTES = parseInt(Settings.bttv_emotes_maximum ??= 30);
-        let NON_EMOTE_PHRASES = new Set;
-        let QUEUED_EMOTES = new Set;
-        let CONVERT_TO_BTTV_EMOTE = (emote, makeTooltip = true) => {
+        BTTV_LOADED_INDEX = 0;
+        BTTV_MAX_EMOTES = parseInt(Settings.bttv_emotes_maximum ??= 30);
+        NON_EMOTE_PHRASES = new Set;
+        QUEUED_EMOTES = new Set;
+        CONVERT_TO_BTTV_EMOTE = (emote, makeTooltip = true) => {
                 let { name, src } = emote,
                     existing = $(`img.bttv[alt="${ name }"i]`);
 
@@ -111,7 +111,7 @@ plugin({
 
                 return emoteContainer;
             };
-        let LOAD_BTTV_EMOTES = async(keyword = '', provider = null, ignoreCap = false) => {
+        LOAD_BTTV_EMOTES = async(keyword = '', provider = null, ignoreCap = false) => {
                 // Load some emotes (max 100 at a time)
                     // [{ emote: { code:string, id:string, imageType:string, user: { displayName:string, id:string, name:string, providerId:string } } }]
                         // emote.code → emote name
@@ -282,202 +282,196 @@ plugin({
                         });
                     });
             };
+    },
 
-        Handlers.bttv_emotes = () => {
-            new context.StopWatch('bttv_emotes');
+    handler: (context) => {
+        new context.StopWatch('bttv_emotes');
 
-            let BTTVEmoteSection = $('#tt-bttv-emotes');
+        let BTTVEmoteSection = $('#tt-bttv-emotes');
 
-            if(defined(BTTVEmoteSection))
-                return context.StopWatch.stop('bttv_emotes');
+        if(defined(BTTVEmoteSection))
+            return context.StopWatch.stop('bttv_emotes');
 
-            let parent = $('[data-test-selector^="chat-room-component"i] .emote-picker__scroll-container > *');
+        let parent = $('[data-test-selector^="chat-room-component"i] .emote-picker__scroll-container > *');
 
-            if(nullish(parent))
-                return context.StopWatch.stop('bttv_emotes');
+        if(nullish(parent))
+            return context.StopWatch.stop('bttv_emotes');
 
-            // Put all BTTV emotes into the emote-picker list
-            let BTTVEmotes = [];
+        // Put all BTTV emotes into the emote-picker list
+        let BTTVEmotes = [];
 
-            for(let [name, src] of context.BTTV_EMOTES)
-                BTTVEmotes.push({ name, src });
+        for(let [name, src] of context.BTTV_EMOTES)
+            BTTVEmotes.push({ name, src });
 
-            BTTVEmoteSection =
-            furnish('#tt-bttv-emotes.emote-picker__content-block',
-                {
-                    ondragover: event => {
-                        event.preventDefault();
-                        // event.dataTransfer.dropEffect = 'move';
-                    },
-
-                    ondrop: async event => {
-                        event.preventDefault();
-
-                        return event.dataTransfer.getData('text/plain');
-                    },
+        BTTVEmoteSection =
+        furnish('#tt-bttv-emotes.emote-picker__content-block',
+            {
+                ondragover: event => {
+                    event.preventDefault();
+                    // event.dataTransfer.dropEffect = 'move';
                 },
 
-                furnish('.tt-pd-b-1.tt-pd-t-05.tt-pd-x-1.tt-relative').with(
-                    // Emote Section Header
-                    furnish('.emote-grid-section__header-title.tt-align-items-center.tt-flex.tt-pd-x-1.tt-pd-y-05').with(
-                        furnish('p.tt-align-middle.tt-c-text-alt.tt-strong', {
-                            innerHTML: `BetterTTV Emotes &mdash; ${ context.EmoteDragCommand }`
-                        })
-                    ),
+                ondrop: async event => {
+                    event.preventDefault();
 
-                    // Emote Section Container
-                    furnish('#tt-bttv-emotes-container.tt-flex.tt-flex-wrap',
-                        {
-                            class: 'tt-scrollbar-area',
-                            style: 'max-height: 15rem; overflow: hidden scroll; display: flex; flex-wrap: wrap;',
-                        },
-                        ...BTTVEmotes.shuffle().slice(0, 102).map(CONVERT_TO_BTTV_EMOTE)
-                    )
+                    return event.dataTransfer.getData('text/plain');
+                },
+            },
+
+            furnish('.tt-pd-b-1.tt-pd-t-05.tt-pd-x-1.tt-relative').with(
+                // Emote Section Header
+                furnish('.emote-grid-section__header-title.tt-align-items-center.tt-flex.tt-pd-x-1.tt-pd-y-05').with(
+                    furnish('p.tt-align-middle.tt-c-text-alt.tt-strong', {
+                        innerHTML: `BetterTTV Emotes &mdash; ${ context.EmoteDragCommand }`
+                    })
+                ),
+
+                // Emote Section Container
+                furnish('#tt-bttv-emotes-container.tt-flex.tt-flex-wrap',
+                    {
+                        class: 'tt-scrollbar-area',
+                        style: 'max-height: 15rem; overflow: hidden scroll; display: flex; flex-wrap: wrap;',
+                    },
+                    ...BTTVEmotes.shuffle().slice(0, 102).map(CONVERT_TO_BTTV_EMOTE)
                 )
-            );
+            )
+        );
 
-            parent.insertBefore(BTTVEmoteSection, parent.firstChild);
+        parent.insertBefore(BTTVEmoteSection, parent.firstChild);
 
-            context.StopWatch.stop('bttv_emotes');
-        };
-        Timers.bttv_emotes = 5_000;
+        context.StopWatch.stop('bttv_emotes');
+    },
 
-        __BetterTTVEmotes__:
-        if(parseBool(Settings.bttv_emotes)) {
-            $remark("Loading BTTV emotes...");
+    setup(context) {
+        $remark("Loading BTTV emotes...");
 
-            // Use 85% of available space to load "required" emotes
-            BTTV_MAX_EMOTES = Math.round(parseInt(Settings.bttv_emotes_maximum) * 0.85);
+        // Use 85% of available space to load "required" emotes
+        BTTV_MAX_EMOTES = Math.round(parseInt(Settings.bttv_emotes_maximum) * 0.85);
 
-            // Load streamer specific emotes
-            if(parseBool(Settings.bttv_emotes_channel))
-                LOAD_BTTV_EMOTES(context.STREAMER.name, context.STREAMER.sole);
-            // Load emotes (not to exceed the max size)
-            LOAD_BTTV_EMOTES(context.STREAMER.name)
-                .then(async() => {
-                    // Allow the remaing 15% to be filled with extra emotes
-                    BTTV_MAX_EMOTES = parseInt(Settings.bttv_emotes_maximum);
+        // Load streamer specific emotes
+        if(parseBool(Settings.bttv_emotes_channel))
+            LOAD_BTTV_EMOTES(context.STREAMER.name, context.STREAMER.sole);
+        // Load emotes (not to exceed the max size)
+        LOAD_BTTV_EMOTES(context.STREAMER.name)
+            .then(async() => {
+                // Allow the remaing 15% to be filled with extra emotes
+                BTTV_MAX_EMOTES = parseInt(Settings.bttv_emotes_maximum);
 
-                    // Load extra emotes
-                    for(let keyword of (Settings.bttv_emotes_extras ?? "").split(',').filter(string => string.length > 1))
-                        // FIX-ME: Adding BTTV emotes might cause loading issues?
-                        LOAD_BTTV_EMOTES(keyword);
-                })
-                .then(() => {
-                    let container = $('#tt-bttv-emotes-container');
+                // Load extra emotes
+                for(let keyword of (Settings.bttv_emotes_extras ?? "").split(',').filter(string => string.length > 1))
+                    // FIX-ME: Adding BTTV emotes might cause loading issues?
+                    LOAD_BTTV_EMOTES(keyword);
+            })
+            .then(() => {
+                let container = $('#tt-bttv-emotes-container');
 
-                    if(nullish(container))
+                if(nullish(container))
+                    return;
+
+                // Put all BTTV emotes into the emote-picker list
+                let BTTVEmotes = [];
+
+                for(let [name, src] of context.BTTV_EMOTES)
+                    BTTVEmotes.push({ name, src });
+
+                container.append(...BTTVEmotes.shuffle().slice(0, 102).map(CONVERT_TO_BTTV_EMOTE));
+            })
+            .then(() => {
+                $remark("Adding BTTV emote event listener...");
+
+                // Run the bttv-emote changer on pre-populated messages
+                Chat.get().map(Chat.onmessage = async line => {
+                    // Replace BTTV emotes for the last 15 chat messages
+                    if(Queue.bttv_emotes.contains(line.uuid))
                         return;
 
-                    // Put all BTTV emotes into the emote-picker list
-                    let BTTVEmotes = [];
+                    Queue.bttv_emotes.push(line.uuid);
+                    Queue.bttv_emotes = Queue.bttv_emotes.slice(-60);
 
-                    for(let [name, src] of context.BTTV_EMOTES)
-                        BTTVEmotes.push({ name, src });
+                    for(let word of line.message.split(/\s+/)) {
+                        // This will recognise "emote" text, i.e. camel-cased text "emoteName" or all-caps "EMOTENAME"
+                        if(parseBool(Settings.auto_load_bttv_emotes))
+                            if(!NON_EMOTE_PHRASES.has(word) && !QUEUED_EMOTES.has(word) && !context.BTTV_EMOTES.has(word) && word.length >= 3 && /[a-z\d][A-Z]|^[A-Z]+$/.test(word))
+                                await LOAD_BTTV_EMOTES(word, null, true);
 
-                    container.append(...BTTVEmotes.shuffle().slice(0, 102).map(CONVERT_TO_BTTV_EMOTE));
-                })
-                .then(() => {
-                    $remark("Adding BTTV emote event listener...");
+                        // This will search for all emotes in the "library"
+                        if(context.BTTV_EMOTES.has(word)) {
+                            let regexp = RegExp(`${ word.replace(/(\W)/g, '\\$1').replace(/^\w/, '\\b$&').replace(/\w$/, '$&\\b') }`, 'g'),
+                                alt = word,
+                                src = context.BTTV_EMOTES.get(alt),
+                                owner = BTTV_OWNERS.get(alt),
+                                own = owner?.displayName ?? 'Anonymous',
+                                pid = owner?.providerId,
+                                style = `visibility:hidden!important`;
 
-                    // Run the bttv-emote changer on pre-populated messages
-                    Chat.get().map(Chat.onmessage = async line => {
-                        // Replace BTTV emotes for the last 15 chat messages
-                        if(Queue.bttv_emotes.contains(line.uuid))
-                            return;
+                            let element = await line.element,
+                                uuid = UUID.from(alt).value;
 
-                        Queue.bttv_emotes.push(line.uuid);
-                        Queue.bttv_emotes = Queue.bttv_emotes.slice(-60);
+                            element.innerHTML = element.innerHTML.replace(regexp, uuid);
 
-                        for(let word of line.message.split(/\s+/)) {
-                            // This will recognise "emote" text, i.e. camel-cased text "emoteName" or all-caps "EMOTENAME"
-                            if(parseBool(Settings.auto_load_bttv_emotes))
-                                if(!NON_EMOTE_PHRASES.has(word) && !QUEUED_EMOTES.has(word) && !context.BTTV_EMOTES.has(word) && word.length >= 3 && /[a-z\d][A-Z]|^[A-Z]+$/.test(word))
-                                    await LOAD_BTTV_EMOTES(word, null, true);
+                            for(let child of $.all('*', element))
+                                for(let { name, value } of child.attributes)
+                                    if(value == uuid)
+                                        child.setAttribute(name, word);
 
-                            // This will search for all emotes in the "library"
-                            if(context.BTTV_EMOTES.has(word)) {
-                                let regexp = RegExp(`${ word.replace(/(\W)/g, '\\$1').replace(/^\w/, '\\b$&').replace(/\w$/, '$&\\b') }`, 'g'),
-                                    alt = word,
-                                    src = context.BTTV_EMOTES.get(alt),
-                                    owner = BTTV_OWNERS.get(alt),
-                                    own = owner?.displayName ?? 'Anonymous',
-                                    pid = owner?.providerId,
-                                    style = `visibility:hidden!important`;
-
-                                let element = await line.element,
-                                    uuid = UUID.from(alt).value;
-
-                                element.innerHTML = element.innerHTML.replace(regexp, uuid);
-
-                                for(let child of $.all('*', element))
-                                    for(let { name, value } of child.attributes)
-                                        if(value == uuid)
-                                            child.setAttribute(name, word);
-
-                                element.innerHTML = element.innerHTML.replace(RegExp(uuid, 'g'), furnish('param.tt-convert-to-img', { alt, src, own, pid, style }).outerHTML);
-                            }
+                            element.innerHTML = element.innerHTML.replace(RegExp(uuid, 'g'), furnish('param.tt-convert-to-img', { alt, src, own, pid, style }).outerHTML);
                         }
-                    });
+                    }
+                });
 
-                    setInterval(() => {
-                        $.all(`param.tt-convert-to-img`).map(child => {
-                            let f = furnish;
-                            let fragment = child.closest('[data-a-target$="message"i]'),
-                                converted = (fragment.getAttribute('tt-converted-emotes') ?? '').split(' '),
-                                tte = (fragment.getAttribute('data-tt-emote') ?? '');
+                setInterval(() => {
+                    $.all(`param.tt-convert-to-img`).map(child => {
+                        let f = furnish;
+                        let fragment = child.closest('[data-a-target$="message"i]'),
+                            converted = (fragment.getAttribute('tt-converted-emotes') ?? '').split(' '),
+                            tte = (fragment.getAttribute('data-tt-emote') ?? '');
 
-                            let alt = child.getAttribute('alt'),
-                                src = child.getAttribute('src'),
-                                own = child.getAttribute('own'),
-                                pid = child.getAttribute('pid');
+                        let alt = child.getAttribute('alt'),
+                            src = child.getAttribute('src'),
+                            own = child.getAttribute('own'),
+                            pid = child.getAttribute('pid');
 
-                            converted.push(alt);
+                        converted.push(alt);
 
-                            fragment.setAttribute('tt-converted-emotes', converted.join(' ').trim());
-                            fragment.dataset.ttEmote = [...tte.split(' '), alt].join(' ').trim();
+                        fragment.setAttribute('tt-converted-emotes', converted.join(' ').trim());
+                        fragment.dataset.ttEmote = [...tte.split(' '), alt].join(' ').trim();
 
-                            child.parentElement.replaceChild(
-                                f(`.chat-line__message--emote-button[@testSelector=emote-button][@bttvEmote=${ alt }][@bttvOwner=${ own }][@bttvOwnerId=${ pid }]`).with(
-                                    f('.chat-line__message--emote-button[@testSelector=emote-button]').with(
-                                        f('span[@aTarget=emote-name]').with(
-                                            f('.class.chat-image__container.tt-align-center.tt-inline-block').with(
-                                                f('img.bttv.chat-image.chat-line__message--emote', {
-                                                    src,
-                                                    alt: encodeHTML(alt),
-                                                })
-                                            )
+                        child.parentElement.replaceChild(
+                            f(`.chat-line__message--emote-button[@testSelector=emote-button][@bttvEmote=${ alt }][@bttvOwner=${ own }][@bttvOwnerId=${ pid }]`).with(
+                                f('.chat-line__message--emote-button[@testSelector=emote-button]').with(
+                                    f('span[@aTarget=emote-name]').with(
+                                        f('.class.chat-image__container.tt-align-center.tt-inline-block').with(
+                                            f('img.bttv.chat-image.chat-line__message--emote', {
+                                                src,
+                                                alt: encodeHTML(alt),
+                                            })
                                         )
                                     )
                                 )
-                                , child
-                            );
+                            )
+                            , child
+                        );
 
-                            context.REFURBISH_BTTV_EMOTE_TOOLTIPS(fragment);
-                        });
-                    }, 250);
-                });
+                        context.REFURBISH_BTTV_EMOTE_TOOLTIPS(fragment);
+                    });
+                }, 250);
+            });
 
-            $remark("Adding BTTV emote search listener...");
+        $remark("Adding BTTV emote search listener...");
 
-            context.EmoteSearch.onquery = async query => {
-                await LOAD_BTTV_EMOTES(query, null, true).then(() => {
-                    let results = [...context.BTTV_EMOTES]
-                        .filter(([key, value]) => {
-                            let pattern = RegExp(query.replace(/(\W)/g, '\\$1'), 'i').test(key),
-                                distance = context.EmoteSearch.getTextDistance(query, key);
+        context.EmoteSearch.onquery = async query => {
+            await LOAD_BTTV_EMOTES(query, null, true).then(() => {
+                let results = [...context.BTTV_EMOTES]
+                    .filter(([key, value]) => {
+                        let pattern = RegExp(query.replace(/(\W)/g, '\\$1'), 'i').test(key),
+                            distance = context.EmoteSearch.getTextDistance(query, key);
 
-                            return pattern || (distance < query.length / 2);
-                        })
-                        .map(([name, src]) => CONVERT_TO_BTTV_EMOTE({ name, src }));
+                        return pattern || (distance < query.length / 2);
+                    })
+                    .map(([name, src]) => CONVERT_TO_BTTV_EMOTE({ name, src }));
 
-                        context.EmoteSearch.appendResults(results, 'bttv');
-                });
-            };
-
-            // top.BTTV_EMOTES = BTTV_EMOTES;
-            // top.BTTV_OWNERS = BTTV_OWNERS;
-            RegisterJob('bttv_emotes');
-        }
+                    context.EmoteSearch.appendResults(results, 'bttv');
+            });
+        };
     },
 });

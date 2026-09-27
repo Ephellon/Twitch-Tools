@@ -14,13 +14,16 @@ const PLUGINS = (globalThis.__TTV_PLUGINS__ ??= new Map);
  * @simply plugin(definition:object) → undefined
  *
  * @param {object}   definition
- * @param {string}   definition.id                  Settings key; also the job name
+ * @param {string}   definition.id                  Unique plugin id; also the job name and settings key unless `job` says otherwise
+ * @param {string}   [definition.job = id]           Job name (Handlers/Timers/Unhandlers key) when it differs from `id`
  * @param {string[]} [definition.frames = ['main']] Where it runs: `main` (www.twitch.tv), `chat`, `player`, `clips`
  * @param {number}   [definition.timer]             Job timer: > 0 repeats every N ms, < 0 runs once after N ms
  * @param {function} definition.handler             The job: `handler(context, ...args)`
  * @param {function} [definition.unhandler]         Undoes the job when the feature is turned off
+ * @param {function} [definition.init]              Runs at start-up whether or not the feature is enabled (resets the feature's state)
  * @param {function} [definition.setup]             Runs once at start-up, before the job, when the feature is enabled
- * @param {function} [definition.enabled]           Whether to start; defaults to `parseBool(Settings[id])`
+ * @param {function} [definition.enabled]           `enabled(Settings, context)`: whether to start; defaults to `parseBool(Settings[job])`
+ * @param {boolean}  [definition.register = true]   `false` when `setup` decides for itself whether to call `RegisterJob`
  * @param {function} [definition.install]           A section moved verbatim from an initializer: it wires its own jobs
  *                                                  (Handlers/Timers/RegisterJob) and runs whether or not it's enabled
  * @param {object}   [definition.settings]          The feature's settings and their defaults (used by the Settings page, Phase 5)
@@ -31,10 +34,13 @@ export function plugin(definition) {
     if(PLUGINS.has(id))
         throw new Error(`Plugin "${ id }" is already registered`);
 
+    let job = definition.job ?? id;
+
     PLUGINS.set(id, {
         frames: ['main'],
-        enabled: settings => parseBool(settings[id]),
+        enabled: settings => parseBool(settings[job]),
         ...definition,
+        job,
     });
 }
 
@@ -65,18 +71,23 @@ export async function run(id, context = {}) {
     if(feature.install)
         return await feature.install(context);
 
-    Handlers[id] = (...args) => feature.handler(context, ...args);
+    let { job } = feature;
+
+    await feature.init?.(context);
+
+    Handlers[job] = (...args) => feature.handler(context, ...args);
 
     if('timer' in feature)
-        Timers[id] = feature.timer;
+        Timers[job] = feature.timer;
 
     if(feature.unhandler)
-        Unhandlers[id] = (...args) => feature.unhandler(context, ...args);
+        Unhandlers[job] = (...args) => feature.unhandler(context, ...args);
 
-    if(feature.enabled(Settings)) {
-        feature.setup?.(context);
+    if(await feature.enabled(Settings, context)) {
+        await feature.setup?.(context);
 
-        RegisterJob(id);
+        if(feature.register !== false)
+            RegisterJob(job);
     }
 }
 

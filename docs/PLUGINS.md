@@ -3,7 +3,18 @@
 Every feature is a plugin: one file under `src/plugins/<group>/`. Plugins come in two shapes:
 
 - **Structured:** the feature describes its job, timer, clean-up and start-up code. This is the form for new code (below).
-- **Installed:** a feature moved verbatim from an initializer in Phase 4. Its `install(context)` runs the old section as-is, wiring its own `Handlers`/`Timers` and calling `RegisterJob`. Most plugins are this shape today. Convert one to the structured form when you next work on it.
+- **Installed:** a feature moved verbatim from an initializer in Phase 4. Its `install(context)` runs the old section as-is, wiring its own `Handlers`/`Timers` and calling `RegisterJob`.
+
+`scripts/structure.mjs` converted 53 of the 68 moved plugins to the structured form. Fifteen stay installed because they don't fit one job per plugin:
+
+| Plugin(s) | Why |
+|---|---|
+| `automation/auto-follow`, `automation/not-implemented` | Two jobs each |
+| `automation/claim-reward`, `chat/safe-soft-unban`, `currencies/points-receipt` | Two setup blocks |
+| `networking/auto-dvr` | Two jobs |
+| `chat/convert-emotes`, `developer/developer-features` | Code after the setup block |
+| `automation/first-in-line-plus` | Handler isn't a function literal |
+| `up-next/helpers`, `notifications/notification-sounds`, `video-recovery/user-intent`, `video-recovery/private-viewing`, `misc/miscellaneous`, `player/miscellaneous` | No job: start-up code only |
 
 A structured plugin describes its job, timer, clean-up and start-up code once. `TTV.run()` then wires it into the job system in `core.js`, so it behaves like every legacy feature: toggling its setting starts or stops it (see [Architecture § 4](ARCHITECTURE.md#4-settings-lifecycle)).
 
@@ -53,12 +64,15 @@ import './automation/kill-extensions.js';
 
 | Field | Required | Meaning |
 |---|---|---|
-| `id` | yes | Settings key and job name (`Handlers[id]`, `Timers[id]`, `Unhandlers[id]`) |
+| `id` | yes | Unique plugin id; also the job name and settings key unless `job` is given |
+| `job` | no | Job name (`Handlers[job]`, `Timers[job]`, `Unhandlers[job]`) when it differs from `id`. Chat plugins use ids like `chat.prevent_spam` for the job `prevent_spam` |
+| `init(context)` | no | Runs at start-up whether or not the feature is enabled, before anything else. Resets module-level state (`let SPAM;` … `init() { SPAM = []; }`), so re-initializing the page starts clean |
 | `handler(context, ...args)` | yes | The job |
 | `timer` | no | Same meaning as `Timers[id]`; without it the job only runs when something calls `RegisterJob(id)` |
 | `unhandler(context)` | no | Clean-up when the feature is turned off (`UnregisterJob`) |
 | `setup(context)` | no | One-time start-up work. It replaces the legacy `__Label__: if(parseBool(Settings.id)) { … }` block, and like that block it only runs at page start |
-| `enabled(settings)` | no | Whether to start; defaults to `parseBool(settings[id])` |
+| `enabled(settings, context)` | no | Whether to start; defaults to `parseBool(settings[job])` |
+| `register` | no | `false` when `setup` decides for itself whether to call `RegisterJob(job)` |
 | `install(context)` | no | Installed form: runs the moved section verbatim, whether or not the feature is enabled. If present, the fields above are ignored |
 | `frames` | no | Where `TTV.start(frame)` runs it: `main` (www.twitch.tv; the default), `chat`, `player`, `clips`. The bundle a plugin is in decides which pages load it (see below) |
 | `settings` | no | The settings it owns, with defaults; the Settings page will be generated from these in Phase 5 |

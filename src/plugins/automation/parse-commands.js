@@ -1,16 +1,19 @@
 /*** /plugins/automation/parse-commands.js
  * Parse Commands.
- * Moved verbatim from tools.js (Initialize) in Phase 4; it wires its own jobs and settings.
+ * Moved from tools.js (Initialize) in Phase 4 and converted to the structured form (docs/PLUGINS.md).
  */
 
 import { plugin } from '../../lib/plugins.js';
 
+// The feature's state; init() resets it whenever the page (re)initializes
+let parseCommands, decodeMD;
+
 plugin({
     id: 'parse_commands',
+    timer: -1000,
 
-    async install() {
-        // Parses textual commands
-        function parseCommands(string = '', variables = {}) {
+    init() {
+        parseCommands = function parseCommands(string = '', variables = {}) {
             for(let MAX_ITER = 3 * string.count('$'), regexp = /\$?(\([^\(\)]+?\)|\{[^\{\}]+?\}|\[[^\[\]]+?\])/; regexp.test(string) && --MAX_ITER > 0;)
                 string = string.replace(regexp, ($0, $1, $$, $_) => {
                     let path = $1.replace(/^[\(\[\{]|[\}\]\)]$/g, '').split(/[\s\.]+/).filter(string => !!string.length);
@@ -91,9 +94,8 @@ plugin({
                 ?.replace(/^\/(?:\w\S+)\s*/, '');
 
             return string;
-        }
-
-        function decodeMD(string = '') {
+        };
+        decodeMD = function decodeMD(string = '') {
             return string
                 .replace(/(`{3})((?:[\w\-]+\s)?)([^$]+)\1/g, '<code type="$2">$3</code>')
                 .replace(/([`]{1})([^\1]+)\1/g, '<code>$2</code>')
@@ -122,410 +124,408 @@ plugin({
                     return string;
                 })
                 .replace(/([#]{1,5})([^$]+)/g, ($0, $1, $2) => `<h${ $1.length }>${ $2.trim() }</h${ $1.length }>`);
-        }
+        };
+    },
 
-        Handlers.parse_commands = async() => {
-            let elements = $.all('[data-a-target="stream-title"i], [data-a-target="about-panel"i] *, [data-a-target^="panel"i] *')
-                .map($0 => $0.getElementByText(/([!][\p{Alpha}\.\\\/\?\+\(\)\[\]\{\}\*\|]+)/u))
-                .isolate()
-                .filter(defined)
-                .filter(e => nullish(e.closest('a[href]')));
+    handler: async() => {
+        let elements = $.all('[data-a-target="stream-title"i], [data-a-target="about-panel"i] *, [data-a-target^="panel"i] *')
+            .map($0 => $0.getElementByText(/([!][\p{Alpha}\.\\\/\?\+\(\)\[\]\{\}\*\|]+)/u))
+            .isolate()
+            .filter(defined)
+            .filter(e => nullish(e.closest('a[href]')));
 
-            for(let element of elements) {
-                for(let { aliases, command, reply, availability, enabled, origin, variables } of await STREAMER.coms)
-                    // Wait here to keep from lagging the page...
-                    await wait(1).then(() => {
-                        let regexp = RegExp(`([!](?:${ [command, ...aliases].map(s => s.replace(/[\.\\\/\?\+\(\)\[\]\{\}\$\*\|]/g, '\\$&')).join('|') })(?!\\p{L}))`, 'igu');
+        for(let element of elements) {
+            for(let { aliases, command, reply, availability, enabled, origin, variables } of await STREAMER.coms)
+                // Wait here to keep from lagging the page...
+                await wait(1).then(() => {
+                    let regexp = RegExp(`([!](?:${ [command, ...aliases].map(s => s.replace(/[\.\\\/\?\+\(\)\[\]\{\}\$\*\|]/g, '\\$&')).join('|') })(?!\\p{L}))`, 'igu');
 
-                        if(!regexp.test(element.innerHTML))
-                            return;
+                    if(!regexp.test(element.innerHTML))
+                        return;
 
-                        element.innerHTML = element.innerHTML.replace(regexp, ($0, $1, $$, $_) => {
-                            if($0.trim().length <= 1)
-                                return $0;
+                    element.innerHTML = element.innerHTML.replace(regexp, ($0, $1, $$, $_) => {
+                        if($0.trim().length <= 1)
+                            return $0;
 
-                            reply = parseCommands(reply, variables);
+                        reply = parseCommands(reply, variables);
 
-                            let url = parseURL(reply),
-                                string;
+                        let url = parseURL(reply),
+                            string;
 
-                            // Find the "best" URL
-                            let _href, _protocol, _host, _origin, _port, _pathname, _search, _hash;
-                            let errors = [];
+                        // Find the "best" URL
+                        let _href, _protocol, _host, _origin, _port, _pathname, _search, _hash;
+                        let errors = [];
 
-                            if(defined(url))
-                                for(let s = reply, i = 0, maxURLs = 5; i < s.length && --maxURLs;) {
-                                    let found = parseURL.pattern.exec(s.slice(i));
+                        if(defined(url))
+                            for(let s = reply, i = 0, maxURLs = 5; i < s.length && --maxURLs;) {
+                                let found = parseURL.pattern.exec(s.slice(i));
 
-                                    if(nullish(found))
-                                        continue;
+                                if(nullish(found))
+                                    continue;
 
-                                    let { index, groups } = found;
-                                    let { href, protocol, host, origin, port, pathname, search, hash } = groups;
+                                let { index, groups } = found;
+                                let { href, protocol, host, origin, port, pathname, search, hash } = groups;
 
-                                    if(false
-                                        // Empty URL...
-                                        || (false
-                                            || (href && !_href)
-                                            || (pathname && !_pathname)
-                                            || (search && !_search)
-                                            || (hash && !_hash)
-                                        )
+                                if(false
+                                    // Empty URL...
+                                    || (false
+                                        || (href && !_href)
+                                        || (pathname && !_pathname)
+                                        || (search && !_search)
+                                        || (hash && !_hash)
+                                    )
 
-                                        // Longest URL...
-                                        // || (href.length < _href.length)
+                                    // Longest URL...
+                                    // || (href.length < _href.length)
 
-                                        // Most complete URL...
-                                        || (false
-                                            || (protocol && !_protocol)
-                                            || (host && !_host)
-                                            || (origin && !_origin)
-                                            || (port && !_port)
-                                        )
-                                    ) {
-                                        // Set the new "best" URL
-                                        _href = href;
-                                        _origin = origin;
-                                        _protocol = protocol;
-                                        _host = host;
-                                        _port = port;
-                                        _pathname = pathname;
-                                        _search = search;
-                                        _hash = hash;
-                                    }
-
-                                    if(index + href.length >= s.slice(i).length)
-                                        break;
-
-                                    i = index + href.length;
+                                    // Most complete URL...
+                                    || (false
+                                        || (protocol && !_protocol)
+                                        || (host && !_host)
+                                        || (origin && !_origin)
+                                        || (port && !_port)
+                                    )
+                                ) {
+                                    // Set the new "best" URL
+                                    _href = href;
+                                    _origin = origin;
+                                    _protocol = protocol;
+                                    _host = host;
+                                    _port = port;
+                                    _pathname = pathname;
+                                    _search = search;
+                                    _hash = hash;
                                 }
 
-                            let titleTo = new UUID + '';
+                                if(index + href.length >= s.slice(i).length)
+                                    break;
 
-                            if(parseBool(Settings.parse_commands__create_links) && defined(_href))
-                                string = `<code tt-code style="border:1px solid currentColor; color:var(--color-colored)!important; white-space:nowrap;" contrast="${ THEME__PREFERRED_CONTRAST }" title-to="${ titleTo };${ encodeHTML(reply) }"><a style="color:inherit!important" href="${ _href.replace(/^(\w{3,}\.\w{2,})/, `https://$1`) }" target=_blank>${ decodeMD(encodeHTML($1)) } ${ Glyphs.modify('ne_arrow', { height:12, width:12, style:'vertical-align:middle!important' }) }</a></code>`;
-                            else
-                                string = `<code tt-code style="opacity:${ 2**-!enabled }; white-space:nowrap" title-to="${ titleTo };${ encodeHTML(reply) }">${ decodeMD(encodeHTML($1)) }</code>`;
+                                i = index + href.length;
+                            }
 
-                            return `<span title-to="${ titleTo }" tt-parse-commands="${ btoa(escape(string)) }">${ $0.split('').join('&zwj;') }</span>`;
-                        });
+                        let titleTo = new UUID + '';
+
+                        if(parseBool(Settings.parse_commands__create_links) && defined(_href))
+                            string = `<code tt-code style="border:1px solid currentColor; color:var(--color-colored)!important; white-space:nowrap;" contrast="${ THEME__PREFERRED_CONTRAST }" title-to="${ titleTo };${ encodeHTML(reply) }"><a style="color:inherit!important" href="${ _href.replace(/^(\w{3,}\.\w{2,})/, `https://$1`) }" target=_blank>${ decodeMD(encodeHTML($1)) } ${ Glyphs.modify('ne_arrow', { height:12, width:12, style:'vertical-align:middle!important' }) }</a></code>`;
+                        else
+                            string = `<code tt-code style="opacity:${ 2**-!enabled }; white-space:nowrap" title-to="${ titleTo };${ encodeHTML(reply) }">${ decodeMD(encodeHTML($1)) }</code>`;
+
+                        return `<span title-to="${ titleTo }" tt-parse-commands="${ btoa(escape(string)) }">${ $0.split('').join('&zwj;') }</span>`;
                     });
-
-                // Controls whether the stream-title (description) has a native tooltip (false) or not (true)
-                if(true)
-                    wait(500, element).then(element => {
-                        let title = decodeHTML(element.getAttribute('title') ?? '');
-
-                        if(title.length < 1)
-                            return;
-
-                        new Tooltip(element, title, { from: 'top' });
-
-                        element.removeAttribute('title');
-                    });
-
-                $.all('[tt-parse-commands]:not([tt-parsed="true"i])').map(element => {
-                    let titleTo = element.getAttribute('title-to');
-
-                    element.outerHTML = unescape(atob(element.getAttribute('tt-parse-commands')));
-
-                    when.defined(to => $(`[title-to^="${ to };"i]`), 30, titleTo).then(tooltip => {
-                        let [to, title = ""] = tooltip.getAttribute('title-to').split(';');
-
-                        if(title.trim().length)
-                            new Tooltip(tooltip, title);
-                        tooltip.removeAttribute('title-to');
-                    });
-
-                    element.setAttribute('tt-parsed', true);
                 });
-            }
-        };
-        Timers.parse_commands = -1000;
 
-        Unhandlers.parse_commands = () => {
-            let title = $('[data-a-target="stream-title"i]');
+            // Controls whether the stream-title (description) has a native tooltip (false) or not (true)
+            if(true)
+                wait(500, element).then(element => {
+                    let title = decodeHTML(element.getAttribute('title') ?? '');
 
-            if(defined(title))
-                title.innerHTML = encodeHTML($('[data-a-target="stream-title"i]').innerText);
-        };
+                    if(title.length < 1)
+                        return;
 
-        __ParseCommands__:
-        if(parseBool(Settings.parse_commands)) {
-            $remark("Parsing title commands...");
+                    new Tooltip(element, title, { from: 'top' });
 
-            RegisterJob('parse_commands');
+                    element.removeAttribute('title');
+                });
 
-            // Add the chat menu popup...
-            let CSSBlockName = `Chat-Input-Menu:${ new UUID }`,
-                AvailableCommands;
+            $.all('[tt-parse-commands]:not([tt-parsed="true"i])').map(element => {
+                let titleTo = element.getAttribute('title-to');
 
-            $('[data-a-target="chat-input"i]')?.addEventListener('keyup', delay(async event => {
-                let { target, code, altKey, ctrlKey, metaKey, shiftKey } = event,
-                    value = (target?.value ?? target?.textContent ?? target?.innerText),
-                    [tray, chat] = target.closest('div:not([class])')?.firstElementChild?.children ?? [,],
-                    f = furnish;
+                element.outerHTML = unescape(atob(element.getAttribute('tt-parse-commands')));
 
-                if(['Tab', 'Space', 'Enter', 'Escape'].contains(code) || value?.contains(' ') || !value?.startsWith('!')) {
-                    let command = $('.tt-chat-input-suggestion')?.getAttribute('command');
-                    if(code.equals('Tab') && defined(command)) {
-                        let match = value.match(/!(\S+|$)/),
-                            { index } = match,
-                            [text, word] = match;
+                when.defined(to => $(`[title-to^="${ to };"i]`), 30, titleTo).then(tooltip => {
+                    let [to, title = ""] = tooltip.getAttribute('title-to').split(';');
 
-                        target.setRangeText(`!${ command }`, index, index + text.length, 'end');
-                    }
+                    if(title.trim().length)
+                        new Tooltip(tooltip, title);
+                    tooltip.removeAttribute('title-to');
+                });
 
-                    tray?.classList?.remove('tt-chat-input-tray__open');
+                element.setAttribute('tt-parsed', true);
+            });
+        }
+    },
 
-                    chat?.classList?.remove('tt-chat-input-container__open');
-                    chat?.firstElementChild?.classList?.remove('tt-chat-input-container__input-wrapper');
+    unhandler: () => {
+        let title = $('[data-a-target="stream-title"i]');
 
-                    $('#tt-tcito1')?.remove();
+        if(defined(title))
+            title.innerHTML = encodeHTML($('[data-a-target="stream-title"i]').innerText);
+    },
 
-                    return RemoveCustomCSSBlock(CSSBlockName);
+    setup() {
+        $remark("Parsing title commands...");
+
+        RegisterJob('parse_commands');
+
+        // Add the chat menu popup...
+        let CSSBlockName = `Chat-Input-Menu:${ new UUID }`,
+            AvailableCommands;
+
+        $('[data-a-target="chat-input"i]')?.addEventListener('keyup', delay(async event => {
+            let { target, code, altKey, ctrlKey, metaKey, shiftKey } = event,
+                value = (target?.value ?? target?.textContent ?? target?.innerText),
+                [tray, chat] = target.closest('div:not([class])')?.firstElementChild?.children ?? [,],
+                f = furnish;
+
+            if(['Tab', 'Space', 'Enter', 'Escape'].contains(code) || value?.contains(' ') || !value?.startsWith('!')) {
+                let command = $('.tt-chat-input-suggestion')?.getAttribute('command');
+                if(code.equals('Tab') && defined(command)) {
+                    let match = value.match(/!(\S+|$)/),
+                        { index } = match,
+                        [text, word] = match;
+
+                    target.setRangeText(`!${ command }`, index, index + text.length, 'end');
                 }
 
-                value = value.slice(1).toLowerCase();
+                tray?.classList?.remove('tt-chat-input-tray__open');
 
-                let listable = (AvailableCommands ??= await STREAMER.coms)
-                    .sort((a, b) => (
-                            (false
-                                || (true
-                                    && a.command.toLowerCase().contains(value)
-                                    && b.command.toLowerCase().missing(value)
-                                )
-                                || (true
-                                    && defined(a.aliases.find(aka => aka.toLowerCase().contains(value)))
-                                    && nullish(b.aliases.find(aka => aka.toLowerCase().contains(value)))
-                                )
-                            )?
-                                -1:
-                            (false
-                                || (true
-                                    && b.command.toLowerCase().contains(value)
-                                    && a.command.toLowerCase().missing(value)
-                                )
-                                || (true
-                                    && defined(b.aliases.find(aka => aka.toLowerCase().contains(value)))
-                                    && nullish(a.aliases.find(aka => aka.toLowerCase().contains(value)))
-                                )
-                            )?
-                                +1:
-                            0
-                        )
+                chat?.classList?.remove('tt-chat-input-container__open');
+                chat?.firstElementChild?.classList?.remove('tt-chat-input-container__input-wrapper');
+
+                $('#tt-tcito1')?.remove();
+
+                return RemoveCustomCSSBlock(CSSBlockName);
+            }
+
+            value = value.slice(1).toLowerCase();
+
+            let listable = (AvailableCommands ??= await STREAMER.coms)
+                .sort((a, b) => (
+                        (false
+                            || (true
+                                && a.command.toLowerCase().contains(value)
+                                && b.command.toLowerCase().missing(value)
+                            )
+                            || (true
+                                && defined(a.aliases.find(aka => aka.toLowerCase().contains(value)))
+                                && nullish(b.aliases.find(aka => aka.toLowerCase().contains(value)))
+                            )
+                        )?
+                            -1:
+                        (false
+                            || (true
+                                && b.command.toLowerCase().contains(value)
+                                && a.command.toLowerCase().missing(value)
+                            )
+                            || (true
+                                && defined(b.aliases.find(aka => aka.toLowerCase().contains(value)))
+                                && nullish(a.aliases.find(aka => aka.toLowerCase().contains(value)))
+                            )
+                        )?
+                            +1:
+                        0
                     )
-                    .slice(0, 30)
-                    .map(data => ({ ...data, textDistance: Math.min(...[data.command, ...data.aliases].map(string => value.distanceFrom(string.toLowerCase()))) }))
-                    .sort((a, b) => a.textDistance - b.textDistance)
-                    .slice(0, 5);
+                )
+                .slice(0, 30)
+                .map(data => ({ ...data, textDistance: Math.min(...[data.command, ...data.aliases].map(string => value.distanceFrom(string.toLowerCase()))) }))
+                .sort((a, b) => a.textDistance - b.textDistance)
+                .slice(0, 5);
 
-                tray.classList.add('tt-chat-input-tray__open');
+            tray.classList.add('tt-chat-input-tray__open');
 
-                chat.classList.add('tt-chat-input-container__open');
-                chat.firstElementChild.classList.add('tt-chat-input-container__input-wrapper');
+            chat.classList.add('tt-chat-input-container__open');
+            chat.firstElementChild.classList.add('tt-chat-input-container__input-wrapper');
 
-                if(listable.length < 1) {
-                    $('#tt-tcito1')?.remove();
+            if(listable.length < 1) {
+                $('#tt-tcito1')?.remove();
 
-                    tray.firstElementChild.append(
-                        f('#tt-tcito1').with(
-                            f('.tcito2').with(
-                                f('.tcito3').with(
-                                    f('div', { style: `max-height:3rem!important` },
-                                        f('div', { style: `padding: 0.05rem!important` },
-                                            f('span', { style: `color:var(--color-text-alt-2)!important` }, `No commands found.`)
-                                        )
+                tray.firstElementChild.append(
+                    f('#tt-tcito1').with(
+                        f('.tcito2').with(
+                            f('.tcito3').with(
+                                f('div', { style: `max-height:3rem!important` },
+                                    f('div', { style: `padding: 0.05rem!important` },
+                                        f('span', { style: `color:var(--color-text-alt-2)!important` }, `No commands found.`)
                                     )
                                 )
                             )
                         )
-                    );
-                } else {
-                    $('#tt-tcito1')?.remove();
+                    )
+                );
+            } else {
+                $('#tt-tcito1')?.remove();
 
-                    tray.firstElementChild.append(
-                        f('#tt-tcito1').with(
-                            f('.tcito2').with(
-                                f('.tcito3').with(
-                                    f('div', { style: `max-height:18rem!important` },
-                                        f.div(
-                                            // f('div', { style: `text-align:center` },
-                                            //     f('.tt-kb').with(
-                                            //         f('p.tt-kb-text').with('Space')
-                                            //     ),
-                                            //     'insert selected command'
-                                            // ),
-                                            ...listable.map(({ aliases, command, reply, availability, enabled, origin, variables, textDistance }, index, array) => {
-                                                reply = parseCommands(reply, variables);
+                tray.firstElementChild.append(
+                    f('#tt-tcito1').with(
+                        f('.tcito2').with(
+                            f('.tcito3').with(
+                                f('div', { style: `max-height:18rem!important` },
+                                    f.div(
+                                        // f('div', { style: `text-align:center` },
+                                        //     f('.tt-kb').with(
+                                        //         f('p.tt-kb-text').with('Space')
+                                        //     ),
+                                        //     'insert selected command'
+                                        // ),
+                                        ...listable.map(({ aliases, command, reply, availability, enabled, origin, variables, textDistance }, index, array) => {
+                                            reply = parseCommands(reply, variables);
 
-                                                let { href } = parseURL(reply);
+                                            let { href } = parseURL(reply);
 
-                                                if(defined(href))
-                                                    reply = f('a', { href: href.replace(/^(\w{3,}\.\w{2,})/, `https://$1`), style: `margin-right:0.75rem` }, reply);
+                                            if(defined(href))
+                                                reply = f('a', { href: href.replace(/^(\w{3,}\.\w{2,})/, `https://$1`), style: `margin-right:0.75rem` }, reply);
 
-                                                return f(`#tt-command--${ command.replace(/[^\w\-]+/g, '') }`).with(
-                                                    f('button.tcito7', {
-                                                        style: `cursor:${ ['not-allowed','auto'][+enabled] }!important; color:${ ['inherit','var(--color-text-success)'][+(textDistance < 1)] }`,
-                                                        onmouseup: ({ target, button = -1 }) => {
-                                                            if(!!button)
-                                                                return;
+                                            return f(`#tt-command--${ command.replace(/[^\w\-]+/g, '') }`).with(
+                                                f('button.tcito7', {
+                                                    style: `cursor:${ ['not-allowed','auto'][+enabled] }!important; color:${ ['inherit','var(--color-text-success)'][+(textDistance < 1)] }`,
+                                                    onmouseup: ({ target, button = -1 }) => {
+                                                        if(!!button)
+                                                            return;
 
-                                                            let command = $('.tt-chat-input-suggestion', target.closest('[id]'))?.getAttribute('command');
-                                                            if(defined(command)) {
-                                                                let target = $('[data-a-target="chat-input"i]');
-                                                                let match = (target?.value ?? target?.textContent ?? target?.innerText).match(/!(\S+|$)/),
-                                                                    { index } = match,
-                                                                    [text, word] = match;
+                                                        let command = $('.tt-chat-input-suggestion', target.closest('[id]'))?.getAttribute('command');
+                                                        if(defined(command)) {
+                                                            let target = $('[data-a-target="chat-input"i]');
+                                                            let match = (target?.value ?? target?.textContent ?? target?.innerText).match(/!(\S+|$)/),
+                                                                { index } = match,
+                                                                [text, word] = match;
 
-                                                                    target.setRangeText(`!${ command }`, index, index + text.length, 'end');
-                                                                    target.focus();
-                                                            }
+                                                                target.setRangeText(`!${ command }`, index, index + text.length, 'end');
+                                                                target.focus();
+                                                        }
 
-                                                            tray.classList.remove('tt-chat-input-tray__open');
+                                                        tray.classList.remove('tt-chat-input-tray__open');
 
-                                                            chat.classList.remove('tt-chat-input-container__open');
-                                                            chat.firstElementChild.classList.remove('tt-chat-input-container__input-wrapper');
+                                                        chat.classList.remove('tt-chat-input-container__open');
+                                                        chat.firstElementChild.classList.remove('tt-chat-input-container__input-wrapper');
 
-                                                            $('#tt-tcito1')?.remove();
+                                                        $('#tt-tcito1')?.remove();
 
-                                                            return RemoveCustomCSSBlock(CSSBlockName);
-                                                        },
+                                                        return RemoveCustomCSSBlock(CSSBlockName);
                                                     },
-                                                        f('.tcito8').with(
-                                                            f('.tcito9').with(
-                                                                f('p.tt-chat-input-suggestion', { style: `word-break:break-word!important; color:${ ['inherit','var(--color-text-error)'][+!enabled] }`, command },
-                                                                    f('img.chat-badge', { src: Chat.badges.get(availability), availability, style: `margin:0 0.75rem 0 0; height:1.5rem; width:1.5rem` }),
+                                                },
+                                                    f('.tcito8').with(
+                                                        f('.tcito9').with(
+                                                            f('p.tt-chat-input-suggestion', { style: `word-break:break-word!important; color:${ ['inherit','var(--color-text-error)'][+!enabled] }`, command },
+                                                                f('img.chat-badge', { src: Chat.badges.get(availability), availability, style: `margin:0 0.75rem 0 0; height:1.5rem; width:1.5rem` }),
 
-                                                                    `!${ command }`,
+                                                                `!${ command }`,
 
-                                                                    f('span.tt-hide-inline-text-overflow', { style: `color:var(--color-text-alt-2); padding:0 0.75rem 0 0; position:absolute; right:0; max-width:50%`, title: reply })
-                                                                        .html(reply)
-                                                                )
+                                                                f('span.tt-hide-inline-text-overflow', { style: `color:var(--color-text-alt-2); padding:0 0.75rem 0 0; position:absolute; right:0; max-width:50%`, title: reply })
+                                                                    .html(reply)
                                                             )
                                                         )
                                                     )
                                                 )
-                                            })
-                                        )
+                                            )
+                                        })
                                     )
                                 )
                             )
                         )
-                    );
+                    )
+                );
+            }
+
+            // Change the input's styling...
+            AddCustomCSSBlock(CSSBlockName, `
+                .tt-chat-input-tray__open {
+                    bottom: 100%;
+                    margin: 0 -.5rem -.5rem;
+                    min-width: 100%;
+
+                    /* .bhOZBz */
+                    background-color: var(--color-background-base) !important;
+                    border: var(--border-width-default) solid var(--color-border-base) !important;
+                    border-radius: 0.6rem !important;
+                    display: block !important;
+
+                    box-shadow: var(--shadow-elevation-1) !important;
+
+                    position: absolute !important;
+                    left: 0px !important;
+                    right: 0px !important;
+                    z-index: var(--z-index-below) !important;
+
+                    padding: 0.5rem !important;
                 }
 
-                // Change the input's styling...
-                AddCustomCSSBlock(CSSBlockName, `
-                    .tt-chat-input-tray__open {
-                        bottom: 100%;
-                        margin: 0 -.5rem -.5rem;
-                        min-width: 100%;
+                .tcito2 {
+                    position: relative !important;
+                    padding: 0.5rem 0.5rem 0 !important;
+                }
 
-                        /* .bhOZBz */
-                        background-color: var(--color-background-base) !important;
-                        border: var(--border-width-default) solid var(--color-border-base) !important;
-                        border-radius: 0.6rem !important;
-                        display: block !important;
+                .tcito3 {
+                    display: flex !important;
+                    flex-direction: column !important;
+                    overflow: hidden !important;
+                }
 
-                        box-shadow: var(--shadow-elevation-1) !important;
+                .tcito7 {
+                    border-radius: var(--border-radius-small);
+                    display: block;
+                    width: 100%;
+                    color: inherit;
+                }
 
-                        position: absolute !important;
-                        left: 0px !important;
-                        right: 0px !important;
-                        z-index: var(--z-index-below) !important;
+                .tcito7:hover {
+                    background-color: var(--color-background-interactable-hover) !important;
+                }
 
-                        padding: 0.5rem !important;
-                    }
+                .tcito8 {
+                    -webkit-box-align: center !important;
+                    -moz-box-align: center !important;
+                    align-items: center !important;
+                    display: flex !important;
+                    padding-left: 0.5rem !important;
+                    padding-right: 0.5rem !important;
+                }
 
-                    .tcito2 {
-                        position: relative !important;
-                        padding: 0.5rem 0.5rem 0 !important;
-                    }
+                .tcito9 {
+                    padding: 0.5rem !important;
+                    display: flex !important;
+                    -webkit-box-pack: justify !important;
+                    -moz-box-pack: justify !important;
+                    justify-content: space-between !important;
+                    -webkit-box-align: center !important;
+                    -moz-box-align: center !important;
+                    align-items: center !important;
+                    -webkit-box-flex: 1 !important;
+                    -moz-box-flex: 1 !important;
+                    flex-grow: 1 !important;
+                }
 
-                    .tcito3 {
-                        display: flex !important;
-                        flex-direction: column !important;
-                        overflow: hidden !important;
-                    }
+                .tt-chat-input-container__open {
+                    border: 1px solid var(--color-border-base);
+                    border-top: 0;
+                    box-shadow: 0 2px 3px -1px rgba(0,0,0,.1),0 2px 2px -2px rgba(0,0,0,.02);
+                    margin: 0 -.5rem -.5rem;
+                    min-width: 100%;
 
-                    .tcito7 {
-                        border-radius: var(--border-radius-small);
-                        display: block;
-                        width: 100%;
-                        color: inherit;
-                    }
+                    /* .exNKnb */
+                    background-color: var(--color-background-base)  !important;
+                    border-bottom-left-radius: 0.6rem !important;
+                    border-bottom-right-radius: 0.6rem !important;
+                    display: block !important;
+                    padding: 0.5rem !important;
+                }
 
-                    .tcito7:hover {
-                        background-color: var(--color-background-interactable-hover) !important;
-                    }
+                .tt-chat-input-container__input-wrapper {
+                    margin: 0 -1px -1px;
+                }
 
-                    .tcito8 {
-                        -webkit-box-align: center !important;
-                        -moz-box-align: center !important;
-                        align-items: center !important;
-                        display: flex !important;
-                        padding-left: 0.5rem !important;
-                        padding-right: 0.5rem !important;
-                    }
+                .tt-kb {
+                    background-color: var(--color-background-alt) !important;
+                    border: var(--border-width-default) solid var(--color-border-base) !important;
+                    border-radius: 0.2rem !important;
+                    display: inline-flex !important;
+                    -webkit-box-align: center !important;
+                    -moz-box-align: center !important;
 
-                    .tcito9 {
-                        padding: 0.5rem !important;
-                        display: flex !important;
-                        -webkit-box-pack: justify !important;
-                        -moz-box-pack: justify !important;
-                        justify-content: space-between !important;
-                        -webkit-box-align: center !important;
-                        -moz-box-align: center !important;
-                        align-items: center !important;
-                        -webkit-box-flex: 1 !important;
-                        -moz-box-flex: 1 !important;
-                        flex-grow: 1 !important;
-                    }
+                    align-items: center !important;
+                    padding: 0 0.5rem !important;
 
-                    .tt-chat-input-container__open {
-                        border: 1px solid var(--color-border-base);
-                        border-top: 0;
-                        box-shadow: 0 2px 3px -1px rgba(0,0,0,.1),0 2px 2px -2px rgba(0,0,0,.02);
-                        margin: 0 -.5rem -.5rem;
-                        min-width: 100%;
+                    /* .keyboard-prompt */
+                    height: 1.5rem;
+                    margin-right: .3rem;
+                }
 
-                        /* .exNKnb */
-                        background-color: var(--color-background-base)  !important;
-                        border-bottom-left-radius: 0.6rem !important;
-                        border-bottom-right-radius: 0.6rem !important;
-                        display: block !important;
-                        padding: 0.5rem !important;
-                    }
+                .tt-kb-text {
+                    color: var(--color-text-alt-2) !important;
 
-                    .tt-chat-input-container__input-wrapper {
-                        margin: 0 -1px -1px;
-                    }
-
-                    .tt-kb {
-                        background-color: var(--color-background-alt) !important;
-                        border: var(--border-width-default) solid var(--color-border-base) !important;
-                        border-radius: 0.2rem !important;
-                        display: inline-flex !important;
-                        -webkit-box-align: center !important;
-                        -moz-box-align: center !important;
-
-                        align-items: center !important;
-                        padding: 0 0.5rem !important;
-
-                        /* .keyboard-prompt */
-                        height: 1.5rem;
-                        margin-right: .3rem;
-                    }
-
-                    .tt-kb-text {
-                        color: var(--color-text-alt-2) !important;
-
-                        /* .keyboard-prompt--text */
-                        font-size: 1.1rem;
-                    }
-                `);
-            }, 250));
-        }
+                    /* .keyboard-prompt--text */
+                    font-size: 1.1rem;
+                }
+            `);
+        }, 250));
     },
 });

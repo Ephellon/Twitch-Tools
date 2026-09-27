@@ -1,308 +1,316 @@
 /*** /plugins/up-next/first-in-line.js
  * First in Line.
- * Moved verbatim from tools.js (Initialize) in Phase 4; it wires its own jobs and settings.
+ * Moved from tools.js (Initialize) in Phase 4 and converted to the structured form (docs/PLUGINS.md).
  */
 
 import { plugin } from '../../lib/plugins.js';
 
+// The feature's state; init() resets it whenever the page (re)initializes
+let HANDLED_NOTIFICATIONS;
+
 plugin({
     id: 'first_in_line',
+    timer: 1000,
 
-    async install({ StopWatch }) {
-        let HANDLED_NOTIFICATIONS = [];
+    init() {
+        HANDLED_NOTIFICATIONS = [];
         STARTED_TIMERS = {};
+    },
 
-        Handlers.first_in_line = async(ActionableNotification, preferredPlace) => {
-            new StopWatch('first_in_line');
+    handler: async({ StopWatch }, ActionableNotification, preferredPlace) => {
+        new StopWatch('first_in_line');
 
-            let notifications = [...$.all('[data-test-selector*="notifications"i] [data-test-selector*="notification"i]'), ActionableNotification].filter(defined);
+        let notifications = [...$.all('[data-test-selector*="notifications"i] [data-test-selector*="notification"i]'), ActionableNotification].filter(defined);
 
-            preferredPlace ??= 'last';
+        preferredPlace ??= 'last';
 
-            // The Up Next empty status
-            $('[up-next--body]')?.setAttribute?.('empty', !(UP_NEXT_ALLOW_THIS_TAB && ALL_FIRST_IN_LINE_JOBS.length));
-            $('[up-next--body]')?.setAttribute?.('allowed', !!UP_NEXT_ALLOW_THIS_TAB);
+        // The Up Next empty status
+        $('[up-next--body]')?.setAttribute?.('empty', !(UP_NEXT_ALLOW_THIS_TAB && ALL_FIRST_IN_LINE_JOBS.length));
+        $('[up-next--body]')?.setAttribute?.('allowed', !!UP_NEXT_ALLOW_THIS_TAB);
 
-            if(!UP_NEXT_ALLOW_THIS_TAB)
-                return;
+        if(!UP_NEXT_ALLOW_THIS_TAB)
+            return;
 
-            for(let notification of notifications) {
-                let action = (
-                    notification instanceof Element?
-                        $('a[href^="/"]', notification):
-                    notification
-                );
+        for(let notification of notifications) {
+            let action = (
+                notification instanceof Element?
+                    $('a[href^="/"]', notification):
+                notification
+            );
 
-                if(nullish(action))
-                    continue;
+            if(nullish(action))
+                continue;
 
-                let { href, pathname } = parseURL(action.href.toLowerCase()),
-                    { innerText } = action,
-                    uuid = UUID.from(innerText).value;
+            let { href, pathname } = parseURL(action.href.toLowerCase()),
+                { innerText } = action,
+                uuid = UUID.from(innerText).value;
 
-                if(HANDLED_NOTIFICATIONS.contains(uuid))
-                    continue;
-                HANDLED_NOTIFICATIONS.push(uuid);
+            if(HANDLED_NOTIFICATIONS.contains(uuid))
+                continue;
+            HANDLED_NOTIFICATIONS.push(uuid);
 
-                if(DO_NOT_AUTO_ADD.contains(href) || RESERVED_TWITCH_PATHNAMES.test(href))
-                    continue;
+            if(DO_NOT_AUTO_ADD.contains(href) || RESERVED_TWITCH_PATHNAMES.test(href))
+                continue;
 
-                if(true
-                    && !/\blive\b/i.test(innerText)
-                    && $.nullish('[class*="toast"i][class*="action"i]', notification)
-                )
-                    continue;
+            if(true
+                && !/\blive\b/i.test(innerText)
+                && $.nullish('[class*="toast"i][class*="action"i]', notification)
+            )
+                continue;
 
-                $log('Received an actionable notification:', innerText, new Date);
+            $log('Received an actionable notification:', innerText, new Date);
 
-                let ALL_JOBS_PREFERENCE_SORTED = (preferredPlace.toString().anyOf('begin', 'beginning', 'first', 'head', 'start', '0', '1', '^')? [href, ...ALL_FIRST_IN_LINE_JOBS]: [...ALL_FIRST_IN_LINE_JOBS, href]);
+            let ALL_JOBS_PREFERENCE_SORTED = (preferredPlace.toString().anyOf('begin', 'beginning', 'first', 'head', 'start', '0', '1', '^')? [href, ...ALL_FIRST_IN_LINE_JOBS]: [...ALL_FIRST_IN_LINE_JOBS, href]);
 
-                if(defined(FIRST_IN_LINE_HREF ??= ALL_FIRST_IN_LINE_JOBS[0])) {
-                    if([...ALL_FIRST_IN_LINE_JOBS, FIRST_IN_LINE_HREF].missing(href)) {
-                        $log('Pushing to First in Line:', href, new Date);
+            if(defined(FIRST_IN_LINE_HREF ??= ALL_FIRST_IN_LINE_JOBS[0])) {
+                if([...ALL_FIRST_IN_LINE_JOBS, FIRST_IN_LINE_HREF].missing(href)) {
+                    $log('Pushing to First in Line:', href, new Date);
 
-                        // $log('Accessing here... #2');
-                        ALL_FIRST_IN_LINE_JOBS = ALL_JOBS_PREFERENCE_SORTED.map(url => url?.toLowerCase?.()).isolate().filter(url => url?.length);
-                    } else {
-                        $warn('Not pushing to First in Line:', href, new Date);
-                        $log('Reason(s):', [FIRST_IN_LINE_JOB, ...ALL_FIRST_IN_LINE_JOBS],
-                            `It is the next job? ${ ['No', 'Yes'][+(FIRST_IN_LINE_HREF === href)] }`,
-                            `It is in the queue already? ${ ['No', 'Yes'][+(ALL_FIRST_IN_LINE_JOBS.contains(href))] }`
-                        );
-                    }
-
-                    // To wait, or not to wait
-                    Cache.save({ ALL_FIRST_IN_LINE_JOBS });
-
-                    continue;
-                } else {
-                    $log('Pushing to First in Line (no contest):', href, new Date);
-
-                    // Add the new job...
-                    // $log('Accessing here... #3');
+                    // $log('Accessing here... #2');
                     ALL_FIRST_IN_LINE_JOBS = ALL_JOBS_PREFERENCE_SORTED.map(url => url?.toLowerCase?.()).isolate().filter(url => url?.length);
-                    FIRST_IN_LINE_DUE_DATE = NEW_DUE_DATE();
-
-                    // To wait, or not to wait
-                    Cache.save({ ALL_FIRST_IN_LINE_JOBS, FIRST_IN_LINE_DUE_DATE }, () => {
-                        REDO_FIRST_IN_LINE_QUEUE(ALL_FIRST_IN_LINE_JOBS[0]);
-                    });
+                } else {
+                    $warn('Not pushing to First in Line:', href, new Date);
+                    $log('Reason(s):', [FIRST_IN_LINE_JOB, ...ALL_FIRST_IN_LINE_JOBS],
+                        `It is the next job? ${ ['No', 'Yes'][+(FIRST_IN_LINE_HREF === href)] }`,
+                        `It is in the queue already? ${ ['No', 'Yes'][+(ALL_FIRST_IN_LINE_JOBS.contains(href))] }`
+                    );
                 }
 
-                AddBalloon: {
-                    update();
+                // To wait, or not to wait
+                Cache.save({ ALL_FIRST_IN_LINE_JOBS });
 
-                    let index = ALL_FIRST_IN_LINE_JOBS.indexOf(href),
-                        name = parseURL(href).pathname.slice(1),
-                        channel = await(null
-                            ?? ALL_CHANNELS.find(channel => channel.name.equals(name))
-                            ?? new Search(name).then(Search.convertResults)
-                        );
+                continue;
+            } else {
+                $log('Pushing to First in Line (no contest):', href, new Date);
 
-                    if(nullish(channel))
-                        continue;
-
-                    let { live } = channel;
-                    name = channel.name;
-
-                    if($.defined(`[live][time][name="${ name }"i]`))
-                        continue;
-
-                    index = index < 0? ALL_FIRST_IN_LINE_JOBS.length: index;
-
-                    let [balloon] = FIRST_IN_LINE_BALLOON?.add({
-                        href,
-                        src: channel.icon,
-                        message: `${ name } <span style="display:${ live? 'none': 'inline-block' }">is not live</span>`,
-                        subheader: `Coming up next`,
-                        onremove: event => {
-                            let index = ALL_FIRST_IN_LINE_JOBS.findIndex(href => event.href == href),
-                                [removed] = ALL_FIRST_IN_LINE_JOBS.splice(index, 1),
-                                purl = parseURL(removed),
-                                name = purl.pathname?.slice(1),
-                                redo = (purl.searchParameters?.redo ?? "");
-
-                            $notice(`Removed from Up Next via Balloon (${ nth(index + 1, 'ordinal-position') }):`, removed, 'Was it canceled?', event.canceled);
-                            if(event.canceled)
-                                DO_NOT_AUTO_ADD.push(removed);
-                            else if(redo.equals(name))
-                                ALL_FIRST_IN_LINE_JOBS.push(removed);
-                            // AddBalloon.onremove
-                            if(ALL_FIRST_IN_LINE_JOBS.length)
-                                REDO_FIRST_IN_LINE_QUEUE(ALL_FIRST_IN_LINE_JOBS[0], { redo: (parseURL(ALL_FIRST_IN_LINE_JOBS[0]).searchParameters?.redo ?? "") });
-
-                            if(index > 0) {
-                                Cache.save({ ALL_FIRST_IN_LINE_JOBS, FIRST_IN_LINE_DUE_DATE }, () => event.callback(event.element));
-                            } else {
-                                $log('Destroying current job [First in Line]...', { FIRST_IN_LINE_HREF, FIRST_IN_LINE_DUE_DATE });
-
-                                [FIRST_IN_LINE_JOB, FIRST_IN_LINE_WARNING_JOB, FIRST_IN_LINE_WARNING_TEXT_UPDATE].forEach(clearInterval);
-
-                                FIRST_IN_LINE_HREF = undefined;
-                                FIRST_IN_LINE_DUE_DATE = NEW_DUE_DATE();
-                                Cache.save({ ALL_FIRST_IN_LINE_JOBS, FIRST_IN_LINE_DUE_DATE }, () => { REDO_FIRST_IN_LINE_QUEUE(ALL_FIRST_IN_LINE_JOBS[0]); event.callback(event.element) });
-                            }
-                        },
-
-                        attributes: {
-                            name,
-                            live,
-                            index,
-                            time: (index < 1? GET_TIME_REMAINING(): FIRST_IN_LINE_WAIT_TIME * 60_000),
-
-                            style: `opacity: ${ 2**-!live }!important`,
-                        },
-
-                        animate: container => {
-                            let subheader = $('.tt-balloon-subheader', container);
-
-                            if(!UP_NEXT_ALLOW_THIS_TAB)
-                                return -1;
-                            if(container.hasAttribute('time-ctrl'))
-                                return -1;
-                            container.setAttribute('time-ctrl', true);
-
-                            return setInterval(async() => {
-                                new StopWatch('first_in_line__job_watcher');
-
-                                let timeRemaining = GET_TIME_REMAINING();
-
-                                timeRemaining = timeRemaining < 0? 0: timeRemaining;
-
-                                /* First in Line is paused */
-                                if(FIRST_IN_LINE_PAUSED) {
-                                    // $remark('Adding time... Job Watcher');
-                                    if(FIRST_IN_LINE_PAUSED_AT.floorToNearest(1e3) === (+new Date).floorToNearest(1e3))
-                                        return;
-
-                                    Cache.save({ FIRST_IN_LINE_DUE_DATE: FIRST_IN_LINE_DUE_DATE = NEW_DUE_DATE(timeRemaining + 1000) });
-                                    StopWatch.stop('first_in_line__job_watcher', 1000);
-
-                                    return FIRST_IN_LINE_PAUSED_AT = +new Date;
-                                }
-
-                                Cache.save({ FIRST_IN_LINE_BOOST });
-
-                                let name = container.getAttribute('name'),
-                                    channel = await(null
-                                        ?? ALL_CHANNELS.find(channel => name.equals(channel.name))
-                                        ?? new Search(name).then(Search.convertResults)
-                                    ),
-                                    { live } = channel;
-                                    name = channel.name;
-
-                                let time = timeRemaining,
-                                    intervalID = parseInt(container.getAttribute('animationID')),
-                                    index = $.all('[id][guid][uuid]', container.parentElement).indexOf(container),
-                                    anchor = $.all('a[connected-to]', container.parentElement)[index];
-
-                                if(anchor.hasAttribute('new-href')) {
-                                    let href = anchor.getAttribute('new-href');
-
-                                    anchor.removeAttribute('new-href');
-                                    ALL_FIRST_IN_LINE_JOBS.splice(index, 1, anchor.href = href);
-                                    container.setAttribute('href', href);
-
-                                    REDO_FIRST_IN_LINE_QUEUE(ALL_FIRST_IN_LINE_JOBS[0]);
-
-                                    Cache.save({ ALL_FIRST_IN_LINE_JOBS });
-                                }
-
-                                if(time < 60_000 && nullish(FIRST_IN_LINE_HREF)) {
-                                    FIRST_IN_LINE_DUE_DATE = NEW_DUE_DATE(time);
-
-                                    $warn('Creating job to avoid [First in Line] mitigation event', channel);
-
-                                    return StopWatch.stop('first_in_line__job_watcher', 1000), REDO_FIRST_IN_LINE_QUEUE(FIRST_IN_LINE_HREF = channel.href);
-                                }
-
-                                if(time < 1000)
-                                    wait(5000, [container, intervalID]).then(([container, intervalID]) => {
-                                        $log('Mitigation event from [First in Line]', { ALL_FIRST_IN_LINE_JOBS, FIRST_IN_LINE_DUE_DATE, FIRST_IN_LINE_HREF }, new Date);
-                                        // Mitigate 0 time bug?
-
-                                        FIRST_IN_LINE_DUE_DATE = NEW_DUE_DATE();
-                                        Cache.save({ ALL_FIRST_IN_LINE_JOBS: ALL_FIRST_IN_LINE_JOBS.filter(href => parseURL(href).pathname.unlike(parseURL(FIRST_IN_LINE_HREF).pathname)), FIRST_IN_LINE_DUE_DATE: FIRST_IN_LINE_DUE_DATE = NEW_DUE_DATE() }, () => {
-                                            $warn(`Timer overdue [animation:first-in-line-balloon] » ${ FIRST_IN_LINE_HREF }`)
-                                                // .toNativeStack();
-
-                                            goto(FIRST_IN_LINE_HREF);
-                                        });
-
-                                        return clearInterval(intervalID);
-                                    });
-
-                                container.setAttribute('time', time - (index > 0? 0: 1000));
-
-                                if(container.getAttribute('index') != index)
-                                    container.setAttribute('index', index);
-
-                                let theme = { light: 'w', dark: 'b' }[THEME];
-
-                                $('a', container)
-                                    .modStyle(`background-color: var(--color-opac-${ theme }-${ index > 15? 1: 15 - index })`);
-
-                                if(container.getAttribute('live') != (live + '')) {
-                                    $('.tt-balloon-message', container).innerHTML =
-                                        `${ name } <span style="display:${ live? 'none': 'inline-block' }">is not live</span>`;
-                                    container.modStyle(`opacity: ${ 2**-!live }!important`);
-                                    container.setAttribute('live', live);
-                                }
-
-                                subheader.innerHTML = index > 0? nth(index + 1, 'ordinal-position'): toTimeString(time, 'clock');
-
-                                StopWatch.stop('first_in_line__job_watcher', 1000);
-                            }, 1000);
-                        },
-                    })
-                        ?? [];
-
-                    if(defined(FIRST_IN_LINE_WAIT_TIME) && nullish(FIRST_IN_LINE_HREF)) {
-                        REDO_FIRST_IN_LINE_QUEUE(FIRST_IN_LINE_HREF = href);
-                        $log('Redid First in Line queue [First in Line]...', { FIRST_IN_LINE_DUE_DATE, FIRST_IN_LINE_WAIT_TIME, FIRST_IN_LINE_HREF });
-                    } else if(Settings.first_in_line_none) {
-                        $log('Heading to stream now [First in Line] is OFF', FIRST_IN_LINE_HREF);
-
-                        [FIRST_IN_LINE_JOB, FIRST_IN_LINE_WARNING_JOB, FIRST_IN_LINE_WARNING_TEXT_UPDATE].forEach(clearInterval);
-
-                        goto(parseURL(FIRST_IN_LINE_HREF).addSearch({ tool: 'first-in-line--killed' }).href);
-                    }
-                }
-            }
-
-            FIRST_IN_LINE_BOOST &&= ALL_FIRST_IN_LINE_JOBS.length > 0;
-
-            let filb = $('[speeding]');
-
-            if(parseBool(filb?.getAttribute('speeding')) != parseBool(FIRST_IN_LINE_BOOST))
-                filb?.click?.();
-
-            StopWatch.stop('first_in_line');
-        };
-        Timers.first_in_line = 1000;
-
-        Unhandlers.first_in_line = () => {
-            if(defined(FIRST_IN_LINE_JOB))
-                [FIRST_IN_LINE_JOB, FIRST_IN_LINE_WARNING_JOB, FIRST_IN_LINE_WARNING_TEXT_UPDATE].forEach(clearInterval);
-
-            if(UnregisterJob.__reason__.anyOf('default', 'reinit', 'job-destruction'))
-                return;
-
-            // Wait 5s before deleteing everything...
-            // If the usr has turned the setting off, it'll still go thru; however, if if page is reloaded too fast nothing will happen
-            wait(5_000).then(() => {
-                if(defined(FIRST_IN_LINE_HREF))
-                    FIRST_IN_LINE_HREF = '?';
-
-                ALL_FIRST_IN_LINE_JOBS = [];
+                // Add the new job...
+                // $log('Accessing here... #3');
+                ALL_FIRST_IN_LINE_JOBS = ALL_JOBS_PREFERENCE_SORTED.map(url => url?.toLowerCase?.()).isolate().filter(url => url?.length);
                 FIRST_IN_LINE_DUE_DATE = NEW_DUE_DATE();
 
-                Cache.save({ ALL_FIRST_IN_LINE_JOBS, FIRST_IN_LINE_DUE_DATE });
-            });
-        };
+                // To wait, or not to wait
+                Cache.save({ ALL_FIRST_IN_LINE_JOBS, FIRST_IN_LINE_DUE_DATE }, () => {
+                    REDO_FIRST_IN_LINE_QUEUE(ALL_FIRST_IN_LINE_JOBS[0]);
+                });
+            }
 
-        __FirstInLine__:
-        if(parseBool(Settings.first_in_line) || parseBool(Settings.first_in_line_plus) || parseBool(Settings.first_in_line_all) || parseBool(Settings.first_in_line_now)) {
+            AddBalloon: {
+                update();
+
+                let index = ALL_FIRST_IN_LINE_JOBS.indexOf(href),
+                    name = parseURL(href).pathname.slice(1),
+                    channel = await(null
+                        ?? ALL_CHANNELS.find(channel => channel.name.equals(name))
+                        ?? new Search(name).then(Search.convertResults)
+                    );
+
+                if(nullish(channel))
+                    continue;
+
+                let { live } = channel;
+                name = channel.name;
+
+                if($.defined(`[live][time][name="${ name }"i]`))
+                    continue;
+
+                index = index < 0? ALL_FIRST_IN_LINE_JOBS.length: index;
+
+                let [balloon] = FIRST_IN_LINE_BALLOON?.add({
+                    href,
+                    src: channel.icon,
+                    message: `${ name } <span style="display:${ live? 'none': 'inline-block' }">is not live</span>`,
+                    subheader: `Coming up next`,
+                    onremove: event => {
+                        let index = ALL_FIRST_IN_LINE_JOBS.findIndex(href => event.href == href),
+                            [removed] = ALL_FIRST_IN_LINE_JOBS.splice(index, 1),
+                            purl = parseURL(removed),
+                            name = purl.pathname?.slice(1),
+                            redo = (purl.searchParameters?.redo ?? "");
+
+                        $notice(`Removed from Up Next via Balloon (${ nth(index + 1, 'ordinal-position') }):`, removed, 'Was it canceled?', event.canceled);
+                        if(event.canceled)
+                            DO_NOT_AUTO_ADD.push(removed);
+                        else if(redo.equals(name))
+                            ALL_FIRST_IN_LINE_JOBS.push(removed);
+                        // AddBalloon.onremove
+                        if(ALL_FIRST_IN_LINE_JOBS.length)
+                            REDO_FIRST_IN_LINE_QUEUE(ALL_FIRST_IN_LINE_JOBS[0], { redo: (parseURL(ALL_FIRST_IN_LINE_JOBS[0]).searchParameters?.redo ?? "") });
+
+                        if(index > 0) {
+                            Cache.save({ ALL_FIRST_IN_LINE_JOBS, FIRST_IN_LINE_DUE_DATE }, () => event.callback(event.element));
+                        } else {
+                            $log('Destroying current job [First in Line]...', { FIRST_IN_LINE_HREF, FIRST_IN_LINE_DUE_DATE });
+
+                            [FIRST_IN_LINE_JOB, FIRST_IN_LINE_WARNING_JOB, FIRST_IN_LINE_WARNING_TEXT_UPDATE].forEach(clearInterval);
+
+                            FIRST_IN_LINE_HREF = undefined;
+                            FIRST_IN_LINE_DUE_DATE = NEW_DUE_DATE();
+                            Cache.save({ ALL_FIRST_IN_LINE_JOBS, FIRST_IN_LINE_DUE_DATE }, () => { REDO_FIRST_IN_LINE_QUEUE(ALL_FIRST_IN_LINE_JOBS[0]); event.callback(event.element) });
+                        }
+                    },
+
+                    attributes: {
+                        name,
+                        live,
+                        index,
+                        time: (index < 1? GET_TIME_REMAINING(): FIRST_IN_LINE_WAIT_TIME * 60_000),
+
+                        style: `opacity: ${ 2**-!live }!important`,
+                    },
+
+                    animate: container => {
+                        let subheader = $('.tt-balloon-subheader', container);
+
+                        if(!UP_NEXT_ALLOW_THIS_TAB)
+                            return -1;
+                        if(container.hasAttribute('time-ctrl'))
+                            return -1;
+                        container.setAttribute('time-ctrl', true);
+
+                        return setInterval(async() => {
+                            new StopWatch('first_in_line__job_watcher');
+
+                            let timeRemaining = GET_TIME_REMAINING();
+
+                            timeRemaining = timeRemaining < 0? 0: timeRemaining;
+
+                            /* First in Line is paused */
+                            if(FIRST_IN_LINE_PAUSED) {
+                                // $remark('Adding time... Job Watcher');
+                                if(FIRST_IN_LINE_PAUSED_AT.floorToNearest(1e3) === (+new Date).floorToNearest(1e3))
+                                    return;
+
+                                Cache.save({ FIRST_IN_LINE_DUE_DATE: FIRST_IN_LINE_DUE_DATE = NEW_DUE_DATE(timeRemaining + 1000) });
+                                StopWatch.stop('first_in_line__job_watcher', 1000);
+
+                                return FIRST_IN_LINE_PAUSED_AT = +new Date;
+                            }
+
+                            Cache.save({ FIRST_IN_LINE_BOOST });
+
+                            let name = container.getAttribute('name'),
+                                channel = await(null
+                                    ?? ALL_CHANNELS.find(channel => name.equals(channel.name))
+                                    ?? new Search(name).then(Search.convertResults)
+                                ),
+                                { live } = channel;
+                                name = channel.name;
+
+                            let time = timeRemaining,
+                                intervalID = parseInt(container.getAttribute('animationID')),
+                                index = $.all('[id][guid][uuid]', container.parentElement).indexOf(container),
+                                anchor = $.all('a[connected-to]', container.parentElement)[index];
+
+                            if(anchor.hasAttribute('new-href')) {
+                                let href = anchor.getAttribute('new-href');
+
+                                anchor.removeAttribute('new-href');
+                                ALL_FIRST_IN_LINE_JOBS.splice(index, 1, anchor.href = href);
+                                container.setAttribute('href', href);
+
+                                REDO_FIRST_IN_LINE_QUEUE(ALL_FIRST_IN_LINE_JOBS[0]);
+
+                                Cache.save({ ALL_FIRST_IN_LINE_JOBS });
+                            }
+
+                            if(time < 60_000 && nullish(FIRST_IN_LINE_HREF)) {
+                                FIRST_IN_LINE_DUE_DATE = NEW_DUE_DATE(time);
+
+                                $warn('Creating job to avoid [First in Line] mitigation event', channel);
+
+                                return StopWatch.stop('first_in_line__job_watcher', 1000), REDO_FIRST_IN_LINE_QUEUE(FIRST_IN_LINE_HREF = channel.href);
+                            }
+
+                            if(time < 1000)
+                                wait(5000, [container, intervalID]).then(([container, intervalID]) => {
+                                    $log('Mitigation event from [First in Line]', { ALL_FIRST_IN_LINE_JOBS, FIRST_IN_LINE_DUE_DATE, FIRST_IN_LINE_HREF }, new Date);
+                                    // Mitigate 0 time bug?
+
+                                    FIRST_IN_LINE_DUE_DATE = NEW_DUE_DATE();
+                                    Cache.save({ ALL_FIRST_IN_LINE_JOBS: ALL_FIRST_IN_LINE_JOBS.filter(href => parseURL(href).pathname.unlike(parseURL(FIRST_IN_LINE_HREF).pathname)), FIRST_IN_LINE_DUE_DATE: FIRST_IN_LINE_DUE_DATE = NEW_DUE_DATE() }, () => {
+                                        $warn(`Timer overdue [animation:first-in-line-balloon] » ${ FIRST_IN_LINE_HREF }`)
+                                            // .toNativeStack();
+
+                                        goto(FIRST_IN_LINE_HREF);
+                                    });
+
+                                    return clearInterval(intervalID);
+                                });
+
+                            container.setAttribute('time', time - (index > 0? 0: 1000));
+
+                            if(container.getAttribute('index') != index)
+                                container.setAttribute('index', index);
+
+                            let theme = { light: 'w', dark: 'b' }[THEME];
+
+                            $('a', container)
+                                .modStyle(`background-color: var(--color-opac-${ theme }-${ index > 15? 1: 15 - index })`);
+
+                            if(container.getAttribute('live') != (live + '')) {
+                                $('.tt-balloon-message', container).innerHTML =
+                                    `${ name } <span style="display:${ live? 'none': 'inline-block' }">is not live</span>`;
+                                container.modStyle(`opacity: ${ 2**-!live }!important`);
+                                container.setAttribute('live', live);
+                            }
+
+                            subheader.innerHTML = index > 0? nth(index + 1, 'ordinal-position'): toTimeString(time, 'clock');
+
+                            StopWatch.stop('first_in_line__job_watcher', 1000);
+                        }, 1000);
+                    },
+                })
+                    ?? [];
+
+                if(defined(FIRST_IN_LINE_WAIT_TIME) && nullish(FIRST_IN_LINE_HREF)) {
+                    REDO_FIRST_IN_LINE_QUEUE(FIRST_IN_LINE_HREF = href);
+                    $log('Redid First in Line queue [First in Line]...', { FIRST_IN_LINE_DUE_DATE, FIRST_IN_LINE_WAIT_TIME, FIRST_IN_LINE_HREF });
+                } else if(Settings.first_in_line_none) {
+                    $log('Heading to stream now [First in Line] is OFF', FIRST_IN_LINE_HREF);
+
+                    [FIRST_IN_LINE_JOB, FIRST_IN_LINE_WARNING_JOB, FIRST_IN_LINE_WARNING_TEXT_UPDATE].forEach(clearInterval);
+
+                    goto(parseURL(FIRST_IN_LINE_HREF).addSearch({ tool: 'first-in-line--killed' }).href);
+                }
+            }
+        }
+
+        FIRST_IN_LINE_BOOST &&= ALL_FIRST_IN_LINE_JOBS.length > 0;
+
+        let filb = $('[speeding]');
+
+        if(parseBool(filb?.getAttribute('speeding')) != parseBool(FIRST_IN_LINE_BOOST))
+            filb?.click?.();
+
+        StopWatch.stop('first_in_line');
+    },
+
+    unhandler: () => {
+        if(defined(FIRST_IN_LINE_JOB))
+            [FIRST_IN_LINE_JOB, FIRST_IN_LINE_WARNING_JOB, FIRST_IN_LINE_WARNING_TEXT_UPDATE].forEach(clearInterval);
+
+        if(UnregisterJob.__reason__.anyOf('default', 'reinit', 'job-destruction'))
+            return;
+
+        // Wait 5s before deleteing everything...
+        // If the usr has turned the setting off, it'll still go thru; however, if if page is reloaded too fast nothing will happen
+        wait(5_000).then(() => {
+            if(defined(FIRST_IN_LINE_HREF))
+                FIRST_IN_LINE_HREF = '?';
+
+            ALL_FIRST_IN_LINE_JOBS = [];
+            FIRST_IN_LINE_DUE_DATE = NEW_DUE_DATE();
+
+            Cache.save({ ALL_FIRST_IN_LINE_JOBS, FIRST_IN_LINE_DUE_DATE });
+        });
+    },
+
+    enabled() {
+        return parseBool(Settings.first_in_line) || parseBool(Settings.first_in_line_plus) || parseBool(Settings.first_in_line_all) || parseBool(Settings.first_in_line_now);
+    },
+
+    async setup() {
+        __FirstInLine__: {
             await Cache.load(['ALL_FIRST_IN_LINE_JOBS', 'FIRST_IN_LINE_DUE_DATE', 'FIRST_IN_LINE_BOOST'], cache => {
                 let oneMin = 60_000,
                     fiveMin = 5.5 * oneMin,

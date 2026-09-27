@@ -81,3 +81,21 @@ test('run() starts one plugin; install() runs whether or not it is enabled', asy
     assert.deepEqual(registered, ['on']);
     await assert.rejects(run('missing'), /No plugin "missing"/);
 });
+
+test('init() always runs first; job, register:false and enabled(settings, context) behave', async() => {
+    const { plugin, run } = await load();
+    const order = [];
+
+    plugin({ id: 'chat.on', job: 'on', init: () => order.push('init'), setup: () => order.push('setup'), handler: () => order.push('job') });
+    plugin({ id: 'off2', job: 'off', init: () => order.push('init-off'), handler() {} });
+    plugin({ id: 'manual', register: false, enabled: (settings, context) => context.go, setup: () => order.push('manual-setup'), handler() {} });
+
+    await run('chat.on');
+    await run('off2');
+    await run('manual', { go: true });
+
+    assert.deepEqual(order, ['init', 'setup', 'init-off', 'manual-setup']);
+    assert.deepEqual(registered, ['on'], 'jobs register under `job`; register:false leaves it to setup');
+    globalThis.Handlers.on();
+    assert.equal(order.at(-1), 'job');
+});

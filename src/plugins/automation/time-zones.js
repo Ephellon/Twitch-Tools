@@ -1,18 +1,47 @@
 /*** /plugins/automation/time-zones.js
  * Time Zones.
- * Moved verbatim from tools.js (Initialize) in Phase 4; it wires its own jobs and settings.
+ * Moved from tools.js (Initialize) in Phase 4 and converted to the structured form (docs/PLUGINS.md).
  */
 
 import { plugin } from '../../lib/plugins.js';
 
+// The feature's state; init() resets it whenever the page (re)initializes
+let TIME_ZONE__TEXT_MATCHES, TIME_ZONE__REGEXPS, TIME_ZONE__CONVERSIONS, GEOGRAPHIC__CONVERSIONS, NON_TIME_ZONE_WORDS, convertWordsToTimes;
+
 plugin({
     id: 'time_zones',
+    timer: 250,
 
-    async install() {
-        let TIME_ZONE__TEXT_MATCHES = [],
+    async init() {
+        convertWordsToTimes = function convertWordsToTimes(string = '') {
+            return string.normalize('NFKD')
+                // .replace(/\b(mornings?|dawn)\b/i, '06:00 AM')
+                .replace(/\b(after\s?noons?|evenings?)\b/i, '01:00 PM')
+                .replace(/\b(noons?|lunch[\s\-]?time)\b/i, '12:00 PM')
+                // .replace(/\b((?:to|2)?nights?|dusk)\b/i, '06:00 PM')
+                .replace(/\b(mid[\s\-]?nights?)\b/i, '12:00 AM')
 
-            // Time-zone RegExps
-            TIME_ZONE__REGEXPS = [
+                // Ignores shorthands → "today" "2day" "tonight" "2night" "tomorrow" "2morrow" "tomrw" "2mw" etc.
+                .replace(/\b(?:to|2)(?:day|night|m[or]*w)\b/ig, ($0, $$, $_) => $0.split('').join('\u200d'))
+
+                // Replaces ranges
+                // 6 - 11P ET | 6:00 AM - 11:00 PM EST
+                .replace(/\b(?<start>\d{1,2}(?::?\d\d)?)(?<premeridiem>\s*[ap]\.?m?\.?)?(?<delimeter>[\p{Pd}\p{Zs}]+)(?<stop>\d{1,2}(?::?\d\d)?)(?<postmeridiem>\s*[ap]\.?m?\.?)?\s*(?<timezone>\b(?:AOE|GMT|UTC|[A-Y]{1,4}T))\b/igu, ($0, start, preMeridiem, delimeter, stop, postMeridiem, timezone) => {
+                    let autoMeridiem = "AP"[+(new Date(STREAMER.data?.actualStartTime ?? +new Date).getHours() > 11)] + 'M';
+
+                    preMeridiem ||= postMeridiem || autoMeridiem;
+                    postMeridiem ||= preMeridiem;
+
+                    let _mm = /(?<!:\d\d)$/, _00 = ':00';
+
+                    start = start.replace(_mm, _00);
+                    stop = stop.replace(_mm, _00);
+
+                    return [start, preMeridiem, delimeter, stop, postMeridiem, ' ', timezone].join('');
+                })
+        };
+        TIME_ZONE__TEXT_MATCHES = [];
+        TIME_ZONE__REGEXPS = [
                 // Natural
                 // 3:00PM EST | 3PM EST | 3:00P EST | 3P EST | 3:00 EST | 3 EST | 3:00PM (EST) | 3PM (EST) | 3:00P (EST) | 3P (EST) | 3:00 (EST) | 3 (EST)
                 /(?<![#\$\.+:\d%‰]|\p{Sc})\b(?<hour>2[0-3]|[01]?\d)(?<minute>:[0-5]\d)?(?!\d*(?:\p{Sc}|[%‰]))[ \t]*(?<meridiem>[ap]\.?m?\.?(?!\p{L}|\p{N}))?[ \t]*(?<timezone>(?:(?:AOE|GMT|UTC)(?:(?:[+-])(?:2[0-3]|[01]?\d)(?::?[0-5]\d)?)?|[A-Y]{1,4}T)\b|\([ \t]*(?:(?:AOE|GMT|UTC)(?:(?:[+-])(?:2[0-3]|[01]?\d)(?::?[0-5]\d)?)?|[A-Y]{1,4}T)[ \t]*\))/iu,
@@ -34,10 +63,8 @@ plugin({
                 // GMT/UTC
                 // GMT+5:00 | GMT-5:00 | GMT+0500 | GMT-0500 | GMT+05 | GMT-05 | GMT+5 | GMT-5 | UTC+5:00 | UTC-5:00 | UTC+0500 | UTC-0500 | UTC+05 | UTC-05 | UTC+5 | UTC-5
                 /(?<![#\$\.+:\d%‰]|\p{Sc})\b(?:GMT[ \t]*|UTC[ \t]*)(?<offset>[+-])(?<hour>2[0-3]|[01]?\d)(?<minute>:?[0-5]\d)?(?!\d*(?:\p{Sc}|[%‰]))\b/iu,
-            ],
-
-            // @FIXME: Fix conflicting Time Zone entries...
-            TIME_ZONE__CONVERSIONS = {
+            ];
+        TIME_ZONE__CONVERSIONS = {
                 AOE: "-12:00",
                 GMT: "+00:00",
                 UTC: "+00:00",
@@ -252,10 +279,8 @@ plugin({
                 YAPT: "+10:00",
                 YEKST: "+06:00",
                 YEKT: "+05:00",
-            },
-
-            // More timezones from: https://www.localeplanet.com/icu/zh-Hant-TW/timezone.html
-            GEOGRAPHIC__CONVERSIONS = {
+            };
+        GEOGRAPHIC__CONVERSIONS = {
                 "Acre": "-05:00",
                 "Adak": "-10:00",
                 "Adelaide": "+09:30",
@@ -985,39 +1010,8 @@ plugin({
                 "Zambia": "+02:00",
                 "Zaporozhye": "+02:00",
                 "Zimbabwe": "+02:00",
-            },
-
-            NON_TIME_ZONE_WORDS = await fetchURL(`get:./ext/[A-Y]{2,4}T.json`).then(response => response.json());
-
-        // Convert text to times
-        function convertWordsToTimes(string = '') {
-            return string.normalize('NFKD')
-                // .replace(/\b(mornings?|dawn)\b/i, '06:00 AM')
-                .replace(/\b(after\s?noons?|evenings?)\b/i, '01:00 PM')
-                .replace(/\b(noons?|lunch[\s\-]?time)\b/i, '12:00 PM')
-                // .replace(/\b((?:to|2)?nights?|dusk)\b/i, '06:00 PM')
-                .replace(/\b(mid[\s\-]?nights?)\b/i, '12:00 AM')
-
-                // Ignores shorthands → "today" "2day" "tonight" "2night" "tomorrow" "2morrow" "tomrw" "2mw" etc.
-                .replace(/\b(?:to|2)(?:day|night|m[or]*w)\b/ig, ($0, $$, $_) => $0.split('').join('\u200d'))
-
-                // Replaces ranges
-                // 6 - 11P ET | 6:00 AM - 11:00 PM EST
-                .replace(/\b(?<start>\d{1,2}(?::?\d\d)?)(?<premeridiem>\s*[ap]\.?m?\.?)?(?<delimeter>[\p{Pd}\p{Zs}]+)(?<stop>\d{1,2}(?::?\d\d)?)(?<postmeridiem>\s*[ap]\.?m?\.?)?\s*(?<timezone>\b(?:AOE|GMT|UTC|[A-Y]{1,4}T))\b/igu, ($0, start, preMeridiem, delimeter, stop, postMeridiem, timezone) => {
-                    let autoMeridiem = "AP"[+(new Date(STREAMER.data?.actualStartTime ?? +new Date).getHours() > 11)] + 'M';
-
-                    preMeridiem ||= postMeridiem || autoMeridiem;
-                    postMeridiem ||= preMeridiem;
-
-                    let _mm = /(?<!:\d\d)$/, _00 = ':00';
-
-                    start = start.replace(_mm, _00);
-                    stop = stop.replace(_mm, _00);
-
-                    return [start, preMeridiem, delimeter, stop, postMeridiem, ' ', timezone].join('');
-                })
-        }
-
+            };
+        NON_TIME_ZONE_WORDS = await fetchURL(`get:./ext/[A-Y]{2,4}T.json`).then(response => response.json());
         convertWordsToTimes.inReverse ??= (string = '') => {
             return string.normalize('NFKD')
                 // .replace(/\b(06:00AM)\b/i, 'morning')
@@ -1026,230 +1020,226 @@ plugin({
                 // .replace(/\b(06:00PM)\b/i, 'night')
                 .replace(/\b(12:00AM)\b/i, 'midnight');
         };
+    },
 
-        Handlers.time_zones = () => {
-            let allNodes = node => (node.childNodes.length? [...node.childNodes].map(allNodes): [node]).flat();
-            let cTitle = $.all('[data-a-target="stream-title"i], [data-a-target="about-panel"i], [data-a-target^="panel"i]'),
-                rTitle = $('[class*="-tooltip"i]:is([class*="channel"i], [class*="guest"i]):not([class*="offline"i]) > p + p');
+    handler: () => {
+        let allNodes = node => (node.childNodes.length? [...node.childNodes].map(allNodes): [node]).flat();
+        let cTitle = $.all('[data-a-target="stream-title"i], [data-a-target="about-panel"i], [data-a-target^="panel"i]'),
+            rTitle = $('[class*="-tooltip"i]:is([class*="channel"i], [class*="guest"i]):not([class*="offline"i]) > p + p');
 
-            parsing:
-            for(let container of [...cTitle, rTitle].filter(defined)) {
-                let [timezone, zone, type, trigger] = (null
-                    ?? (container?.innerText || '')
-                        .normalize('NFKD')
-                        .match(/(?:Time[ -]?zone[ \t:=]+)(?:(?<zone>\p{L}{3,}))(?:[ \t\-]*(?<type>\p{L}+))?/iu)
-                    ?? (container?.innerText || '')
-                        .normalize('NFKD')
-                        .match(/(?:(?<zone>\p{L}{3,})[ \t\-]+)(?:(?<type>\p{L}+)[ \t\-]+)?(?<trigger>time)\b/iu)
-                    ?? []
-                );
+        parsing:
+        for(let container of [...cTitle, rTitle].filter(defined)) {
+            let [timezone, zone, type, trigger] = (null
+                ?? (container?.innerText || '')
+                    .normalize('NFKD')
+                    .match(/(?:Time[ -]?zone[ \t:=]+)(?:(?<zone>\p{L}{3,}))(?:[ \t\-]*(?<type>\p{L}+))?/iu)
+                ?? (container?.innerText || '')
+                    .normalize('NFKD')
+                    .match(/(?:(?<zone>\p{L}{3,})[ \t\-]+)(?:(?<type>\p{L}+)[ \t\-]+)?(?<trigger>time)\b/iu)
+                ?? []
+            );
 
-                let MASTER_TIME_ZONE;
+            let MASTER_TIME_ZONE;
 
-                locator: if(defined(zone)) {
-                    for(let place in GEOGRAPHIC__CONVERSIONS)
-                        if(RegExp(place.replaceAll('-', '-?'), 'i').test(zone)) {
-                            MASTER_TIME_ZONE = GEOGRAPHIC__CONVERSIONS[place];
-                            break locator;
-                        }
-
-                    // Try to not mistake common suffixes and titles...
-                    // From: https://translated-into.com/{word}
-                    if(false
-                        // "the"
-                        || /\b(y?a(h|ng?)?|c[aá]c|d(as|e[nt]?|ie|u)|e([lw]|ta)|i(he|l|ng|tu|yo)?|[lk]a|ny|o|quod|t(h?e|us)|u|y)\b/i
-                            .test(zone)
-                        // "of"
-                        || /\b(a([fvz]|pie|utem)|d(ari|[ei])|e[ae]|[fvn]an|gada|ji|kohta|n([ae]k?|ing?|ke|tawm|y)|o([dif]|\s?ka)?|s(aka|e)|[tv]on|ti(na)?|vun|y[ae]|z)\b/i
-                            .test(zone)
-                        // "for"
-                        || /\b(aua|(b|ch)o|canys|dla|eest|f([oö]a?r|un|yrir)|gia|hoki|kw?a(nggo|y)?|m(aka|ert)|ngoba|[ps](ara|[eëo]u?r?|r([eo]|iek))|quia|rau|til|untuk|v(arten|i|oo)r|ye|z(a|um))\b/i
-                            .test(zone)
-                        // "nor" or "or"
-                        // || /\b(n?or?)\b/i
-                        //     .test(zone)
-                        // "but" or "and"
-                        || /\b(a([bw]?er?|g(a|us)|ka?|[ls][ei]|m(m[ao]|pak)|nd|ti?)?|b(aina|[eu]t)|d(an|he)|e(n(gari)?|s|ta?)?|izda|k(a[ij]|[ou]ma)|l(an|e)|ja|lebe|m(a([anr]{2}|i?s)?|en|utta)|no|[ou]g|s(ed|is)|(te)?ta(b|pi)|u(nd)?|v[ae]|y)\b/i
-                            .test(zone)
-                        // "yet"
-                        // || /\b(yet)\b/i
-                        //     .test(zone)
-                        // tensed words
-                        || /\B(i?e[ds]|ing)$/i
-                            .test(zone)
-                    )
+            locator: if(defined(zone)) {
+                for(let place in GEOGRAPHIC__CONVERSIONS)
+                    if(RegExp(place.replaceAll('-', '-?'), 'i').test(zone)) {
+                        MASTER_TIME_ZONE = GEOGRAPHIC__CONVERSIONS[place];
                         break locator;
+                    }
 
-                    MASTER_TIME_ZONE ??= (TIME_ZONE__CONVERSIONS[timezone?.length < 1? '': timezone = [zone, type ?? 'Standard', trigger].map((s = '') => s[0]).join('').toUpperCase()]?.length? timezone: '');
-                }
+                // Try to not mistake common suffixes and titles...
+                // From: https://translated-into.com/{word}
+                if(false
+                    // "the"
+                    || /\b(y?a(h|ng?)?|c[aá]c|d(as|e[nt]?|ie|u)|e([lw]|ta)|i(he|l|ng|tu|yo)?|[lk]a|ny|o|quod|t(h?e|us)|u|y)\b/i
+                        .test(zone)
+                    // "of"
+                    || /\b(a([fvz]|pie|utem)|d(ari|[ei])|e[ae]|[fvn]an|gada|ji|kohta|n([ae]k?|ing?|ke|tawm|y)|o([dif]|\s?ka)?|s(aka|e)|[tv]on|ti(na)?|vun|y[ae]|z)\b/i
+                        .test(zone)
+                    // "for"
+                    || /\b(aua|(b|ch)o|canys|dla|eest|f([oö]a?r|un|yrir)|gia|hoki|kw?a(nggo|y)?|m(aka|ert)|ngoba|[ps](ara|[eëo]u?r?|r([eo]|iek))|quia|rau|til|untuk|v(arten|i|oo)r|ye|z(a|um))\b/i
+                        .test(zone)
+                    // "nor" or "or"
+                    // || /\b(n?or?)\b/i
+                    //     .test(zone)
+                    // "but" or "and"
+                    || /\b(a([bw]?er?|g(a|us)|ka?|[ls][ei]|m(m[ao]|pak)|nd|ti?)?|b(aina|[eu]t)|d(an|he)|e(n(gari)?|s|ta?)?|izda|k(a[ij]|[ou]ma)|l(an|e)|ja|lebe|m(a([anr]{2}|i?s)?|en|utta)|no|[ou]g|s(ed|is)|(te)?ta(b|pi)|u(nd)?|v[ae]|y)\b/i
+                        .test(zone)
+                    // "yet"
+                    // || /\b(yet)\b/i
+                    //     .test(zone)
+                    // tensed words
+                    || /\B(i?e[ds]|ing)$/i
+                        .test(zone)
+                )
+                    break locator;
 
-                searching:
-                for(let regexp of TIME_ZONE__REGEXPS) {
-                    replacing:
-                    for(let MAX = Object.keys(TIME_ZONE__CONVERSIONS).length; --MAX > 0 && regexp.test(convertWordsToTimes(container?.innerText));) {
-                        container = (null
-                            ?? container.getElementByText(regexp)
-                            ?? container.getElementByText(/\b(after\s?noons?|evenings?|noons?|lunch[\s\-]?time|mid[\s\-]?nights?)\b/iu)
-                        );
+                MASTER_TIME_ZONE ??= (TIME_ZONE__CONVERSIONS[timezone?.length < 1? '': timezone = [zone, type ?? 'Standard', trigger].map((s = '') => s[0]).join('').toUpperCase()]?.length? timezone: '');
+            }
 
-                        if(nullish(container))
-                            continue searching;
+            searching:
+            for(let regexp of TIME_ZONE__REGEXPS) {
+                replacing:
+                for(let MAX = Object.keys(TIME_ZONE__CONVERSIONS).length; --MAX > 0 && regexp.test(convertWordsToTimes(container?.innerText));) {
+                    container = (null
+                        ?? container.getElementByText(regexp)
+                        ?? container.getElementByText(/\b(after\s?noons?|evenings?|noons?|lunch[\s\-]?time|mid[\s\-]?nights?)\b/iu)
+                    );
 
-                        let convertedText = convertWordsToTimes(container.innerText.trim()),
-                            originalText = container.innerText;
+                    if(nullish(container))
+                        continue searching;
 
-                        if(convertedText.length < 1)
-                            continue searching;
+                    let convertedText = convertWordsToTimes(container.innerText.trim()),
+                        originalText = container.innerText;
 
-                        let { groups, index, length } = regexp.exec(convertedText),
-                            { hour, minute = ':00', offset = '', meridiem = '', timezone = MASTER_TIME_ZONE } = groups,
-                            timesone = timezone?.replace(/^([^s])t$/, '$1st')?.replace(/^([^S])T$/, '$1ST') ?? '';
+                    if(convertedText.length < 1)
+                        continue searching;
 
-                        if(offset.length > 0 && isNaN(parseInt(offset)))
-                            continue;
+                    let { groups, index, length } = regexp.exec(convertedText),
+                        { hour, minute = ':00', offset = '', meridiem = '', timezone = MASTER_TIME_ZONE } = groups,
+                        timesone = timezone?.replace(/^([^s])t$/, '$1st')?.replace(/^([^S])T$/, '$1ST') ?? '';
 
-                        let misint = timezone?.mutilate(),
-                            MISINT = timezone?.toUpperCase(),
-                            missnt = timesone?.mutilate(),
-                            MISSNT = timesone?.toUpperCase();
+                    if(offset.length > 0 && isNaN(parseInt(offset)))
+                        continue;
 
-                        // This isn't a timezone... it's a word...
-                        if(true
-                            && !(false
-                                || MISINT in TIME_ZONE__CONVERSIONS
-                                || MISSNT in TIME_ZONE__CONVERSIONS
-                            )
-                            && NON_TIME_ZONE_WORDS[misint?.[0]]?.[misint?.length]?.contains(misint)
-                            && NON_TIME_ZONE_WORDS[missnt?.[0]]?.[missnt?.length]?.contains(missnt)
+                    let misint = timezone?.mutilate(),
+                        MISINT = timezone?.toUpperCase(),
+                        missnt = timesone?.mutilate(),
+                        MISSNT = timesone?.toUpperCase();
+
+                    // This isn't a timezone... it's a word...
+                    if(true
+                        && !(false
+                            || MISINT in TIME_ZONE__CONVERSIONS
+                            || MISSNT in TIME_ZONE__CONVERSIONS
                         )
+                        && NON_TIME_ZONE_WORDS[misint?.[0]]?.[misint?.length]?.contains(misint)
+                        && NON_TIME_ZONE_WORDS[missnt?.[0]]?.[missnt?.length]?.contains(missnt)
+                    )
+                        continue searching;
+
+                    let now = new Date,
+                        year = now.getFullYear(),
+                        month = now.getMonth() + 1,
+                        day = now.getDate(),
+                        _hr_ = new Date(STREAMER.data?.actualStartTime || now).getHours(),
+                        autoMeridiem = "AP"[+(_hr_ > 11)];
+
+                    let houl = hour = parseInt(hour);
+
+                    hour += (
+                        Date.isDST()?
+                            // Daylight Savings is active and Standard Time was detected
+                            -/\Bs?t$/i.test(timezone):
+                        // Daylight Savings is inactive and Daylight Time was detected
+                        +/\Bdt$/i.test(timezone)
+                    );
+
+                    // Doesn't work as intended? Or works too well
+                    if(meridiem[0]?.length < autoMeridiem.length) {
+                        if(autoMeridiem == 'A')
+                            hour += 12;
+                        else
+                            hour -= 12;
+
+                        if(hour < 0)
+                            hour += 24;
+                    } else if(meridiem[0]?.equals(autoMeridiem)) {
+                        if(autoMeridiem == 'P' && hour < 12)
+                            hour += 12;
+                        else if(autoMeridiem == 'A' && hour > 11)
+                            hour -= 12;
+                    } else if(meridiem[0]?.length) {
+                        if(meridiem[0].toUpperCase() == 'P' && hour < 12)
+                            hour += 12;
+                        else if(meridiem[0].toUpperCase() == 'A' && hour > 11)
+                            hour -= 12;
+                    }
+
+                    hour %= 24;
+
+                    timezone ||= (offset.length? 'GMT': '');
+
+                    if(timezone.length) {
+                        let name = timezone = timezone.toUpperCase().replace(/[^\w\+\-]+/g, '');
+
+                        if(timezone in TIME_ZONE__CONVERSIONS)
+                            timezone = TIME_ZONE__CONVERSIONS[timezone].replace(/^[+-]/, 'GMT$&');
+                        else if(/[\+\-]/.test(timezone))
+                            timezone = timezone.replace(/^[+-]/, 'GMT$&');
+                        else if(timesone in TIME_ZONE__CONVERSIONS)
+                            timezone = TIME_ZONE__CONVERSIONS[timesone].replace(/^[+-]/, 'GMT$&');
+                        else
                             continue searching;
 
-                        let now = new Date,
-                            year = now.getFullYear(),
-                            month = now.getMonth() + 1,
-                            day = now.getDate(),
-                            _hr_ = new Date(STREAMER.data?.actualStartTime || now).getHours(),
-                            autoMeridiem = "AP"[+(_hr_ > 11)];
+                        MASTER_TIME_ZONE ||= name;
+                    }
 
-                        let houl = hour = parseInt(hour);
+                    let newDate = new Date(`${ [year, month, day].join(' ') } ${ offset }${ hour + minute } ${ timezone }`),
+                        newTime = newDate.toLocaleTimeString(top.LANGUAGE, { timeStyle: 'short' }),
+                        noChange = convertWordsToTimes(originalText).equals(originalText);
 
-                        hour += (
-                            Date.isDST()?
-                                // Daylight Savings is active and Standard Time was detected
-                                -/\Bs?t$/i.test(timezone):
-                            // Daylight Savings is inactive and Daylight Time was detected
-                            +/\Bdt$/i.test(timezone)
-                        );
+                    if(isNaN(+newDate)) {
+                        // Keep original text
+                        let { groups, index, length } = regexp.exec(originalText);
 
-                        // Doesn't work as intended? Or works too well
-                        if(meridiem[0]?.length < autoMeridiem.length) {
-                            if(autoMeridiem == 'A')
-                                hour += 12;
-                            else
-                                hour -= 12;
-
-                            if(hour < 0)
-                                hour += 24;
-                        } else if(meridiem[0]?.equals(autoMeridiem)) {
-                            if(autoMeridiem == 'P' && hour < 12)
-                                hour += 12;
-                            else if(autoMeridiem == 'A' && hour > 11)
-                                hour -= 12;
-                        } else if(meridiem[0]?.length) {
-                            if(meridiem[0].toUpperCase() == 'P' && hour < 12)
-                                hour += 12;
-                            else if(meridiem[0].toUpperCase() == 'A' && hour > 11)
-                                hour -= 12;
-                        }
-
-                        hour %= 24;
-
-                        timezone ||= (offset.length? 'GMT': '');
-
-                        if(timezone.length) {
-                            let name = timezone = timezone.toUpperCase().replace(/[^\w\+\-]+/g, '');
-
-                            if(timezone in TIME_ZONE__CONVERSIONS)
-                                timezone = TIME_ZONE__CONVERSIONS[timezone].replace(/^[+-]/, 'GMT$&');
-                            else if(/[\+\-]/.test(timezone))
-                                timezone = timezone.replace(/^[+-]/, 'GMT$&');
-                            else if(timesone in TIME_ZONE__CONVERSIONS)
-                                timezone = TIME_ZONE__CONVERSIONS[timesone].replace(/^[+-]/, 'GMT$&');
-                            else
-                                continue searching;
-
-                            MASTER_TIME_ZONE ||= name;
-                        }
-
-                        let newDate = new Date(`${ [year, month, day].join(' ') } ${ offset }${ hour + minute } ${ timezone }`),
-                            newTime = newDate.toLocaleTimeString(top.LANGUAGE, { timeStyle: 'short' }),
-                            noChange = convertWordsToTimes(originalText).equals(originalText);
-
-                        if(isNaN(+newDate)) {
-                            // Keep original text
-                            let { groups, index, length } = regexp.exec(originalText);
-
-                            container.innerHTML = `${ originalText.substr(0, index).split('').join('&zwj;') }{{time_zones?=${ btoa(escape(originalText.substr(index, length))) }}}${ originalText.substr(length).split('').join('&zwj;') }`;
-                        } else {
-                            // Convert to new text
-                            container.innerText = convertedText
-                                .replace(regexp, ($0, $$, $_) => `{{time_zones?=${ btoa(escape(newTime)) }|${ btoa(escape(noChange? $0.replace(/$/, (groups.timezone?.length? '': MASTER_TIME_ZONE?.length? ` (${ MASTER_TIME_ZONE })`: '')): convertWordsToTimes.inReverse($0))) }}}`);
-                        }
+                        container.innerHTML = `${ originalText.substr(0, index).split('').join('&zwj;') }{{time_zones?=${ btoa(escape(originalText.substr(index, length))) }}}${ originalText.substr(length).split('').join('&zwj;') }`;
+                    } else {
+                        // Convert to new text
+                        container.innerText = convertedText
+                            .replace(regexp, ($0, $$, $_) => `{{time_zones?=${ btoa(escape(newTime)) }|${ btoa(escape(noChange? $0.replace(/$/, (groups.timezone?.length? '': MASTER_TIME_ZONE?.length? ` (${ MASTER_TIME_ZONE })`: '')): convertWordsToTimes.inReverse($0))) }}}`);
                     }
                 }
             }
-
-            let TZC = [], TZE = new Set;
-            for(let MAX = 1000, regexp = /\{\{time_zones\?=(.+?)\}\}/, node; --MAX > 0 && defined(node = $.body.getElementByText(regexp));) {
-                let text = RegExp['$&'],
-                    tzc = RegExp.$1;
-
-                TZE.add(node);
-                node.innerHTML = node.innerHTML.replace(text, `<!--!time#${ TZC.push(tzc) }-->`);
-            }
-
-            for(let node of TZE)
-                allNodes(node)
-                    .filter(node => /\bcomment\b/i.test(node.nodeName) && node.textContent.startsWith('!time#'))
-                    .map(comment => {
-                        let index = parseInt(comment.textContent.replace('!time#', '')) - 1;
-                        let [newText, oldText] = TZC[index].split('|');
-
-                        let span = furnish('span', {
-                            id: `tt-time-zone--${ new nanoid(10, nanoid.LOWERCASE_SAFE) }`,
-                            style: 'color:var(--user-contrast-color); text-decoration:underline 2px; width:min-content; white-space:nowrap',
-                            contrast: THEME__PREFERRED_CONTRAST,
-                            innerHTML: unescape(atob(newText)).split('').join('&zwj;').pad('&zwj;'),
-                        });
-
-                        if(oldText?.length)
-                            span.setAttribute('tip-text--timezone', oldText);
-                        else
-                            span.removeAttribute('style');
-
-                        comment.replaceWith(span);
-                    });
-
-            wait(2_5_0).then(() => {
-                $.all('[id^="tt-time-zone-"][tip-text--timezone]')
-                    .map(span => {
-                        let oldText = span.getAttribute('tip-text--timezone');
-
-                        new Tooltip(span, unescape(atob(oldText)), { from: 'top' });
-
-                        // span.removeAttribute('tip-text--timezone');
-                    });
-            });
-
-            TIME_ZONE__TEXT_MATCHES = TIME_ZONE__TEXT_MATCHES.isolate();
-        };
-        Timers.time_zones = 250;
-
-        __TimeZones__:
-        if(parseBool(Settings.time_zones)) {
-            $remark('Converting time zones...');
-
-            RegisterJob('time_zones');
         }
+
+        let TZC = [], TZE = new Set;
+        for(let MAX = 1000, regexp = /\{\{time_zones\?=(.+?)\}\}/, node; --MAX > 0 && defined(node = $.body.getElementByText(regexp));) {
+            let text = RegExp['$&'],
+                tzc = RegExp.$1;
+
+            TZE.add(node);
+            node.innerHTML = node.innerHTML.replace(text, `<!--!time#${ TZC.push(tzc) }-->`);
+        }
+
+        for(let node of TZE)
+            allNodes(node)
+                .filter(node => /\bcomment\b/i.test(node.nodeName) && node.textContent.startsWith('!time#'))
+                .map(comment => {
+                    let index = parseInt(comment.textContent.replace('!time#', '')) - 1;
+                    let [newText, oldText] = TZC[index].split('|');
+
+                    let span = furnish('span', {
+                        id: `tt-time-zone--${ new nanoid(10, nanoid.LOWERCASE_SAFE) }`,
+                        style: 'color:var(--user-contrast-color); text-decoration:underline 2px; width:min-content; white-space:nowrap',
+                        contrast: THEME__PREFERRED_CONTRAST,
+                        innerHTML: unescape(atob(newText)).split('').join('&zwj;').pad('&zwj;'),
+                    });
+
+                    if(oldText?.length)
+                        span.setAttribute('tip-text--timezone', oldText);
+                    else
+                        span.removeAttribute('style');
+
+                    comment.replaceWith(span);
+                });
+
+        wait(2_5_0).then(() => {
+            $.all('[id^="tt-time-zone-"][tip-text--timezone]')
+                .map(span => {
+                    let oldText = span.getAttribute('tip-text--timezone');
+
+                    new Tooltip(span, unescape(atob(oldText)), { from: 'top' });
+
+                    // span.removeAttribute('tip-text--timezone');
+                });
+        });
+
+        TIME_ZONE__TEXT_MATCHES = TIME_ZONE__TEXT_MATCHES.isolate();
+    },
+
+    setup() {
+        $remark('Converting time zones...');
     },
 });

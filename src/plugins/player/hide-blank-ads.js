@@ -1,55 +1,54 @@
 /*** /plugins/player/hide-blank-ads.js
  * Hide Blank Ads.
- * Moved verbatim from player.js (Player__Initialize) in Phase 4; it wires its own jobs and settings.
+ * Moved from player.js (Player__Initialize) in Phase 4 and converted to the structured form (docs/PLUGINS.md).
  */
 
 import { plugin } from '../../lib/plugins.js';
 
+// The feature's state; init() resets it whenever the page (re)initializes
+let BLANK_AD_PRESENCE;
+
 plugin({
     id: 'player.hide_blank_ads',
+    job: 'hide_blank_ads',
+    timer: 500,
 
-    async install() {
-        let BLANK_AD_PRESENCE = false;
+    init() {
+        BLANK_AD_PRESENCE = false;
+    },
 
-        Handlers.hide_blank_ads = () => {
-            if($.defined('[data-a-target*="ad-countdown"i]'))
-                return window.postMessage({ action: 'report-blank-ad', from: 'player.js', purple: true }, '*');
+    handler: () => {
+        if($.defined('[data-a-target*="ad-countdown"i]'))
+            return window.postMessage({ action: 'report-blank-ad', from: 'player.js', purple: true }, '*');
 
-            let video = $('video');
+        let video = $('video');
 
-            if(nullish(video))
-                return;
+        if(nullish(video))
+            return;
 
-            let capture = video.captureFrame(),
-                banner = Runtime.getURL('twitch-banner.png');
+        let capture = video.captureFrame(),
+            banner = Runtime.getURL('twitch-banner.png');
 
-            resemble(capture)
-                .compareTo(banner)
-                .ignoreColors()
-                .scaleToSameSize()
-                .onComplete(async data => {
-                    let { analysisTime, misMatchPercentage } = data;
+        resemble(capture)
+            .compareTo(banner)
+            .ignoreColors()
+            .scaleToSameSize()
+            .onComplete(async data => {
+                let { analysisTime, misMatchPercentage } = data;
 
-                    analysisTime = parseInt(analysisTime);
-                    misMatchPercentage = parseFloat(misMatchPercentage);
+                analysisTime = parseInt(analysisTime);
+                misMatchPercentage = parseFloat(misMatchPercentage);
 
-                    let matchPercentage = 100 - misMatchPercentage,
-                        isBlankAd = matchPercentage > 80;
+                let matchPercentage = 100 - misMatchPercentage,
+                    isBlankAd = matchPercentage > 80;
 
-                    if(BLANK_AD_PRESENCE == isBlankAd)
-                        return;
-                    BLANK_AD_PRESENCE = isBlankAd;
+                if(BLANK_AD_PRESENCE == isBlankAd)
+                    return;
+                BLANK_AD_PRESENCE = isBlankAd;
 
-                    // $warn(`The Purple banner of death!`, { isBlankAd, matchPercentage, analysisTime });
+                // $warn(`The Purple banner of death!`, { isBlankAd, matchPercentage, analysisTime });
 
-                    window.postMessage({ action: 'report-blank-ad', from: 'player.js', purple: isBlankAd }, '*');
-                });
-        };
-        Timers.hide_blank_ads = 500;
-
-        __Hide_Blank_Ads__:
-        if(parseBool(Settings.hide_blank_ads)) {
-            RegisterJob('hide_blank_ads');
-        }
+                window.postMessage({ action: 'report-blank-ad', from: 'player.js', purple: isBlankAd }, '*');
+            });
     },
 });
