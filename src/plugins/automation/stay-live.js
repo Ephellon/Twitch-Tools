@@ -6,7 +6,7 @@
 import { plugin } from '../../lib/plugins.js';
 
 // The feature's state; init() resets it whenever the page (re)initializes
-let ClearIntent, twitch_pathnames, reserved_twitch_pathnames;
+let ClearIntent, twitch_pathnames, reserved_twitch_pathnames, WATCHED_LIVE, USER_INTENT;
 
 plugin({
     id: 'stay_live',
@@ -14,6 +14,8 @@ plugin({
 
     init() {
         ClearIntent = undefined;
+        WATCHED_LIVE = undefined;       // The channel seen live during this visit
+        USER_INTENT = undefined;        // A channel the viewer chose themselves (see user-intent.js)
         twitch_pathnames = [
             USERNAME,
 
@@ -30,14 +32,21 @@ plugin({
 
         try {
             await Cache.load('UserIntent', async({ UserIntent }) => {
+                // `reserved_twitch_pathnames` was built from a copy of TWITCH_PATHNAMES, so pushing here never
+                // counted; remember the intent and check it below (#50)
                 if(parseBool(UserIntent))
-                    TWITCH_PATHNAMES.push(UserIntent);
+                    TWITCH_PATHNAMES.push(USER_INTENT = UserIntent);
 
                 Cache.remove('UserIntent');
             });
         } catch(error) {
             return StopWatch.stop('stay_live'), Cache.remove('UserIntent');
         }
+
+        let ignoreReruns = parseBool(Settings.stay_live__ignore_channel_reruns);
+
+        if(STREAMER.live && !(ignoreReruns && STREAMER.redo))
+            WATCHED_LIVE = STREAMER.name;
 
         NotLive:
         if(false
@@ -51,6 +60,13 @@ plugin({
                 break NotLive;
 
             if(!RegExp(STREAMER?.name, 'i').test(PATHNAME))
+                break NotLive;
+
+            // Only move on when the stream ended while being watched, or the extension brought the viewer
+            // here; a channel the viewer opened while it was offline is theirs to look at (#50)
+            let broughtHere = defined(parseURL(location).searchParameters?.tool);
+
+            if(USER_INTENT?.equals?.(STREAMER?.name) || !(WATCHED_LIVE?.equals?.(STREAMER?.name) || broughtHere))
                 break NotLive;
 
             if(defined(next)) {
