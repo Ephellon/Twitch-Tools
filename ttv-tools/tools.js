@@ -58,7 +58,7 @@ when.defined(() => {
             UserMenuToggleButton.click();
             ACTIVITY = window.ACTIVITY = $('[data-a-target="presence-text"i]')?.textContent ?? '';
             USERNAME = window.USERNAME = $('[data-a-target="user-display-name"i]')?.textContent ?? `User_Not_Logged_In_${ +new Date }`;
-            THEME = window.THEME = [...$('html').classList].find(c => /theme-(\w+)/i.test(c)).replace(/[^]*theme-(\w+)/i, '$1').toLowerCase();
+            THEME = window.THEME = [...$('html').classList].find(c => /theme-(\w+)/i.test(c))?.replace(/[^]*theme-(\w+)/i, '$1').toLowerCase() ?? 'dark';
             ANTITHEME = window.ANTITHEME = ['light', 'dark'].filter(theme => theme != THEME).pop();
 
             $('[data-a-target^="language"i]')?.click();
@@ -67,7 +67,7 @@ when.defined(() => {
         } else {
             ACTIVITY = window.ACTIVITY = '';
             USERNAME = window.USERNAME = `User_Not_Logged_In_${ +new Date }`;
-            THEME = window.THEME = [...$('html').classList].find(c => /theme-(\w+)/i.test(c)).replace(/[^]*theme-(\w+)/i, '$1').toLowerCase();
+            THEME = window.THEME = [...$('html').classList].find(c => /theme-(\w+)/i.test(c))?.replace(/[^]*theme-(\w+)/i, '$1').toLowerCase() ?? 'dark';
             ANTITHEME = window.ANTITHEME = ['light', 'dark'].filter(theme => theme != THEME).pop();
         }
 
@@ -382,7 +382,7 @@ class Balloon {
                                                                                 ALL_FIRST_IN_LINE_JOBS.map((job, index) => {
                                                                                     if(parseURL(job).pathname.equals(url.pathname))
                                                                                         if(index)
-                                                                                            Cache.save({ ALL_FIRST_IN_LINE_JOBS: ALL_FIRST_IN_LINE_JOBS.splice(index, 1, url.href) });
+                                                                                            ALL_FIRST_IN_LINE_JOBS.splice(index, 1, url.href), Cache.save({ ALL_FIRST_IN_LINE_JOBS });
                                                                                         else
                                                                                             REDO_FIRST_IN_LINE_QUEUE(job, { redo });
                                                                                 });
@@ -616,7 +616,7 @@ class Balloon {
                                                         ALL_FIRST_IN_LINE_JOBS.map((job, index) => {
                                                             if(parseURL(job).pathname.equals(url.pathname))
                                                                 if(index)
-                                                                    Cache.save({ ALL_FIRST_IN_LINE_JOBS: ALL_FIRST_IN_LINE_JOBS.splice(index, 1, url.href) });
+                                                                    ALL_FIRST_IN_LINE_JOBS.splice(index, 1, url.href), Cache.save({ ALL_FIRST_IN_LINE_JOBS });
                                                                 else
                                                                     REDO_FIRST_IN_LINE_QUEUE(job, { redo });
                                                         });
@@ -887,7 +887,10 @@ class Card {
 
     remove() {
         this.container?.remove();
-        Card.#CARDS.delete(this.title);
+
+        for(let [title, card] of Card.#CARDS)
+            if(card === this)
+                Card.#CARDS.delete(title);
     }
 
     static get(title) {
@@ -1170,7 +1173,7 @@ class Search {
                     extensions = { persistedQuery: "SHA-256", version: 1 };
 
                 template = ({ operationName: 'StreamChat', variables, extensions });
-            };
+            } break;
 
             case 'chat.user': {
                 let variables = {},
@@ -1500,7 +1503,7 @@ class Search {
                 ok: request.status >= 200 && request.status < 300,
                 json: () => new Promise((onsuccess, onerror) => {
                     try {
-                        onsuccess(JSON.parse(query.body));
+                        onsuccess(JSON.parse(request.response || request.responseText));
                     } catch(query) {
                         onerror(query);
                     }
@@ -1831,7 +1834,7 @@ Object.defineProperties(Chat, {
                 let name = callback.name || UUID.from(callback.toString()).value;
 
                 if(Chat.__deferredEvents__.__onwhisper__.has(name))
-                    return Chat.__onwhisper__.get(name);
+                    return Chat.__deferredEvents__.__onwhisper__.get(name);
 
                 // $remark('Adding deferred [on new whisper] event listener', { [name]: callback });
 
@@ -1846,7 +1849,7 @@ Object.defineProperties(Chat, {
                 let name = callback.name || UUID.from(callback.toString()).value;
 
                 if(Chat.__deferredEvents__.__onbullet__.has(name))
-                    return Chat.__onbullet__.get(name);
+                    return Chat.__deferredEvents__.__onbullet__.get(name);
 
                 // $remark('Adding deferred [on new newbullet] event listener', { [name]: callback });
 
@@ -1861,7 +1864,7 @@ Object.defineProperties(Chat, {
                 let name = callback.name || UUID.from(callback.toString()).value;
 
                 if(Chat.__deferredEvents__.__oncommand__.has(name))
-                    return Chat.__oncommand__.get(name);
+                    return Chat.__deferredEvents__.__oncommand__.get(name);
 
                 // $remark('Adding deferred [on new command] event listener', { [name]: callback });
 
@@ -1916,7 +1919,7 @@ Object.defineProperties(Chat, {
                 let name = callback.name || UUID.from(callback.toString()).value;
 
                 if(Chat.__consumableEvents__.__onwhisper__.has(name))
-                    return Chat.__onwhisper__.get(name);
+                    return Chat.__consumableEvents__.__onwhisper__.get(name);
 
                 // $remark('Adding consumable [on new whisper] event listener', { [name]: callback });
 
@@ -1931,7 +1934,7 @@ Object.defineProperties(Chat, {
                 let name = callback.name || UUID.from(callback.toString()).value;
 
                 if(Chat.__consumableEvents__.__onbullet__.has(name))
-                    return Chat.__onbullet__.get(name);
+                    return Chat.__consumableEvents__.__onbullet__.get(name);
 
                 // $remark('Adding consumable [on new newbullet] event listener', { [name]: callback });
 
@@ -1946,7 +1949,7 @@ Object.defineProperties(Chat, {
                 let name = callback.name || UUID.from(callback.toString()).value;
 
                 if(Chat.__consumableEvents__.__oncommand__.has(name))
-                    return Chat.__oncommand__.get(name);
+                    return Chat.__consumableEvents__.__oncommand__.get(name);
 
                 // $remark('Adding consumable [on new command] event listener', { [name]: callback });
 
@@ -2294,7 +2297,7 @@ async function SetQuality(quality = 'auto', backup = 'source') {
 
     return new Promise((resolve, reject) => {
         let checker = setInterval(() => {
-            video = $.all('video').pop(),
+            let video = $.all('video').pop(),
             computed = (video?.videoHeight | 0) + 'p';
 
             if(desired !== computed) {
@@ -3100,7 +3103,7 @@ try {
                                                     size = parseInt(size);
 
                                                     if(size > max) {
-                                                        size = max;
+                                                        max = size;
                                                         badge.href = href;
                                                     }
                                                 }
@@ -3111,7 +3114,7 @@ try {
                                         stream.badges = badges;
 
                                         // Community Points
-                                        if(STREAMER?.sole == stream.broadcaster.id);
+                                        if(STREAMER?.sole == stream.broadcaster.id)
                                             stream.points = {
                                                 ...Points,
                                                 get balance() {
@@ -3854,7 +3857,7 @@ let Initialize = async(START_OVER = false) => {
                 start: new Date,
                 stop: null,
                 span: null,
-                max: Math.abs(interval + new Date) * 1.1,
+                max: Math.abs(interval) * 1.1,
             });
         }
 
@@ -4307,7 +4310,7 @@ let Initialize = async(START_OVER = false) => {
                         for(let metadata of commands) {
                             let { aliases, command, reply, accessLevel, enabled, count = 0, cooldown, cost } = metadata;
 
-                            COMMANDS.push({ aliases: [...aliases, ...commands.filter(command => command.reply?.contains(command))], command, reply, availability: match(accessLevel), enabled, origin: 'StreamElements', variables: { count, coolDown: cooldown.global, cost } });
+                            COMMANDS.push({ aliases: [...aliases, ...commands.filter(alias => alias.reply?.contains(command))], command, reply, availability: match(accessLevel), enabled, origin: 'StreamElements', variables: { count, coolDown: cooldown.global, cost } });
                         }
                     })
                     .catch($warn);
@@ -5129,7 +5132,7 @@ let Initialize = async(START_OVER = false) => {
                 let { pathname } = location;
 
                 if(pathname.startsWith('/videos/'))
-                    videoID = pathname.replace('/videos/', '').replace(/\/g/, '').replace(/^v/i, '');
+                    videoID = pathname.replace('/videos/', '').replace(/\//g, '').replace(/^v/i, '');
                 else
                     channelName = pathname.replace(/^(moderator)\/(\/[^\/]+?)/i, '$1').replace(/^(\/[^\/]+?)\/(squad|videos)\b/i, '$1').replace(/\//g, '');
 
@@ -6469,6 +6472,8 @@ let Initialize = async(START_OVER = false) => {
                         else if(defined(offerClaimLink))
                             offerDismissButton?.click();
 
+                        ++handled;
+
                         return true;
                     }, 1e3, container).then(() => {
                         if(handled >= offerContainers.length)
@@ -7342,7 +7347,7 @@ let Initialize = async(START_OVER = false) => {
                     else
                         alert.timed(`Claiming ${ claimed }!`, 7000);
                 }
-            }).then(() => TTV_DROPS_CHECKER(btn_str));
+            }).then(() => TTV_DROPS_CHECKER(btn_str, svg_str));
         })('.tw-tower *:not([class*="tooltip"i]) > button:not([class*="image"i]):not([disabled], [aria-label*="refresh"i])', 'path:is([clip-rule~="evenodd"i], [fill-rule~="evenodd"i])');
 
         TTV_DROPS_REFRESHER = setInterval(() => {
@@ -8552,7 +8557,7 @@ let Initialize = async(START_OVER = false) => {
                 if(!/^tv\.twitch/i.test(domainPath.join('.')) || RESERVED_TWITCH_PATHNAMES.test(pathname))
                     return $warn(`Unable to add link to Up Next "${ href }"`);
 
-                streamer = await(null
+                let streamer = await(null
                     ?? ALL_CHANNELS.find(channel => parseURL(channel.href).pathname.equals('/' + name))
                     ?? (null
                         ?? new Search(name).then(Search.convertResults)
@@ -10079,7 +10084,7 @@ let Initialize = async(START_OVER = false) => {
                                             .then(html => (new DOMParser).parseFromString(html, 'text/html'))
                                             .then(DOM => {
                                                 let description = (null
-                                                    ?? $('[id][class*="description"i]')?.textContent
+                                                    ?? $('[id][class*="description"i]', DOM)?.textContent
                                                     ?? $('meta[name="description"i]', DOM)?.content
                                                 );
 
@@ -10549,7 +10554,7 @@ let Initialize = async(START_OVER = false) => {
                                                 href = info.Url,
                                                 img = info.ImageUrl,
                                                 price = 'More...',
-                                                errs = parseBool(Title?.errs(game) < PARTIAL_MATCH_THRESHOLD);
+                                                errs = parseBool(info.Title?.errs(game) < PARTIAL_MATCH_THRESHOLD);
 
                                             return { game, name, href, img, price, errs };
                                         });
@@ -10628,7 +10633,7 @@ let Initialize = async(START_OVER = false) => {
                                             .then(html => (new DOMParser).parseFromString(html, 'text/html'))
                                             .then(DOM => {
                                                 let description = (null
-                                                    ?? $('[id][class*="description"i]')?.textContent
+                                                    ?? $('[id][class*="description"i]', DOM)?.textContent
                                                     ?? $('meta[name="description"i]', DOM)?.content
                                                 );
 
@@ -10750,7 +10755,7 @@ let Initialize = async(START_OVER = false) => {
                                             .then(html => (new DOMParser).parseFromString(html, 'text/html'))
                                             .then(DOM => {
                                                 let description = (null
-                                                    ?? $('[id][class*="description"i]')?.textContent
+                                                    ?? $('[id][class*="description"i]', DOM)?.textContent
                                                     ?? $('meta[name="description"i]', DOM)?.content
                                                 );
 
@@ -11033,7 +11038,7 @@ let Initialize = async(START_OVER = false) => {
                                         .then(html => (new DOMParser).parseFromString(html, 'text/html'))
                                         .then(DOM => {
                                             let description = (null
-                                                ?? JSON.parse($('script[id*="data"i][type$="json"i]')?.textContent ?? "{}").props?.pageProps?.meta?.description
+                                                ?? JSON.parse($('script[id*="data"i][type$="json"i]', DOM)?.textContent ?? "{}").props?.pageProps?.meta?.description
                                                 ?? $('meta[name="description"i]', DOM)?.content
                                             );
 
@@ -11156,7 +11161,7 @@ let Initialize = async(START_OVER = false) => {
                                     .then(html => (new DOMParser).parseFromString(html, 'text/html'))
                                     .then(DOM => {
                                         let description = (null
-                                            ?? JSON.parse($('script[id*="data"i][type$="json"i]')?.textContent ?? "{}").props?.pageProps?.meta?.description
+                                            ?? JSON.parse($('script[id*="data"i][type$="json"i]', DOM)?.textContent ?? "{}").props?.pageProps?.meta?.description
                                             ?? $('meta[name="description"i]', DOM)?.content
                                         );
 
@@ -11279,7 +11284,7 @@ let Initialize = async(START_OVER = false) => {
                                     return /*await*/ fetchURL.fromDisk(`https://store.epicgames.com/graphql?operationName=primarySearchAutocomplete&variables=${ encodeURIComponent(variables) }`)
                                         .then(r => r.json())
                                         .then(async({ data = {} }) => {
-                                            for(let element of data.Catalog?.searchStore?.elements) {
+                                            for(let element of data.Catalog?.searchStore?.elements ?? []) {
                                                 const { offerId, sandboxId, title } = element;
 
                                                 if(nullish(offerId))
@@ -11571,7 +11576,6 @@ let Initialize = async(START_OVER = false) => {
                         display_name: STREAMER.name,
                         alias: STREAMER.name,
                     },
-                    user2: STREAMER.name,
 
                     title: $('[data-a-target="stream-title"i]').textContent,
                     status: $('[data-a-target="stream-title"i]').textContent,
@@ -12149,7 +12153,7 @@ let Initialize = async(START_OVER = false) => {
             next = await GetNextStreamer(),
             host_banner = $.all('[href^="/"] h1, [href^="/"] > p, [data-a-target="hosting-indicator"i]').map(element => element.textContent),
             host = (STREAMER.name ?? ''),
-            [guest] = host_banner.filter(name => !RegExp(name, 'i').test(host));
+            [guest] = host_banner.filter(name => !host.toLowerCase().includes(name.toLowerCase()));
 
         guest ??= "anonymous";
 
@@ -12447,7 +12451,7 @@ let Initialize = async(START_OVER = false) => {
                 REDO_FIRST_IN_LINE_QUEUE( parseURL(FIRST_IN_LINE_HREF)?.addSearch?.({ from: STREAMER?.name })?.href );
 
                 let index = ALL_FIRST_IN_LINE_JOBS.indexOf(FIRST_IN_LINE_HREF),
-                    [removed] = ALL_FIRST_IN_LINE_JOBS.splice(index, 1);
+                    [removed] = (index < 0? []: ALL_FIRST_IN_LINE_JOBS.splice(index, 1));
 
                 if(UP_NEXT_ALLOW_THIS_TAB)
                     Cache.save({ ALL_FIRST_IN_LINE_JOBS, FIRST_IN_LINE_DUE_DATE }, () => goto(parseURL(next.href)?.addSearch?.({ obit: STREAMER?.name, tool: 'stay-live' })?.href ?? '?tool=stay-live'));
@@ -12612,7 +12616,6 @@ let Initialize = async(START_OVER = false) => {
             EEST: "+03:00",
             EGST: "+0:00",
             EGT: "-01:00",
-            EST: "-05:00",
             FET: "+03:00",
             FJST: "+13:00",
             FJT: "+12:00",
@@ -12624,7 +12627,6 @@ let Initialize = async(START_OVER = false) => {
             GET: "+04:00",
             GFT: "-03:00",
             GILT: "+12:00",
-            GMT: "+0:00",
             GST: "+04:00",
             GYT: "-04:00",
             HDT: "-09:00",
@@ -12709,7 +12711,6 @@ let Initialize = async(START_OVER = false) => {
             TVT: "+12:00",
             ULAST: "+09:00",
             ULAT: "+08:00",
-            UTC: ":00",
             UYST: "-02:00",
             UYT: "-03:00",
             UZT: "+05:00",
@@ -14736,8 +14737,8 @@ let Initialize = async(START_OVER = false) => {
                 if(amounter.innerHTML.unlike(amount))
                     amounter.innerHTML = amount;
             } else if(defined(target)) {
-                let pointAmount = `span.tt-point-amount[bottom-only][name=${ name }]`,
-                    pointFace = `span.tt-point-face[name=${ name }]`;
+                let pointAmount = `span.tt-point-amount[bottom-only][name="${ name }"]`,
+                    pointFace = `span.tt-point-face[name="${ name }"]`;
 
                 let text = furnish(pointAmount, {
                         'rainbow-border': notEarned == 0,
@@ -15417,7 +15418,7 @@ let Initialize = async(START_OVER = false) => {
             icon = Glyphs.modify(icon, { style: 'fill:var(--user-contrast-color)!important', height: '20px', width: '20px' });
 
             // Create the action button...
-            action =
+            let action =
             f('div', { 'tt-action': 'auto-dvr', 'for': DVR_ID, enabled, 'action-origin': 'foreign', style: `animation:1s fade-in 1;` },
                 f('button', {
                     onmouseup: async event => {
@@ -16128,7 +16129,7 @@ let Initialize = async(START_OVER = false) => {
             } else if(playing) {
                 // PLAYING → PAUSE, PLAY
                 control.click();
-                wait(250).then(control.click);
+                wait(250).then(() => control.click());
             }
 
             control.dataset.recoveryAttempts = ++attempts;
@@ -16592,7 +16593,7 @@ let Initialize = async(START_OVER = false) => {
 
                     help.append(
                         f('tr.tw-table-row.tt-extra-keyboard-shortcuts').with(
-                            f('td.tw-tabel-cell').with(
+                            f('td.tw-table-cell').with(
                                 f.p(name)
                             ),
                             f('td.tw-table-cell').with(
@@ -17854,7 +17855,7 @@ if(top == window) {
                                 if(nullish(currentTarget))
                                     break pin;
 
-                                pinned = currentTarget.dataset.pinned = true;
+                                currentTarget.dataset.pinned = true;
                                 currentTarget.closest('.tt-pinnable').modStyle(`background:var(--color-background-chat);`);
                                 $('.tt-balloon-message strong', currentTarget).modStyle(`color:var(--color-amazon)`);
                                 $('strong', currentTarget).html(`${ name } &bull; Pinned. Click to unpin`);
@@ -18370,7 +18371,7 @@ if(top == window) {
                         .then(() => {
                             if(parseBool(Settings.recover_chat))
                                 return ReloadPage(true);
-                            return TTV_IRC.socket = new WebSocket(TTV_IRC.wsURL_chat);
+                            return TTV_IRC.socket = new WebSocket(TTV_IRC.wsURL);
                         })
                         .then(() => {
                             when(() => TTV_IRC.socket.readyState === WebSocket.OPEN, 500)
