@@ -64,6 +64,15 @@ Tooling: ESLint now sees `window.X ??=` globals, `Object.defineProperties(top, �
 - tools.js L3809 `FIRST_IN_LINE_WARNING_TEXT_UPDATE` is never assigned.
 - GitHub issues #44–#57, #52, #55, #56 (all Up Next).
 
+## Low priority (reported during Phase 4 testing)
+
+The owner can still reproduce these; none is fatal.
+
+- **Left navbar bounces** (an old bug): reproducible by opening the left navbar before the extension takes control of the page.
+- **Fine Details (4)** fails (non-fatal).
+- **Streamer Data (1§1)** fails (non-fatal).
+- **The one-minute timer doesn't show** unless the drag-and-drop has been used on the page.
+
 ## Owner decisions
 
 1. **Auto DVR:** not a bug. `DVR_CLIP_PRECOMP_NAME` is a getter defined on `top` (tools.js L15542), and it already falls back to `new ClipName(2)`; the lint config now sees such globals. The master handler's undefined `body` is fixed. It had no prompt to look up.

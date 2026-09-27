@@ -65,6 +65,13 @@ Living plan for the multi-week revamp. One phase at a time; each phase ends in s
 - Generate option rows from each plugin's `settings` block instead of hand-written HTML; keeps the JSON export/restore from #58 working.
 
 ### 6. Styling
+- **Code style ✅ (side quest):** [docs/STYLEGUIDE.md](docs/STYLEGUIDE.md) is locked in, enforced by the house ESLint rules in `scripts/eslint/style.mjs`, and `npm run format` has been applied everywhere. Owner choices:
+  - ternary `?`/`:` lead their lines;
+  - declarations are comma-first;
+  - `void null` replaces `undefined`;
+  - quotes follow their meaning;
+  - switch cases use `{ } break;`;
+  - JSDoc headers on named and top-level functions (Offser drafts them).
 - CSS custom-property token layer (colors, spacing, radii, fonts) shared by `core.css`, `extras.css`, `settings.css`.
 - Per-plugin CSS where styles are feature-specific; dedupe the rest.
 

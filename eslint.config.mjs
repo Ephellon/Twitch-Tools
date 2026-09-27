@@ -15,6 +15,7 @@ import * as espree from 'espree';
 import js from '@eslint/js';
 import globals from 'globals';
 import stylistic from '@stylistic/eslint-plugin';
+import house from './scripts/eslint/style.mjs';
 
 const ROOT = 'src';
 const read = file => fs.readFileSync(path.join(ROOT, file), 'utf8');
@@ -30,9 +31,9 @@ const BUNDLES = {
 
 // Every ES-module source that ends up in a bundle
 function moduleSources(entry) {
-    let folder = path.join(ROOT, path.dirname(entry));
-    let all = [];
-    let visit = dir => fs.readdirSync(dir, { withFileTypes: true }).forEach(e => e.isDirectory()? visit(path.join(dir, e.name)): e.name.endsWith('.js') && all.push(path.relative(ROOT, path.join(dir, e.name))));
+    const folder = path.join(ROOT, path.dirname(entry));
+    const all = [];
+    const visit = dir => fs.readdirSync(dir, { withFileTypes: true }).forEach(e => e.isDirectory() ? visit(path.join(dir, e.name)) : e.name.endsWith('.js') && all.push(path.relative(ROOT, path.join(dir, e.name))));
 
     visit(folder);
     visit(path.join(ROOT, 'plugins'));
@@ -49,22 +50,22 @@ function declaredNames(file) {
 }
 
 function declaredNamesIn(file, module) {
-    let names = new Set;
-    let source = read(file);
+    const names = new Set;
+    const source = read(file);
     let program;
 
     try {
-        program = espree.parse(source, { ecmaVersion: 'latest', sourceType: module? 'module': 'script' });
+        program = espree.parse(source, { ecmaVersion: 'latest', sourceType: module ? 'module' : 'script' });
     } catch {
         return names;
     }
 
-    for(let node of program.body)
+    for(const node of program.body)
         collectStatement(node, names, true);
 
     // Object.defineProperties(top, { NAME: … }) and Object.defineProperty(window, 'NAME', …)
     walk(program, node => {
-        let { callee, arguments: [target, what] = [] } = node.type == 'CallExpression'? node: {};
+        const { callee, arguments: [target, what] = [] } = node.type == 'CallExpression' ? node : {};
 
         if(callee?.object?.name != 'Object' || !GLOBAL_OBJECTS.has(target?.name))
             return;
@@ -77,7 +78,7 @@ function declaredNamesIn(file, module) {
             names.add(what.value);
     });
 
-    for(let [, name] of source.matchAll(/\b(?:window|globalThis|self|top)\.([A-Za-z_$][\w$]*)\s*(?:\?\?|\|\||&&)?=[^=]/g))
+    for(const [, name] of source.matchAll(/\b(?:window|globalThis|self|top)\.([A-Za-z_$][\w$]*)\s*(?:\?\?|\|\||&&)?=[^=]/g))
         names.add(name);
 
     return names;
@@ -91,9 +92,9 @@ function walk(node, visit) {
 
     visit(node);
 
-    for(let key in node)
+    for(const key in node)
         if(key != 'parent')
-            for(let child of [].concat(node[key]))
+            for(const child of [].concat(node[key]))
                 if(child && typeof child == 'object')
                     walk(child, visit);
 }
@@ -101,37 +102,37 @@ function walk(node, visit) {
 // Sloppy-mode scripts also leak function declarations out of top-level blocks (Annex B), e.g. `__STATIC__: { function RegisterJob() {} }`
 function collectStatement(node, names, topLevel = false) {
     switch(node?.type) {
-        case 'VariableDeclaration':
+        case 'VariableDeclaration': {
             if(topLevel || node.kind == 'var')
                 node.declarations.forEach(({ id }) => collectPattern(id, names));
-            break;
-        case 'FunctionDeclaration':
+        } break;
+        case 'FunctionDeclaration': {
             names.add(node.id.name);
-            break;
-        case 'ClassDeclaration':
+        } break;
+        case 'ClassDeclaration': {
             topLevel && names.add(node.id.name);
-            break;
-        case 'LabeledStatement':
+        } break;
+        case 'LabeledStatement': {
             collectStatement(node.body, names);
-            break;
-        case 'BlockStatement':
+        } break;
+        case 'BlockStatement': {
             node.body.forEach(child => collectStatement(child, names));
-            break;
-        case 'IfStatement':
+        } break;
+        case 'IfStatement': {
             collectStatement(node.consequent, names);
             collectStatement(node.alternate, names);
-            break;
-    }
+        } break;
+    } // switch node?.type
 }
 
 function collectPattern(node, names) {
     switch(node?.type) {
-        case 'Identifier': names.add(node.name); break;
-        case 'ObjectPattern': node.properties.forEach(p => collectPattern(p.value ?? p.argument, names)); break;
-        case 'ArrayPattern': node.elements.forEach(e => collectPattern(e, names)); break;
-        case 'RestElement': collectPattern(node.argument, names); break;
-        case 'AssignmentPattern': collectPattern(node.left, names); break;
-    }
+        case 'Identifier': { names.add(node.name) } break;
+        case 'ObjectPattern': { node.properties.forEach(p => collectPattern(p.value ?? p.argument, names)) } break;
+        case 'ArrayPattern': { node.elements.forEach(e => collectPattern(e, names)) } break;
+        case 'RestElement': { collectPattern(node.argument, names) } break;
+        case 'AssignmentPattern': { collectPattern(node.left, names) } break;
+    } // switch node?.type
 }
 
 // Each group of scripts that share a scope: one per content-script entry, plus the settings page
@@ -140,12 +141,14 @@ const groups = manifest.content_scripts.map(({ js }) => js);
 groups.push([...read('settings.html').matchAll(/<script[^>]*\bsrc=['"]([^'"]+)['"]/gi)].map(([, src]) => src));
 
 const sharedGlobals = {};
-for(let group of groups) {
-    let names = {};
-    for(let file of group)
-        for(let name of declaredNames(file))
+
+for(const group of groups) {
+    const names = {};
+
+    for(const file of group)
+        for(const name of declaredNames(file))
             names[name] = 'writable';
-    for(let file of group)
+    for(const file of group)
         Object.assign(sharedGlobals[file] ??= {}, names);
 }
 
@@ -181,7 +184,9 @@ const legacy = {
     'no-undef': 'warn',
 };
 
-// The project's style, as written by hand. Warnings for now; `npm run format` fixes a file
+// The house style (docs/STYLEGUIDE.md). Warnings; `npm run format` fixes what it safely can
+const PADDED = ['const', 'let', 'var', 'if', 'for', 'while'];
+const DECLARATIONS = ['const', 'let', 'var'];
 const style = {
     '@stylistic/indent-binary-ops': 'off',
     '@stylistic/keyword-spacing': ['warn', {
@@ -189,8 +194,38 @@ const style = {
         overrides: Object.fromEntries(['if', 'for', 'while', 'switch'].map(k => [k, { after: false }])),
     }],
     '@stylistic/space-before-function-paren': ['warn', { anonymous: 'never', named: 'never', asyncArrow: 'never', catch: 'never' }],
-    '@stylistic/semi': ['warn', 'always', { omitLastInOneLineBlock: true, omitLastInOneLineClassBody: true }],
-    '@stylistic/operator-linebreak': ['warn', 'before', { overrides: { '?': 'after', ':': 'after', '=': 'after' } }],
+    'ttv/semi': ['warn', 'always', { omitLastInOneLineBlock: true, omitLastInOneLineClassBody: true }],
+    '@stylistic/operator-linebreak': ['warn', 'before', { overrides: { '=': 'after' } }],
+    '@stylistic/space-infix-ops': 'warn',
+    '@stylistic/space-unary-ops': ['warn', { words: true, nonwords: false }],
+    '@stylistic/array-bracket-spacing': ['warn', 'never'],
+    '@stylistic/comma-style': ['warn', 'first', { exceptions: Object.fromEntries([
+        'ArrayExpression', 'ArrayPattern', 'ArrowFunctionExpression', 'CallExpression', 'FunctionDeclaration', 'FunctionExpression',
+        'ImportDeclaration', 'ObjectExpression', 'ObjectPattern', 'NewExpression', 'ExportNamedDeclaration', 'ExportAllDeclaration',
+    ].map(type => [type, true])) }],
+    'ttv/body-below': 'warn',
+    '@stylistic/comma-spacing': ['warn', { before: false, after: true }],
+    '@stylistic/max-statements-per-line': ['warn', { max: 1 }],
+    '@stylistic/brace-style': ['warn', '1tbs', { allowSingleLine: true }],
+    '@stylistic/padding-line-between-statements': ['warn',
+        { blankLine: 'always', prev: '*', next: ['break', 'continue'] },
+        { blankLine: 'any', prev: 'block', next: 'break' },
+        // Different kinds of block are separated; a run of the same kind needn't be
+        ...PADDED.map(kind => ({
+            blankLine: 'always', prev: kind,
+            next: PADDED.filter(other => other != kind && !(DECLARATIONS.includes(kind) && DECLARATIONS.includes(other))),
+        })),
+    ],
+    'no-var': 'warn',
+    'ttv/prefer-const': ['warn', { destructuring: 'all' }],
+    'ttv/void-null': 'warn',
+    'ttv/switch-case-braces': 'warn',
+    'ttv/prefix-update': 'warn',
+    'ttv/if-braces': 'warn',
+    'ttv/if-block-semi': 'warn',
+    'ttv/quotes': 'warn',
+    'ttv/regex-callback-params': 'warn',
+    'ttv/breadcrumbs': 'warn',
     '@stylistic/comma-dangle': ['warn', 'only-multiline'],
     '@stylistic/object-curly-spacing': ['warn', 'always'],
     '@stylistic/template-curly-spacing': ['warn', 'always'],
@@ -212,7 +247,7 @@ export default [
             globals: { ...globals.browser, ...globals.webextensions, ...VENDORED },
         },
         linterOptions: { reportUnusedDisableDirectives: 'off' },
-        plugins: { '@stylistic': stylistic },
+        plugins: { '@stylistic': stylistic, ttv: house },
         rules: { ...legacy, ...style },
     },
     ...Object.entries(sharedGlobals).map(([file, names]) => ({
@@ -241,7 +276,7 @@ export default [
     {
         files: ['*.mjs', 'scripts/**/*.mjs'],
         languageOptions: { sourceType: 'module', globals: globals.node },
-        plugins: { '@stylistic': stylistic },
-        rules: { ...style, 'no-unused-vars': ['error', { ignoreRestSiblings: true }] },
+        plugins: { '@stylistic': stylistic, ttv: house },
+        rules: { ...style, 'no-unused-vars': ['error', { ignoreRestSiblings: true }], 'no-constant-binary-expression': 'off' },
     },
 ];
