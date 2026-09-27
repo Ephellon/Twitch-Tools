@@ -12,3 +12,4 @@
 chrome*.zip
 .jsdocconfig
 -*.*
+/.claude/launch.json
