@@ -41,6 +41,7 @@ const TESTS = [
     'v2.test.js',
     'realistic.test.js',
     'host.test.js',
+    'functions.test.js',
 ];
 
 for (let name of MODULES)

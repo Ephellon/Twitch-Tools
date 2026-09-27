@@ -63,6 +63,21 @@ if (typeof require === 'function' && typeof module === 'object') {
         [TokenType.FORMAT]: (left, right, loc) => AST.formatExpression(left, right, loc),
     };
 
+    /** Inside an expression, a call's arguments bind no looser than the pipe: `%`, `~`/`as`,
+     * the comparisons, `and`/`or` and assignment all apply to the call's *result*. */
+    const CALL_ARGUMENT_PRECEDENCE = OPERATORS[TokenType.PIPE].precedence;
+
+    /** Tokens that can begin an argument. Anything else after a function name means it was
+     * called with none — `NOW` on its own. */
+    const ARGUMENT_STARTS = [
+        TokenType.NUMBER, TokenType.STRING, TokenType.TEMPLATE, TokenType.DURATION, TokenType.ORDINAL,
+        TokenType.TRUE, TokenType.FALSE, TokenType.WILDCARD, TokenType.ANY, TokenType.LPAREN,
+        TokenType.IDENT, TokenType.JS_PATH, TokenType.CALC, TokenType.COUNTER,
+        TokenType.NOT, TokenType.MINUS, TokenType.EXACT,
+        TokenType.SELECTOR_SELF, TokenType.SELECTOR_PROP, TokenType.SELECTOR_CHANNEL, TokenType.SELECTOR_REALM,
+        TokenType.SELECTOR_BADGE, TokenType.SELECTOR_USER, TokenType.SELECTOR_CONTEXT,
+    ];
+
     /** The diagnostic each poisoned reserved word produces. They exist for no other reason.
      * @type {Object<String, String>}
      */
@@ -121,13 +136,33 @@ if (typeof require === 'function' && typeof module === 'object') {
          * so it is only legal in a `using` at depth 0. */
         #blockDepth = 0;
 
+        /** Set while reading a `define` body: `return` is legal, and `await`, `after` and
+         * `using` are not. */
+        #inFunction = false;
+
+        /** The labels of the loops being read, innermost last (`null` for an unlabelled
+         * one). Empty outside any loop — and reset inside a `define`, so `break` cannot
+         * leave a function. */
+        #loops = [];
+
+        /** Every function name the script `define`s. Collected before parsing starts, because
+         * a call reads exactly like a verb — `TOREADABLE wait_time` — and only the name tells
+         * the parser which one it is looking at, wherever in the script the `define` sits. */
+        #functions;
+
         /**
          * @param {Array<Object>} tokens
          * @param {String} source - the text locations refer to, used for code frames
+         * @param {Set<String>} [functions] - handed down to the parsers of `${ ... }`
+         * @param {Array<?String>} [loops] - likewise, so `${ $ }` inside a `for` is legal
          */
-        constructor(tokens, source) {
+        constructor(tokens, source, functions, loops) {
             this.#tokens = tokens;
             this.#source = source;
+            this.#loops = (loops ?? []).slice();
+            this.#functions = functions ?? new Set(tokens
+                .filter((token, index) => TokenType.IDENT === token.type && TokenType.DEFINE === tokens[index - 1]?.type)
+                .map(token => token.value));
         }
 
         /** Every error collected during the parse. */
@@ -398,6 +433,22 @@ if (typeof require === 'function' && typeof module === 'object') {
             // An all-caps bare word in statement position is a verb call. The decision is
             // made here, by position, rather than in the lexer — so the host can register
             // new verbs without touching the language.
+            // A defined function in statement position is called exactly like a verb, and its
+            // arguments take the rest of the line the way a verb's argument does.
+            // An arrow after the arguments binds the call's *result* — `FACT n -> rest` — so
+            // the arguments stop just short of it (assignment is the only construct looser
+            // than `or`).
+            if (TokenType.IDENT === token.type && this.#functions.has(token.value)) {
+                let statement = this.#parseCall(token, LOWEST_PRECEDENCE + 1);
+
+                if (this.#at(TokenType.ARROW_LOCAL, TokenType.ARROW_PARENT))
+                    statement = this.#parseAssignmentTail(statement);
+
+                this.#expect(TokenType.NEWLINE, 'end of line');
+
+                return AST.expressionStatement(statement, statement.loc);
+            }
+
             if (TokenType.IDENT === token.type && token.isUpper)
                 return this.#parseVerbStatement(token);
 
@@ -428,7 +479,7 @@ if (typeof require === 'function' && typeof module === 'object') {
 
             // A host call may stand alone too: `&html.setText("#title", "hi")` is done for
             // what it does, exactly as a verb is.
-            if (NodeType.AssignmentExpression !== expression.type && NodeType.JSInvokeExpression !== expression.type) {
+            if (NodeType.AssignmentExpression !== expression.type && NodeType.JSInvokeExpression !== expression.type && NodeType.CallExpression !== expression.type) {
                 this.#index = before;
 
                 return this.#fail(`Expected a statement, found ${ this.#describe(token) }`);
@@ -441,6 +492,7 @@ if (typeof require === 'function' && typeof module === 'object') {
 
         /** `await <subject> [with <filter>]` */
         #parseAwaitStatement(token) {
+            this.#refuseInFunction(token);
             this.#next();
 
             let subject = this.#parseExpression(),
@@ -454,9 +506,187 @@ if (typeof require === 'function' && typeof module === 'object') {
             return AST.awaitStatement(subject, filter, body, span(token.loc, (body ?? filter ?? subject).loc));
         }
 
+        /** A function computes; it does not install. An `await` inside one would install a
+         * handler on every call, which is exactly the pile-up nested `await`s were fixed to
+         * avoid, and a `using` would change grants mid-call. */
+        #refuseInFunction(token) {
+            if (this.#inFunction)
+                this.#fail(`\`${ token.lexeme }\` is not allowed inside a \`define\`; a function computes a value, it does not install handlers`, token);
+        }
+
+        /** Reads a name that the script is creating — a function, parameter or loop label.
+         * @param {String} what - for the error message
+         * @return {Object} the IDENT token
+         */
+        #expectOwnName(what) {
+            let token = this.#peek();
+
+            if (TokenType.IDENT !== token.type)
+                this.#fail(`Expected ${ what }, found ${ this.#describe(token) }`);
+
+            if (THIS_ALIASES.has(token.value) || !VARIABLE_PATTERN.test(token.value))
+                this.#fail(`${ what[0].toUpperCase() + what.slice(1) } needs a lower-case letter; ALL-CAPS names like \`${ token.value }\` are the host's constants and verbs`, token);
+
+            return this.#next();
+        }
+
+        /** `define name(param, ...) [with +perm ...]` + block. */
+        #parseDefineStatement(token) {
+            this.#next();
+
+            if (this.#blockDepth > 0 || this.#inFunction)
+                this.#fail('`define` is only allowed at the top level of a script', token);
+
+            let nameToken = this.#peek();
+
+            // A function is a verb the script defines, so it is named like one.
+            if (TokenType.IDENT !== nameToken.type || !nameToken.isUpper || nameToken.value in PRESENCE_WORDS)
+                this.#fail(`A function is named in ALL-CAPS, like a verb — e.g. \`define TOREADABLE(mils)\`; found ${ this.#describe(nameToken) }`, nameToken);
+
+            this.#next();
+
+            let name = nameToken.value;
+
+            if (!(this.#at(TokenType.LPAREN) && this.#peek().loc.start === this.#peek(-1).loc.end))
+                this.#fail(`Expected \`(\` straight after \`${ name }\``);
+
+            this.#next();
+
+            let params = [];
+
+            this.#skipSeparators();
+
+            while (!this.#at(TokenType.RPAREN, TokenType.EOF)) {
+                let param = this.#expectOwnName('a parameter name').value;
+
+                if (params.includes(param))
+                    this.#fail(`Parameter \`${ param }\` is listed twice`);
+
+                params.push(param);
+                this.#skipSeparators();
+            }
+
+            this.#expect(TokenType.RPAREN, '`)` closing the parameter list');
+
+            let permissions = [];
+
+            if (this.#accept(TokenType.WITH)) {
+                while (this.#at(TokenType.PERMISSION, TokenType.COMMA)) {
+                    let grant = this.#next();
+
+                    if (TokenType.PERMISSION === grant.type)
+                        permissions.push(grant.value);
+                }
+
+                if (!permissions.length)
+                    this.#fail('`with` after a function lists the permissions it needs, e.g. `with +read:datetime +eval:calc`');
+            }
+
+            let saved = { inFunction: this.#inFunction, loops: this.#loops },
+                body;
+
+            this.#inFunction = true;
+            this.#loops = [];
+
+            try {
+                body = this.#parseBlock();
+            } finally {
+                this.#inFunction = saved.inFunction;
+                this.#loops = saved.loops;
+            }
+
+            if (null === body)
+                this.#fail(`\`define ${ name }\` has no indented body`, token);
+
+            return AST.defineStatement(name, params, permissions, body, span(token.loc, body.loc));
+        }
+
+        /** `return [<value>]` */
+        #parseReturnStatement(token) {
+            this.#next();
+
+            if (!this.#inFunction)
+                this.#fail('`return` is only allowed inside a `define`', token);
+
+            let argument = null;
+
+            if (!this.#at(TokenType.NEWLINE, TokenType.EOF, TokenType.DEDENT))
+                argument = this.#parseExpression();
+
+            this.#expect(TokenType.NEWLINE, 'end of line');
+
+            return AST.returnStatement(argument, span(token.loc, (argument ?? token).loc));
+        }
+
+        /** `for [as label:] start; stop[; step]` or `for [as label:] <list>` + block. */
+        #parseForStatement(token) {
+            this.#next();
+
+            let label = null;
+
+            if (this.#at(TokenType.FORMAT) && 'as' === this.#peek().lexeme) {
+                this.#next();
+                label = this.#expectOwnName('a loop label').value;
+
+                if (this.#loops.includes(label))
+                    this.#fail(`A loop inside \`${ label }\` cannot reuse its label`);
+
+                this.#expect(TokenType.COLON, '`:` after the loop label');
+            }
+
+            let first = this.#parseExpression(),
+                parts = { list: first };
+
+            if (this.#accept(TokenType.SEMICOLON)) {
+                parts = { start: first, stop: this.#parseExpression() };
+
+                if (this.#accept(TokenType.SEMICOLON))
+                    parts.step = this.#parseExpression();
+            }
+
+            this.#loops.push(label);
+
+            let body;
+
+            try {
+                body = this.#parseBlock();
+            } finally {
+                this.#loops.pop();
+            }
+
+            if (null === body)
+                this.#fail('`for` has no indented body', token);
+
+            return AST.forStatement(label, parts, body, span(token.loc, body.loc));
+        }
+
+        /** `break [label]` / `renew [label]` */
+        #parseLoopJump(token) {
+            this.#next();
+
+            let label = null;
+
+            if (!this.#loops.length)
+                this.#fail(`\`${ token.lexeme }\` is only allowed inside a \`for\``, token);
+
+            if (this.#at(TokenType.IDENT)) {
+                let target = this.#next();
+
+                if (!this.#loops.includes(target.value))
+                    this.#fail(`No enclosing loop is labelled \`${ target.value }\``, target);
+
+                label = target.value;
+            }
+
+            this.#expect(TokenType.NEWLINE, 'end of line');
+
+            return (TokenType.BREAK === token.type? AST.breakStatement(label, token.loc): AST.renewStatement(label, token.loc));
+        }
+
         /** `after <duration> [with <filter>]` + block — fires once. The duration is any
          * expression, read when the statement is reached, so `after wait_time` works. */
         #parseAfterStatement(token) {
+            this.#refuseInFunction(token);
             this.#next();
 
             let subject = this.#parseExpression(),
@@ -475,6 +705,7 @@ if (typeof require === 'function' && typeof module === 'object') {
 
         /** `using [<subject> ...] [+permission ...] [+scope[:mode]] [-- "description"]` */
         #parseUsingStatement(token) {
+            this.#refuseInFunction(token);
             this.#next();
 
             let subjects = [],
@@ -720,6 +951,11 @@ if (typeof require === 'function' && typeof module === 'object') {
         #statementParsers = {
             [TokenType.AWAIT]: this.#parseAwaitStatement,
             [TokenType.AFTER]: this.#parseAfterStatement,
+            [TokenType.DEFINE]: this.#parseDefineStatement,
+            [TokenType.RETURN]: this.#parseReturnStatement,
+            [TokenType.FOR]: this.#parseForStatement,
+            [TokenType.BREAK]: this.#parseLoopJump,
+            [TokenType.RENEW]: this.#parseLoopJump,
             [TokenType.USING]: this.#parseUsingStatement,
             [TokenType.IF]: this.#parseIfStatement,
             [TokenType.GOTO]: this.#parseGotoStatement,
@@ -830,16 +1066,15 @@ if (typeof require === 'function' && typeof module === 'object') {
 
             let name = target.value;
 
-            // Enforced here, at the binding site, and nowhere else. The lexer cannot tell
-            // `USERNAME` from `mod_msg`, and a reference site must not try: a name with an
-            // interior underscore resolves variable-then-constant, one without resolves
-            // constant-only. Checking only where a name is *created* is also what makes the
-            // subject aliases safe — they are only ever read, so they can never trip this.
+            // Enforced here, at the binding site. A reference site cannot reject anything:
+            // a name with a lower-case letter resolves variable-then-constant, an ALL-CAPS
+            // one resolves constant-only. The subject aliases are only ever read, so they are
+            // refused as targets by name rather than by shape.
             if (THIS_ALIASES.has(name))
                 this.#fail(`\`${ name }\` always means the current subject and cannot be bound`, target);
 
             if (!VARIABLE_PATTERN.test(name))
-                this.#fail('A variable name must contain an interior underscore, e.g. `mod_msg`; `x`, `_x` and `x_` are not variable names', target);
+                this.#fail(`A variable name needs a lower-case letter; ALL-CAPS names like \`${ name }\` are the host's constants and verbs`, target);
 
             if (this.#at(TokenType.ARROW_LOCAL, TokenType.ARROW_PARENT))
                 this.#fail('Chained assignment is not allowed; bind one name per expression');
@@ -945,6 +1180,13 @@ if (typeof require === 'function' && typeof module === 'object') {
                     return this.#parseCalc();
 
                 case TokenType.IDENT:
+                    // `POST TOREADABLE wait_time` — a defined function, read like a verb.
+                    // Inside an expression its arguments stop before `%`/`as`, the
+                    // comparisons and the logic words, so `TOREADABLE x as "mm:ss"` formats
+                    // the result rather than the argument.
+                    if (this.#functions.has(token.value))
+                        return this.#parseCall(token, CALL_ARGUMENT_PRECEDENCE);
+
                     this.#next();
 
                     // `_` and its long-winded spellings are the subject itself — the same
@@ -959,6 +1201,14 @@ if (typeof require === 'function' && typeof module === 'object') {
                         return AST.wildcard(token.loc, PRESENCE_WORDS[token.value]);
 
                     return AST.identifier(token.value, !!token.isUpper, token.loc);
+
+                case TokenType.COUNTER:
+                    this.#next();
+
+                    if (!this.#loops.length)
+                        this.#fail('`$` is the loop counter, and there is no `for` here', token);
+
+                    return AST.counter(token.loc);
 
                 case TokenType.RESERVED:
                     return this.#failReserved(token);
@@ -1132,6 +1382,27 @@ if (typeof require === 'function' && typeof module === 'object') {
             return this.#parseMembers(this.#parsePrimary());
         }
 
+        /** `NAME [<arg> [, <arg> ...]]` — a call, spelled like a verb.
+         * @param {Object} token - the name
+         * @param {Number} precedence - how loosely each argument may bind
+         */
+        #parseCall(token, precedence) {
+            this.#next();
+
+            let args = [];
+
+            if (this.#at(...ARGUMENT_STARTS)) {
+                args.push(this.#parseExpression(precedence));
+
+                while (this.#accept(TokenType.COMMA))
+                    args.push(this.#parseExpression(precedence));
+            }
+
+            let last = (args[args.length - 1] ?? token);
+
+            return AST.callExpression(token.value, args, span(token.loc, last.loc));
+        }
+
         /** Any sigil. `/channel` glued directly to `#prop` collapses into one node. */
         #parseSelector() {
             let token = this.#next(),
@@ -1235,7 +1506,7 @@ if (typeof require === 'function' && typeof module === 'object') {
             let { quasis, expressions } = token.value,
                 parsed = expressions.map(({ source, offset }) => {
                     let tokens = new Tokenizer(source, { fragment: true, origin: { offset, source: this.#source } }).tokenize(),
-                        parser = new Parser(tokens, this.#source);
+                        parser = new Parser(tokens, this.#source, this.#functions, this.#loops);
 
                     return parser.parseInterpolation();
                 });

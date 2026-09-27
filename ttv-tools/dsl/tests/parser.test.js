@@ -390,12 +390,12 @@
             });
         });
 
-        it('requires an interior underscore in a bound name', () => {
-            for (let name of ['x', '_x', 'x_', 'USERNAME'])
-                assert.throws(() => parse(`\`hi\` -> ${ name }\n`), /interior underscore/i);
+        it('requires a lower-case letter in a bound name; ALL-CAPS belongs to the host', () => {
+            for (let name of ['USERNAME', 'CLKFMT', 'A_B', 'X2'])
+                assert.throws(() => parse(`\`hi\` -> ${ name }\n`), /needs a lower-case letter/i);
 
-            assert.ok(parse('`hi` -> a_b\n'));
-            assert.ok(parse('`hi` -> mod_msg_2\n'));
+            for (let name of ['x', '_x', 'x_', 'clkFmt', 'mils', 'a_b', 'mod_msg_2', 'toReadable'])
+                assert.ok(parse(`\`hi\` -> ${ name }\n`), name);
         });
 
         it('refuses to bind a subject alias', () => {

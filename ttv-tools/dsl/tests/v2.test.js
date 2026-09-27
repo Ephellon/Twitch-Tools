@@ -170,8 +170,8 @@
 
             assert.deepEqual(sent(runtime), ['[]']);
 
-            // A name with no interior underscore can only be a constant, and an unknown
-            // constant still fails loudly — that is what the underscore rule buys.
+            // An ALL-CAPS name can only be a constant, and an unknown constant still fails
+            // loudly — that is what reserving ALL-CAPS for the host buys.
             await run('await *\n    POST `${ NOPE }`\n', runtime, {});
             await runtime.dispatch({ sender: 'a' });
 

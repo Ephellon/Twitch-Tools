@@ -55,6 +55,20 @@ globalThis.TTV_DSL ??= {};
         FALSE: 'FALSE',
         /** `when` — both the switch head and the `if`-chain continuation. */
         WHEN: 'WHEN',
+        /** `define name(params) [with +perm ...]` — a function. */
+        DEFINE: 'DEFINE',
+        /** `return [<value>]` — only inside a `define`. */
+        RETURN: 'RETURN',
+        /** `for [as label:] start; stop[; step]` or `for [as label:] <list>`. */
+        FOR: 'FOR',
+        /** `break [label]` — leave a loop. */
+        BREAK: 'BREAK',
+        /** `renew [label]` — start a loop's next iteration (a `continue`). */
+        RENEW: 'RENEW',
+        /** `;` — separates the parts of a `for` header, and nothing else. */
+        SEMICOLON: 'SEMICOLON',
+        /** `$` — the innermost loop's counter. */
+        COUNTER: 'COUNTER',
         /** `calc` — opens an arithmetic group: `calc( .raid_size * 2 + 1 )`. */
         CALC: 'CALC',
         /** `+ - * / % **` — an arithmetic operator. Only ever emitted **inside** the
@@ -182,6 +196,11 @@ globalThis.TTV_DSL ??= {};
         false: TokenType.FALSE,
         when: TokenType.WHEN,
         after: TokenType.AFTER,
+        define: TokenType.DEFINE,
+        return: TokenType.RETURN,
+        for: TokenType.FOR,
+        break: TokenType.BREAK,
+        renew: TokenType.RENEW,
         else: TokenType.ELSE,
 
         // `is above 50` / `is or above 50`. The inclusive form reuses `or` rather than
@@ -236,6 +255,7 @@ globalThis.TTV_DSL ??= {};
         { lexeme: '=', type: TokenType.EXACT },
         { lexeme: ',', type: TokenType.COMMA },
         { lexeme: '~', type: TokenType.FORMAT },
+        { lexeme: ';', type: TokenType.SEMICOLON },
         // `|` is spelled differently from `where` and means exactly `where`. Mapping it to
         // the same token type — rather than giving it its own — is what guarantees the two
         // spellings can never drift apart in precedence, associativity or AST shape.
@@ -325,6 +345,11 @@ globalThis.TTV_DSL ??= {};
         TokenType.GOTO,
         TokenType.WHEN,
         TokenType.AFTER,
+        TokenType.DEFINE,
+        TokenType.RETURN,
+        TokenType.FOR,
+        TokenType.BREAK,
+        TokenType.RENEW,
         TokenType.ELSE,
         TokenType.WITH,
     ]));
@@ -351,15 +376,15 @@ globalThis.TTV_DSL ??= {};
     const SCOPE_MODES = Object.freeze(new Set(['local', 'global', 'universal']));
     const DEFAULT_SCOPE_MODE = 'global';
 
-    /** The shape a *variable* name must have: at least one interior underscore.
+    /** The shape a *variable* (or function, or parameter) name must have: at least one
+     * lower-case letter.
      *
-     * This is the whole disambiguation between a variable and a host constant, and it is
-     * enforced at the binding site only. `USERNAME` and `mod_msg` are lexically identical —
-     * nothing but this pattern tells them apart — so a reference site cannot reject
-     * anything without also rejecting one of the two legitimate readings. `_x`, `x_` and
-     * `x` all fail it, which is exactly why `_`, `__this__` and friends can never be
-     * mistaken for variables. */
-    const VARIABLE_PATTERN = /^[A-Za-z0-9]+(?:_[A-Za-z0-9]+)+$/;
+     * This is the whole disambiguation between a name the script made and a name the host
+     * published. ALL-CAPS is reserved for host constants (`USERNAME`) and verbs (`POST`) —
+     * and must be, because `CLKFMT "..."` at the start of a line already reads as a verb
+     * call. Anything with a lower-case letter in it — `clkFmt`, `mils`, `raid_title` — is
+     * the script's own. `_`, `__this__` and friends are refused as binding targets by name. */
+    const VARIABLE_PATTERN = /^(?=[A-Za-z0-9_]*[a-z])[A-Za-z_][A-Za-z0-9_]*$/;
 
     /** The class letters a `%` run may carry, plus `c` (the always-on trim flag). */
     const PERCENT_CLASSES = Object.freeze(new Set(['0', 'a', 'A', 'b', 'B', 'd', 'D', 'f', 'n', 'r', 's', 'S', 't', 'v', 'w', 'W', 'c']));

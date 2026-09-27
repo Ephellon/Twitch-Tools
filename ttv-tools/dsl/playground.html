@@ -421,6 +421,8 @@
                 [TokenType.PERCENT]: 't-operator',
                 [TokenType.FORMAT]: 't-operator',
                 [TokenType.ARITH]: 't-operator',
+                [TokenType.SEMICOLON]: 't-operator',
+                [TokenType.COUNTER]: 't-atomic',
                 [TokenType.PIPE]: 't-operator',
                 [TokenType.WHERE]: 't-operator',
                 [TokenType.ARROW_LOCAL]: 't-operator',
@@ -439,6 +441,9 @@
             /** Upper-case words the playground's host actually defines: its verbs and constants.
              * An unknown one keeps the default colour, which is itself a hint. */
             const KNOWN_CAPS = new Set([...Object.keys(DSL.createRuntime().verbs), 'USERNAME']);
+
+            /** Functions the script itself defines — verbs too, so coloured like them. */
+            let definedCaps = new Set();
 
             /** `é` / `\u{1F49C}` inside string text. */
             const UNICODE_ESCAPE = /\\u\{[0-9A-Fa-f]{1,6}\}|\\u[0-9A-Fa-f]{4}/g;
@@ -494,7 +499,7 @@
                     if (ATOMIC_WORDS.has(token.value))
                         return 't-atomic';
 
-                    if (token.isUpper && KNOWN_CAPS.has(token.value))
+                    if (token.isUpper && (KNOWN_CAPS.has(token.value) || definedCaps.has(token.value)))
                         return 't-number';
 
                     return (token.isUpper? 't-caps': '');
@@ -561,7 +566,11 @@
             };
 
             // A trailing newline needs a character after it or the <pre> collapses it.
-            let highlight = (source) => highlightCode(source) + '\n ';
+            let highlight = (source) => {
+                definedCaps = new Set([...source.matchAll(/\bdefine\s+([A-Z][A-Z0-9_]*)/g)].map(match => match[1]));
+
+                return highlightCode(source) + '\n ';
+            };
 
             // -- state -----------------------------------------------------------------
 

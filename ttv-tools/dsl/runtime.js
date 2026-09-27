@@ -156,7 +156,17 @@ if (typeof require === 'function' && typeof module === 'object')
         'parse:html.structure',
         'eval:calc',
         'eval:js',
+        'eval:budget_1M',
+        'eval:budget_10M',
+        'eval:budget_100M',
     ]);
+
+    /** What each budget grant raises the per-turn step limit to. */
+    const BUDGET_GRANTS = Object.freeze({
+        'eval:budget_1M': 1e6,
+        'eval:budget_10M': 1e7,
+        'eval:budget_100M': 1e8,
+    });
 
     /** The grant a wildcard would need to cover `name`: `read:html.attributes` →
      * `read:html.*`. Null when `name` has no `.` below its resource, so nothing can cover it
@@ -1001,7 +1011,7 @@ if (typeof require === 'function' && typeof module === 'object')
     let createContext = (runtime, { subject, channel, realm, permissions = [] }) => {
         let signal = createSignal();
 
-        let make = (subjects, envs, currentChannel, currentRealm, granted, hold, route) => ({
+        let make = (subjects, envs, currentChannel, currentRealm, granted, hold, route, callDepth = 0) => ({
             runtime,
             signal,
             subjects,
@@ -1020,6 +1030,9 @@ if (typeof require === 'function' && typeof module === 'object')
              * `await` install once per iteration rather than once in total. */
             route,
 
+            /** How many function calls deep this context is. */
+            callDepth,
+
             /** The innermost bound subject. */
             get subject() {
                 return subjects[subjects.length - 1];
@@ -1036,7 +1049,16 @@ if (typeof require === 'function' && typeof module === 'object')
                     : (isChannelLike(value)? value: (value?.channel ?? currentChannel)));
 
                 return make(subjects.concat([value]), envs.concat([new Map()]), resolved, (nextRealm ?? currentRealm), (nextPermissions ?? granted),
-                    (nextHold !== undefined? nextHold: hold), (nextRoute ?? route));
+                    (nextHold !== undefined? nextHold: hold), (nextRoute ?? route), callDepth);
+            },
+
+            /** A fresh frame for a function call: same subject, channel and signal, but none
+             * of the caller's variables, and exactly the grants the function declared.
+             * @param {Set<String>} permissions
+             * @return {Object}
+             */
+            frame(permissions) {
+                return make([subjects[subjects.length - 1]], [new Map()], currentChannel, currentRealm, permissions, null, '', callDepth + 1);
             },
 
             onAbort: (handler) => signal.onAbort(handler),
@@ -1070,6 +1092,7 @@ if (typeof require === 'function' && typeof module === 'object')
         PERCENT_ZERO_WIDTH,
         PERCENT_DEFAULT,
         BUILTIN_JS_PERMISSION,
+        BUDGET_GRANTS,
         JS_BUILTINS,
         MAX_ARRAY_FROM,
         BLOCKED_STATICS,

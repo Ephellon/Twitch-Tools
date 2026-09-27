@@ -36,6 +36,20 @@ globalThis.TTV_DSL ??= {};
         AwaitStatement: 'AwaitStatement',
         /** `using <subject> [<subject> ...]` + optional body. */
         UsingStatement: 'UsingStatement',
+        /** `define name(params) [with +perm ...]` + body. Top level only. */
+        DefineStatement: 'DefineStatement',
+        /** `return [<value>]`. */
+        ReturnStatement: 'ReturnStatement',
+        /** `for` — numeric (`start`, `stop`, `step`) or over a `list`. */
+        ForStatement: 'ForStatement',
+        /** `break [label]`. */
+        BreakStatement: 'BreakStatement',
+        /** `renew [label]`. */
+        RenewStatement: 'RenewStatement',
+        /** `name( ... )` — a call to a `define`d function. */
+        CallExpression: 'CallExpression',
+        /** `$` — the innermost loop's counter. */
+        Counter: 'Counter',
         /** `after <duration> [with (<filter>)]` + body — a one-shot timer. */
         AfterStatement: 'AfterStatement',
         /** `if <test>` + optional body, plus an optional `alternate` — the `when` that
@@ -143,6 +157,13 @@ globalThis.TTV_DSL ??= {};
 
         [NodeType.AwaitStatement]: ['subject', 'filter', 'body'],
         [NodeType.AfterStatement]: ['subject', 'filter', 'body'],
+        [NodeType.DefineStatement]: ['body'],
+        [NodeType.ReturnStatement]: ['argument'],
+        [NodeType.ForStatement]: ['start', 'stop', 'step', 'list', 'body'],
+        [NodeType.BreakStatement]: [],
+        [NodeType.RenewStatement]: [],
+        [NodeType.CallExpression]: ['arguments'],
+        [NodeType.Counter]: [],
         // `permissions` is a list of plain strings, not of nodes, so it stays off this table.
         [NodeType.UsingStatement]: ['subjects', 'body'],
         [NodeType.IfStatement]: ['test', 'body', 'alternate'],
@@ -218,6 +239,46 @@ globalThis.TTV_DSL ??= {};
          * @param {Object} loc
          */
         afterStatement: (subject, filter, body, loc) => node(NodeType.AfterStatement, { subject, filter, body }, loc),
+
+        /**
+         * @param {String} name
+         * @param {Array<String>} params
+         * @param {Array<String>} permissions - from `with +perm ...`
+         * @param {Object} body
+         * @param {Object} loc
+         */
+        defineStatement: (name, params, permissions, body, loc) => node(NodeType.DefineStatement, { name, params, permissions, body }, loc),
+
+        /**
+         * @param {?Object} argument
+         * @param {Object} loc
+         */
+        returnStatement: (argument, loc) => node(NodeType.ReturnStatement, { argument }, loc),
+
+        /**
+         * @param {?String} label
+         * @param {Object} parts - `{ start, stop, step }` for a numeric loop, `{ list }` otherwise
+         * @param {Object} body
+         * @param {Object} loc
+         */
+        forStatement: (label, { start = null, stop = null, step = null, list = null }, body, loc) =>
+            node(NodeType.ForStatement, { label, start, stop, step, list, body }, loc),
+
+        /** @param {?String} label @param {Object} loc */
+        breakStatement: (label, loc) => node(NodeType.BreakStatement, { label }, loc),
+
+        /** @param {?String} label @param {Object} loc */
+        renewStatement: (label, loc) => node(NodeType.RenewStatement, { label }, loc),
+
+        /**
+         * @param {String} callee
+         * @param {Array<Object>} args
+         * @param {Object} loc
+         */
+        callExpression: (callee, args, loc) => node(NodeType.CallExpression, { callee, arguments: args }, loc),
+
+        /** @param {Object} loc */
+        counter: (loc) => node(NodeType.Counter, {}, loc),
 
         /**
          * @param {Array<Object>} subjects
@@ -385,7 +446,7 @@ globalThis.TTV_DSL ??= {};
         duration: (milliseconds, loc) => node(NodeType.Duration, { milliseconds }, loc),
 
         /**
-         * @param {String} name - already validated to carry an interior underscore
+         * @param {String} name - already validated to carry a lower-case letter
          * @param {String} arrow - `'->'` or `'=>'`; the two are synonyms, and the spelling is
          *   kept only so tooling can round-trip it. Where the name lands is decided by the
          *   enclosing `+scope` mode, never by the arrow.

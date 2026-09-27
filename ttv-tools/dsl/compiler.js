@@ -36,6 +36,25 @@ if (typeof require === 'function' && typeof module === 'object') {
     const { DSLRuntimeError, DSLLimitError, DSLError } = globalThis.TTV_DSL.errors;
     const { NodeType } = globalThis.TTV_DSL.ast;
     const { VARIABLE_PATTERN, DEFAULT_SCOPE_MODE } = globalThis.TTV_DSL.tokens;
+    const { BUDGET_GRANTS } = globalThis.TTV_DSL.runtime;
+
+    /** Thrown by `return`, caught at the call boundary. Never escapes a call. */
+    class ReturnSignal {
+        constructor(value) {
+            this.value = value;
+        }
+    }
+
+    /** Thrown by `break` / `renew`, caught by the loop it names (or the innermost). */
+    class LoopSignal {
+        constructor(kind, label) {
+            this.kind = kind;
+            this.label = label;
+        }
+    }
+
+    /** How deep calls may nest — recursion included. */
+    const MAX_CALL_DEPTH = 100;
 
     /** The value `*` / `ANYTHING` evaluates to. A symbol, so no script-visible value can
      * impersonate it. */
@@ -298,7 +317,17 @@ if (typeof require === 'function' && typeof module === 'object') {
      * @param {Object} runtime - from `createRuntime`
      * @return {Function} `async (context) => value`
      */
-    let compile = (node, runtime) => compileNode(node, { runtime, depth: 0, parentDepth: null, permissions: EMPTY_PERMISSIONS, mode: DEFAULT_SCOPE_MODE });
+    let compile = (node, runtime) => compileNode(node, {
+        runtime,
+        depth: 0,
+        parentDepth: null,
+        permissions: EMPTY_PERMISSIONS,
+        mode: DEFAULT_SCOPE_MODE,
+        // Shared by every scope of one script: `define`s register here, calls are checked
+        // against it once the whole script has compiled.
+        functions: new Map(),
+        calls: [],
+    });
 
     /** The grant set a program starts with: nothing. */
     const EMPTY_PERMISSIONS = Object.freeze(new Set());
@@ -334,6 +363,8 @@ if (typeof require === 'function' && typeof module === 'object') {
         parentDepth: scope.depth,
         permissions: scope.permissions,
         mode: scope.mode,
+        functions: scope.functions,
+        calls: scope.calls,
     }, extra);
 
     /** Which env slot a binding made in `scope` writes to. Both arrows ask the same
@@ -489,9 +520,210 @@ if (typeof require === 'function' && typeof module === 'object') {
 
     const COMPILERS = {
         [NodeType.Program](node, scope) {
+            let { runtime } = scope;
+
+            // A budget grant raises the per-turn step limit for the whole script — the
+            // budget is global, so there is nothing narrower for it to apply to.
+            globalThis.TTV_DSL.ast.walk(node, {
+                [NodeType.UsingStatement](using) {
+                    for (let grant of using.permissions)
+                        if (grant in BUDGET_GRANTS)
+                            runtime.limits.steps = Math.max(runtime.limits.steps, BUDGET_GRANTS[grant]);
+                },
+            });
+
             let body = compileAll(node.body, scope);
 
-            return sequence(body, scope.runtime, node.loc);
+            // Every call must name a `define` somewhere in the script — checked once
+            // everything is compiled, so a function may be called before it is defined.
+            for (let call of scope.calls) {
+                let target = scope.functions.get(call.callee);
+
+                if (!target)
+                    throw new DSLRuntimeError(`No function named \`${ call.callee }\`. Defined: ${ [...scope.functions.keys()].join(', ') || 'none' }`, call.loc);
+
+                if (call.arguments.length > target.params.length)
+                    throw new DSLRuntimeError(`\`${ call.callee }\` takes ${ target.params.length } argument(s), got ${ call.arguments.length }`, call.loc);
+            }
+
+            return sequence(body, runtime, node.loc);
+        },
+
+        /** `define` registers the function and compiles to nothing: defining is not doing.
+         *
+         * The body is compiled in a scope of its own — depth 0, no parent — which is what
+         * keeps the caller's variables out: a function sees its parameters, its own locals
+         * and the host's constants, and nothing else. Its grants are exactly the ones its
+         * `with` lists, and a caller must hold all of them to call it. */
+        [NodeType.DefineStatement](node, scope) {
+            let { runtime } = scope;
+
+            if (scope.functions.has(node.name))
+                throw new DSLRuntimeError(`\`${ node.name }\` is defined twice`, node.loc);
+
+            // A function is spelled like a verb or a constant; it may not quietly replace one.
+            if (node.name in runtime.verbs || node.name in runtime.constants)
+                throw new DSLRuntimeError(`\`${ node.name }\` is already a ${ node.name in runtime.verbs? 'verb': 'constant' } the host provides; pick another name`, node.loc);
+
+            for (let grant of node.permissions)
+                runtime.checkGrant(grant, node.loc);
+
+            let permissions = Object.freeze(new Set(node.permissions)),
+                body = compileNode(node.body, {
+                    runtime,
+                    depth: 0,
+                    parentDepth: null,
+                    permissions,
+                    mode: 'global',
+                    functions: scope.functions,
+                    calls: scope.calls,
+                });
+
+            scope.functions.set(node.name, { name: node.name, params: node.params, permissions, body, loc: node.loc });
+
+            return async () => {};
+        },
+
+        [NodeType.ReturnStatement](node, scope) {
+            let { runtime } = scope,
+                argument = compileNode(node.argument, scope);
+
+            return async (context) => {
+                runtime.step(node.loc);
+
+                throw new ReturnSignal(argument? await argument(context): undefined);
+            };
+        },
+
+        /** `name( ... )`. The caller must already hold everything the function declared;
+         * the function then runs holding exactly that, in a fresh frame. */
+        [NodeType.CallExpression](node, scope) {
+            let { runtime } = scope,
+                args = compileAll(node.arguments, scope);
+
+            scope.calls.push(node);
+
+            return async (context) => {
+                let target = scope.functions.get(node.callee);
+
+                if (context.callDepth >= MAX_CALL_DEPTH)
+                    throw new DSLRuntimeError(`Calls nested more than ${ MAX_CALL_DEPTH } deep at \`${ node.callee }\` — runaway recursion?`, node.loc);
+
+                for (let needed of target.permissions)
+                    runtime.requirePermission(needed, context, node.loc);
+
+                runtime.step(node.loc);
+
+                let values = [];
+
+                for (let resolve of args)
+                    values.push(await resolve(context));
+
+                let frame = context.frame(target.permissions),
+                    env = frame.envs[0];
+
+                target.params.forEach((param, index) => env.set(param, values[index]));
+
+                try {
+                    await target.body(frame);
+                } catch (signal) {
+                    if (signal instanceof ReturnSignal)
+                        return signal.value;
+
+                    throw signal;
+                }
+
+                return undefined;
+            };
+        },
+
+        /** `for`. Each iteration is a fresh scope with the counter bound as `$` — and under
+         * the label, when there is one — so `$` always means the innermost loop and an outer
+         * loop's counter stays readable by name. */
+        [NodeType.ForStatement](node, scope) {
+            let { runtime } = scope,
+                start = compileNode(node.start, scope),
+                stop = compileNode(node.stop, scope),
+                step = compileNode(node.step, scope),
+                list = compileNode(node.list, scope),
+                body = compileNode(node.body, inner(scope)),
+                { label } = node;
+
+            /** @return {Promise<Boolean>} false when the loop should stop */
+            let iterate = async (context, value, index) => {
+                runtime.step(node.loc);
+
+                let child = context.child(context.subject, { channel: context.channel, route: `${ context.route }/for${ index }` }),
+                    env = child.envs[child.envs.length - 1];
+
+                env.set('$', value);
+
+                if (label)
+                    env.set(label, value);
+
+                try {
+                    await body(child);
+                } catch (signal) {
+                    if (!(signal instanceof LoopSignal) || (null !== signal.label && signal.label !== label))
+                        throw signal;
+
+                    return ('renew' === signal.kind);
+                }
+
+                return true;
+            };
+
+            return async (context) => {
+                if (list) {
+                    let items = toList(await list(context));
+
+                    for (let index = 0; index < items.length && !context.signal.aborted; ++index)
+                        if (!await iterate(context, items[index], index))
+                            return;
+
+                    return;
+                }
+
+                let from = toNumber(await start(context), runtime),
+                    to = toNumber(await stop(context), runtime),
+                    by = (step? toNumber(await step(context), runtime): 1);
+
+                if (![from, to, by].every(Number.isFinite))
+                    throw new DSLRuntimeError('`for` needs numbers (or durations) for its start, stop and step', node.loc);
+
+                if (0 === by)
+                    throw new DSLRuntimeError('`for` cannot step by 0', node.loc);
+
+                if ((by > 0 && from > to) || (by < 0 && from < to))
+                    throw new DSLRuntimeError(`\`for ${ from }; ${ to }; ${ by }\` steps away from its stop; flip the sign of the step`, node.loc);
+
+                for (let value = from, index = 0; (by > 0? value < to: value > to) && !context.signal.aborted; value += by, ++index)
+                    if (!await iterate(context, value, index))
+                        return;
+            };
+        },
+
+        [NodeType.BreakStatement](node) {
+            return async () => {
+                throw new LoopSignal('break', node.label);
+            };
+        },
+
+        [NodeType.RenewStatement](node) {
+            return async () => {
+                throw new LoopSignal('renew', node.label);
+            };
+        },
+
+        /** `$` — found by the ordinary outward walk, so the innermost loop's wins. */
+        [NodeType.Counter](node, scope) {
+            let depth = scope.depth;
+
+            return async (context) => {
+                let value = readVariable(context, depth, '$');
+
+                return (UNBOUND === value? undefined: value);
+            };
         },
 
         [NodeType.Block](node, scope) {
@@ -1183,8 +1415,8 @@ if (typeof require === 'function' && typeof module === 'object') {
 
         /** A bare word: a variable, or a host constant.
          *
-         * The shape of the name decides which lookups are even attempted. A name with an
-         * interior underscore is variable-shaped, so it resolves variable-then-constant and
+         * The shape of the name decides which lookups are even attempted. A name with a
+         * lower-case letter is variable-shaped, so it resolves variable-then-constant and
          * yields empty when neither has it — reading an unbound variable is *not* an error,
          * for the same reason `.prop` on a null subject is not: the script that wrote it is
          * describing a shape, and a script may perfectly well install a handler whose
@@ -1193,7 +1425,7 @@ if (typeof require === 'function' && typeof module === 'object') {
         [NodeType.Identifier](node, scope) {
             let { name } = node,
                 depth = scope.depth,
-                variable = VARIABLE_PATTERN.test(name);
+                variable = VARIABLE_PATTERN.test(name);  // a lower-case letter: the script's own
 
             return async (context) => {
                 if (variable) {

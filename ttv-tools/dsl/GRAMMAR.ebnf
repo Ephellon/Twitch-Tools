@@ -34,6 +34,12 @@ statement      = await_stmt
                | else_stmt          (* v2.1 *)
                | with_stmt          (* v2 *)
                | goto_stmt
+               | define_stmt        (* v2.1 *)
+               | return_stmt        (* v2.1 *)
+               | for_stmt           (* v2.1 *)
+               | break_stmt         (* v2.1 *)
+               | renew_stmt         (* v2.1 *)
+               | call_stmt          (* v2.1 *)
                | verb_stmt
                | expr_stmt ;        (* v2 *)
 
@@ -113,6 +119,29 @@ goto_stmt      = "goto" , expression , NEWLINE ;
    keeps the host's verb registry open. The argument is optional. *)
 verb_stmt      = UPPER_IDENT , [ expression ] , NEWLINE ;
 
+(* (v2.1) A function is a verb the script defines. FUNC_NAME is an UPPER_IDENT
+   that some define_stmt in the script names - the parser collects those names
+   before it starts, so a call may come before its definition. define_stmt is
+   top-level only, and its body may not contain await/after/using. *)
+define_stmt    = "define" , FUNC_NAME , "(" , [ VAR_NAME , { [ "," ] , VAR_NAME } ] , ")" ,
+                 [ "with" , PERMISSION , { [ "," ] , PERMISSION } ] , NEWLINE , block ;
+
+return_stmt    = "return" , [ expression ] , NEWLINE ;     (* inside define_stmt only *)
+
+(* On a statement line the arguments take everything up to an arrow, which then
+   binds the call's result. *)
+call_stmt      = FUNC_NAME , [ or_expr , { "," , or_expr } ] ,
+                 [ ( "->" | "=>" ) , VAR_NAME ] , NEWLINE ;
+
+(* Numeric (start ; stop [ ; step ]) or a list. `as label:` names the loop and
+   binds its counter under that name as well as `$`. *)
+for_stmt       = "for" , [ "as" , VAR_NAME , ":" ] ,
+                 ( expression , ";" , expression , [ ";" , expression ] | expression ) ,
+                 NEWLINE , block ;
+
+break_stmt     = "break" , [ VAR_NAME ] , NEWLINE ;         (* inside for_stmt only *)
+renew_stmt     = "renew" , [ VAR_NAME ] , NEWLINE ;         (* inside for_stmt only *)
+
 (* (v2) Deliberately narrow. A bare expression on a line is still an error;
    only an assignment may stand alone, because only an assignment does
    anything. *)
@@ -135,9 +164,9 @@ expression     = assign_expr ;
    (v2.1) The two arrows are SYNONYMS. Where the name lands is decided by the
    script's `+scope` mode (SPEC 9.2), never by the arrow.
 
-   VAR_NAME must contain an interior underscore (`mod_msg`), which is what
-   distinguishes a variable from a host constant. Checked at the BINDING site
-   only; a reference site checks nothing. *)
+   VAR_NAME must contain a lower-case letter; ALL-CAPS is the host's (and the
+   script's functions'). Checked at the BINDING site only; a reference site
+   checks nothing. *)
 assign_expr    = or_expr , [ ( "->" | "=>" ) , VAR_NAME ] ;
 
 or_expr        = and_expr , { "or" , and_expr } ;
@@ -191,7 +220,14 @@ unary_expr     = ( "not" | "-" | "=" ) , unary_expr
    in EBNF. *)
 member_expr    = primary , { context_sel } ;
 
-primary        = literal
+(* (v2.1) Inside an expression, a call's arguments bind no looser than the
+   pipe, so `%`, `~`/`as`, comparisons, `and`/`or` and arrows apply to its
+   result. *)
+call_expr      = FUNC_NAME , [ pipe_expr , { "," , pipe_expr } ] ;
+
+primary        = call_expr          (* v2.1 *)
+               | "$"                (* v2.1: the innermost loop's counter *)
+               | literal
                | selector
                | any_from
                | js_invoke          (* v2 *)
@@ -393,10 +429,11 @@ context_sel    = "." , IDENT ;
                    (v2.1) The default run is `\s*\n\s*` - any whitespace run
                    containing a newline - NOT "%n%s", which is `\n+\s+`. *)
 
-  VAR_NAME    = [A-Za-z0-9]+ ( "_" [A-Za-z0-9]+ )+                   (* v2 *)
+  VAR_NAME    = IDENT containing at least one [a-z]                  (* v2.1 *)
                 (* NOT a lexical class - the lexer emits IDENT and the PARSER
-                   applies this pattern, at binding sites only. It cannot be
-                   lexical: `USERNAME` and `mod_msg` are the same token. *)
+                   applies this rule, at binding sites only. v2 required an
+                   interior underscore instead. *)
+  FUNC_NAME   = an UPPER_IDENT named by a `define` in the same script  (* v2.1 *)
 
   BADGE_NAME  = [A-Za-z][A-Za-z0-9_-]*   (* reached only inside "[ ]" *)
 
@@ -412,6 +449,7 @@ context_sel    = "." , IDENT ;
               | where | of | is | in | and | or | not | true | false
               | when                                                 (* v2 *)
               | else | above | below | after | calc | as           (* v2.1 *)
+              | define | return | for | break | renew             (* v2.1 *)
 
   RESERVED    = elif | elseif | switch | case | default
                 (* (v2) reserved for ONE purpose: to produce a diagnostic that

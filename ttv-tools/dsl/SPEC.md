@@ -36,7 +36,10 @@ and fixing what fought back. These behaviours changed, all listed in §14.1a:
 It also adds `else` (§6.7), `is above` / `is below` / `is or above` / `is or below` (§5.4),
 `ANYTHING` / `SOMETHING` / `NOTHING` (§3.7), nested property reads `.a.b.c` (§5.13), a
 `using` with no subject (§6.3), `after` (§6.9), the `~` format operator (§5.14), arithmetic
-in `calc( ... )` (§5.15), lists (§8), and host calls as statements (§6.6).
+in `calc( ... )` (§5.15), lists (§8), host calls as statements (§6.6), functions — verbs the
+script defines (§6.10) — and loops (§6.11), with budget grants to pay for them (§12).
+Variable names no longer need an underscore: anything with a lower-case letter is the
+script's, ALL-CAPS is the host's (§9.3).
 
 What the language expects from whatever runs it — realms, events, verbs, host calls and the
 permission prompt — is specified separately, in **`HOST.md`**.
@@ -61,10 +64,10 @@ permission prompt — is specified separately, in **`HOST.md`**.
 
 ### Non-goals
 
-- General-purpose computation. There are no user-defined functions and no loop construct.
-  Variables (§9.2) and lists (§8) name values computed once; there is still nowhere to put
-  a *procedure*. Arithmetic exists, but only inside `calc( ... )` and only with the
-  `eval:calc` permission (§5.15).
+- General-purpose computation for its own sake. Functions (§6.10) and loops (§6.11) exist
+  to keep chat scripts short, not to host algorithms: functions cannot install handlers or
+  see their caller's variables, arithmetic needs `calc( ... )` and `eval:calc` (§5.15), and
+  every step counts against a per-turn budget (§12).
 - Persistence. A script holds no state between runs.
 - A security boundary against a determined attacker. Permissions (§6.8) and the host's
   prompt (`HOST.md` §6) let a viewer see — and refuse — what a *shared* script asks for,
@@ -1129,6 +1132,7 @@ that, a typo like `+read:htlm.*` would be accepted and silently grant nothing.
 | `parse:html.text` · `parse:html.attributes` · `parse:html.structure` | turning HTML text the script already has into serializable data |
 | `eval:calc` | arithmetic (reserved; §14.2) |
 | `eval:js` | the built-in `Math` / `Number` / `Date` / `JSON` / `Array` set (§5.12) — never a host binding |
+| `eval:budget_1M` · `_10M` · `_100M` | raising the per-turn step budget (§12) |
 
 A host may add to the list (`createRuntime({ permissions: [...] })`). A host path mapped to
 a permission that is not on the list is refused when the runtime is created, since no script
@@ -1194,6 +1198,85 @@ Inside a handler, every arrival schedules its own `after`: `after 1:00` in a rai
 means "a minute after *each* raid". That cannot pile up — each timer fires and is done. Its
 body shares the enclosing handler's installation, so an `await` inside an `after` still
 installs once (§6.1), and an enclosing `with (...)` still has to hold when it fires.
+
+### 6.10 Functions, `define` and `return` *(v2.1)*
+
+A function is a **verb the script defines**. It is named in ALL-CAPS, like `POST`, and called
+the same way — its name, then its arguments, no parentheses:
+
+```
+define TOREADABLE(mils)
+    "hh?:mm:ss" -> clkFmt
+    return mils as clkFmt
+
+await (.raider is SOMETHING)
+    POST TOREADABLE 5:00                 // "05:00"
+    POST `took ${ TOREADABLE wait_time }`
+    TOREADABLE 5:00 -> readable          // alone on a line; the arrow binds the result
+    CLAMP .raid_size, 1, 100             // several arguments, comma-separated
+```
+
+**Defining.** `define NAME(param, ...)` + an indented body, **at the top level only**. The
+name is ALL-CAPS and may not be a verb or constant the host already provides; parameters are
+ordinary variable names (§9.3), each listed once. A function may be called before its
+definition, and may call itself — calls nest at most 100 deep.
+
+**Calling.** Arguments are separated by commas; a call with none is just the name. Alone on
+a line, the arguments take the rest of it, as a verb's does — except an arrow at the end,
+which binds the call's *result*. Inside an expression, the arguments stop before `%`,
+`~`/`as`, the comparisons, `and`/`or` and arrows, so `POST TOREADABLE x as "mm:ss"`
+formats the *result*. Parenthesize an argument to put any of those inside it. Passing more
+arguments than there are parameters is an error when the script compiles; fewer leave the
+rest empty.
+
+**`return <value>`** ends the call with that value; a call that reaches the end of its body
+returns empty. `return` outside a `define` is a parse error.
+
+**What a function can see.** Its parameters, its own locals and the host's constants — **not**
+the caller's variables. What it needs comes in as arguments. It does see the caller's
+subject and channel, so `.sender` and `POST` behave as they would at the call site.
+
+**What a function may do.** Compute, branch, loop, call verbs, call functions. It may **not**
+contain `await`, `after` or `using`: a function computes, it does not install handlers —
+installing on every call is the pile-up nested `await`s were fixed to avoid — and it does not
+change grants mid-call.
+
+**Permissions.** `define NAME(...) with +perm ...` lists what the function needs. A caller
+must hold **all** of them, or the call is refused; the function then runs holding **exactly**
+those, whatever else its caller holds. A function declaring nothing runs with nothing.
+
+```
+define ADD(a, b) with +eval:calc
+    return calc(a + b)
+```
+
+### 6.11 Loops, `for` / `break` / `renew` *(v2.1)*
+
+```
+for 0; 10; 2                 // start; stop; step — stop is excluded, like `..`
+    POST `${ $ }`            // $ is the innermost loop's counter: 0, 2, 4, 6, 8
+
+for as row: 0; 3             // a label names the loop — and its counter
+    for greet_list           // or walk a list: $ is each item
+        if $ is `hey`
+            renew            // next iteration (continue)
+        if row is 2
+            break row        // leave the loop named `row`
+        POST `${ row }: ${ $ }`
+```
+
+- **Numeric form** `start; stop[; step]`: numbers or durations. `stop` is excluded. `step`
+  defaults to 1 and may be negative to count down. A step of 0, or one pointing away from
+  `stop`, is an error rather than an empty or endless loop.
+- **List form** `for <value>`: each item in turn — a list, a range, anything `any from`
+  accepts.
+- **`$`** is the innermost loop's counter. A label (`for as name:`) also binds the counter
+  under that name, so an inner loop can read an outer one's. `$` outside a loop is a parse
+  error; `$name` is not a thing.
+- **`break [label]`** leaves the innermost loop, or the one named. **`renew [label]`** starts
+  its next iteration. A label that no enclosing loop carries is a parse error, and neither
+  can leave a function.
+- Every iteration costs a step, so a runaway loop is stopped by the budget (§12).
 
 ---
 
@@ -1352,25 +1435,25 @@ That is the *only* expression allowed to stand alone as a statement. A bare expr
 line is still an error, because a language whose statements are verbs has no use for a value
 nobody reads — and accepting one would turn every misspelled verb into a silent no-op.
 
-### 9.3 The underscore rule *(v2)*
+### 9.3 Names: ALL-CAPS is the host's *(v2.1)*
 
-**A variable name must contain an interior underscore.** `mod_msg` and `wait_time` are
-names; `x`, `_x`, `x_` and `USERNAME` are not.
+**A variable name needs a lower-case letter.** `clkFmt`, `mils`, `x` and `mod_msg` are
+names; `USERNAME` and `CLKFMT` are not. The same rule covers parameters and loop labels.
 
-This is the entire mechanism that distinguishes a variable from a host constant, and it has
-to exist because the two are *lexically identical* — `USERNAME` and `mod_msg` are both just
-`IDENT`. The lexer cannot tell them apart and neither can a reference site.
+ALL-CAPS belongs to the host's constants and verbs — and to the script's own functions,
+which are verbs it defines (§6.10). It has to: `CLKFMT "..."` at the start of a line already
+reads as a verb call. That one fact is the whole distinction between a name the script made
+and a name the host published, because the lexer sees both as the same `IDENT`.
 
-So the rule is enforced at the **binding site only**:
+- Binding: the name must contain a lower-case letter, or it is a `DSLParseError`.
+- Reference: **nothing is rejected.** A name with a lower-case letter resolves
+  variable-first, then constant; an ALL-CAPS one is a constant (or a function call).
 
-- Binding: the name must match `[A-Za-z0-9]+(_[A-Za-z0-9]+)+`, or it is a `DSLParseError`.
-- Reference: **nothing is rejected.** A name with an interior underscore resolves
-  variable-first, then constant. A name without one can only be a constant.
+The subject aliases (§5.7) — `_`, `__this__`, `__self__`, `__me__` — are refused as binding
+targets by name.
 
-Enforcing only at creation is also why the subject aliases (§5.7) never collide with it:
-`_`, `__this__`, `__self__` and `__me__` are only ever *read*, so they can never trip a
-binding-site check. They are additionally refused as binding targets by name, so the error
-says what is actually wrong rather than complaining about underscores.
+> **Changed in v2.1.** v2 required an interior underscore (`mod_msg`), which made `mils` and
+> `clkFmt` illegal for no reason a reader could see.
 
 ### 9.4 Reading an unbound variable *(v2)*
 
@@ -1510,6 +1593,19 @@ allowing a tight loop inside a single handler to burn the entire allowance.
 | `steps` | 100000 | every statement, loop iteration and range element |
 | `wallMs` | 30000 | the same points, against `wallClock` |
 
+**Raising the budget** *(v2.1)*. A script that genuinely needs more — a long loop — may grant
+itself a larger step budget, like any other capability:
+
+```
+using +eval:budget_1M -- "walks the whole emote list"
+```
+
+`eval:budget_1M`, `eval:budget_10M` and `eval:budget_100M` raise the per-turn step limit to
+one, ten or a hundred million. The budget is **global**, so the grant applies to the whole
+script; the largest one wins. Like every `eval` grant it needs a description, and like every
+grant the host can show it to the viewer before the script runs. The time limit is
+unchanged.
+
 Elapsed time is measured with `wallClock`, never with `clock`: `clock` is the script's own
 sense of time, and a script that waits five minutes has not *executed* for five minutes.
 
@@ -1630,7 +1726,7 @@ Each entry keeps the title v1 filed it under.
 - **No `Identifier` in the original node inventory** — Resolved without a sigil. A variable
   is told from a constant by its *shape*: a variable name must contain an interior
   underscore (§9.3). `mod_msg` is a name, `USERNAME` is a constant, and the rule is checked
-  only where a name is created.
+  only where a name is created. *(Changed in v2.1: a lower-case letter, not an underscore.)*
 - **No escape syntax inside templates for `${`** — Resolved. An **unterminated** `${` is
   literal text; a **matched** one is still an interpolation, and still an error if its
   contents are ungrammatical (§3.2). The escape idiom is `${ "${x}" }`.
@@ -1692,6 +1788,12 @@ From writing `realistic.ttv` and ranking what fought back:
   means "while live" (§6.1). **Behaviour change.**
 - **An unknown realm broke its whole enclosing body** — Resolved. It now fails only its own
   block (§4).
+- **No user-defined functions** — Resolved: `define` makes a verb the script can call like
+  `POST` (§6.10).
+- **No loops** — Resolved: `for` over a numeric range or a list, with `$`, labels, `break`
+  and `renew` (§6.11); the budget can be raised with `+eval:budget_*` (§12).
+- **Variable names needed an interior underscore** — Replaced: any name with a lower-case
+  letter is a variable; ALL-CAPS is the host's, and the script's functions' (§9.3).
 - **One-shot timers** — Resolved by `after` (§6.9).
 - **Durations printed as milliseconds** — Resolved by the `~` format operator (§5.14).
 - **No arithmetic** — Resolved by `calc( ... )` (§5.15), gated on `eval:calc`.
@@ -1713,9 +1815,6 @@ From writing `realistic.ttv` and ranking what fought back:
 
 ### 14.2 Still open
 
-- **No user-defined functions.** Variables (§9.2) name a *value* — including a list (§8) —
-  not a procedure.
-- **No loops.** `await` is still the only repetition, and it is driven by time or events.
 - **DISCORD is unimplemented.** `idea.ttv` uses it; the runtime does not register it. A
   script naming it has that one block skipped, with one error reported (§4).
 - **The host.** `HOST.md` specifies it; the extension, being rewritten, does not implement it

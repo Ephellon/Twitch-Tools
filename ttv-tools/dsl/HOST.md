@@ -138,6 +138,7 @@ using +write:html.text -- "renames the stream title for mods"
 | `parse:html.text` · `.attributes` · `.structure` | markup the script already has → serializable data |
 | `eval:calc` | `calc( ... )` arithmetic |
 | `eval:js` | the built-in JavaScript set only (§7.3) — never a host binding |
+| `eval:budget_1M` · `_10M` · `_100M` | raise the per-turn step budget for the whole script |
 
 A grant ending in `.*` covers exactly one more level. `write` and `eval` grants always carry
 a `-- "description"`.

@@ -514,8 +514,19 @@ if (typeof require === 'function' && typeof module === 'object') {
 
             // `$` outside a template was the v2 host-call head. Named here so the error
             // says what to write instead.
-            if ('$' === character)
-                this.#fail('Unexpected "$"; host calls are written "&datetime.now()"', start, start + 1);
+            // `$` alone is the loop counter. `$:` was the v2 host-call head.
+            if ('$' === character) {
+                if (':' === this.#source[start + 1])
+                    this.#fail('Unexpected "$"; host calls are written "&datetime.now()"', start, start + 1);
+
+                if (/[A-Za-z0-9_]/.test(this.#source[start + 1] ?? ''))
+                    this.#fail('`$` stands alone — it is the loop counter; name a loop with `for as name:` to read it by name', start, start + 2);
+
+                ++this.#index;
+                this.#emit(TokenType.COUNTER, start, this.#index);
+
+                return;
+            }
 
             if ('%' === character)
                 return this.#scanPercent();
