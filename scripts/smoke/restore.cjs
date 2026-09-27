@@ -1,5 +1,5 @@
 // Feeds a settings JSON file to the "restore" input and reports what landed in storage
-module.exports = async (page, errors) => {
+module.exports = async page => {
     const fs = require('fs');
     fs.writeFileSync(require('path').join(require('os').tmpdir(), 'ttv-restore.json'), JSON.stringify({ auto_accept_mature: true, simplify_chat_font: 'Comic Sans MS', view_mode: 'theatre' }));
     await page.setInputFiles('#sync-settings--upload-json-input', require('path').join(require('os').tmpdir(), 'ttv-restore.json'));

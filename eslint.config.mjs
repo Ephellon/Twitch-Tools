@@ -210,6 +210,11 @@ export default [
         languageOptions: { globals: { ...globals.node, describe: 'readonly', it: 'readonly', assert: 'readonly' } },
     },
     {
+        // Smoke scripts: Node, plus browser code they evaluate inside Chromium
+        files: ['scripts/**/*.cjs'],
+        languageOptions: { sourceType: 'commonjs', globals: { ...globals.node, ...globals.browser, ...globals.webextensions } },
+    },
+    {
         files: ['*.mjs', 'scripts/**/*.mjs'],
         languageOptions: { sourceType: 'module', globals: globals.node },
         plugins: { '@stylistic': stylistic },
