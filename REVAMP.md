@@ -52,10 +52,14 @@ Living plan for the multi-week revamp. One phase at a time; each phase ends in s
 - Pilot plugins: Auto-Join, Kill Extensions, View Mode (`src/plugins/automation/`).
 - Checks: registry unit tests (`src/lib/tests/`), plus a headless Chromium check that compares content-script output on a stubbed twitch.tv page before and after (local only; Twitch itself isn't reachable from CI).
 
-### 4. Plugin migration (one feature per commit)
-- Move sections into `plugins/<group>/<id>.js`, apply the formatter as each file moves.
-- Order: self-contained first (Auto-Join, Stay Live, Stop Raiding, Kill Extensions…) → chat features → Points/Rewards → Auto DVR / Recovery → First in Line / Up Next last.
-- `tools.js`/`chat.js` shrink to bootstrap; delete when empty.
+### 4. Plugin migration ✅ (mechanical move)
+- Every feature is a plugin: 71 files under `src/plugins/`, in four bundles (`lib.js`, `chat-plugins.js`, `player-plugins.js`, `clips-plugins.js`). Each one runs where its code used to be (`await TTV.run(id, PLUGIN_CONTEXT)`).
+- Legacy scripts, 26.7k → 6.5k lines: `tools.js` 18.4k → 5.1k, `chat.js` 4.45k → 1.03k, `player.js` 471 → 222, `clips.js` 316 → 207.
+- Tools: `scripts/sections.mjs` (section map), `scripts/promote.mjs` (shared variables), `scripts/migrate.mjs` (move a section; `--live` for chat.js's own scope).
+- Checks per batch: esbuild in strict mode, lint (`no-undef` as modules), registry tests, and headless parity against the previous build. Parity covered a stub channel page, pop-out chat, player and clips: same jobs, same errors.
+- Strict-mode fixes that came up: `delete channel;` no-ops removed, `private` renamed, Recover Chat's dead fallback fixed.
+- Up Next fixes: reordering now resets the queue (`jobs[0].href` was `undefined`); the Stay Live fallback warning shows. Prevent Hosting removed.
+- **Still to do:** convert installed plugins to the structured form as features are touched; the remaining Up Next and live-DOM issues (see `docs/triage/TRIAGE.md`).
 
 ### 5. Settings UI from plugin metadata
 - Generate option rows from each plugin's `settings` block instead of hand-written HTML; keeps the JSON export/restore from #58 working.

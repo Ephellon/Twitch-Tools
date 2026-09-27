@@ -5,7 +5,7 @@ How TTV Tools is put together. Written in Phase 1 (v5.35.3.3) and updated as the
 - [Writing a plugin](PLUGINS.md): the feature format introduced in Phase 3.
 
 - [Feature catalog](FEATURES.md): every Settings option → the code that reads it.
-- [Section digests](sections/): what each part of each file does.
+- [Section digests](sections/): what each part of each file did in v5.35.3.3. Line numbers refer to that layout; the code now lives in `src/plugins/`.
 
 ## 1. What runs where
 
@@ -13,10 +13,10 @@ How TTV Tools is put together. Written in Phase 1 (v5.35.3.3) and updated as the
 
 | Page (match) | Scripts, in order | Entry point |
 |---|---|---|
-| `www.twitch.tv/*` | `ext/localforage` → `ext/polyfill` → `ext/resemble` → `ext/sortable` → `ext/glyphs` → `ext/irc` → **`core`** → **`lib`** (built) → **`tools`** → **`chat`** → `ext/tracking` → `ext/face` → `ext/eye` → `ext/mouth` (+ `core.css`, `extras.css`) | `Initialize()` in `tools.js`, `Chat__Initialize()` in `chat.js` |
-| `www.twitch.tv/popout/*` | same libs, **`core`** → **`chat`** | `Chat__Initialize()` |
-| `player.twitch.tv/*` | libs → **`core`** → **`player`** | `Player__Initialize()` |
-| `clips.twitch.tv/*` | libs → **`core`** → **`clips`** | `Clips__Initialize()` |
+| `www.twitch.tv/*` | `ext/localforage` → `ext/polyfill` → `ext/resemble` → `ext/sortable` → `ext/glyphs` → `ext/irc` → **`core`** → **`lib`** (built) → **`tools`** → **`chat-plugins`** (built) → **`chat`** → `ext/tracking` → `ext/face` → `ext/eye` → `ext/mouth` (+ `core.css`, `extras.css`) | `Initialize()` in `tools.js`, `Chat__Initialize()` in `chat.js` |
+| `www.twitch.tv/popout/*` | same libs, **`core`** → **`chat-plugins`** → **`chat`** | `Chat__Initialize()` |
+| `player.twitch.tv/*` | libs → **`core`** → **`player-plugins`** → **`player`** | `Player__Initialize()` |
+| `clips.twitch.tv/*` | libs → **`core`** → **`clips-plugins`** → **`clips`** | `Clips__Initialize()` |
 | Options page / popup | `settings.html` → `ext/localforage`, `ext/polyfill`, `ext/glyphs`, **`core`**, **`settings`** | top-level code in `settings.js` |
 | Background | `background.js` (module service worker; event page on Firefox) | top-level listeners |
 
@@ -30,8 +30,8 @@ All content scripts run with `all_frames: true`. `tools.js` guards its bootstrap
 | Language/DOM polyfill | `ext/polyfill.js` | Prototype extensions (`String..equals/unlike/contains`, `Array..contains/missing/random`, `Element..getElementByText`, `HTMLVideoElement..startRecording`…), `$`/`$.all`/`$.defined`, `parseURL`, `parseBool`, `furnish`, `LANGUAGE` |
 | Core | `core.js` | `UUID`, `nanoid`, `LZW`, `Tooltip`, `nullish`/`defined`/`empty`/`sated`, `when()` (poll-until promise family), `wait`/`delay`, `fetchURL`, **`Settings`**, **`Cache`**, extension-API aliases (`Runtime`, `Storage`, `Container`, `Manifest`), and the **job system** (`Jobs`, `Timers`, `Handlers`, `Unhandlers`, `Limbo`, `RegisterJob`, `UnregisterJob`, `RestartJob`, `DelayJob`) |
 | Shared helpers (ES modules) | `lib/*.js` → `lib.js` | UI primitives (`Balloon`, `ChatFooter`, `Card`, `ContextMenu`, `Search`, `Chat`), player helpers (`Get/SetQuality`, `Get/SetVolume`, `Get/SetViewMode`), `parseCoin`, `GetActivity`/`GetLanguage`/`ReloadPage`, and the plugin registry (`TTV.plugin`, `TTV.start`). They are published on `globalThis` for the legacy scripts |
-| Plugins (ES modules) | `plugins/**` → `lib.js` | One file per migrated feature; see [PLUGINS.md](PLUGINS.md) |
-| Main page | `tools.js` | Page state (`STREAMER`, `STREAMERS`, `CHANNELS`, `SEARCH`, `NOTIFICATIONS`…), then ~99 features inside `Initialize()` |
+| Plugins (ES modules) | `plugins/**` → `lib.js`, `chat-plugins.js`, `player-plugins.js`, `clips-plugins.js` | Every feature, one file each (71); see [PLUGINS.md](PLUGINS.md) |
+| Main page | `tools.js` | Bootstrap, page state, `Initialize()`'s shared setup, and one `TTV.run` per feature. Before Phase 4 it also held every feature, as did `chat.js`, `player.js` and `clips.js`. Page state (`STREAMER`, `STREAMERS`, `CHANNELS`, `SEARCH`, `NOTIFICATIONS`…), then ~99 features inside `Initialize()` |
 | Chat | `chat.js` | ~59 chat features inside `Chat__Initialize()`; a reduced `Chat__Initialize_Safe_Mode()` for banned / hidden chat |
 | Player, clips | `player.js`, `clips.js` | Small `*__Initialize()` for the embedded player and clip pages |
 | Settings UI | `settings.html/js/css` | Hand-written controls, `SaveSettings`/`LoadSettings`, JSON export/restore, translation |
