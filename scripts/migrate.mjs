@@ -29,6 +29,12 @@ if(!section.standalone && !force)
 
 let lines = fs.readFileSync(file, 'utf8').split('\n');
 let [first, last] = section.lines.split('-').map(Number);
+
+// Stop at a plugin that already ran from here (`// Title → src/plugins/…` + its `TTV.run`); it stays put
+let pointer = lines.slice(first - 1, last).findIndex(line => /^\s*\/\/ .+ → src\/plugins\//.test(line));
+if(pointer > 0)
+    last = first - 1 + pointer;
+
 let body = lines.slice(first - 1, last);
 
 // Drop the banner comment (ASCII art); the title goes in the plugin's header instead
@@ -41,7 +47,7 @@ while(code.length && !code.at(-1).trim())
     code.pop();
 
 if(remove) {
-    if(code.some(line => line.trim()))
+    if(code.some(line => line.trim() && !line.trim().startsWith("//")))
         throw new Error(`"${ title }" has code; refusing to delete`);
 
     lines.splice(first - 1, last - first + 1);

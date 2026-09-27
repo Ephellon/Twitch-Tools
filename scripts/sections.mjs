@@ -54,7 +54,7 @@ export function analyze(file, initializer) {
         for(let ref of variable.references) {
             let user = sectionAt(ref.identifier.loc.start.line);
 
-            if(user !== home && variable.name != 'StopWatch') {
+            if(user !== home && !['StopWatch', 'PLUGIN_CONTEXT'].includes(variable.name)) {
                 if(!user.needs.has(variable.name))
                     user.needs.set(variable.name, home.title);
                 home.usedBy.add(user.title);

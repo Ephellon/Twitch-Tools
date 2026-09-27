@@ -19,7 +19,20 @@ const path = require('path');
             <div data-test-selector="chat-scrollable-area__message-container"></div><div id="side-nav"><div class="side-nav-section" aria-label="Followed Channels"></div></div></main></body></html>`,
     }));
     await ctx.route(/^https?:\/\/(?!([a-z]+\.)?twitch\.tv\/)/, route => route.abort());
-    if(process.env.ENABLE) {
+    if(process.env.ENABLE == 'all') {
+        // Let the Settings page store its defaults, then switch every on/off option on
+        let [sw] = ctx.serviceWorkers(); sw ??= await ctx.waitForEvent('serviceworker');
+        let id = sw.url().split('/')[2];
+        let settings = await ctx.newPage();
+        await settings.goto(`chrome-extension://${ id }/settings.html`);
+        await settings.waitForTimeout(5000);
+        let on = await sw.evaluate(() => new Promise(r => chrome.storage.local.get(null, all => {
+            let flags = Object.fromEntries(Object.entries(all).filter(([, v]) => typeof v == 'boolean').map(([k]) => [k, true]));
+            chrome.storage.local.set(flags, () => r(Object.keys(flags).length));
+        })));
+        console.log('enabled flags:', on);
+        await settings.close();
+    } else if(process.env.ENABLE) {
         let [sw] = ctx.serviceWorkers(); sw ??= await ctx.waitForEvent('serviceworker');
         await sw.evaluate(() => chrome.storage.local.set({ auto_accept_mature: true, kill_extensions: true, view_mode: 'theatre' }));
     }
