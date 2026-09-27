@@ -50,7 +50,7 @@ let Clips__Initialize = async(START_OVER = false) => {
                 start: new Date,
                 stop: null,
                 span: null,
-                max: Math.abs(interval + new Date) * 1.1,
+                max: Math.abs(interval) * 1.1,
             });
         }
 
@@ -96,7 +96,7 @@ let Clips__Initialize = async(START_OVER = false) => {
 
         if(EDITOR_MODE) {
             title = new ClipName(2);
-            author = USERNAME;
+            author = window.USERNAME ?? $('[data-a-target="user-display-name"i]')?.textContent ?? '';
 
             original = $(carryQuery = '[data-a-target*="label"i][data-a-target*="text"i]')?.closest('[style]');
             placeBefore = original;

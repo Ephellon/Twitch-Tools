@@ -50,7 +50,7 @@ let Player__Initialize = async(START_OVER = false) => {
                 start: new Date,
                 stop: null,
                 span: null,
-                max: Math.abs(interval + new Date) * 1.1,
+                max: Math.abs(interval) * 1.1,
             });
         }
 
@@ -127,7 +127,7 @@ let Player__Initialize = async(START_OVER = false) => {
         $error('The stream ran into an error:', errorMessage.textContent, new Date);
 
         if(/\b(subscribe|mature)\b/i.test(errorMessage.textContent)) {
-            let next = await GetNextStreamer();
+            let next = await window.GetNextStreamer?.();
 
             // Subscriber only, etc.
             if(defined(next))
@@ -245,7 +245,7 @@ let Player__Initialize = async(START_OVER = false) => {
         if(nullish(video) || !live)
             return (
                 parseBool(autosave)?
-                    video.stopRecording():
+                    video?.stopRecording():
                 null
             );
 

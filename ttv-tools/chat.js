@@ -76,7 +76,7 @@ let Chat__Initialize = async(START_OVER = false) => {
                 start: new Date,
                 stop: null,
                 span: null,
-                max: Math.abs(interval + new Date) * 1.1,
+                max: Math.abs(interval) * 1.1,
             });
         }
 
@@ -1255,6 +1255,15 @@ let Chat__Initialize = async(START_OVER = false) => {
      */
     let MESSAGE_FILTER;
 
+    // Rules may be patterns; one that doesn't compile is matched as plain text instead of throwing
+    function MatchesRule(text, message) {
+        try {
+            return RegExp(text, 'i').test(message);
+        } catch {
+            return message.toLowerCase().includes(text.toLowerCase());
+        }
+    }
+
     Handlers.filter_messages = () => {
         new StopWatch('filter_messages');
 
@@ -1289,7 +1298,7 @@ let Chat__Initialize = async(START_OVER = false) => {
                                 || (author.replace(/^[^@]/, '@$&').equals(user?.replace(/^[^@]/, '@$&'))? (match = author, reason = 'channel user'): false)
                                 || (!!~badges.findIndex(medal => medal.toLowerCase().contains(badge?.toLowerCase()) && medal.length && badge.length)? (match = badges, reason = 'channel badge'): false)
                                 || (!!~emotes.findIndex(glyph => glyph.toLowerCase().contains(emote?.toLowerCase()) && glyph.length && emote.length)? (match = emotes, reason = 'channel emote'): false)
-                                || (RegExp(text, 'i').test(message)? (match = text, reason = 'channel text'): false)
+                                || (MatchesRule(text, message)? (match = text, reason = 'channel text'): false)
                             )
                         )
                     }).contains(true)
@@ -2485,7 +2494,7 @@ let Chat__Initialize = async(START_OVER = false) => {
     Timers.simplify_chat = -250;
 
     Unhandlers.simplify_chat = () => {
-        ['SimplifyChat', 'SimplifyChatMonotoneUsernames', 'SimplifyChatFont'].map(block => RemoveCustomCSSBlock(block));
+        ['Simplify Chat', 'Simplify Chat Monotone Usernames', 'Simplify Chat Font', 'Simplify Page Font', 'Simplify Font (Head)'].map(block => RemoveCustomCSSBlock(block));
     };
 
     __SimplifyChat__:
@@ -3159,8 +3168,8 @@ let Chat__Initialize = async(START_OVER = false) => {
             error = $('[class*="chat"i][class*="content"] .core-error');
 
         if(defined(error) || nullish(chat)) {
-            $('[data-a-target*="welcome"i]')?.append(furnish('p', { style: 'text-decoration:underline var(--color-error)' }, `There was an error loading chat: ${ error.textContent }`));
-            error.remove();
+            $('[data-a-target*="welcome"i]')?.append(furnish('p', { style: 'text-decoration:underline var(--color-error)' }, `There was an error loading chat: ${ error?.textContent ?? 'no response' }`));
+            error?.remove();
         }
 
         if(defined(chat))
@@ -4191,7 +4200,7 @@ Chat__PAGE_CHECKER = setInterval(Chat__WAIT_FOR_PAGE = async() => {
                                     handle = $('[data-a-user]', element).textContent,
                                     usable = false,
                                     message = raw.replace(/^[^:]+?:/, '').trim(),
-                                    mentions = $.all('[data-a-atrget*="mention"i]', element).map(e => e.textContent),
+                                    mentions = $.all('[data-a-target*="mention"i]', element).map(e => e.textContent),
                                     highlighted = parseBool(element.dataset.testSelector?.contains('notice'));
 
                                 element.dataset.uuid = uuid;
