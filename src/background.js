@@ -113,8 +113,8 @@
 
 ;
 
-const $ = (selector, multiple = false, container = document) => multiple? [...container.querySelectorAll(selector)]: container.querySelector(selector);
-const nullish = value => (value === undefined || value === null);
+const $ = (selector, multiple = false, container = document) => multiple ? [...container.querySelectorAll(selector)] : container.querySelector(selector);
+const nullish = value => (value === void null || value === null);
 const defined = value => !nullish(value);
 
 /** @protected
@@ -123,46 +123,46 @@ const defined = value => !nullish(value);
  *                                                      Determines whether the value clashes with a reserved pathname or not.
  */
 const RESERVED_TWITCH_PATHNAMES = Object.defineProperties([
-    "u",
-    "p",
-    "activate",
-    "bits",
-    "bits-checkout",
-    "checkout",
-    "clips",
-    "collections",
-    "communities",
-    "dashboard",
-    "directory",
-    "download",
-    "downloads?",
-    "drops",
-    "event",
-    "following",
-    "friend",
-    "friends",
-    "inventory",
-    "job",
-    "jobs",
-    "luna",
-    "moderator",
-    "popout",
-    "prime",
-    "products",
-    "schedule",
-    "search",
-    "settings",
-    "store",
-    "subs",
-    "subscription",
-    "subscriptions",
-    "team",
-    "turbo",
-    "user",
-    "video",
-    "videos",
-    "wallet",
-    "watchparty"
+    'u',
+    'p',
+    'activate',
+    'bits',
+    'bits-checkout',
+    'checkout',
+    'clips',
+    'collections',
+    'communities',
+    'dashboard',
+    'directory',
+    'download',
+    'downloads?',
+    'drops',
+    'event',
+    'following',
+    'friend',
+    'friends',
+    'inventory',
+    'job',
+    'jobs',
+    'luna',
+    'moderator',
+    'popout',
+    'prime',
+    'products',
+    'schedule',
+    'search',
+    'settings',
+    'store',
+    'subs',
+    'subscription',
+    'subscriptions',
+    'team',
+    'turbo',
+    'user',
+    'video',
+    'videos',
+    'wallet',
+    'watchparty'
 ], {
     has: { value(value) { return !!~this.indexOf(value?.toLowerCase()) } },
 });
@@ -198,7 +198,7 @@ function ReloadTab(tab, onlineOnly = true, forced = false) {
         });
 
         if(forced) {
-            setTimeout(() => Container.tabs.reload(tab.id), 100);
+            setTimeout(() => Container.tabs.reload(tab.id), 100)
 
             // REPORTS.set(tab.id, +new Date);
             // GALLOWS.set(tab.id, +new Date);
@@ -230,7 +230,7 @@ function RemoveTab(tab, duplicateTab = false, forced = true) {
     duplication: if(duplicateTab) {
         // Using `.duplicate` carries the frozen status to the new tab...
 
-        let created = RemoveTab.duplicatedTabs.get(tab.url);
+        const created = RemoveTab.duplicatedTabs.get(tab.url);
 
         // The tab was just duplicated (<15s ago)
         if(defined(created) && +(new Date) - created < 15e3)
@@ -279,9 +279,9 @@ const RESPAWN_COOLDOWN = 120_000;
  * @return {boolean}    Whether to go ahead
  */
 function MayRespawn(tab) {
-    let now = +new Date;
+    const now = +new Date;
 
-    for(let [key, when] of RECENT_RESPAWNS)
+    for(const [key, when] of RECENT_RESPAWNS)
         if(now - when >= RESPAWN_COOLDOWN)
             RECENT_RESPAWNS.delete(key);
 
@@ -326,7 +326,7 @@ switch(BrowserNamespace) {
         Manifest = Runtime.getManifest();
         Alarms = Container.alarms;
 
-        let _storage = {};
+        const _storage = {};
 
         Storage.sync.get().then(_sync => {
             Object.assign(_storage, _sync);
@@ -349,7 +349,7 @@ switch(BrowserNamespace) {
         Manifest = Runtime.getManifest();
         Alarms = Container.alarms;
 
-        let _storage = {};
+        const _storage = {};
 
         Storage.sync.get().then(_sync => {
             Object.assign(_storage, _sync);
@@ -397,7 +397,7 @@ const {
     // ({ reason:string<"install" | "update" | "chrome_update" | "shared_module_update">, previousVersion:string?, id:string? }) → undefined
 Runtime.onInstalled.addListener(({ reason, previousVersion, id }) => {
     Container.tabs.query({
-        url: ["*://www.twitch.tv/*", "*://player.twitch.tv/*", "*://clips.twitch.tv/*"],
+        url: ['*://www.twitch.tv/*', '*://player.twitch.tv/*', '*://clips.twitch.tv/*'],
     }, (tabs = []) => {
         Storage.set({ onInstalledReason: reason, chromeUpdateAvailable: false, githubUpdateAvailable: false });
 
@@ -412,19 +412,19 @@ Runtime.onInstalled.addListener(({ reason, previousVersion, id }) => {
             // If so, but the version hasn't changed, change the build number
             case UPDATE: {
                 Storage.get(['buildVersion'], ({ buildVersion }) => {
-                    let [version, build] = (buildVersion ?? "").split('#');
+                    const [version, build] = (buildVersion ?? '').split('#');
 
-                    Storage.set({ buildVersion: `${ Manifest.version }#${ (Manifest.version == version? (build | 0) + 1: 0) }` });
+                    Storage.set({ buildVersion: `${ Manifest.version }#${ (Manifest.version == version ? (build | 0) + 1 : 0) }` });
                 });
 
                 // Most settings will reload Twitch pages when needed
-                for(let tab of tabs)
+                for(const tab of tabs)
                     RemoveTab(tab, true);
             } break;
         }
 
         // Update the badge text when there's an update available
-        Container.action.setBadgeText({ text: '' });
+        Container.action.setBadgeText({ text: "" });
 
         // Memory Management
         Alarms.create('ttvMemoryAudit', { periodInMinutes: 5 });
@@ -433,9 +433,9 @@ Runtime.onInstalled.addListener(({ reason, previousVersion, id }) => {
             if(!ram_onhigh && !ram_onmedium && !ram_onlow)
                 Storage.set({
                     // ignore | notify | respawn
-                    ram_onlow: "ignore",    // ≥500MB
-                    ram_onmedium: "ignore", // ≥1GB
-                    ram_onhigh: "ignore",   // ≥2GB
+                    ram_onlow: 'ignore',    // ≥500MB
+                    ram_onmedium: 'ignore', // ≥1GB
+                    ram_onhigh: 'ignore',   // ≥2GB
                     ram_timescale: false,   // Scale with tab age
                 });
         });
@@ -444,7 +444,7 @@ Runtime.onInstalled.addListener(({ reason, previousVersion, id }) => {
 
 // Update the tab(s) when they unload
     // `Container.tabs.onUpdated.addListener(...)` does not support pages crashing...
-let OfflineTabs = new Set();
+const OfflineTabs = new Set();
 
 // https://developer.mozilla.org/en-US/docs/Web/API/Compute_Pressure_API
 function TabWatcher(records) {
@@ -452,24 +452,24 @@ function TabWatcher(records) {
         try {
             const lastRecord = records.at(-1);
 
-            if(lastRecord.state == "critical") {
+            if(lastRecord.state == 'critical') {
                 // The system is experiencing extremely high usage and should be put into some sort of rest-mode
-                Container.tabs.query({ url: "*://*.twitch.tv/*" }, (tabs = []) => {
-                    for(let tab of tabs)
+                Container.tabs.query({ url: '*://*.twitch.tv/*' }, (tabs = []) => {
+                    for(const tab of tabs)
                         ReloadTab(tab, tab.status != UNLOADED, true);
-                });
-            } else if(lastRecord.state == "serious") {
+                })
+            } else if(lastRecord.state == 'serious') {
                 // The system's usage rate is in an elevated state and it may begin throttling processes
-                Container.tabs.query({ url: "*://*.twitch.tv/*" }, (tabs = []) => {
-                    for(let tab of tabs)
+                Container.tabs.query({ url: '*://*.twitch.tv/*' }, (tabs = []) => {
+                    for(const tab of tabs)
                         if(!TabIsOffline(tab))
                             continue;
                         else if(!OfflineTabs.has(tab.id))
                             OfflineTabs.add(tab.id);
                         else
                             ReloadTab(tab, tab.status != UNLOADED, true);
-                });
-            } else if(lastRecord.state == "fair" || lastRecord.state == "nominal") {
+                })
+            } else if(lastRecord.state == 'fair' || lastRecord.state == 'nominal') {
                 // Everything is fine, and the system can take on more work
             }
         } catch(error) {
@@ -478,8 +478,8 @@ function TabWatcher(records) {
         }
     else
         try {
-            Container.tabs.query({ url: "*://*.twitch.tv/*" }, (tabs = []) => {
-                for(let tab of tabs)
+            Container.tabs.query({ url: '*://*.twitch.tv/*' }, (tabs = []) => {
+                for(const tab of tabs)
                     if(!TabIsOffline(tab))
                         continue;
                     else if(!OfflineTabs.has(tab.id))
@@ -500,23 +500,23 @@ Container.action.setBadgeBackgroundColor({ color: '#9147ff' });
     // if installed from Chrome, update the badge text, and wait for an auto-update
     // if installed from GitHub, update the badge text
 Storage.onChanged.addListener(changes => {
-    let installedFromWebstore = (Runtime.id === "fcfodihfdbiiogppbnhabkigcdhkhdjd");
+    const installedFromWebstore = (Runtime.id === 'fcfodihfdbiiogppbnhabkigcdhkhdjd');
 
     updater:
-    for(let key in changes) {
-        let change = changes[key],
-            { oldValue, newValue } = change;
+    for(const key in changes) {
+        const change = changes[key]
+            , { oldValue, newValue } = change;
 
         switch(key) {
             case 'chromeUpdateAvailable':
             case 'githubUpdateAvailable': {
                 if(newValue === true)
-                    Container.action.setBadgeText({ text: '\u2191' });
+                    Container.action.setBadgeText({ text: "\u2191" });
                 else
-                    Container.action.setBadgeText({ text: '' });
+                    Container.action.setBadgeText({ text: "" });
             } break updater;
 
-            default: continue updater;
+            default: { continue updater }
         }
     }
 });
@@ -525,7 +525,7 @@ let FOCUSED_TAB = null;
 
 Container.windows.onFocusChanged.addListener(async(windowId) => {
     if(windowId === Container.windows.WINDOW_ID_NONE) {
-        FOCUSED_TAB = null;
+        FOCUSED_TAB = null
     } else {
         const [tab] = await Container.tabs.query({ active: true, windowId });
 
@@ -540,21 +540,21 @@ let TabWatcherInterval;
 
 // Listen for messages from the content page(s)
 Runtime.onMessage.addListener((request, sender, respond) => {
-    let reloadAll = false,
-        returningData;
+    let reloadAll = false
+        , returningData;
 
     function reloadTabs(all = false) {
         if(!all)
             return;
 
         Container.tabs.query({
-            url: ["*://www.twitch.tv/*", "*://player.twitch.tv/*", "*://clips.twitch.tv/*"],
+            url: ['*://www.twitch.tv/*', '*://player.twitch.tv/*', '*://clips.twitch.tv/*'],
         }, tabs => {
             if(nullish(tabs))
                 return;
 
             // Reload Twitch pages
-            for(let tab of tabs)
+            for(const tab of tabs)
                 ReloadTab(tab);
         });
     }
@@ -564,10 +564,10 @@ Runtime.onMessage.addListener((request, sender, respond) => {
             delete request.action;
 
             Container.tabs.query({
-                url: ["*://*.twitch.tv/*"],
+                url: ['*://*.twitch.tv/*'],
             }, (tabs = []) => {
                 console.warn(`Consuming Up Next...`, request);
-                for(let tab of tabs)
+                for(const tab of tabs)
                     Container.tabs.sendMessage(tab.id, { action: 'consume-up-next', ...request });
 
                 respond(request);
@@ -579,26 +579,26 @@ Runtime.onMessage.addListener((request, sender, respond) => {
                 reloadAll ||= UP_NEXT_OWNER == null;
 
                 Container.tabs.query({
-                    url: ["*://*.twitch.tv/*"],
+                    url: ['*://*.twitch.tv/*'],
                 }, (tabs = []) => {
                     console.warn(`Claiming Up Next...`, tabs);
 
                     try {
-                        let getName = url => new URL(url).pathname.slice(1).split('/').shift().toLowerCase().trim();
-                        let hostHas = (url, ...doms) => {
-                            for(let dom of doms)
-                                if(!!~new URL(url).host.indexOf(dom))
+                        const getName = url => new URL(url).pathname.slice(1).split('/').shift().toLowerCase().trim();
+                        const hostHas = (url, ...doms) => {
+                            for(const dom of doms)
+                                if(~new URL(url).host.indexOf(dom))
                                     return true;
                             return false;
                         };
-                        let name = null,
-                            owner = null,
-                            ownerAlive = false;
+                        let name = null
+                            , owner = null
+                            , ownerAlive = false;
 
                         // Does the Tab ID match?
-                        checking_tab_id: for(let tab of tabs)
+                        checking_tab_id: for(const tab of tabs)
                             if(hostHas(tab.url, 'player.', 'clips.', 'safety.', 'help.', 'blog.', 'dev.', 'api.', 'tmi.') || RESERVED_TWITCH_PATHNAMES.has(getName(tab.url))) {
-                                continue checking_tab_id;
+                                continue checking_tab_id
                             } else if(ownerAlive ||= (tab.id == UP_NEXT_OWNER)) {
                                 owner = tab.id;
                                 name = getName(tab.url);
@@ -614,9 +614,9 @@ Runtime.onMessage.addListener((request, sender, respond) => {
                             respond({ owner: owner == sender.tab.id });
                         } else {
                             // Does the streamer name match?
-                            checking_streamer_name: for(let tab of tabs)
+                            checking_streamer_name: for(const tab of tabs)
                                 if(RESERVED_TWITCH_PATHNAMES.has(getName(tab.url))) {
-                                    continue checking_streamer_name;
+                                    continue checking_streamer_name
                                 } else if(ownerAlive ||= (getName(tab.url) == UP_NEXT_OWNER_NAME)) {
                                     owner = tab.id;
                                     name = getName(tab.url);
@@ -642,14 +642,14 @@ Runtime.onMessage.addListener((request, sender, respond) => {
                     } catch(error) {
                         console.warn(`Failed to Claim Up Next: ${ error }`);
 
-                        let json = JSON.stringify(tabs);
+                        const json = JSON.stringify(tabs);
 
                         REPORTS.delete(json);
                         GALLOWS.delete(json);
                     }
                 });
             });
-        } break;
+        } break; // switch request.action | 'CLAIM_UP_NEXT'
 
         case 'WAIVE_UP_NEXT': {
             Storage.get(['UP_NEXT_OWNER', 'UP_NEXT_OWNER_NAME'], ({ UP_NEXT_OWNER = null, UP_NEXT_OWNER_NAME = null }) => {
@@ -662,21 +662,21 @@ Runtime.onMessage.addListener((request, sender, respond) => {
         } break;
 
         case 'GET_VERSION': {
-            let { version } = Manifest;
+            const { version } = Manifest;
 
             respond({ version });
         } break;
 
         case 'LOG_RAID_EVENT': {
-            let { from, to } = request.data;
+            const { from, to } = request.data;
 
             Storage.get(['RaidEvents'], ({ RaidEvents = {} }) => {
-                let date = (new Date),
-                    week = `${ date.getFullYear() }${ date.getWeek().toString().padStart(2, '00') }`;
+                const date = (new Date)
+                    , week = `${ date.getFullYear() }${ date.getWeek().toString().padStart(2, '00') }`;
 
-                let events = ((RaidEvents[from] ??= {})[week] ??= []).push(to);
+                const events = ((RaidEvents[from] ??= {})[week] ??= []).push(to);
 
-                for(let wk in RaidEvents[from])
+                for(const wk in RaidEvents[from])
                     if(parseInt(wk) < parseInt(week) - 4)
                         delete RaidEvents[from][wk];
 
@@ -693,7 +693,7 @@ Runtime.onMessage.addListener((request, sender, respond) => {
         } break;
 
         case 'BEGIN_REPORT': {
-            let { tab } = sender;
+            const { tab } = sender;
             IGNORE_REPORTS = false;
 
             console.warn(`Beginning report for tab #${ tab.id }`);
@@ -701,7 +701,7 @@ Runtime.onMessage.addListener((request, sender, respond) => {
 
             try {
                 TabWatcherInterval = new PressureObserver(TabWatcher);
-                TabWatcherInterval.observe("cpu", {
+                TabWatcherInterval.observe('cpu', {
                     sampleInterval: 10e3,
                 });
             } catch(error) {
@@ -712,7 +712,7 @@ Runtime.onMessage.addListener((request, sender, respond) => {
         } break;
 
         case 'WAIVE_REPORT': {
-            let { tab } = sender;
+            const { tab } = sender;
             IGNORE_REPORTS = true;
 
             console.warn(`Ignoring reports for tab #${ tab.id }`);
@@ -721,16 +721,16 @@ Runtime.onMessage.addListener((request, sender, respond) => {
         } break;
 
         case 'FETCH_SHARED_DATA': {
-            let sData = {};
+            const sData = {};
 
-            for(let [key, value] of SHARED_DATA)
+            for(const [key, value] of SHARED_DATA)
                 sData[key] = value;
 
             respond(sData);
         } break;
 
         case 'POST_SHARED_DATA': {
-            for(let key in request.data)
+            for(const key in request.data)
                 SHARED_DATA.set(key, request.data[key]);
 
             respond({ ok: true });
@@ -755,20 +755,20 @@ Runtime.onMessage.addListener((request, sender, respond) => {
         default: {
             if(request.action?.length)
                 Container.tabs.query({
-                    url: ["*://*.twitch.tv/*"],
+                    url: ['*://*.twitch.tv/*'],
                 }, (tabs = []) => {
-                    let action = request.action.toLowerCase().replace(/_+/g, '-');
+                    const action = request.action.toLowerCase().replace(/_+/g, '-');
 
                     console.warn(`Sending "${ action }" to all (non-origin) tabs...`, request);
 
-                    for(let tab of tabs)
+                    for(const tab of tabs)
                         if(tab.id != sender.tab.id)
                             Container.tabs.sendMessage(tab.id, { ...request, action });
 
                     respond(request);
                 });
         } break;
-    }
+    } // switch request.action
 
     reloadTabs(reloadAll);
 
@@ -776,16 +776,16 @@ Runtime.onMessage.addListener((request, sender, respond) => {
 });
 
 // Handle and manage dead or dying tabs
-let REPORTS = new Map,
-    GALLOWS = new Map,
-    HANG_UP_CHECKER = new Map,
-    MAX_TIME_ALLOWED = 35_000;
+const REPORTS = new Map
+    , GALLOWS = new Map
+    , HANG_UP_CHECKER = new Map
+    , MAX_TIME_ALLOWED = 35_000;
 
-let LAG_REPORTER = setInterval(() => {
+const LAG_REPORTER = setInterval(() => {
     if(IGNORE_REPORTS)
         return;
 
-    for(let [ID, createdAt] of REPORTS) {
+    for(const [ID, createdAt] of REPORTS) {
         HANG_UP_CHECKER.set(ID,
             setTimeout((id = ID) => {
                 try {
@@ -817,10 +817,10 @@ let LAG_REPORTER = setInterval(() => {
 
             Container.tabs.get(ID)
                 .then(tab => {
-                    let { audible, discarded, id, mutedInfo, status, title } = tab;
+                    const { audible, discarded, id, mutedInfo, status, title } = tab;
 
                     Container.tabs.sendMessage(id, { action: 'report-back' }, response => {
-                        let { ok = false, performance = 1, timestamp = +new Date - MAX_TIME_ALLOWED } = (response ?? {});
+                        const { ok = false, performance = 1, timestamp = +new Date - MAX_TIME_ALLOWED } = (response ?? {});
 
                         if(false
                             || ((+new Date - timestamp) > MAX_TIME_ALLOWED)
@@ -837,7 +837,7 @@ let LAG_REPORTER = setInterval(() => {
                         console.warn(`Tab "${ title }" (#${ id }) did not respond. Contacting again... Response Time → ${ (+new Date - timestamp) }ms · Memory Usage → ${ (100 * performance).toFixed(2).replace('.00', '') }% · Bad Audio → ${ (!audible && !mutedInfo.muted) } { Audible=${ audible }; Muted=${ mutedInfo.muted } }`);
 
                         Container.tabs.sendMessage(id, { action: 'report-back' }, response => {
-                            let { ok = false, performance = 1, timestamp = +new Date - MAX_TIME_ALLOWED } = (response ?? {});
+                            const { ok = false, performance = 1, timestamp = +new Date - MAX_TIME_ALLOWED } = (response ?? {});
 
                             if(false
                                 || ((+new Date - timestamp) > MAX_TIME_ALLOWED * 1.5)
@@ -868,8 +868,8 @@ let LAG_REPORTER = setInterval(() => {
     }
 }, MAX_TIME_ALLOWED);
 
-let GALLOWS_CHECKER = setInterval(() => {
-    for(let [ID, updated] of GALLOWS)
+const GALLOWS_CHECKER = setInterval(() => {
+    for(const [ID, updated] of GALLOWS)
         try {
             Container.tabs.sendMessage(ID, { action: 'close' }, response => {
                 if(!response?.ok)
@@ -899,9 +899,9 @@ Alarms.onAlarm.addListener(({ name }) => {
 const MEMORY_TIERS = {
     // Can't fetch real RAM usage, but can guess:
     //                          Real* / Heap
-    LOW:    0.4 * 1024**3,  //  500MB / 400MB
-    MEDIUM: 0.6 * 1024**3,  //  1GB   / 600MB
-    HIGH:   0.8 * 1024**3,  //  2GB   / 800MB
+    LOW:    0.4 * 1024 ** 3,  //  500MB / 400MB
+    MEDIUM: 0.6 * 1024 ** 3,  //  1GB   / 600MB
+    HIGH:   0.8 * 1024 ** 3,  //  2GB   / 800MB
 };
 
 async function auditMemory() {
@@ -942,16 +942,16 @@ async function auditMemory() {
                 if(ram_timescale)
                     ramUsed *= 1 + (liveTime / (60 * 60 * 1e3));
 
-                let tier = (
+                const tier = (
                     ramUsed >= MEMORY_TIERS.HIGH
-                        ? "high"
+                        ? 'high'
                         : ramUsed >= MEMORY_TIERS.MEDIUM
-                            ? "medium"
+                            ? 'medium'
                             : ramUsed >= MEMORY_TIERS.LOW
-                                ? "low"
-                                : "normal"
+                                ? 'low'
+                                : 'normal'
                 );
-                let act = ram_[`ram_on${ tier }`] ?? 'ignore';
+                const act = ram_[`ram_on${ tier }`] ?? 'ignore';
 
                 const onAccept = 'RESPAWN_THIS_TAB'
                     , onIgnore = (true
@@ -965,15 +965,15 @@ async function auditMemory() {
                 if(act === 'respawn') {
                     Container.tabs.sendMessage(id, {
                         action: 'notify',
-                        message: `<div title="RAM Overage - Respawn Pending" okay="Respawn" deny="Cancel" data-on-okay="${ onAccept }" data-on-time="${ onAccept }">This tab is at <strong style="color:var(--color-red)">${ Math.round(ramUsed / 1024**2) }MB in RAM usage</strong>. This tab will not be respawned if you are actively using it.</div>`,
+                        message: `<div title="RAM Overage - Respawn Pending" okay="Respawn" deny="Cancel" data-on-okay="${ onAccept }" data-on-time="${ onAccept }">This tab is at <strong style="color:var(--color-red)">${ Math.round(ramUsed / 1024 ** 2) }MB in RAM usage</strong>. This tab will not be respawned if you are actively using it.</div>`,
                         onAccept, onIgnore,
-                    });
+                    })
                 } else if(act === 'notify') {
                     Container.tabs.sendMessage(id, {
                         action: 'notify',
-                        message: `<div title="RAM Warning" okay="Respawn" data-on-okay="${ onAccept }">This tab is at <strong style="color:var(--color-warn)">${ Math.round(ramUsed / 1024**2) }MB in RAM usage</strong>.</div>`,
+                        message: `<div title="RAM Warning" okay="Respawn" data-on-okay="${ onAccept }">This tab is at <strong style="color:var(--color-warn)">${ Math.round(ramUsed / 1024 ** 2) }MB in RAM usage</strong>.</div>`,
                         onAccept,
-                    });
+                    })
                 }
 
                 memoryAudit.push({
@@ -991,7 +991,7 @@ async function auditMemory() {
         } catch(error) {
             console.debug(`Skipping tab during memory audit: ${ id }`, { id, url, title });
         }
-    }
+    } // :find_offenders
 
     await Storage.set({ memoryAudit });
 }
@@ -1007,17 +1007,17 @@ async function auditMemory() {
  * @return {number<integer>}
  */
 Date.prototype.getWeek = function getWeek() {
-    let now = new Date(Date.UTC(
+    const now = new Date(Date.UTC(
         this.getFullYear(),
         this.getMonth(),
         this.getDate()
     ));
 
-    let day = now.getUTCDay() || 7;
+    const day = now.getUTCDay() || 7;
 
     now.setUTCDate(now.getUTCDate() + 4 - day);
 
-    let year = new Date(Date.UTC(now.getUTCFullYear(), 0, 1));
+    const year = new Date(Date.UTC(now.getUTCFullYear(), 0, 1));
 
     return Math.ceil((((now - year) / 86_400_000) + 1) / 7);
 };

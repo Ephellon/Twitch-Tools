@@ -16,22 +16,22 @@ plugin({
 
             // There's at least one offer...
             when.sated(() => $.all('[class*="prime"i][class*="offer"i][class*="header"i] ~ *'), 750).then(offerContainers => {
-                for(let container of offerContainers)
+                for(const container of offerContainers)
                     when(container => {
-                        let offerClaimLink = $('[data-a-target*="prime"i][data-a-target*="claim"i]', container);
-                        let offerClaimButton = $('button[data-a-target*="prime-claim"i]', container);
-                        let offerDismissButton = $('[class*="prime-offer"i][class*="dismiss"i] button', container);
+                        const offerClaimLink = $('[data-a-target*="prime"i][data-a-target*="claim"i]', container);
+                        const offerClaimButton = $('button[data-a-target*="prime-claim"i]', container);
+                        const offerDismissButton = $('[class*="prime-offer"i][class*="dismiss"i] button', container);
 
                         if(nullish(offerClaimLink ?? offerClaimButton ?? offerDismissButton))
                             return false;
 
-                        let gameTitle = $('[data-a-target*="prime-offer"i][data-a-target*="game"i][data-a-target*="title"i]', container)?.innerText?.trim();
-                        let offerTitle = $('[data-a-target*="prime-offer"i][data-a-target*="title"i]:not([data-a-target*="game"i])', container)?.innerText?.trim();
-                        let offerImage = $('img', container)?.src;
-                        let offerDescription = $('[class*="prime-offer"i][class*="description"i]', container)?.innerText?.trim();
-                        let offerPublisher = $('[class*="prime-offer"i][class*="publisher"i]', container)?.innerText?.trim();
+                        const gameTitle = $('[data-a-target*="prime-offer"i][data-a-target*="game"i][data-a-target*="title"i]', container)?.innerText?.trim();
+                        const offerTitle = $('[data-a-target*="prime-offer"i][data-a-target*="title"i]:not([data-a-target*="game"i])', container)?.innerText?.trim();
+                        const offerImage = $('img', container)?.src;
+                        const offerDescription = $('[class*="prime-offer"i][class*="description"i]', container)?.innerText?.trim();
+                        const offerPublisher = $('[class*="prime-offer"i][class*="publisher"i]', container)?.innerText?.trim();
 
-                        $notice(`Claiming Prime Loot Offer:`, { title: offerTitle, game: gameTitle, description: offerDescription, publisher: offerPublisher, type: (offerClaimButton? 'BUTTON_CLAIM': 'LINK_CLAIM') });
+                        $notice(`Claiming Prime Loot Offer:`, { title: offerTitle, game: gameTitle, description: offerDescription, publisher: offerPublisher, type: (offerClaimButton ? 'BUTTON_CLAIM' : 'LINK_CLAIM') });
 
                         if(defined(offerClaimButton))
                             offerClaimButton.click();

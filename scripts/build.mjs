@@ -48,7 +48,7 @@ const TARGETS = {
     },
 
     firefox(manifest) {
-        let { background, web_accessible_resources, ...rest } = manifest;
+        const { background, web_accessible_resources, ...rest } = manifest;
 
         delete rest.minimum_chrome_version;
         delete rest.options_page;       // Firefox only reads `options_ui`
@@ -74,19 +74,19 @@ const TARGETS = {
 
 function listFiles(directory, base = directory) {
     return fs.readdirSync(directory, { withFileTypes: true }).flatMap(entry => {
-        let full = path.join(directory, entry.name);
+        const full = path.join(directory, entry.name);
 
-        return entry.isDirectory()?
-            listFiles(full, base):
-        [path.relative(base, full).split(path.sep).join('/')];
+        return entry.isDirectory()
+            ? listFiles(full, base)
+        : [path.relative(base, full).split(path.sep).join('/')];
     });
 }
 
 async function bundle() {
-    let output = {};
+    const output = {};
 
-    for(let [entry, file] of Object.entries(BUNDLES)) {
-        let { outputFiles: [result] } = await esbuild.build({
+    for(const [entry, file] of Object.entries(BUNDLES)) {
+        const { outputFiles: [result] } = await esbuild.build({
             entryPoints: [path.join(SOURCE, entry)],
             bundle: true,
             format: 'iife',
@@ -106,30 +106,30 @@ async function bundle() {
 }
 
 async function build() {
-    let files = listFiles(SOURCE).filter(file => !EXCLUDE.some(pattern => pattern.test(file)) && !MODULE_FOLDERS.test(file)).sort();
-    let manifest = JSON.parse(fs.readFileSync(path.join(SOURCE, 'manifest.json'), 'utf8'));
-    let bundles = await bundle();
+    const files = listFiles(SOURCE).filter(file => !EXCLUDE.some(pattern => pattern.test(file)) && !MODULE_FOLDERS.test(file)).sort();
+    const manifest = JSON.parse(fs.readFileSync(path.join(SOURCE, 'manifest.json'), 'utf8'));
+    const bundles = await bundle();
 
     fs.rmSync(OUTPUT, { recursive: true, force: true });
 
-    for(let [target, transform] of Object.entries(TARGETS))
+    for(const [target, transform] of Object.entries(TARGETS))
         write(target, transform, files, manifest, bundles);
 }
 
 function write(target, transform, files, manifest, bundles) {
-    let directory = path.join(OUTPUT, target);
-    let entries = [];
+    const directory = path.join(OUTPUT, target);
+    const entries = [];
 
-    for(let [file, data] of Object.entries(bundles)) {
+    for(const [file, data] of Object.entries(bundles)) {
         fs.mkdirSync(path.dirname(path.join(directory, file)), { recursive: true });
         fs.writeFileSync(path.join(directory, file), data);
         entries.push({ name: file, data });
     }
 
-    for(let file of files) {
-        let data = file == 'manifest.json'?
-            Buffer.from(JSON.stringify(transform(structuredClone(manifest)), null, 4) + '\n'):
-        fs.readFileSync(path.join(SOURCE, file));
+    for(const file of files) {
+        const data = file == 'manifest.json'
+            ? Buffer.from(JSON.stringify(transform(structuredClone(manifest)), null, 4) + '\n')
+        : fs.readFileSync(path.join(SOURCE, file));
 
         fs.mkdirSync(path.dirname(path.join(directory, file)), { recursive: true });
         fs.writeFileSync(path.join(directory, file), data);
@@ -139,7 +139,7 @@ function write(target, transform, files, manifest, bundles) {
     console.log(`${ target }: ${ entries.length } files → ${ directory }`);
 
     if(ZIP) {
-        let name = target == 'chrome'? 'ttv-tools.zip': `ttv-tools-${ target }.zip`;
+        const name = target == 'chrome' ? 'ttv-tools.zip' : `ttv-tools-${ target }.zip`;
 
         fs.writeFileSync(path.join(OUTPUT, name), zip(entries));
         console.log(`${ target }: ${ path.join(OUTPUT, name) }`);
@@ -162,15 +162,15 @@ if(WATCH) {
 // Minimal ZIP writer (deflate, forward-slash paths) so the build needs no platform `zip` tool
 function zip(entries) {
     let locals = [], centrals = [], offset = 0;
-    let [time, date] = dosDateTime(new Date);
+    const [time, date] = dosDateTime(new Date);
 
-    for(let { name, data } of entries) {
-        let nameBuffer = Buffer.from(name, 'utf8');
-        let compressed = zlib.deflateRawSync(data, { level: 9 });
-        let [method, body] = compressed.length < data.length? [8, compressed]: [0, data];
-        let crc = crc32(data);
+    for(const { name, data } of entries) {
+        const nameBuffer = Buffer.from(name, 'utf8');
+        const compressed = zlib.deflateRawSync(data, { level: 9 });
+        const [method, body] = compressed.length < data.length ? [8, compressed] : [0, data];
+        const crc = crc32(data);
 
-        let header = Buffer.alloc(30);
+        const header = Buffer.alloc(30);
         header.writeUInt32LE(0x04034b50, 0);
         header.writeUInt16LE(20, 4);
         header.writeUInt16LE(0x0800, 6);           // UTF-8 names
@@ -182,7 +182,7 @@ function zip(entries) {
         header.writeUInt32LE(data.length, 22);
         header.writeUInt16LE(nameBuffer.length, 26);
 
-        let central = Buffer.alloc(46);
+        const central = Buffer.alloc(46);
         central.writeUInt32LE(0x02014b50, 0);
         central.writeUInt16LE(20, 4);
         central.writeUInt16LE(20, 6);
@@ -201,8 +201,8 @@ function zip(entries) {
         offset += header.length + nameBuffer.length + body.length;
     }
 
-    let directory = Buffer.concat(centrals);
-    let end = Buffer.alloc(22);
+    const directory = Buffer.concat(centrals);
+    const end = Buffer.alloc(22);
     end.writeUInt32LE(0x06054b50, 0);
     end.writeUInt16LE(entries.length, 8);
     end.writeUInt16LE(entries.length, 10);
@@ -222,12 +222,13 @@ function dosDateTime(when) {
 function crc32(buffer) {
     crc32.table ??= Array.from({ length: 256 }, (_, n) => {
         for(let k = 0; k < 8; ++k)
-            n = n & 1? 0xEDB88320 ^ (n >>> 1): n >>> 1;
+            n = n & 1 ? 0xEDB88320 ^ (n >>> 1) : n >>> 1;
         return n >>> 0;
     });
 
     let crc = ~0;
-    for(let byte of buffer)
+
+    for(const byte of buffer)
         crc = crc32.table[(crc ^ byte) & 0xFF] ^ (crc >>> 8);
 
     return ~crc >>> 0;

@@ -7,10 +7,10 @@
     // GetActivity() → Promise<string | null>
 async function GetActivity() {
     return when.defined(() => {
-        let open = $.defined('[data-a-target="user-display-name"i], [class*="dropdown-menu-header"i]');
+        const open = $.defined('[data-a-target="user-display-name"i], [class*="dropdown-menu-header"i]');
 
         if(open) {
-            ACTIVITY = window.ACTIVITY = $('[data-a-target="presence-text"i]')?.textContent;
+            ACTIVITY = window.ACTIVITY = $('[data-a-target="presence-text"i]')?.textContent
         } else {
             UserMenuToggleButton?.click();
             ACTIVITY = window.ACTIVITY = $('[data-a-target="presence-text"i]')?.textContent;
@@ -25,10 +25,10 @@ async function GetActivity() {
     // GetLanguage() → Promise<string | null>
 async function GetLanguage() {
     return when.defined(() => {
-        let open = $.defined('[data-a-target="user-display-name"i], [class*="dropdown-menu-header"i]');
+        const open = $.defined('[data-a-target="user-display-name"i], [class*="dropdown-menu-header"i]');
 
         if(open) {
-            LITERATURE = window.LITERATURE = $('[data-language] svg')?.closest('button')?.dataset?.language;
+            LITERATURE = window.LITERATURE = $('[data-language] svg')?.closest('button')?.dataset?.language
         } else {
             UserMenuToggleButton?.click();
             $('[data-a-target^="language"i]')?.click();
@@ -50,7 +50,8 @@ async function ReloadPage(onlineOnly = true) {
             || navigator.connection?.type?.equals('none')
             || navigator.onLine === false
         )
-    ) return;
+    )
+        return;
 
     // A hidden tab may never finish loading, so wait until it's visible (#40)
     if(document.visibilityState == 'hidden') {

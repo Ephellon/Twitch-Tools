@@ -18,11 +18,11 @@ plugin({
             if(Queue.message_popups.missing(line.uuid)) {
                 Queue.message_popups.push(line.uuid);
 
-                when(line => (defined(line.element)? line: false), 1000, line).then(async line => {
-                    let { author, message, element } = line,
-                        reply = await line.reply;
+                when(line => (defined(line.element) ? line : false), 1000, line).then(async line => {
+                    let { author, message, element } = line
+                        , reply = await line.reply;
 
-                    let existing = $('#tt-chat-footer');
+                    const existing = $('#tt-chat-footer');
 
                     if(defined(existing))
                         return;
@@ -31,15 +31,15 @@ plugin({
 
                     new ChatFooter(`@${ author } mentioned you.`, {
                         onclick: event => {
-                            let chatbox = $('[class*="chat-input"i] textarea'),
-                                existing = $('#tt-chat-footer');
+                            const chatbox = $('[class*="chat-input"i] textarea')
+                                , existing = $('#tt-chat-footer');
 
                             if(defined(chatbox))
                                 chatbox.focus();
                             if(defined(existing))
                                 existing.remove();
 
-                            $log('Clicked [reply] button', { author, chatbox, existing, line, message, reply });
+                            $log("Clicked [reply] button", { author, chatbox, existing, line, message, reply });
 
                             (reply ?? $('button[data-test-selector*="reply"i]', element))?.click();
                         },

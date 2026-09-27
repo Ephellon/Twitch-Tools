@@ -12,31 +12,31 @@ class Balloon {
     static #BALLOONS = new Map;
 
     constructor({ title, icon = 'play', iconAttr = {} }, ...jobs) {
-        let f = furnish;
+        const f = furnish;
 
-        let [L_pane, C_pane, R_pane] = $.all('.top-nav__menu > div:not(:only-child)'),
-            X = $('#tt-balloon', R_pane),
-            I = Runtime.getURL('profile.png'),
-            F, C, H, U, N;
+        let [L_pane, C_pane, R_pane] = $.all('.top-nav__menu > div:not(:only-child)')
+            , X = $('#tt-balloon', R_pane)
+            , I = Runtime.getURL('profile.png')
+            , F, C, H, U, N;
 
         if([L_pane, C_pane, R_pane].filter(nullish).length)
             return;
 
-        let uuid = U = UUID.from([title, JSON.stringify(jobs)].join(':')).value,
-            existing = Balloon.#BALLOONS.get(title);
+        const uuid = U = UUID.from([title, JSON.stringify(jobs)].join(':')).value
+            , existing = Balloon.#BALLOONS.get(title);
 
         if(defined(existing))
             return existing;
 
         if(defined(X)) {
             if(Queue.balloons.map(balloon => balloon.uuid).missing(uuid)) {
-                let interval = setInterval(() => {
-                    let existing = $('#tt-balloon');
+                const interval = setInterval(() => {
+                    const existing = $('#tt-balloon');
 
                     if(defined(existing))
                         return;
 
-                    let { title, icon, jobs, uuid, interval } = Queue.balloons.pop();
+                    const { title, icon, jobs, uuid, interval } = Queue.balloons.pop();
 
                     new Balloon({ title, icon }, ...jobs);
 
@@ -49,7 +49,7 @@ class Balloon {
             return;
         }
 
-        let p =
+        const p =
         f('.tt-align-self-center.tt-flex-grow-0.tt-flex-nowrap.tt-flex-shrink-0.tt-mg-x-05', { style: `animation:1s fade-in 1;` },
             f.div(
                 f('.tt-relative').with(
@@ -64,15 +64,15 @@ class Balloon {
                                     'connected-to': U,
 
                                     onclick: event => {
-                                        let { currentTarget } = event,
-                                            connectedTo = currentTarget.getAttribute('connected-to');
+                                        let { currentTarget } = event
+                                            , connectedTo = currentTarget.getAttribute('connected-to');
 
-                                        let balloon = $(`#tt-balloon-${ connectedTo }`);
+                                        const balloon = $(`#tt-balloon-${ connectedTo }`);
 
                                         if(nullish(balloon))
                                             return;
 
-                                        let display = balloon.getAttribute('display').equals('block')? 'none': 'block';
+                                        const display = balloon.getAttribute('display').equals('block') ? 'none' : 'block';
 
                                         balloon.modStyle(`display:${ display }!important; z-index:9; left: -15rem`);
                                         balloon.setAttribute('display', display);
@@ -92,9 +92,9 @@ class Balloon {
                                         f('.tt-c-background-base.tt-inline-flex.tt-number-badge.tt-relative').with(
                                             f(`#tt-notification-counter-output--${ U }.tt-number-badge__badge.tt-relative`, {
                                                 'interval-id': setInterval(() => {
-                                                    let counter = $(`#tt-notification-counter--${ uuid }`),
-                                                        output = $(`#tt-notification-counter-output--${ uuid }`),
-                                                        length = parseInt(counter?.getAttribute('length'));
+                                                    const counter = $(`#tt-notification-counter--${ uuid }`)
+                                                        , output = $(`#tt-notification-counter-output--${ uuid }`)
+                                                        , length = parseInt(counter?.getAttribute('length'));
 
                                                     if(nullish(counter) || nullish(output) || nullish(length))
                                                         return;
@@ -102,9 +102,9 @@ class Balloon {
                                                     output.textContent = length;
 
                                                     if(length > 0) {
-                                                        counter.modStyle(`visibility:unset; font-size:75%`);
+                                                        counter.modStyle(`visibility:unset; font-size:75%`)
                                                     } else {
-                                                        counter.modStyle(`visibility:hidden`);
+                                                        counter.modStyle(`visibility:hidden`)
                                                     }
                                                 }, 1000),
                                             })
@@ -130,9 +130,9 @@ class Balloon {
                                     role: 'dialog',
                                 },
                                 // Header
-                                f('.tt-border-top-left-radius-medium.tt-border-top-right-radius-medium.tt-c-text-base.tt-elevation-1.tt-flex.tt-flex-shrink-0.tt-pd-x-1.tt-pd-y-05.tt-popover-header', { style: `background-color:#${ THEME.equals('dark')? '000': 'fff' }e; position:sticky; top:0; z-index:99999;` },
+                                f('.tt-border-top-left-radius-medium.tt-border-top-right-radius-medium.tt-c-text-base.tt-elevation-1.tt-flex.tt-flex-shrink-0.tt-pd-x-1.tt-pd-y-05.tt-popover-header', { style: `background-color:#${ THEME.equals('dark') ? '000' : 'fff' }e; position:sticky; top:0; z-index:99999;` },
                                     f('.tt-align-items-center.tt-flex.tt-flex-column.tt-flex-grow-1.tt-justify-content-center').with(
-                                        (H = f(`h5#tt-balloon-header-${ U }.tt-align-center.tt-c-text-alt.tt-semibold`, { style: 'margin-left:4rem!important', contrast: THEME__PREFERRED_CONTRAST, }, title))
+                                        (H = f(`h5#tt-balloon-header-${ U }.tt-align-center.tt-c-text-alt.tt-semibold`, { style: 'margin-left:4rem!important', contrast: THEME__PREFERRED_CONTRAST }, title))
                                     ),
                                     f('button.tt-align-items-center.tt-align-middle.tt-border-bottom-left-radius-medium.tt-border-bottom-right-radius-medium.tt-border-top-left-radius-medium.tt-border-top-right-radius-medium.tt-button-icon.tt-button-icon--secondary.tt-core-button.tt-flex.tt-flex-column.tt-inline-flex.tt-interactive.tt-justify-content-center.tt-justify-content-center.tt-mg-l-05.tt-overflow-hidden.tt-popover-header__icon-slot--right.tt-relative',
                                         {
@@ -143,15 +143,15 @@ class Balloon {
                                             'connected-to': U,
 
                                             onclick: event => {
-                                                let { currentTarget } = event,
-                                                    connectedTo = currentTarget.getAttribute('connected-to');
+                                                let { currentTarget } = event
+                                                    , connectedTo = currentTarget.getAttribute('connected-to');
 
-                                                let balloon = $(`#tt-balloon-${ connectedTo }`);
+                                                const balloon = $(`#tt-balloon-${ connectedTo }`);
 
                                                 if(nullish(balloon))
                                                     return;
 
-                                                let display = balloon.getAttribute('display').equals('block')? 'none': 'block';
+                                                const display = balloon.getAttribute('display').equals('block') ? 'none' : 'block';
 
                                                 balloon.modStyle(`display:${ display }!important`);
                                                 balloon.setAttribute('display', display);
@@ -161,10 +161,10 @@ class Balloon {
                                 ),
                                 // Body
                                 ...jobs.map((job, index) => {
-                                    let { href, message, subheader, src = I, attributes = {}, onremove = ($=>$), animate = ($=>$) } = job,
-                                        guid = UUID.from([href, message].join(':')).value;
+                                    let { href, message, subheader, src = I, attributes = {}, onremove = ($=>$), animate = ($=>$) } = job
+                                        , guid = UUID.from([href, message].join(':')).value;
 
-                                    let container = f(`#tt-balloon-job-${ U }--${ guid }`, { ...attributes, uuid, guid, href: parseURL(href).href },
+                                    const container = f(`#tt-balloon-job-${ U }--${ guid }`, { ...attributes, uuid, guid, href: parseURL(href).href },
                                         f('.simplebar-scroll-content',
                                             {
                                                 style: 'overflow: hidden;',
@@ -188,10 +188,10 @@ class Balloon {
                                                                     href,
 
                                                                     onclick: event => {
-                                                                        let { currentTarget } = event,
-                                                                            connectedTo = currentTarget.getAttribute('connected-to');
+                                                                        let { currentTarget } = event
+                                                                            , connectedTo = currentTarget.getAttribute('connected-to');
 
-                                                                        let element = $(`#tt-balloon-job-${ connectedTo }`);
+                                                                        const element = $(`#tt-balloon-job-${ connectedTo }`);
 
                                                                         if(defined(element)) {
                                                                             onremove({
@@ -203,7 +203,7 @@ class Balloon {
                                                                                     clearInterval(+element.getAttribute('animationID'));
                                                                                     element.remove();
                                                                                 },
-                                                                            });
+                                                                            })
                                                                         }
                                                                     },
                                                                 },
@@ -242,13 +242,13 @@ class Balloon {
                                                                             '@streamer-name': parseURL(href).pathname.slice(1),
 
                                                                             onclick: event => {
-                                                                                let { currentTarget } = event,
-                                                                                    connectedTo = currentTarget.getAttribute('connected-to');
+                                                                                let { currentTarget } = event
+                                                                                    , connectedTo = currentTarget.getAttribute('connected-to');
 
-                                                                                let element = $(`#tt-balloon-job-${ connectedTo }`),
-                                                                                    thisJob = $('a', element),
-                                                                                    redo = (parseURL(thisJob.href).searchParameters?.redo?.equals(currentTarget.dataset.streamerName)? '': currentTarget.dataset.streamerName),
-                                                                                    url = parseURL(thisJob.href).addSearch({ redo });
+                                                                                const element = $(`#tt-balloon-job-${ connectedTo }`)
+                                                                                    , thisJob = $('a', element)
+                                                                                    , redo = (parseURL(thisJob.href).searchParameters?.redo?.equals(currentTarget.dataset.streamerName) ? '' : currentTarget.dataset.streamerName)
+                                                                                    , url = parseURL(thisJob.href).addSearch({ redo });
 
                                                                                 thisJob.setAttribute('new-href', url.href);
                                                                                 ALL_FIRST_IN_LINE_JOBS.map((job, index) => {
@@ -279,11 +279,11 @@ class Balloon {
                                                                             'connected-to': `${ U }--${ guid }`,
 
                                                                             onclick: event => {
-                                                                                let { currentTarget } = event,
-                                                                                    connectedTo = currentTarget.getAttribute('connected-to');
+                                                                                let { currentTarget } = event
+                                                                                    , connectedTo = currentTarget.getAttribute('connected-to');
 
-                                                                                let element = $(`#tt-balloon-job-${ connectedTo }`);
-                                                                                let tooltip = Tooltip.get(currentTarget.closest('.persistent-notification__delete'));
+                                                                                const element = $(`#tt-balloon-job-${ connectedTo }`);
+                                                                                const tooltip = Tooltip.get(currentTarget.closest('.persistent-notification__delete'));
 
                                                                                 if(defined(element))
                                                                                     onremove({
@@ -339,9 +339,9 @@ class Balloon {
         this.counter = F;
         this.container = p;
 
-        let cssName = title.replace(/\s+/g, '-').toLowerCase();
+        const cssName = title.replace(/\s+/g, '-').toLowerCase();
 
-        for(let key of 'body icon header parent container'.split(' '))
+        for(const key of 'body icon header parent container'.split(' '))
             this[key].setAttribute(`${ cssName }--${ key }`, (+new Date).toString(36));
 
         this.tooltip ??= f('.tt-tooltip.tt-tooltip--align-center.tt-tooltip--down', { id: `balloon-tooltip-for-${ U }`, role: 'tooltip' }, this.title = title);
@@ -352,14 +352,14 @@ class Balloon {
     }
 
     addButton({ left = false, icon = 'play', onclick = ($=>$), attributes = {} }) {
-        let parent = this.header.closest('div[class*="header"i]');
-        let uuid = UUID.from(onclick.toString()).value,
-            existing = $(`[uuid="${ uuid }"i]`, parent);
+        const parent = this.header.closest('div[class*="header"i]');
+        const uuid = UUID.from(onclick.toString()).value
+            , existing = $(`[uuid="${ uuid }"i]`, parent);
 
         if(defined(existing))
             return existing;
 
-        let button = furnish('button.tt-align-items-center.tt-align-middle.tt-border-bottom-left-radius-medium.tt-border-bottom-right-radius-medium.tt-border-top-left-radius-medium.tt-border-top-right-radius-medium.tt-button-icon.tt-button-icon--secondary.tt-core-button.tt-flex.tt-flex-column.tt-inline-flex.tt-interactive.tt-justify-content-center.tt-justify-content-center.tt-mg-l-05.tt-overflow-hidden.tt-popover-header__icon-slot--right.tt-relative',
+        const button = furnish('button.tt-align-items-center.tt-align-middle.tt-border-bottom-left-radius-medium.tt-border-bottom-right-radius-medium.tt-border-top-left-radius-medium.tt-border-top-right-radius-medium.tt-button-icon.tt-button-icon--secondary.tt-core-button.tt-flex.tt-flex-column.tt-inline-flex.tt-interactive.tt-justify-content-center.tt-justify-content-center.tt-mg-l-05.tt-overflow-hidden.tt-popover-header__icon-slot--right.tt-relative',
             {
                 ...attributes,
 
@@ -388,19 +388,19 @@ class Balloon {
 
     add(...jobs) {
         jobs = jobs.map((job, index) => {
-            let { href, message, subheader, src = Runtime.getURL('profile.png'), attributes = {}, onremove = ($=>$), animate = ($=>$) } = job,
-                { uuid } = this,
-                guid = UUID.from(href).value,
-                f = furnish;
+            let { href, message, subheader, src = Runtime.getURL('profile.png'), attributes = {}, onremove = ($=>$), animate = ($=>$) } = job
+                , { uuid } = this
+                , guid = UUID.from(href).value
+                , f = furnish;
 
-            let existing = $(`#tt-balloon-job-${ uuid }--${ guid }`);
+            const existing = $(`#tt-balloon-job-${ uuid }--${ guid }`);
 
             if(defined(existing))
                 return existing;
 
             ++this.length;
 
-            let container = f(`#tt-balloon-job-${ uuid }--${ guid }`, { ...attributes, uuid, guid, href: parseURL(href).href },
+            const container = f(`#tt-balloon-job-${ uuid }--${ guid }`, { ...attributes, uuid, guid, href: parseURL(href).href },
                 f('.simplebar-scroll-content',
                     {
                         style: 'overflow: hidden;',
@@ -422,10 +422,10 @@ class Balloon {
                                             href,
 
                                             onclick: event => {
-                                                let { currentTarget } = event,
-                                                    connectedTo = currentTarget.getAttribute('connected-to');
+                                                let { currentTarget } = event
+                                                    , connectedTo = currentTarget.getAttribute('connected-to');
 
-                                                let element = $(`#tt-balloon-job-${ connectedTo }`);
+                                                const element = $(`#tt-balloon-job-${ connectedTo }`);
 
                                                 if(defined(element)) {
                                                     onremove({
@@ -437,7 +437,7 @@ class Balloon {
                                                             clearInterval(+element.getAttribute('animationID'));
                                                             element.remove();
                                                         },
-                                                    });
+                                                    })
                                                 }
                                             },
                                         },
@@ -476,13 +476,13 @@ class Balloon {
                                                     '@streamer-name': parseURL(href).pathname.slice(1),
 
                                                     onclick: event => {
-                                                        let { currentTarget } = event,
-                                                            connectedTo = currentTarget.getAttribute('connected-to');
+                                                        let { currentTarget } = event
+                                                            , connectedTo = currentTarget.getAttribute('connected-to');
 
-                                                        let element = $(`#tt-balloon-job-${ connectedTo }`),
-                                                            thisJob = $('a', element),
-                                                            redo = (parseURL(thisJob.href).searchParameters?.redo?.equals(currentTarget.dataset.streamerName)? '': currentTarget.dataset.streamerName),
-                                                            url = parseURL(thisJob.href).addSearch({ redo });
+                                                        const element = $(`#tt-balloon-job-${ connectedTo }`)
+                                                            , thisJob = $('a', element)
+                                                            , redo = (parseURL(thisJob.href).searchParameters?.redo?.equals(currentTarget.dataset.streamerName) ? '' : currentTarget.dataset.streamerName)
+                                                            , url = parseURL(thisJob.href).addSearch({ redo });
 
                                                         thisJob.setAttribute('new-href', url.href);
                                                         ALL_FIRST_IN_LINE_JOBS.map((job, index) => {
@@ -513,11 +513,11 @@ class Balloon {
                                                     'connected-to': `${ uuid }--${ guid }`,
 
                                                     onclick: event => {
-                                                        let { currentTarget } = event,
-                                                            connectedTo = currentTarget.getAttribute('connected-to');
+                                                        let { currentTarget } = event
+                                                            , connectedTo = currentTarget.getAttribute('connected-to');
 
-                                                        let element = $(`#tt-balloon-job-${ connectedTo }`);
-                                                        let tooltip = Tooltip.get(currentTarget.closest('.persistent-notification__delete'));
+                                                        const element = $(`#tt-balloon-job-${ connectedTo }`);
+                                                        const tooltip = Tooltip.get(currentTarget.closest('.persistent-notification__delete'));
 
                                                         if(defined(element)) {
                                                             onremove({
@@ -530,7 +530,7 @@ class Balloon {
                                                                     tooltip.remove();
                                                                     element.remove();
                                                                 },
-                                                            });
+                                                            })
                                                         }
                                                     },
                                                 },

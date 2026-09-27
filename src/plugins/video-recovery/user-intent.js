@@ -12,13 +12,13 @@ plugin({
         wait(1000).then(() => {
             $.all('[data-a-target="followed-channel"i], [id*="side"i][id*="nav"i] .side-nav-section[aria-label][tt-svg-label="followed"i] [href^="/"], [data-test-selector*="search-result"i][data-test-selector*="channel"i] a:not([href*="/search?"])').map(a => {
                 a.addEventListener('mouseup', async event => {
-                    let { currentTarget, button = -1 } = event;
+                    const { currentTarget, button = -1 } = event;
 
-                    if(!!button)
+                    if(button)
                         return /* Not the primary button */;
 
-                    let url = parseURL(currentTarget.href),
-                        UserIntent = url.pathname.replace('/', '');
+                    const url = parseURL(currentTarget.href)
+                        , UserIntent = url.pathname.replace('/', '');
 
                     Cache.save({ UserIntent });
                 });

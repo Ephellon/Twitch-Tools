@@ -15,7 +15,7 @@ plugin({
 
     init() {
         UNWANTED_BANNER_AD_SELECTOR = new nanoid(21, nanoid.LOWERCASE_SAFE).value;
-        LAST_ELEMENT = Symbol("last-selector-slot");
+        LAST_ELEMENT = Symbol('last-selector-slot');
         EMPTY_ELEMENT_SUBSTITUTE = { dataset: {} };
     },
 
@@ -29,12 +29,12 @@ plugin({
         // TTV Tools — Banner Rules
         fetchURL.fromDisk(`https://ephellon.github.io/ttv-tools/ad-banners.css`, { hoursUntilEntryExpires: 24 }).then(r => r.text()).then(bannerSelectors => {
             bannerSelectors = bannerSelectors.split(/[\r\n]+/).filter(s => s.trim().length).map(selector => {
-                let syntaxes = [];
-                let path = [''];
-                let curr = "";
+                const syntaxes = [];
+                const path = [''];
+                let curr = '';
                 let esc = false;
-                let detect = char => {
-                    let { length } = syntaxes;
+                const detect = char => {
+                    const { length } = syntaxes;
 
                     if(char == '(') {
                         curr = char;
@@ -43,9 +43,9 @@ plugin({
                         curr = char;
                         syntaxes.push('attribute');
                     } else if(char == '"') {
-                        syntaxes.push('string:2');
+                        syntaxes.push('string:2')
                     } else if(char == "'") {
-                        syntaxes.push('string:1');
+                        syntaxes.push('string:1')
                     } else if(char == '<') {
                         path.push('');
                         syntaxes.push('closest');
@@ -54,17 +54,17 @@ plugin({
                     return length < syntaxes.length;
                 };
 
-                constructing: for(let char of selector)
+                constructing: for(const char of selector)
                     switch(syntaxes.at(-1)) {
                         case 'operator': {
                             curr += char;
 
-                            if(detect(char))
-                                continue constructing;
-                            else if(char == ')') {
+                            if(detect(char)) {
+                                continue constructing
+                            } else if(char == ')') {
                                 path[path.length - 1] = curr;
 
-                                curr = "";
+                                curr = '';
                                 syntaxes.pop();
                             }
                         } break;
@@ -72,12 +72,12 @@ plugin({
                         case 'attribute': {
                             curr += char;
 
-                            if(detect(char))
-                                continue constructing;
-                            else if(char == ']') {
+                            if(detect(char)) {
+                                continue constructing
+                            } else if(char == ']') {
                                 path[path.length - 1] = curr;
 
-                                curr = "";
+                                curr = '';
                                 syntaxes.pop();
                             }
                         } break;
@@ -114,7 +114,7 @@ plugin({
                         default: {
                             detect(char);
                         } break;
-                    }
+                    } // :constructing | switch syntaxes.at(-1)
 
                     path.push(LAST_ELEMENT);
 
@@ -129,9 +129,9 @@ plugin({
                         let c = parseInt(v.trim() || '1');
 
                         if(Number.isNaN(c)) {
-                            return elements.map(el => el.closest(v)).filter(defined);
+                            return elements.map(el => el.closest(v)).filter(defined)
                         } else {
-                            for(;c-->0;)
+                            for(;c-- > 0;)
                                 elements = elements.map(el => el.parentElement).filter(defined);
 
                             return elements;
@@ -140,7 +140,7 @@ plugin({
                         if(parseBool(el.dataset?.[UNWANTED_BANNER_AD_SELECTOR]))
                             return;
 
-                        $remark('Blocking...', el);
+                        $remark("Blocking...", el);
 
                         el.dataset[UNWANTED_BANNER_AD_SELECTOR] = true;
                     });
@@ -155,7 +155,7 @@ plugin({
     },
 
     setup() {
-        let listener = DelayJob('block_banners');
+        const listener = DelayJob('block_banners');
 
         $.body.addEventListener('mouseup', listener);
 

@@ -11,16 +11,16 @@ plugin({
     timer: 500,
 
     handler: () => {
-        let card = $('[data-a-target="viewer-card"i], [data-a-target="emote-card"i]'),
-            existing = $('#tt-highlight-rule--user, #tt-highlight-rule--emote');
+        const card = $('[data-a-target="viewer-card"i], [data-a-target="emote-card"i]')
+            , existing = $('#tt-highlight-rule--user, #tt-highlight-rule--emote');
 
         if(nullish(card) || defined(existing))
             return;
 
-        let title = $('h1,h2,h3,h4,h5,h6', card),
-            [name] = title.childNodes,
-            type = (card.getAttribute('data-a-target').equals('viewer-card')? 'user': 'emote'),
-            { phrase_rules } = Settings;
+        let title = $('h1,h2,h3,h4,h5,h6', card)
+            , [name] = title.childNodes
+            , type = (card.getAttribute('data-a-target').equals('viewer-card') ? 'user' : 'emote')
+            , { phrase_rules } = Settings;
 
         name = name?.textContent?.replace(/[^]+?\((\w+)\)/, '$1');
 
@@ -29,15 +29,15 @@ plugin({
             if(phrase_rules && phrase_rules.split(',').contains(`@${ name }`))
                 return /* Already highlighting messages from this person */;
 
-            let phrase = furnish('#tt-highlight-rule--user', {
+            const phrase = furnish('#tt-highlight-rule--user', {
                 title: `Highlight all messages from @${ name }`,
                 style: 'cursor:pointer; fill:var(--color-green); font-size:1.1rem; font-weight:normal',
                 username: name,
 
                 onclick: event => {
-                    let { currentTarget } = event,
-                        username = currentTarget.getAttribute('username'),
-                        { phrase_rules } = Settings;
+                    let { currentTarget } = event
+                        , username = currentTarget.getAttribute('username')
+                        , { phrase_rules } = Settings;
 
                     phrase_rules = (phrase_rules || '').split(',');
                     phrase_rules.push(`@${ username }`);
@@ -53,7 +53,7 @@ plugin({
                 innerHTML: `${ Glyphs.star } Highlight messages from @${ name }`,
             });
 
-            let svg = $('svg', phrase);
+            const svg = $('svg', phrase);
 
             svg.modStyle('vertical-align:bottom; height:20px; width:20px');
 
@@ -63,15 +63,15 @@ plugin({
             if(phrase_rules && phrase_rules.split(',').contains(`:${ name }:`))
                 return /* Already highlighting this emote */;
 
-            let phrase = furnish('#tt-highlight-rule--emote', {
-                title: 'Highlight this emote',
+            const phrase = furnish('#tt-highlight-rule--emote', {
+                title: "Highlight this emote",
                 style: 'cursor:pointer; fill:var(--color-green); font-size:1.1rem; font-weight:normal;',
                 emote: `:${ name }:`,
 
                 onclick: event => {
-                    let { currentTarget } = event,
-                        emote = currentTarget.getAttribute('emote'),
-                        { phrase_rules } = Settings;
+                    let { currentTarget } = event
+                        , emote = currentTarget.getAttribute('emote')
+                        , { phrase_rules } = Settings;
 
                     phrase_rules = (phrase_rules || '').split(',');
                     phrase_rules.push(emote);
@@ -90,7 +90,7 @@ plugin({
                 innerHTML: `${ Glyphs.star } Highlight <strong>${ name }</strong>`,
             });
 
-            let svg = $('svg', phrase);
+            const svg = $('svg', phrase);
 
             svg.modStyle('vertical-align:bottom; height:20px; width:20px');
 

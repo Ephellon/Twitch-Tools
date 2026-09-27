@@ -34,7 +34,7 @@ plugin({
                 if(PrimeSubscriptionReclaims < 1)
                     break resubscribing;
 
-                let button = $('[data-a-target="subscribe-button"i]');
+                const button = $('[data-a-target="subscribe-button"i]');
 
                 if(nullish(button))
                     break resubscribing;

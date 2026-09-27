@@ -11,13 +11,13 @@ plugin({
     timer: 250,
 
     handler: () => {
-        let card = $('[data-a-target="viewer-card"i], [data-a-target="emote-card"i]');
+        const card = $('[data-a-target="viewer-card"i], [data-a-target="emote-card"i]');
 
         if(nullish(card))
             return;
 
-        let title = $('h1,h2,h3,h4,h5,h6', card),
-            { length } = title.children;
+        const title = $('h1,h2,h3,h4,h5,h6', card)
+            , { length } = title.children;
 
         if(length > 2)
             title.modStyle(`height: ${ 3 * (length - 1) + 1 }rem`);

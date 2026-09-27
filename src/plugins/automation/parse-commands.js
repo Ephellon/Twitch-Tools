@@ -16,9 +16,9 @@ plugin({
         parseCommands = function parseCommands(string = '', variables = {}) {
             for(let MAX_ITER = 3 * string.count('$'), regexp = /\$?(\([^\(\)]+?\)|\{[^\{\}]+?\}|\[[^\[\]]+?\])/; regexp.test(string) && --MAX_ITER > 0;)
                 string = string.replace(regexp, ($0, $1, $$, $_) => {
-                    let path = $1.replace(/^[\(\[\{]|[\}\]\)]$/g, '').split(/[\s\.]+/).filter(string => !!string.length);
+                    const path = $1.replace(/^[\(\[\{]|[\}\]\)]$/g, '').split(/[\s\.]+/).filter(string => !!string.length);
 
-                    let gameText = STREAMER.game + '';
+                    const gameText = STREAMER.game + '';
                     let properties = ({
                         // StreamElements
                         user: {
@@ -80,11 +80,11 @@ plugin({
 
                         // Fetched...
                         ...variables
-                    }),
-                        value = properties;
+                    })
+                        , value = properties;
 
                     dir:
-                    for(let root of path)
+                    for(const root of path)
                         if(nullish(value = value[root]))
                             return $0;
                     value = value?._ ?? value;
@@ -111,34 +111,35 @@ plugin({
                      * (2) SCR → 𝒯𝒽ℯ 𝓆𝓊𝒾𝒸𝓀 𝒷𝓇ℴ𝓌𝓃 𝒻ℴ𝓍 𝒿𝓊𝓂𝓅ℯ𝒹 ℴ𝓋ℯ𝓇 𝓉𝒽ℯ 𝓁𝒶𝓏𝓎 𝒹ℴ𝓌𝓃
                      * (3) FR  → 𝔗𝔥𝔢 𝔮𝔲𝔦𝔠𝔨 𝔟𝔯𝔬𝔴𝔫 𝔣𝔬𝔵 𝔧𝔲𝔪𝔭𝔢𝔡 𝔬𝔳𝔢𝔯 𝔱𝔥𝔢 𝔩𝔞𝔷𝔶 𝔡𝔬𝔴𝔫
                      */
-                    let type = ['opf','scr','fr'][$1.length - 1];
+                    const type = ['opf', 'scr', 'fr'][$1.length - 1];
 
                     let string = '';
-                    for(let char of $2)
+
+                    for(const char of $2)
                         string += (
-                            /[a-z]/i.test(char)?
-                                `&${ char }${ type };`:
-                            char
+                            /[a-z]/i.test(char)
+                                ? `&${ char }${ type };`
+                            : char
                         );
 
                     return string;
                 })
-                .replace(/([#]{1,5})([^$]+)/g, ($0, $1, $2) => `<h${ $1.length }>${ $2.trim() }</h${ $1.length }>`);
+                .replace(/([#]{1,5})([^$]+)/g, ($0, $1, $2, $$, $_) => `<h${ $1.length }>${ $2.trim() }</h${ $1.length }>`);
         };
     },
 
     handler: async() => {
-        let elements = $.all('[data-a-target="stream-title"i], [data-a-target="about-panel"i] *, [data-a-target^="panel"i] *')
+        const elements = $.all('[data-a-target="stream-title"i], [data-a-target="about-panel"i] *, [data-a-target^="panel"i] *')
             .map($0 => $0.getElementByText(/([!][\p{Alpha}\.\\\/\?\+\(\)\[\]\{\}\*\|]+)/u))
             .isolate()
             .filter(defined)
             .filter(e => nullish(e.closest('a[href]')));
 
-        for(let element of elements) {
+        for(const element of elements) {
             for(let { aliases, command, reply, availability, enabled, origin, variables } of await STREAMER.coms)
                 // Wait here to keep from lagging the page...
                 await wait(1).then(() => {
-                    let regexp = RegExp(`([!](?:${ [command, ...aliases].filter(s => typeof s == 'string' && s.length).map(s => s.replace(/[\.\\\/\?\+\(\)\[\]\{\}\$\*\|]/g, '\\$&')).join('|') })(?!\\p{L}))`, 'igu');
+                    const regexp = RegExp(`([!](?:${ [command, ...aliases].filter(s => typeof s == 'string' && s.length).map(s => s.replace(/[\.\\\/\?\+\(\)\[\]\{\}\$\*\|]/g, '\\$&')).join('|') })(?!\\p{L}))`, 'igu');
 
                     if(!regexp.test(element.innerHTML))
                         return;
@@ -149,22 +150,22 @@ plugin({
 
                         reply = parseCommands(reply, variables);
 
-                        let url = parseURL(reply),
-                            string;
+                        let url = parseURL(reply)
+                            , string;
 
                         // Find the "best" URL
                         let _href, _protocol, _host, _origin, _port, _pathname, _search, _hash;
-                        let errors = [];
+                        const errors = [];
 
                         if(defined(url))
                             for(let s = reply, i = 0, maxURLs = 5; i < s.length && --maxURLs;) {
-                                let found = parseURL.pattern.exec(s.slice(i));
+                                const found = parseURL.pattern.exec(s.slice(i));
 
                                 if(nullish(found))
                                     continue;
 
-                                let { index, groups } = found;
-                                let { href, protocol, host, origin, port, pathname, search, hash } = groups;
+                                const { index, groups } = found;
+                                const { href, protocol, host, origin, port, pathname, search, hash } = groups;
 
                                 if(false
                                     // Empty URL...
@@ -203,12 +204,12 @@ plugin({
                                 i = index + href.length;
                             }
 
-                        let titleTo = new UUID + '';
+                        const titleTo = new UUID + '';
 
                         if(parseBool(Settings.parse_commands__create_links) && defined(_href))
                             string = `<code tt-code style="border:1px solid currentColor; color:var(--color-colored)!important; white-space:nowrap;" contrast="${ THEME__PREFERRED_CONTRAST }" title-to="${ titleTo };${ encodeHTML(reply) }"><a style="color:inherit!important" href="${ _href.replace(/^(\w{3,}\.\w{2,})/, `https://$1`) }" target=_blank>${ decodeMD(encodeHTML($1)) } ${ Glyphs.modify('ne_arrow', { height:12, width:12, style:'vertical-align:middle!important' }) }</a></code>`;
                         else
-                            string = `<code tt-code style="opacity:${ 2**-!enabled }; white-space:nowrap" title-to="${ titleTo };${ encodeHTML(reply) }">${ decodeMD(encodeHTML($1)) }</code>`;
+                            string = `<code tt-code style="opacity:${ 2 ** -!enabled }; white-space:nowrap" title-to="${ titleTo };${ encodeHTML(reply) }">${ decodeMD(encodeHTML($1)) }</code>`;
 
                         return `<span title-to="${ titleTo }" tt-parse-commands="${ btoa(escape(string)) }">${ $0.split('').join('&zwj;') }</span>`;
                     });
@@ -217,7 +218,7 @@ plugin({
             // Controls whether the stream-title (description) has a native tooltip (false) or not (true)
             if(true)
                 wait(500, element).then(element => {
-                    let title = decodeHTML(element.getAttribute('title') ?? '');
+                    const title = decodeHTML(element.getAttribute('title') ?? '');
 
                     if(title.length < 1)
                         return;
@@ -228,12 +229,12 @@ plugin({
                 });
 
             $.all('[tt-parse-commands]:not([tt-parsed="true"i])').map(element => {
-                let titleTo = element.getAttribute('title-to');
+                const titleTo = element.getAttribute('title-to');
 
                 element.outerHTML = unescape(atob(element.getAttribute('tt-parse-commands')));
 
                 when.defined(to => $(`[title-to^="${ to };"i]`), 30, titleTo).then(tooltip => {
-                    let [to, title = ""] = tooltip.getAttribute('title-to').split(';');
+                    const [to, title = ''] = tooltip.getAttribute('title-to').split(';');
 
                     if(title.trim().length)
                         new Tooltip(tooltip, title);
@@ -246,7 +247,7 @@ plugin({
     },
 
     unhandler: () => {
-        let title = $('[data-a-target="stream-title"i]');
+        const title = $('[data-a-target="stream-title"i]');
 
         if(defined(title))
             title.innerHTML = encodeHTML($('[data-a-target="stream-title"i]').innerText);
@@ -258,21 +259,22 @@ plugin({
         RegisterJob('parse_commands');
 
         // Add the chat menu popup...
-        let CSSBlockName = `Chat-Input-Menu:${ new UUID }`,
-            AvailableCommands;
+        let CSSBlockName = `Chat-Input-Menu:${ new UUID }`
+            , AvailableCommands;
 
         $('[data-a-target="chat-input"i]')?.addEventListener('keyup', delay(async event => {
-            let { target, code, altKey, ctrlKey, metaKey, shiftKey } = event,
-                value = (target?.value ?? target?.textContent ?? target?.innerText),
-                [tray, chat] = target.closest('div:not([class])')?.firstElementChild?.children ?? [,],
-                f = furnish;
+            let { target, code, altKey, ctrlKey, metaKey, shiftKey } = event
+                , value = (target?.value ?? target?.textContent ?? target?.innerText)
+                , [tray, chat] = target.closest('div:not([class])')?.firstElementChild?.children ?? [,]
+                , f = furnish;
 
             if(['Tab', 'Space', 'Enter', 'Escape'].contains(code) || value?.contains(' ') || !value?.startsWith('!')) {
-                let command = $('.tt-chat-input-suggestion')?.getAttribute('command');
+                const command = $('.tt-chat-input-suggestion')?.getAttribute('command');
+
                 if(code.equals('Tab') && defined(command)) {
-                    let match = value.match(/!(\S+|$)/),
-                        { index } = match,
-                        [text, word] = match;
+                    const match = value.match(/!(\S+|$)/)
+                        , { index } = match
+                        , [text, word] = match;
 
                     target.setRangeText(`!${ command }`, index, index + text.length, 'end');
                 }
@@ -289,7 +291,7 @@ plugin({
 
             value = value.slice(1).toLowerCase();
 
-            let listable = (AvailableCommands ??= await STREAMER.coms)
+            const listable = (AvailableCommands ??= await STREAMER.coms)
                 .sort((a, b) => (
                         (false
                             || (true
@@ -300,9 +302,9 @@ plugin({
                                 && defined(a.aliases.find(aka => aka.toLowerCase().contains(value)))
                                 && nullish(b.aliases.find(aka => aka.toLowerCase().contains(value)))
                             )
-                        )?
-                            -1:
-                        (false
+                        )
+                            ? -1
+                        : (false
                             || (true
                                 && b.command.toLowerCase().contains(value)
                                 && a.command.toLowerCase().missing(value)
@@ -311,9 +313,9 @@ plugin({
                                 && defined(b.aliases.find(aka => aka.toLowerCase().contains(value)))
                                 && nullish(a.aliases.find(aka => aka.toLowerCase().contains(value)))
                             )
-                        )?
-                            +1:
-                        0
+                        )
+                            ? +1
+                        : 0
                     )
                 )
                 .slice(0, 30)
@@ -360,24 +362,25 @@ plugin({
                                         ...listable.map(({ aliases, command, reply, availability, enabled, origin, variables, textDistance }, index, array) => {
                                             reply = parseCommands(reply, variables);
 
-                                            let { href } = parseURL(reply);
+                                            const { href } = parseURL(reply);
 
                                             if(defined(href))
                                                 reply = f('a', { href: href.replace(/^(\w{3,}\.\w{2,})/, `https://$1`), style: `margin-right:0.75rem` }, reply);
 
                                             return f(`#tt-command--${ command.replace(/[^\w\-]+/g, '') }`).with(
                                                 f('button.tcito7', {
-                                                    style: `cursor:${ ['not-allowed','auto'][+enabled] }!important; color:${ ['inherit','var(--color-text-success)'][+(textDistance < 1)] }`,
+                                                    style: `cursor:${ ['not-allowed', 'auto'][+enabled] }!important; color:${ ['inherit', 'var(--color-text-success)'][+(textDistance < 1)] }`,
                                                     onmouseup: ({ target, button = -1 }) => {
-                                                        if(!!button)
+                                                        if(button)
                                                             return;
 
-                                                        let command = $('.tt-chat-input-suggestion', target.closest('[id]'))?.getAttribute('command');
+                                                        const command = $('.tt-chat-input-suggestion', target.closest('[id]'))?.getAttribute('command');
+
                                                         if(defined(command)) {
-                                                            let target = $('[data-a-target="chat-input"i]');
-                                                            let match = (target?.value ?? target?.textContent ?? target?.innerText).match(/!(\S+|$)/),
-                                                                { index } = match,
-                                                                [text, word] = match;
+                                                            const target = $('[data-a-target="chat-input"i]');
+                                                            const match = (target?.value ?? target?.textContent ?? target?.innerText).match(/!(\S+|$)/)
+                                                                , { index } = match
+                                                                , [text, word] = match;
 
                                                                 target.setRangeText(`!${ command }`, index, index + text.length, 'end');
                                                                 target.focus();
@@ -395,7 +398,7 @@ plugin({
                                                 },
                                                     f('.tcito8').with(
                                                         f('.tcito9').with(
-                                                            f('p.tt-chat-input-suggestion', { style: `word-break:break-word!important; color:${ ['inherit','var(--color-text-error)'][+!enabled] }`, command },
+                                                            f('p.tt-chat-input-suggestion', { style: `word-break:break-word!important; color:${ ['inherit', 'var(--color-text-error)'][+!enabled] }`, command },
                                                                 f('img.chat-badge', { src: Chat.badges.get(availability), availability, style: `margin:0 0.75rem 0 0; height:1.5rem; width:1.5rem` }),
 
                                                                 `!${ command }`,
@@ -406,7 +409,7 @@ plugin({
                                                         )
                                                     )
                                                 )
-                                            )
+                                            );
                                         })
                                     )
                                 )

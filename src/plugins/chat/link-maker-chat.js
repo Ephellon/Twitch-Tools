@@ -14,10 +14,10 @@ plugin({
     timer: -500,
 
     init() {
-        LINK_MAKER_ENABLED = undefined;
+        LINK_MAKER_ENABLED = void null;
         CHAT_CARDIFIED = new Map;
         CHAT_CARDIFYING_TIMERS = new Map;
-        REWARDS_CARDIFIER = undefined;
+        REWARDS_CARDIFIER = void null;
         REWARDS_CARDIFIED = new Map;
         LINK_PARSER = new DOMParser;
     },
@@ -25,20 +25,20 @@ plugin({
     handler: (context) => {
         // Channel Point rewards (Blerp)
         REWARDS_CARDIFIER = setInterval(() => {
-            let f = furnish;
-            let card = $('[class*="reward"i][class*="center"i][class*="body"i]');
-            let timerStart = +new Date;
+            const f = furnish;
+            const card = $('[class*="reward"i][class*="center"i][class*="body"i]');
+            const timerStart = +new Date;
 
             if(nullish(card))
                 return;
 
-            let content = card.getElementByText(/\bblerp.com\//i),
-                alias = card.closest('[class*="reward"i][class*="center"i][class*="content"i]')?.querySelector('[id*="reward"i][id*="center"i][id*="header"i]')?.textContent;
+            const content = card.getElementByText(/\bblerp.com\//i)
+                , alias = card.closest('[class*="reward"i][class*="center"i][class*="content"i]')?.querySelector('[id*="reward"i][id*="center"i][id*="header"i]')?.textContent;
 
             if(nullish(content))
                 return;
 
-            let { href = '', origin, protocol, scheme, host, hostname, port, pathname, search, hash } = parseURL(content.innerText);
+            const { href = '', origin, protocol, scheme, host, hostname, port, pathname, search, hash } = parseURL(content.innerText);
 
             if(href.trim().length < 2)
                 return;
@@ -58,11 +58,11 @@ plugin({
                     if(!(DOM instanceof Document))
                         throw TypeError(`No DOM available. Page not loaded`);
 
-                    let f = furnish;
-                    let get = property => DOM.get(property);
+                    const f = furnish;
+                    const get = property => DOM.get(property);
 
-                    let [title, description, image, url, audio] = ["title", "description", "image", "url", "audio"].map(get),
-                        error = DOM.querySelector('parsererror')?.textContent;
+                    let [title, description, image, url, audio] = ['title', 'description', 'image', 'url', 'audio'].map(get)
+                        , error = DOM.querySelector('parsererror')?.textContent;
 
                     $log(`Loaded page: Blerp @ ${ href }`, { title, description, image, DOM, size: (DOM.documentElement.innerHTML.length * 8).suffix('B', 2, 'data'), time: ((+new Date - timerStart) / 1000).suffix('s', false) });
 
@@ -73,8 +73,8 @@ plugin({
                             throw error;
                     }
 
-                    let aliasContainer = $(`[data-blerp="${ parseURL(url).pathname }"i]`),
-                        audioContainer = f(`audio[controls]`, { style: 'margin:1rem 0; min-width:50%;' }, f.source({ src: audio }));
+                    const aliasContainer = $(`[data-blerp="${ parseURL(url).pathname }"i]`)
+                        , audioContainer = f(`audio[controls]`, { style: 'margin:1rem 0; min-width:50%;' }, f.source({ src: audio }));
 
                     if(nullish(aliasContainer))
                         return;
@@ -94,18 +94,20 @@ plugin({
 
             let { message, mentions, author, element } = line;
 
-            let parsed = parseURL.pattern.exec(message);
+            const parsed = parseURL.pattern.exec(message);
 
             if(!parsed?.length)
                 return;
-            let { groups } = parsed,
-                { href = '', origin, protocol, scheme, host, hostname, port, pathname, search, hash } = groups;
+
+            let { groups } = parsed
+                , { href = '', origin, protocol, scheme, host, hostname, port, pathname, search, hash } = groups;
 
             if(href.trim().length < 2)
                 return;
-            let unknown = Symbol('UNKNOWN');
-            let url = parseURL(href.replace(/^(https?:\/\/)?/i, `${ location.protocol }//`).trim()),
-                [topDom = '', secDom = '', ...subDom] = url.domainPath ?? ['tv', 'twitch', 'clips'];
+
+            const unknown = Symbol('UNKNOWN');
+            const url = parseURL(href.replace(/^(https?:\/\/)?/i, `${ location.protocol }//`).trim())
+                , [topDom = '', secDom = '', ...subDom] = url.domainPath ?? ['tv', 'twitch', 'clips'];
 
             // Ignore pre-cardified links
             if(subDom.contains('clips') || pathname?.contains('/videos/', '/clip/'))
@@ -119,7 +121,7 @@ plugin({
             element = await element;
 
             if(CHAT_CARDIFIED.has(href)) {
-                let card = CHAT_CARDIFIED.get(href);
+                const card = CHAT_CARDIFIED.get(href);
 
                 if(nullish($(`#card-${ UUID.from(href).toStamp() }`, element)) && defined(card)) {
                     element.insertAdjacentElement('beforeend', card);
@@ -142,11 +144,11 @@ plugin({
                     if(!(DOM instanceof Document))
                         throw TypeError(`No DOM available. Page not loaded`);
 
-                    let f = furnish;
-                    let get = property => DOM.get(property);
+                    const f = furnish;
+                    const get = property => DOM.get(property);
 
-                    let [title = '', description = '', image] = ["title", "description", "image"].map(get),
-                        error = DOM.querySelector('parsererror')?.textContent;
+                    const [title = '', description = '', image] = ['title', 'description', 'image'].map(get)
+                        , error = DOM.querySelector('parsererror')?.textContent;
 
                     $log(`Loaded page: Card @ ${ href }`, { title, description, image, DOM, size: (DOM.documentElement.innerHTML.length * 8).suffix('B', 2, 'data'), time: ((+new Date - CHAT_CARDIFYING_TIMERS.get(href)) / 1000).suffix('s', false) });
 
@@ -159,7 +161,7 @@ plugin({
                             throw error;
                     }
 
-                    let card = f('.tt-iframe-card.tt-border-radius-medium.tt-elevation-1').with(
+                    const card = f('.tt-iframe-card.tt-border-radius-medium.tt-elevation-1').with(
                         f('.tt-border-radius-medium.tt-c-background-base.tt-flex.tt-full-width').with(
                             f('a.tt-block.tt-border-radius-medium.tt-full-width.tt-interactable', { rel: 'noopener noreferrer', target: '_blank', href },
                                 f('.chat-card.tt-flex.tt-flex-nowrap.tt-pd-05').with(
@@ -197,7 +199,7 @@ plugin({
                         )
                     );
 
-                    let container = f(`#card-${ UUID.from(href).toStamp() }.chat-line__message[@aTarget=chat-line-message][@testSelector=chat-line-message]`).with(
+                    const container = f(`#card-${ UUID.from(href).toStamp() }.chat-line__message[@aTarget=chat-line-message][@testSelector=chat-line-message]`).with(
                         f('.tt-relative').with(
                             f('.tt-relative.chat-line__message-container').with(
                                 f('div').with(

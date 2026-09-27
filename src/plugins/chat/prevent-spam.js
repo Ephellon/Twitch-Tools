@@ -21,8 +21,8 @@ plugin({
         new context.StopWatch('prevent_spam');
 
         function markAsSpam(element, type = 'spam', message, phrase = '') {
-            let spam_placeholder = "chat-deleted-message-placeholder";
-            let span = furnish(`span.chat-line__message--deleted-notice.tt-spam-filter-${ type }[@aTarget=${ spam_placeholder }][@testSelector=${ spam_placeholder }]`).with(`message marked as ${ type }.`);
+            const spam_placeholder = 'chat-deleted-message-placeholder';
+            const span = furnish(`span.chat-line__message--deleted-notice.tt-spam-filter-${ type }[@aTarget=${ spam_placeholder }][@testSelector=${ spam_placeholder }]`).with(`message marked as ${ type }.`);
 
             $.all(':is([data-test-selector="chat-message-separator"i], [class*="username-container"i] + *) ~ * > *', element).forEach(sibling => sibling.remove());
             $('[data-test-selector="chat-message-separator"i], [class*="username-container"i] + *', element).parentElement.append(span);
@@ -46,7 +46,7 @@ plugin({
                 markAsSpam(await element, 'plagiarism', message);
 
             // The message contains repetitive (more than X instances) words/phrases
-            let regexp = RegExp(`(?<phrase>[\\S]{${ minLen },}?)${ "(?:(?:[^]+)?\\1)".repeat(minOcc - 1) }`, 'i');
+            const regexp = RegExp(`(?<phrase>[\\S]{${ minLen },}?)${ '(?:(?:[^]+)?\\1)'.repeat(minOcc - 1) }`, 'i');
 
             if(regexp.test(message))
                 markAsSpam(await element, 'repetitive', message, regexp.exec(message).groups.phrase);

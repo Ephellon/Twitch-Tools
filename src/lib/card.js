@@ -6,38 +6,38 @@
 // Creates a Twitch-style card
     // new Card({ title:string, subtitle:string?, fineTuning:object? }) → Element<Card>
 class Card {
-    static #CARDS = new Map()
+    static #CARDS = new Map();
 
-    constructor({ title = "", subtitle = "", description = "", footer, icon, fineTuning = {} }) {
+    constructor({ title = '', subtitle = '', description = '', footer, icon, fineTuning = {} }) {
         fineTuning.top ??= '7rem';
         fineTuning.left ??= '0px';
         fineTuning.cursor ??= 'auto';
 
         let styling = [];
 
-        for(let key in fineTuning) {
-            let [value, unit] = (fineTuning[key] ?? "").toString().split(/([\-\+]?[\d\.]+)([^\d\.]+)/).filter(string => string.length);
+        for(const key in fineTuning) {
+            let [value, unit] = (fineTuning[key] ?? '').toString().split(/([\-\+]?[\d\.]+)([^\d\.]+)/).filter(string => string.length);
 
             if(nullish(value))
                 continue;
 
             if(parseFloat(value) >= -Infinity)
-                unit ??= "px";
+                unit ??= 'px';
             else
-                unit ??= "";
+                unit ??= '';
 
             styling.push(`${ key }:${ value }${ unit }`);
         }
 
         styling = styling.join(';');
 
-        let f = furnish;
+        const f = furnish;
 
-        let container = $('[data-a-target*="card"i] [class*="card-layer"i]'),
-            card = f(`.tt-absolute.tt-border-radius-large.viewer-card-layer__draggable[@aTarget=viewer-card-positioner]`, { style: styling }),
-            uuid = UUID.from([title, subtitle].join('\n')).value;
+        const container = $('[data-a-target*="card"i] [class*="card-layer"i]')
+            , card = f(`.tt-absolute.tt-border-radius-large.viewer-card-layer__draggable[@aTarget=viewer-card-positioner]`, { style: styling })
+            , uuid = UUID.from([title, subtitle].join('\n')).value;
 
-        icon ??= { src: Runtime.getURL('profile.png'), alt: 'Profile' };
+        icon ??= { src: Runtime.getURL('profile.png'), alt: "Profile" };
 
         card.id = uuid;
 
@@ -45,7 +45,7 @@ class Card {
         [...container.children].forEach(child => child.remove());
 
         // Furnish the card
-        let iconElement = f('img.emote-card__big-emote.tt-image[@testSelector=big-emote]', { ...icon }).setTooltip(icon.alt);
+        const iconElement = f('img.emote-card__big-emote.tt-image[@testSelector=big-emote]', { ...icon }).setTooltip(icon.alt);
 
         card.append(
             f('.emote-card.tt-border-b.tt-border-l.tt-border-r.tt-border-radius-large.tt-border-t.tt-elevation-1[data-a-target="emote-card"]', { style: 'animation:1 fade-in .6s' },
@@ -67,7 +67,7 @@ class Card {
                 },
                 f('.tt-inline-flex.viewer-card-drag-cancel').with(
                     f('button.tt-button-icon.tt-button-icon--secondary.tt-core-button[@testSelector=close-viewer-card]', {
-                        'aria-label': "Hide",
+                        'aria-label': 'Hide',
                     },
                         f('span.tt-button-icon__icon').with(
                             f('div[style="width: 2rem; height: 2rem;"]').with(
@@ -139,7 +139,7 @@ class Card {
     remove() {
         this.container?.remove();
 
-        for(let [title, card] of Card.#CARDS)
+        for(const [title, card] of Card.#CARDS)
             if(card === this)
                 Card.#CARDS.delete(title);
     }
@@ -157,26 +157,26 @@ class Card {
 
             let styling = ['border:var(--border-width-default) solid var(--color-border-base);'];
 
-            for(let key in fineTuning) {
-                let [value, unit] = (fineTuning[key] ?? "").toString().split(/([\-\+]?[\d\.]+)([^\d\.]+)/).filter(string => string.length);
+            for(const key in fineTuning) {
+                let [value, unit] = (fineTuning[key] ?? '').toString().split(/([\-\+]?[\d\.]+)([^\d\.]+)/).filter(string => string.length);
 
                 if(nullish(value))
                     continue;
 
                 if(parseFloat(value) >= -Infinity)
-                    unit ??= "px";
+                    unit ??= 'px';
                 else
-                    unit ??= "";
+                    unit ??= '';
 
                 styling.push(`${ key }:${ value }${ unit }`);
             }
 
             styling = styling.join(';');
 
-            let f = furnish;
+            const f = furnish;
 
-            let container = $('[data-a-target*="card"i] [class*="card-layer"i]'),
-                card = f(`.tt-absolute.tt-border-radius-large.viewer-card-layer__draggable[@aTarget=viewer-card-positioner]`, { style: styling },
+            const container = $('[data-a-target*="card"i] [class*="card-layer"i]')
+                , card = f(`.tt-absolute.tt-border-radius-large.viewer-card-layer__draggable[@aTarget=viewer-card-positioner]`, { style: styling },
                     f('.tt-absolute.tt-mg-r-05.tt-mg-t-05.tt-right-0.tt-top-0[@aTarget=viewer-card-close-button]',
                         {
                             onmouseup: ({ button = -1 }) => {
@@ -185,7 +185,7 @@ class Card {
                         },
                         f('.tt-inline-flex.viewer-card-drag-cancel').with(
                             f('button.tt-button-icon.tt-button-icon--secondary.tt-core-button[@testSelector=close-viewer-card]', {
-                                'aria-label': "Hide",
+                                'aria-label': 'Hide',
                             },
                                 f('span.tt-button-icon__icon').with(
                                     f('div[style="width: 2rem; height: 2rem;"]').with(
@@ -210,7 +210,7 @@ class Card {
             // Add the card
             container.append(card);
 
-            let uuid = UUID.from(card.getPath()).value;
+            const uuid = UUID.from(card.getPath()).value;
 
             card.id = uuid;
             card.classList.add('tt-c-background-base');
@@ -227,7 +227,7 @@ class Card {
 
             return new Card(state);
         }
-    }
+    };
 }
 
 export { Card };

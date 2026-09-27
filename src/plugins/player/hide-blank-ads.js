@@ -21,13 +21,13 @@ plugin({
         if($.defined('[data-a-target*="ad-countdown"i]'))
             return window.postMessage({ action: 'report-blank-ad', from: 'player.js', purple: true }, '*');
 
-        let video = $('video');
+        const video = $('video');
 
         if(nullish(video))
             return;
 
-        let capture = video.captureFrame(),
-            banner = Runtime.getURL('twitch-banner.png');
+        const capture = video.captureFrame()
+            , banner = Runtime.getURL('twitch-banner.png');
 
         resemble(capture)
             .compareTo(banner)
@@ -39,8 +39,8 @@ plugin({
                 analysisTime = parseInt(analysisTime);
                 misMatchPercentage = parseFloat(misMatchPercentage);
 
-                let matchPercentage = 100 - misMatchPercentage,
-                    isBlankAd = matchPercentage > 80;
+                const matchPercentage = 100 - misMatchPercentage
+                    , isBlankAd = matchPercentage > 80;
 
                 if(BLANK_AD_PRESENCE == isBlankAd)
                     return;

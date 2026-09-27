@@ -14,8 +14,8 @@
     const { DSLRuntimeError, DSLPermissionError } = globalThis.TTV_DSL.errors;
 
     /** Reads a `.ttv` fixture, or null in a browser where there is no filesystem. */
-    let fixture = (name) => {
-        if (typeof require !== 'function' || typeof __dirname === 'undefined')
+    const fixture = (name) => {
+        if(typeof require !== 'function' || typeof __dirname === 'undefined')
             return null;
 
         return require('fs').readFileSync(require('path').join(__dirname, 'fixtures', `${ name }.ttv`), 'utf8');
@@ -24,15 +24,15 @@
     /** A runtime on a fake clock, with whatever host bindings the test needs.
      * @return {{ runtime, clock, realm, failures }}
      */
-    let harness = ({ seed = 1, jsBindings, jsPermissions, constants, channels } = {}) => {
-        let clock = createFakeClock(0),
-            failures = [],
-            realm = createTwitchRealm({
+    const harness = ({ seed = 1, jsBindings, jsPermissions, constants, channels } = {}) => {
+        const clock = createFakeClock(0)
+            , failures = []
+            , realm = createTwitchRealm({
                 current: 'ginger_enby',
                 channels: (channels ?? { ginger_enby: { live: true, badges: ['moderator', 'vip', 'subscriber'] } }),
             });
 
-        let runtime = createRuntime({
+        const runtime = createRuntime({
             clock,
             wallClock: () => 0,
             random: createSeededRandom(seed),
@@ -49,18 +49,18 @@
     };
 
     /** @return {Array<String>} the text of everything sent */
-    let sent = (runtime) => runtime.sink.map(entry => entry.text);
+    const sent = (runtime) => runtime.sink.map(entry => entry.text);
 
     // -- variables ----------------------------------------------------------
 
     describe('v2 / variables and scope', () => {
-        let source = fixture('variables');
+        const source = fixture('variables');
 
-        if (null === source)
+        if(null === source)
             it.skip('runs variables.ttv', 'no filesystem in this runtime');
         else
-            it('makes `=>` visible to later siblings and `->` visible only downward', async () => {
-                let { runtime, clock } = harness();
+            it('makes `=>` visible to later siblings and `->` visible only downward', async() => {
+                const { runtime, clock } = harness();
 
                 await run(source, runtime, { channel: runtime.defaultRealm.current });
                 await clock.advance(90000);
@@ -80,8 +80,8 @@
                 ]);
             });
 
-        it('binds through an `await` duration without turning it into an event-await', async () => {
-            let { runtime, clock } = harness();
+        it('binds through an `await` duration without turning it into an event-await', async() => {
+            const { runtime, clock } = harness();
 
             // The duration-vs-event decision is syntactic, so an assignment wrapped around
             // the subject is exactly the shape that could silently stop the timer firing.
@@ -95,14 +95,14 @@
         });
 
         it('refuses `=>` where there is no parent scope', () => {
-            let { runtime } = harness(),
-                program = parse('`hi` => mod_msg\n');
+            const { runtime } = harness()
+                , program = parse('`hi` => mod_msg\n');
 
             assert.throws(() => globalThis.TTV_DSL.compile(program, runtime), /no parent scope/i);
         });
 
-        it('reads an unbound variable as empty but an unknown constant as an error', async () => {
-            let { runtime, failures } = harness();
+        it('reads an unbound variable as empty but an unknown constant as an error', async() => {
+            const { runtime, failures } = harness();
 
             await run('await *\n    POST `[${ not_bound }]`\n', runtime, {});
             await runtime.dispatch({ sender: 'a' });
@@ -117,8 +117,8 @@
             assert.ok(failures.some(entry => /unknown name/i.test(entry)));
         });
 
-        it('resolves a subject alias to the same thing `.prop` reads from', async () => {
-            let { runtime } = harness();
+        it('resolves a subject alias to the same thing `.prop` reads from', async() => {
+            const { runtime } = harness();
 
             await run('await *\n    POST `${ .name } / ${ _ }`\n', runtime, {});
             await runtime.dispatch({ name: 'zip' });
@@ -130,11 +130,11 @@
     // -- when ---------------------------------------------------------------
 
     describe('v2 / `when`', () => {
-        let source = fixture('when');
+        const source = fixture('when');
 
         /** Dispatches one command and returns what both `when`s replied. */
-        let ask = async (command) => {
-            let { runtime } = harness();
+        const ask = async(command) => {
+            const { runtime } = harness();
 
             await run(source, runtime, { channel: runtime.defaultRealm.current });
             await runtime.dispatch({ command, sender: 'someone' });
@@ -142,21 +142,21 @@
             return sent(runtime);
         };
 
-        if (null === source) {
-            it.skip('runs when.ttv', 'no filesystem in this runtime');
+        if(null === source) {
+            it.skip('runs when.ttv', 'no filesystem in this runtime')
         } else {
-            it('picks the matching case in the switch form', async () => {
+            it('picks the matching case in the switch form', async() => {
                 assert.deepEqual(await ask('help'), ['switch: help', 'chain: help']);
                 assert.deepEqual(await ask('gamble'), ['switch: gamble', 'chain: gamble']);
             });
 
-            it('falls through to `*`, which needs no special casing', async () => {
+            it('falls through to `*`, which needs no special casing', async() => {
                 assert.deepEqual(await ask('whoami'), ['switch: other', 'chain: other']);
             });
         }
 
-        it('runs at most one branch of a chain', async () => {
-            let { runtime } = harness();
+        it('runs at most one branch of a chain', async() => {
+            const { runtime } = harness();
 
             await run([
                 'await *',
@@ -176,16 +176,16 @@
     // -- permissions --------------------------------------------------------
 
     describe('v2 / permissions', () => {
-        let bindings = { Date: { now: () => 1234 }, Math: { random: () => 0.5 } },
-            mapping = { 'Date.now': 'read:datetime' };
+        const bindings = { Date: { now: () => 1234 }, Math: { random: () => 0.5 } }
+            , mapping = { 'Date.now': 'read:datetime' };
 
-        let source = fixture('permissions');
+        const source = fixture('permissions');
 
-        if (null === source)
+        if(null === source)
             it.skip('runs permissions.ttv', 'no filesystem in this runtime');
         else
-            it('honours a grant and refuses everything it does not cover', async () => {
-                let { runtime, clock, failures } = harness({ jsBindings: bindings, jsPermissions: mapping });
+            it('honours a grant and refuses everything it does not cover', async() => {
+                const { runtime, clock, failures } = harness({ jsBindings: bindings, jsPermissions: mapping });
 
                 await run(source, runtime, { channel: runtime.defaultRealm.current });
                 await clock.advance(90000);
@@ -196,8 +196,8 @@
 
         // The regression that matters. Nothing in the runtime does prefix matching, and
         // nothing ever should: a grant that silently widens is a grant nobody can audit.
-        it('does not let `+eval` stand in for `eval:calc`, in either direction', async () => {
-            let { runtime, failures } = harness({ jsBindings: bindings, jsPermissions: { 'Math.random': 'eval:calc' } });
+        it('does not let `+eval` stand in for `eval:calc`, in either direction', async() => {
+            const { runtime, failures } = harness({ jsBindings: bindings, jsPermissions: { 'Math.random': 'eval:calc' } });
 
             await run('using * +eval\n    await *\n        POST `${ $:Math.random() }`\n', runtime, {});
             await runtime.dispatch({ a: 1 });
@@ -205,7 +205,7 @@
             assert.equal(sent(runtime).length, 0);
             assert.ok(failures.some(entry => /not granted .\+eval:calc/.test(entry)), failures.join('\n'));
 
-            let narrow = harness({ jsBindings: bindings, jsPermissions: { 'Math.random': 'eval' } });
+            const narrow = harness({ jsBindings: bindings, jsPermissions: { 'Math.random': 'eval' } });
 
             await run('using * +eval:calc\n    await *\n        POST `${ $:Math.random() }`\n', narrow.runtime, {});
             await narrow.runtime.dispatch({ a: 1 });
@@ -214,8 +214,8 @@
             assert.ok(narrow.failures.some(entry => /not granted .\+eval\b/.test(entry)), narrow.failures.join('\n'));
         });
 
-        it('accumulates grants down the nesting tree, never sideways', async () => {
-            let { runtime, failures } = harness({ jsBindings: bindings, jsPermissions: { 'Math.random': 'a:b' } });
+        it('accumulates grants down the nesting tree, never sideways', async() => {
+            const { runtime, failures } = harness({ jsBindings: bindings, jsPermissions: { 'Math.random': 'a:b' } });
 
             await run([
                 'using * +a:b',
@@ -235,8 +235,8 @@
         });
 
         it('raises DSLPermissionError, not a generic runtime error', () => {
-            let { runtime } = harness(),
-                context = runtime.createContext({ permissions: ['a'] });
+            const { runtime } = harness()
+                , context = runtime.createContext({ permissions: ['a'] });
 
             assert.equal(runtime.requirePermission('a', context), true);
             assert.throws(() => runtime.requirePermission('a:b', context), DSLPermissionError);
@@ -247,33 +247,33 @@
 
     describe('v2 / `$:` host calls', () => {
         it('fails loudly when the host registered nothing', () => {
-            let { runtime } = harness(),
-                context = runtime.createContext({ permissions: ['eval:js'] });
+            const { runtime } = harness()
+                , context = runtime.createContext({ permissions: ['eval:js'] });
 
-            let error = assert.throws(() => runtime.invokeJS(['Date', 'now'], [], context), DSLRuntimeError);
+            const error = assert.throws(() => runtime.invokeJS(['Date', 'now'], [], context), DSLRuntimeError);
 
             assert.match(error.message, /no host binding/i);
         });
 
         it('calls a registered binding with its arguments', () => {
-            let { runtime } = harness({ jsBindings: { Math: { max: (...values) => Math.max(...values) } } }),
-                context = runtime.createContext({ permissions: ['eval:js'] });
+            const { runtime } = harness({ jsBindings: { Math: { max: (...values) => Math.max(...values) } } })
+                , context = runtime.createContext({ permissions: ['eval:js'] });
 
             assert.equal(runtime.invokeJS(['Math', 'max'], [1, 9, 3], context), 9);
         });
 
         it('defaults to requiring `eval:js`', () => {
-            let { runtime } = harness({ jsBindings: { Date: { now: () => 1 } } }),
-                context = runtime.createContext({ permissions: [] });
+            const { runtime } = harness({ jsBindings: { Date: { now: () => 1 } } })
+                , context = runtime.createContext({ permissions: [] });
 
             assert.throws(() => runtime.invokeJS(['Date', 'now'], [], context), DSLPermissionError);
         });
 
         it('refuses to walk through `constructor` or `__proto__`', () => {
-            let { runtime } = harness({ jsBindings: { Date: { now: () => 1 } } }),
-                context = runtime.createContext({ permissions: ['eval:js'] });
+            const { runtime } = harness({ jsBindings: { Date: { now: () => 1 } } })
+                , context = runtime.createContext({ permissions: ['eval:js'] });
 
-            for (let segment of ['constructor', '__proto__', 'prototype'])
+            for(const segment of ['constructor', '__proto__', 'prototype'])
                 assert.throws(() => runtime.invokeJS(['Date', segment, 'x'], [], context), /never allowed/i);
         });
     });
@@ -329,8 +329,8 @@
             assert.throws(() => percent('a', ['q'], '-'), DSLRuntimeError);
         });
 
-        it('produces idea.ttv\'s worked example', async () => {
-            let { runtime } = harness();
+        it('produces idea.ttv\'s worked example', async() => {
+            const { runtime } = harness();
 
             // Byte-for-byte the shape from idea.ttv lines 51-57, with the interpolation
             // resolved. The replacement goes in verbatim, so `% '·'` gives a bare separator;
@@ -352,8 +352,8 @@
             ]);
         });
 
-        it('produces the spaced form when the replacement carries the spaces', async () => {
-            let { runtime } = harness();
+        it('produces the spaced form when the replacement carries the spaces', async() => {
+            const { runtime } = harness();
 
             await run([
                 'await *',
@@ -376,8 +376,8 @@
     // -- the remaining odds and ends ----------------------------------------
 
     describe('v2 / `=`, `with`, and commas', () => {
-        it('makes a comparison case-sensitive, and leaves the default alone', async () => {
-            let { runtime } = harness();
+        it('makes a comparison case-sensitive, and leaves the default alone', async() => {
+            const { runtime } = harness();
 
             await run([
                 'await *',
@@ -395,8 +395,8 @@
             assert.deepEqual(sent(runtime), ['loose', 'exact-hit']);
         });
 
-        it('runs a `with` block once on a boolean and once per element on a list', async () => {
-            let { runtime } = harness();
+        it('runs a `with` block once on a boolean and once per element on a list', async() => {
+            const { runtime } = harness();
 
             await run([
                 'await *',
@@ -419,7 +419,7 @@
         // filter-then-index. The consequence is that a predicate containing a comparison has
         // to be parenthesized — that is the canonical spelling, not a workaround.
         it('reads a parenthesized predicate as a genuine `where` filter', () => {
-            let { NodeType } = globalThis.TTV_DSL.ast;
+            const { NodeType } = globalThis.TTV_DSL.ast;
 
             assert.like(parse('await (.links | ("x" in .href))\n').body[0].subject, {
                 type: NodeType.WhereExpression,
@@ -429,7 +429,7 @@
         });
 
         it('reads an unparenthesized predicate as a comparison, not a filter', () => {
-            let { NodeType } = globalThis.TTV_DSL.ast;
+            const { NodeType } = globalThis.TTV_DSL.ast;
 
             assert.like(parse('await (.links | "x" in .href)\n').body[0].subject, {
                 type: NodeType.BinaryExpression,
@@ -438,8 +438,8 @@
             });
         });
 
-        it('ignores commas wherever they are optional', async () => {
-            let { runtime } = harness({ seed: 3 });
+        it('ignores commas wherever they are optional', async() => {
+            const { runtime } = harness({ seed: 3 });
 
             await run('await *\n    POST any from (\n        , `a`\n        , `a`\n        ,\n    )\n', runtime, {});
             await runtime.dispatch({ x: 1 });
@@ -449,5 +449,5 @@
     });
 })();
 
-if (typeof module === 'object' && module?.exports)
+if(typeof module === 'object' && module?.exports)
     module.exports = globalThis.TTV_DSL;

@@ -17,8 +17,8 @@
      * @param {String} name
      * @return {?String}
      */
-    let fixture = (name) => {
-        if (typeof require !== 'function' || typeof __dirname === 'undefined')
+    const fixture = (name) => {
+        if(typeof require !== 'function' || typeof __dirname === 'undefined')
             return null;
 
         return require('fs').readFileSync(require('path').join(__dirname, 'fixtures', `${ name }.ttv`), 'utf8');
@@ -28,14 +28,14 @@
      * @param {String} source
      * @return {Object}
      */
-    let statement = (source) => parse(source).body[0];
+    const statement = (source) => parse(source).body[0];
 
     /** Parses `await <source>` and hands back the awaited expression — the shortest route
      * to an expression node, since the DSL has no bare expression statement.
      * @param {String} source
      * @return {Object}
      */
-    let expression = (source) => statement(`await ${ source }\n`).subject;
+    const expression = (source) => statement(`await ${ source }\n`).subject;
 
     describe('parser / statements', () => {
         it('parses `await` with a `with` filter and a body', () => {
@@ -152,7 +152,7 @@
         });
 
         it('rejects a chained non-associative comparison', () => {
-            let error = assert.throws(() => parse('await .a is .b is .c\n'), DSLParseError);
+            const error = assert.throws(() => parse('await .a is .b is .c\n'), DSLParseError);
 
             assert.match(error.message, /not associative/i);
         });
@@ -200,7 +200,7 @@
                 type: NodeType.UsingStatement,
                 subjects: [
                     { type: NodeType.Selector, kind: 'channel' },
-                    { type: NodeType.Selector, kind: 'prop', channel: undefined },
+                    { type: NodeType.Selector, kind: 'prop', channel: void null },
                 ],
             });
         });
@@ -256,7 +256,7 @@
         });
 
         it('reports a fault inside an interpolation at its real position in the file', () => {
-            let error = assert.throws(() => parse('POST `a`\nPOST `b ${ .x is .y is .z }`\n'), DSLParseError);
+            const error = assert.throws(() => parse('POST `a`\nPOST `b ${ .x is .y is .z }`\n'), DSLParseError);
 
             assert.equal(error.loc.line, 2, 'the error should point at line 2 of the file, not line 1 of the fragment');
         });
@@ -268,13 +268,13 @@
 
     describe('parser / error recovery', () => {
         it('reports one error per broken line instead of cascading', () => {
-            let { errors } = parseTolerant('using *\n    await .a is .b is .c\n        POST `x`\n    POST `ok`\n');
+            const { errors } = parseTolerant('using *\n    await .a is .b is .c\n        POST `x`\n    POST `ok`\n');
 
             assert.equal(errors.length, 1);
         });
 
         it('keeps parsing the statements after a broken one', () => {
-            let { program } = parseTolerant('using *\n    await .a is .b is .c\n        POST `x`\n    POST `ok`\n');
+            const { program } = parseTolerant('using *\n    await .a is .b is .c\n        POST `x`\n    POST `ok`\n');
 
             assert.like(program.body[0].body.body[program.body[0].body.body.length - 1], {
                 type: NodeType.VerbStatement,
@@ -283,7 +283,7 @@
         });
 
         it('flags an `if` that opens no block', () => {
-            let { errors } = parseTolerant('using *\n    if .a is 1\n    POST `sibling`\n');
+            const { errors } = parseTolerant('using *\n    if .a is 1\n    POST `sibling`\n');
 
             assert.equal(errors.length, 1);
             assert.match(errors[0].message, /no indented body/i);
@@ -291,31 +291,31 @@
     });
 
     describe('parser / fixtures', () => {
-        let names = ['hello', 'nesting', 'templates', 'chains'];
+        const names = ['hello', 'nesting', 'templates', 'chains'];
 
-        for (let name of names) {
-            let source = fixture(name);
+        for(const name of names) {
+            const source = fixture(name);
 
-            if (null === source) {
+            if(null === source) {
                 it.skip(`parses ${ name }.ttv`, 'no filesystem in this runtime');
 
                 continue;
             }
 
             it(`parses ${ name }.ttv without error`, () => {
-                let { errors } = parseTolerant(source);
+                const { errors } = parseTolerant(source);
 
                 assert.deepEqual(errors.map(error => error.message), []);
             });
         }
 
-        let mockup = fixture('mockup');
+        const mockup = fixture('mockup');
 
-        if (null === mockup)
+        if(null === mockup)
             it.skip('parses the full mockup', 'no filesystem in this runtime');
         else
             it('parses the full mockup end to end', () => {
-                let program = parse(mockup);
+                const program = parse(mockup);
 
                 assert.equal(program.type, NodeType.Program);
                 assert.equal(program.body.length, 1);
@@ -326,18 +326,18 @@
                 });
 
                 // Six `using` blocks hang off the top-level `await`.
-                let usings = program.body[0].body.body.filter(node => NodeType.UsingStatement === node.type);
+                const usings = program.body[0].body.body.filter(node => NodeType.UsingStatement === node.type);
 
                 assert.equal(usings.length, 6);
             });
 
-        let malformed = fixture('malformed');
+        const malformed = fixture('malformed');
 
-        if (null === malformed)
+        if(null === malformed)
             it.skip('recovers from malformed.ttv', 'no filesystem in this runtime');
         else
             it('recovers from every fault in malformed.ttv', () => {
-                let { errors } = parseTolerant(malformed);
+                const { errors } = parseTolerant(malformed);
 
                 assert.equal(errors.length, 3);
                 assert.match(errors[0].message, /not associative/i);
@@ -345,14 +345,14 @@
                 assert.match(errors[2].message, /no indented body/i);
             });
 
-        for (let name of ['idea', 'variables', 'when', 'permissions']) {
-            let source = fixture(name);
+        for(const name of ['idea', 'variables', 'when', 'permissions']) {
+            const source = fixture(name);
 
-            if (null === source)
+            if(null === source)
                 it.skip(`parses ${ name }.ttv without a single error`, 'no filesystem in this runtime');
             else
                 it(`parses ${ name }.ttv without a single error`, () => {
-                    let { errors } = parseTolerant(source);
+                    const { errors } = parseTolerant(source);
 
                     assert.deepEqual(errors.map(error => error.message), []);
                 });
@@ -392,7 +392,7 @@
         });
 
         it('requires an interior underscore in a bound name', () => {
-            for (let name of ['x', '_x', 'x_', 'USERNAME'])
+            for(const name of ['x', '_x', 'x_', 'USERNAME'])
                 assert.throws(() => parse(`\`hi\` -> ${ name }\n`), /interior underscore/i);
 
             assert.ok(parse('`hi` -> a_b\n'));
@@ -400,7 +400,7 @@
         });
 
         it('refuses to bind a subject alias', () => {
-            for (let name of ['_', '__this__', '__self__', '__me__'])
+            for(const name of ['_', '__this__', '__self__', '__me__'])
                 assert.throws(() => parse(`\`hi\` -> ${ name }\n`), /cannot be bound/i);
         });
 
@@ -409,17 +409,17 @@
         });
 
         it('reads every subject alias as the same node, and never rejects it at a read', () => {
-            for (let name of ['_', '__this__', '__self__', '__me__'])
+            for(const name of ['_', '__this__', '__self__', '__me__'])
                 assert.like(expression(name), { type: NodeType.This });
         });
     });
 
     describe('parser / `when`', () => {
         /** @param {String} body @return {Array<Object>} the statements inside an `await` body */
-        let inAwait = (body) => statement(`await *\n${ body }`).body.body;
+        const inAwait = (body) => statement(`await *\n${ body }`).body.body;
 
         it('reads a dangling `is` as the switch form', () => {
-            let [when] = inAwait('    when .command is\n        "help":\n            POST `a`\n        *:\n            POST `b`\n');
+            const [when] = inAwait('    when .command is\n        "help":\n            POST `a`\n        *:\n            POST `b`\n');
 
             assert.like(when, {
                 type: NodeType.WhenStatement,
@@ -433,7 +433,7 @@
         });
 
         it('reads `when <test>` as a chain, and folds it into the preceding `if`', () => {
-            let body = inAwait('    if .a is "x"\n        POST `a`\n    when .a is "y"\n        POST `b`\n    when .a is *\n        POST `c`\n');
+            const body = inAwait('    if .a is "x"\n        POST `a`\n    when .a is "y"\n        POST `b`\n    when .a is *\n        POST `c`\n');
 
             // Three source statements, one tree: the chain is nested, not flat.
             assert.equal(body.length, 1);
@@ -452,7 +452,7 @@
         });
 
         it('points `else` and friends at `when`', () => {
-            for (let word of ['else', 'elif', 'elseif'])
+            for(const word of ['else', 'elif', 'elseif'])
                 assert.throws(() => parse(`await *\n    ${ word } .a is "x"\n        POST \`a\`\n`), /use `when` for the next condition/i);
 
             assert.throws(() => parse('await *\n    switch .a\n        POST `a`\n'), /when <expression> is/i);
@@ -506,7 +506,7 @@
         });
 
         it('reads `|` as `where`, producing the identical node', () => {
-            let strip = (node) => JSON.stringify(node, (key, value) => ('loc' === key? undefined: value));
+            const strip = (node) => JSON.stringify(node, (key, value) => ('loc' === key ? void null : value));
 
             assert.equal(strip(expression('(.links | .a)')), strip(expression('(.links where .a)')));
         });
@@ -566,7 +566,7 @@
         });
 
         it('names every reading of ":" when a bare one turns up', () => {
-            let error = assert.throws(() => parse('await :\n'), DSLParseError);
+            const error = assert.throws(() => parse('await :\n'), DSLParseError);
 
             assert.match(error.message, /emote/i);
             assert.match(error.message, /duration/i);
@@ -575,5 +575,5 @@
     });
 })();
 
-if (typeof module === 'object' && module?.exports)
+if(typeof module === 'object' && module?.exports)
     module.exports = globalThis.TTV_DSL;

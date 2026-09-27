@@ -22,26 +22,26 @@ plugin({
         // Display the points
         new StopWatch('point_watcher_placement');
 
-        if(top.WINDOW_STATE == "unloading")
+        if(top.WINDOW_STATE == 'unloading')
             return;
 
         // Color the balance text
-        let balance = $.last('[data-test-selector*="balance-string"i]');
+        const balance = $.last('[data-test-selector*="balance-string"i]');
 
         balance?.setAttribute('rainbow-border', await STREAMER.done);
         balance?.setAttribute('bottom-only', '');
 
-        let richTooltip = $('[class*="-tooltip"i]:is([class*="channel"i], [class*="guest"i])');
+        const richTooltip = $('[class*="-tooltip"i]:is([class*="channel"i], [class*="guest"i])');
         let { name, game } = STREAMER;
         let target = null;
 
         contextualizer: if(defined(richTooltip)) {
-            let [title, subtitle, ...footers] = richTooltip.children,
-                [gTarget] = footers.map(footer => $('[class*="tooltip"i][class*="text"i]', footer)).filter(defined);
+            let [title, subtitle, ...footers] = richTooltip.children
+                , [gTarget] = footers.map(footer => $('[class*="tooltip"i][class*="text"i]', footer)).filter(defined);
 
             if(nullish(subtitle)) {
-                let [rTitle, rSubtitle] = $.all('[data-a-target*="side-nav-header-"i] ~ * *:hover [data-a-target$="metadata"i] > *'),
-                    rTarget = $('[data-a-target*="side-nav-header-"i] ~ * *:hover [data-a-target$="status"i]');
+                const [rTitle, rSubtitle] = $.all('[data-a-target*="side-nav-header-"i] ~ * *:hover [data-a-target$="metadata"i] > *')
+                    , rTarget = $('[data-a-target*="side-nav-header-"i] ~ * *:hover [data-a-target$="status"i]');
 
                 title = rTitle;
                 subtitle = rSubtitle;
@@ -65,37 +65,38 @@ plugin({
         Cache.load(['ChannelPoints'], async({ ChannelPoints }) => {
             ChannelPoints ??= {};
 
-            let [amount, fiat, face, notEarned, pointsToEarnNext] = (ChannelPoints[name] ?? 0).toString().split('|'),
-                style = new CSSObject({ verticalAlign: 'bottom', height: '20px', width: '20px' }),
-                upNext = !!~(ALL_FIRST_IN_LINE_JOBS ?? []).findIndex(href => RegExp(`/${ name }\\b`, 'i').test(href));
+            let [amount, fiat, face, notEarned, pointsToEarnNext] = (ChannelPoints[name] ?? 0).toString().split('|')
+                , style = new CSSObject({ verticalAlign: 'bottom', height: '20px', width: '20px' })
+                , upNext = !!~(ALL_FIRST_IN_LINE_JOBS ?? []).findIndex(href => RegExp(`/${ name }\\b`, 'i').test(href));
 
             amount = (amount ?? '')?.replace('.0', '');
             notEarned = parseInt(notEarned);
             pointsToEarnNext = parseInt(
-                (notEarned >= -Infinity)?
-                    pointsToEarnNext:
-                0
+                (notEarned >= -Infinity)
+                    ? pointsToEarnNext
+                : 0
             );
 
-            let amounter = $(`.tt-point-amount[name="${ name }"i]`, target);
+            const amounter = $(`.tt-point-amount[name="${ name }"i]`, target);
+
             if(defined(amounter)) {
                 amounter.setAttribute('rainbow-border', notEarned == 0);
 
                 if(amounter.innerHTML.unlike(amount))
                     amounter.innerHTML = amount;
             } else if(defined(target)) {
-                let pointAmount = `span.tt-point-amount[bottom-only][name="${ name }"]`,
-                    pointFace = `span.tt-point-face[name="${ name }"]`;
+                const pointAmount = `span.tt-point-amount[bottom-only][name="${ name }"]`
+                    , pointFace = `span.tt-point-face[name="${ name }"]`;
 
-                let text = furnish(pointAmount, {
+                const text = furnish(pointAmount, {
                         'rainbow-border': notEarned == 0,
                         innerHTML: amount,
-                    }),
-                    icon = face?.contains('/')?
-                        furnish(pointFace, {
+                    })
+                    , icon = face?.contains('/')
+                        ? furnish(pointFace, {
                             innerHTML: ` | ${ furnish('img', { src: `https://static-cdn.jtvnw.net/channel-points-icons/${ face }`, style: style.toString() }).outerHTML } `,
-                        }):
-                    furnish(pointFace, {
+                        })
+                    : furnish(pointFace, {
                         innerHTML: ` | ${ Glyphs.modify('channelpoints', { style, ...style.toObject() }) } `,
                     });
 
@@ -107,31 +108,31 @@ plugin({
 
             // Update the points (every 15s | 60 × 1/4)
             if(!(POINT_WATCHER_COUNTER++ % 60)) {
-                let allRewards = (await STREAMER.shop).filter(reward => reward.enabled),
-                    balance = STREAMER.coin || 0;
+                const allRewards = (await STREAMER.shop).filter(reward => reward.enabled)
+                    , balance = STREAMER.coin || 0;
 
                 HAS_POINTS_BALANCE ||= defined(balance);
 
-                amount = ((balance? balance.suffix('', 1).replace('.0','').toUpperCase(): 0) || (HAS_POINTS_BALANCE? amount: '&#128683;'));
+                amount = ((balance ? balance.suffix('', 1).replace('.0', '').toUpperCase() : 0) || (HAS_POINTS_BALANCE ? amount : '&#128683;'));
                 fiat = (STREAMER?.fiat ?? fiat ?? 0);
                 face = (STREAMER?.face ?? face ?? `${ STREAMER.sole }`);
                 notEarned = (
-                    (allRewards?.length)?
-                        allRewards.filter(({ cost = 0 }) => cost > STREAMER.coin).length:
-                    (notEarned >= -Infinity)?
-                        notEarned:
-                    -1
+                    (allRewards?.length)
+                        ? allRewards.filter(({ cost = 0 }) => cost > STREAMER.coin).length
+                    : (notEarned >= -Infinity)
+                        ? notEarned
+                    : -1
                 );
                 pointsToEarnNext = (
-                    (allRewards?.length)?
-                        allRewards
-                            .map(reward => (reward.cost > STREAMER.coin? reward.cost - STREAMER.coin: 0))
-                            .sort((x, y) => (x > y? -1: +1))
+                    (allRewards?.length)
+                        ? allRewards
+                            .map(reward => (reward.cost > STREAMER.coin ? reward.cost - STREAMER.coin : 0))
+                            .sort((x, y) => (x > y ? -1 : +1))
                             .filter(x => x > 0)
-                            .pop():
-                    (notEarned >= -Infinity)?
-                        pointsToEarnNext:
-                    0
+                            .pop()
+                    : (notEarned >= -Infinity)
+                        ? pointsToEarnNext
+                    : 0
                 );
 
                 face = face?.replace(/^(?:https?:.*?)?([\d]+\/[\w\-\.\/]+)$/i, '$1');
@@ -158,7 +159,7 @@ plugin({
             .then(async balanceButton => {
                 RegisterJob('point_watcher_placement');
 
-                let jump = (STREAMER.jump?.[STREAMER.name?.toLowerCase?.()]?.stream?.points);
+                const jump = (STREAMER.jump?.[STREAMER.name?.toLowerCase?.()]?.stream?.points);
 
                 // $notice('[primary] How many channel points does the user have?', jump?.balance | 0);
                 if(defined(jump?.balance))
@@ -166,9 +167,9 @@ plugin({
 
                 balanceButton.click();
 
-                for(let reward of $.all('[class*="reward"i][class*="item"i]')) {
-                    let [image, cost, title] = $.all('[class*="reward"i][class*="image"i] img[alt], [data-test-selector="cost"i], p[title]', reward),
-                        backgroundColor = (false
+                for(const reward of $.all('[class*="reward"i][class*="item"i]')) {
+                    let [image, cost, title] = $.all('[class*="reward"i][class*="image"i] img[alt], [data-test-selector="cost"i], p[title]', reward)
+                        , backgroundColor = (false
                             || $('button [style]')
                                 ?.getComputedStyle?.($(`main a[href$="${ NORMALIZED_PATHNAME }"i]`) ?? $(':root'))
                                 ?.getPropertyValue?.('background-color')
@@ -177,17 +178,17 @@ plugin({
 
                     image = image?.src ?? 'https://static-cdn.jtvnw.net/custom-reward-images/default-1.png';
                     cost = parseCoin(cost?.textContent) | 0;
-                    title = (title?.textContent ?? "").trim();
+                    title = (title?.textContent ?? '').trim();
 
                     if(!title.length && !cost)
                         continue;
 
-                    let imgURL = parseURL(image),
-                        imgPath = imgURL.pathname.slice(1),
-                        [imgType, imgName, imgSub = ''] = imgPath.split('/'),
-                        realId = (
-                            imgType.contains('auto') && imgType.contains('reward')?
-                                ({
+                    const imgURL = parseURL(image)
+                        , imgPath = imgURL.pathname.slice(1)
+                        , [imgType, imgName, imgSub = ''] = imgPath.split('/')
+                        , realId = (
+                            imgType.contains('auto') && imgType.contains('reward')
+                                ? ({
                                     'SUBSONLY': 'SINGLE_MESSAGE_BYPASS_SUB_MODE',
                                     SINGLE_MESSAGE_BYPASS_SUB_MODE: 'SINGLE_MESSAGE_BYPASS_SUB_MODE',
 
@@ -202,17 +203,17 @@ plugin({
 
                                     'CHOOSE-EMOTE': 'CHOSEN_SUB_EMOTE_UNLOCK',
                                     CHOSEN_SUB_EMOTE_UNLOCK: 'CHOSEN_SUB_EMOTE_UNLOCK',
-                                }[imgName.replace(/(\W?\d+)?\.(gif|jpe?g|png)$/i, '').replace(/^(\d+)$/, imgSub).toUpperCase()]):
-                            null
+                                }[imgName.replace(/(\W?\d+)?\.(gif|jpe?g|png)$/i, '').replace(/^(\d+)$/, imgSub).toUpperCase()])
+                            : null
                         );
 
-                    let item = {
+                    const item = {
                         title, cost,
                         image: { url: image },
 
                         backgroundColor: Color.destruct(backgroundColor).HEX,
                         id: (realId ?? UUID.from([image, title.mutilate(), cost].join('|$|'), true).value),
-                        type: (realId ?? "UNKNOWN"),
+                        type: (realId ?? 'UNKNOWN'),
 
                         enabled: true,
                         available: true,
@@ -225,7 +226,7 @@ plugin({
                         needsInput: false,
                         paused: false,
                         premium: false,
-                        prompt: "",
+                        prompt: '',
                         skips: false,
                         updated: (new Date).toJSON(),
                     };

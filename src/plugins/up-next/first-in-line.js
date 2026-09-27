@@ -20,7 +20,7 @@ plugin({
     handler: async({ StopWatch }, ActionableNotification, preferredPlace) => {
         new StopWatch('first_in_line');
 
-        let notifications = [...$.all('[data-test-selector*="notifications"i] [data-test-selector*="notification"i]'), ActionableNotification].filter(defined);
+        const notifications = [...$.all('[data-test-selector*="notifications"i] [data-test-selector*="notification"i]'), ActionableNotification].filter(defined);
 
         preferredPlace ??= 'last';
 
@@ -31,19 +31,19 @@ plugin({
         if(!UP_NEXT_ALLOW_THIS_TAB)
             return;
 
-        for(let notification of notifications) {
-            let action = (
-                notification instanceof Element?
-                    $('a[href^="/"]', notification):
-                notification
+        for(const notification of notifications) {
+            const action = (
+                notification instanceof Element
+                    ? $('a[href^="/"]', notification)
+                : notification
             );
 
             if(nullish(action))
                 continue;
 
-            let { href, pathname } = parseURL(action.href.toLowerCase()),
-                { innerText } = action,
-                uuid = UUID.from(innerText).value;
+            const { href, pathname } = parseURL(action.href.toLowerCase())
+                , { innerText } = action
+                , uuid = UUID.from(innerText).value;
 
             if(HANDLED_NOTIFICATIONS.contains(uuid))
                 continue;
@@ -67,19 +67,19 @@ plugin({
             )
                 continue;
 
-            $log('Received an actionable notification:', innerText, new Date);
+            $log("Received an actionable notification:", innerText, new Date);
 
-            let ALL_JOBS_PREFERENCE_SORTED = (preferredPlace.toString().anyOf('begin', 'beginning', 'first', 'head', 'start', '0', '1', '^')? [href, ...ALL_FIRST_IN_LINE_JOBS]: [...ALL_FIRST_IN_LINE_JOBS, href]);
+            const ALL_JOBS_PREFERENCE_SORTED = (preferredPlace.toString().anyOf('begin', 'beginning', 'first', 'head', 'start', '0', '1', '^') ? [href, ...ALL_FIRST_IN_LINE_JOBS] : [...ALL_FIRST_IN_LINE_JOBS, href]);
 
             if(defined(FIRST_IN_LINE_HREF ??= ALL_FIRST_IN_LINE_JOBS[0])) {
                 if([...ALL_FIRST_IN_LINE_JOBS, FIRST_IN_LINE_HREF].missing(href)) {
-                    $log('Pushing to First in Line:', href, new Date);
+                    $log("Pushing to First in Line:", href, new Date);
 
                     // $log('Accessing here... #2');
                     ALL_FIRST_IN_LINE_JOBS = ALL_JOBS_PREFERENCE_SORTED.map(url => url?.toLowerCase?.()).isolate().filter(url => url?.length);
                 } else {
-                    $warn('Not pushing to First in Line:', href, new Date);
-                    $log('Reason(s):', [FIRST_IN_LINE_JOB, ...ALL_FIRST_IN_LINE_JOBS],
+                    $warn("Not pushing to First in Line:", href, new Date);
+                    $log("Reason(s):", [FIRST_IN_LINE_JOB, ...ALL_FIRST_IN_LINE_JOBS],
                         `It is the next job? ${ ['No', 'Yes'][+(FIRST_IN_LINE_HREF === href)] }`,
                         `It is in the queue already? ${ ['No', 'Yes'][+(ALL_FIRST_IN_LINE_JOBS.contains(href))] }`
                     );
@@ -90,7 +90,7 @@ plugin({
 
                 continue;
             } else {
-                $log('Pushing to First in Line (no contest):', href, new Date);
+                $log("Pushing to First in Line (no contest):", href, new Date);
 
                 // Add the new job...
                 // $log('Accessing here... #3');
@@ -106,9 +106,9 @@ plugin({
             AddBalloon: {
                 update();
 
-                let index = ALL_FIRST_IN_LINE_JOBS.indexOf(href),
-                    name = parseURL(href).pathname.slice(1),
-                    channel = await(null
+                let index = ALL_FIRST_IN_LINE_JOBS.indexOf(href)
+                    , name = parseURL(href).pathname.slice(1)
+                    , channel = await (null
                         ?? ALL_CHANNELS.find(channel => channel.name.equals(name))
                         ?? new Search(name).then(Search.convertResults)
                     );
@@ -116,43 +116,43 @@ plugin({
                 if(nullish(channel))
                     continue;
 
-                let { live } = channel;
+                const { live } = channel;
                 name = channel.name;
 
                 if($.defined(`[live][time][name="${ name }"i]`))
                     continue;
 
-                index = index < 0? ALL_FIRST_IN_LINE_JOBS.length: index;
+                index = index < 0 ? ALL_FIRST_IN_LINE_JOBS.length : index;
 
-                let [balloon] = FIRST_IN_LINE_BALLOON?.add({
+                const [balloon] = FIRST_IN_LINE_BALLOON?.add({
                     href,
                     src: channel.icon,
-                    message: `${ name } <span style="display:${ live? 'none': 'inline-block' }">is not live</span>`,
+                    message: `${ name } <span style="display:${ live ? "none" : "inline-block" }">is not live</span>`,
                     subheader: `Coming up next`,
                     onremove: event => {
-                        let index = ALL_FIRST_IN_LINE_JOBS.findIndex(href => event.href == href),
-                            [removed] = (index < 0? []: ALL_FIRST_IN_LINE_JOBS.splice(index, 1)),
-                            purl = parseURL(removed),
-                            name = purl.pathname?.slice(1),
-                            redo = (purl.searchParameters?.redo ?? "");
+                        const index = ALL_FIRST_IN_LINE_JOBS.findIndex(href => event.href == href)
+                            , [removed] = (index < 0 ? [] : ALL_FIRST_IN_LINE_JOBS.splice(index, 1))
+                            , purl = parseURL(removed)
+                            , name = purl.pathname?.slice(1)
+                            , redo = (purl.searchParameters?.redo ?? '');
 
-                        $notice(`Removed from Up Next via Balloon (${ nth(index + 1, 'ordinal-position') }):`, removed, 'Was it canceled?', event.canceled);
+                        $notice(`Removed from Up Next via Balloon (${ nth(index + 1, 'ordinal-position') }):`, removed, "Was it canceled?", event.canceled);
                         if(event.canceled)
                             DO_NOT_AUTO_ADD.push(removed);
                         else if(redo.equals(name))
                             ALL_FIRST_IN_LINE_JOBS.push(removed);
                         // AddBalloon.onremove
                         if(ALL_FIRST_IN_LINE_JOBS.length)
-                            REDO_FIRST_IN_LINE_QUEUE(ALL_FIRST_IN_LINE_JOBS[0], { redo: (parseURL(ALL_FIRST_IN_LINE_JOBS[0]).searchParameters?.redo ?? "") });
+                            REDO_FIRST_IN_LINE_QUEUE(ALL_FIRST_IN_LINE_JOBS[0], { redo: (parseURL(ALL_FIRST_IN_LINE_JOBS[0]).searchParameters?.redo ?? '') });
 
                         if(index > 0) {
-                            Cache.save({ ALL_FIRST_IN_LINE_JOBS, FIRST_IN_LINE_DUE_DATE }, () => event.callback(event.element));
+                            Cache.save({ ALL_FIRST_IN_LINE_JOBS, FIRST_IN_LINE_DUE_DATE }, () => event.callback(event.element))
                         } else {
-                            $log('Destroying current job [First in Line]...', { FIRST_IN_LINE_HREF, FIRST_IN_LINE_DUE_DATE });
+                            $log("Destroying current job [First in Line]...", { FIRST_IN_LINE_HREF, FIRST_IN_LINE_DUE_DATE });
 
                             [FIRST_IN_LINE_JOB, FIRST_IN_LINE_WARNING_JOB, FIRST_IN_LINE_WARNING_TEXT_UPDATE].forEach(clearInterval);
 
-                            FIRST_IN_LINE_HREF = undefined;
+                            FIRST_IN_LINE_HREF = void null;
                             FIRST_IN_LINE_DUE_DATE = NEW_DUE_DATE();
                             Cache.save({ ALL_FIRST_IN_LINE_JOBS, FIRST_IN_LINE_DUE_DATE }, () => { REDO_FIRST_IN_LINE_QUEUE(ALL_FIRST_IN_LINE_JOBS[0]); event.callback(event.element) });
                         }
@@ -162,13 +162,13 @@ plugin({
                         name,
                         live,
                         index,
-                        time: (index < 1? GET_TIME_REMAINING(): FIRST_IN_LINE_WAIT_TIME * 60_000),
+                        time: (index < 1 ? GET_TIME_REMAINING() : FIRST_IN_LINE_WAIT_TIME * 60_000),
 
-                        style: `opacity: ${ 2**-!live }!important`,
+                        style: `opacity: ${ 2 ** -!live }!important`,
                     },
 
                     animate: container => {
-                        let subheader = $('.tt-balloon-subheader', container);
+                        const subheader = $('.tt-balloon-subheader', container);
 
                         if(!UP_NEXT_ALLOW_THIS_TAB)
                             return -1;
@@ -181,7 +181,7 @@ plugin({
 
                             let timeRemaining = GET_TIME_REMAINING();
 
-                            timeRemaining = timeRemaining < 0? 0: timeRemaining;
+                            timeRemaining = timeRemaining < 0 ? 0 : timeRemaining;
 
                             /* First in Line is paused */
                             if(FIRST_IN_LINE_PAUSED) {
@@ -197,21 +197,21 @@ plugin({
 
                             Cache.save({ FIRST_IN_LINE_BOOST });
 
-                            let name = container.getAttribute('name'),
-                                channel = await(null
+                            let name = container.getAttribute('name')
+                                , channel = await (null
                                     ?? ALL_CHANNELS.find(channel => name.equals(channel.name))
                                     ?? new Search(name).then(Search.convertResults)
-                                ),
-                                { live } = channel;
+                                )
+                                , { live } = channel;
                                 name = channel.name;
 
-                            let time = timeRemaining,
-                                intervalID = parseInt(container.getAttribute('animationID')),
-                                index = $.all('[id][guid][uuid]', container.parentElement).indexOf(container),
-                                anchor = $.all('a[connected-to]', container.parentElement)[index];
+                            const time = timeRemaining
+                                , intervalID = parseInt(container.getAttribute('animationID'))
+                                , index = $.all('[id][guid][uuid]', container.parentElement).indexOf(container)
+                                , anchor = $.all('a[connected-to]', container.parentElement)[index];
 
                             if(anchor.hasAttribute('new-href')) {
-                                let href = anchor.getAttribute('new-href');
+                                const href = anchor.getAttribute('new-href');
 
                                 anchor.removeAttribute('new-href');
                                 ALL_FIRST_IN_LINE_JOBS.splice(index, 1, anchor.href = href);
@@ -225,19 +225,19 @@ plugin({
                             if(time < 60_000 && nullish(FIRST_IN_LINE_HREF)) {
                                 FIRST_IN_LINE_DUE_DATE = NEW_DUE_DATE(time);
 
-                                $warn('Creating job to avoid [First in Line] mitigation event', channel);
+                                $warn("Creating job to avoid [First in Line] mitigation event", channel);
 
                                 return StopWatch.stop('first_in_line__job_watcher', 1000), REDO_FIRST_IN_LINE_QUEUE(FIRST_IN_LINE_HREF = channel.href);
                             }
 
                             if(time < 1000)
                                 wait(5000, [container, intervalID]).then(([container, intervalID]) => {
-                                    $log('Mitigation event from [First in Line]', { ALL_FIRST_IN_LINE_JOBS, FIRST_IN_LINE_DUE_DATE, FIRST_IN_LINE_HREF }, new Date);
+                                    $log("Mitigation event from [First in Line]", { ALL_FIRST_IN_LINE_JOBS, FIRST_IN_LINE_DUE_DATE, FIRST_IN_LINE_HREF }, new Date);
                                     // Mitigate 0 time bug?
 
                                     FIRST_IN_LINE_DUE_DATE = NEW_DUE_DATE();
                                     Cache.save({ ALL_FIRST_IN_LINE_JOBS: ALL_FIRST_IN_LINE_JOBS.filter(href => parseURL(href).pathname.unlike(parseURL(FIRST_IN_LINE_HREF).pathname)), FIRST_IN_LINE_DUE_DATE: FIRST_IN_LINE_DUE_DATE = NEW_DUE_DATE() }, () => {
-                                        $warn(`Timer overdue [animation:first-in-line-balloon] » ${ FIRST_IN_LINE_HREF }`)
+                                        $warn(`Timer overdue [animation:first-in-line-balloon] » ${ FIRST_IN_LINE_HREF }`);
                                             // .toNativeStack();
 
                                         goto(FIRST_IN_LINE_HREF);
@@ -246,24 +246,24 @@ plugin({
                                     return clearInterval(intervalID);
                                 });
 
-                            container.setAttribute('time', time - (index > 0? 0: 1000));
+                            container.setAttribute('time', time - (index > 0 ? 0 : 1000));
 
                             if(container.getAttribute('index') != index)
                                 container.setAttribute('index', index);
 
-                            let theme = { light: 'w', dark: 'b' }[THEME];
+                            const theme = { light: 'w', dark: 'b' }[THEME];
 
                             $('a', container)
-                                .modStyle(`background-color: var(--color-opac-${ theme }-${ index > 15? 1: 15 - index })`);
+                                .modStyle(`background-color: var(--color-opac-${ theme }-${ index > 15 ? 1 : 15 - index })`);
 
                             if(container.getAttribute('live') != (live + '')) {
                                 $('.tt-balloon-message', container).innerHTML =
-                                    `${ name } <span style="display:${ live? 'none': 'inline-block' }">is not live</span>`;
-                                container.modStyle(`opacity: ${ 2**-!live }!important`);
+                                    `${ name } <span style="display:${ live ? "none" : "inline-block" }">is not live</span>`;
+                                container.modStyle(`opacity: ${ 2 ** -!live }!important`);
                                 container.setAttribute('live', live);
                             }
 
-                            subheader.innerHTML = index > 0? nth(index + 1, 'ordinal-position'): toTimeString(time, 'clock');
+                            subheader.innerHTML = index > 0 ? nth(index + 1, 'ordinal-position') : toTimeString(time, 'clock');
 
                             StopWatch.stop('first_in_line__job_watcher', 1000);
                         }, 1000);
@@ -273,22 +273,22 @@ plugin({
 
                 if(defined(FIRST_IN_LINE_WAIT_TIME) && nullish(FIRST_IN_LINE_HREF)) {
                     REDO_FIRST_IN_LINE_QUEUE(FIRST_IN_LINE_HREF = href);
-                    $log('Redid First in Line queue [First in Line]...', { FIRST_IN_LINE_DUE_DATE, FIRST_IN_LINE_WAIT_TIME, FIRST_IN_LINE_HREF });
+                    $log("Redid First in Line queue [First in Line]...", { FIRST_IN_LINE_DUE_DATE, FIRST_IN_LINE_WAIT_TIME, FIRST_IN_LINE_HREF });
                 } else if(Settings.first_in_line_none) {
-                    $log('Heading to stream now [First in Line] is OFF', FIRST_IN_LINE_HREF);
+                    $log("Heading to stream now [First in Line] is OFF", FIRST_IN_LINE_HREF);
 
                     [FIRST_IN_LINE_JOB, FIRST_IN_LINE_WARNING_JOB, FIRST_IN_LINE_WARNING_TEXT_UPDATE].forEach(clearInterval);
 
                     goto(parseURL(FIRST_IN_LINE_HREF).addSearch({ tool: 'first-in-line--killed' }).href);
                 }
-            }
+            } // :AddBalloon
         }
 
         FIRST_IN_LINE_BOOST &&= ALL_FIRST_IN_LINE_JOBS.length > 0;
 
         // The boost button itself: `[speeding]` matched the Up Next toggle button first (the boost button
         // marks it too), so once rushing ended this clicked the panel open and shut every second (#44)
-        let filb = $('#up-next-boost');
+        const filb = $('#up-next-boost');
 
         if(defined(filb) && parseBool(filb.getAttribute('speeding')) != parseBool(FIRST_IN_LINE_BOOST))
             filb.click();
@@ -323,9 +323,9 @@ plugin({
     async setup() {
         __FirstInLine__: {
             await Cache.load(['ALL_FIRST_IN_LINE_JOBS', 'FIRST_IN_LINE_DUE_DATE', 'FIRST_IN_LINE_BOOST'], cache => {
-                let oneMin = 60_000,
-                    fiveMin = 5.5 * oneMin,
-                    tenMin = 10 * oneMin;
+                const oneMin = 60_000
+                    , fiveMin = 5.5 * oneMin
+                    , tenMin = 10 * oneMin;
 
                 [FIRST_IN_LINE_HREF] = ALL_FIRST_IN_LINE_JOBS = (cache.ALL_FIRST_IN_LINE_JOBS ?? []);
                 FIRST_IN_LINE_BOOST = parseBool(cache.FIRST_IN_LINE_BOOST) && parseBool(ALL_FIRST_IN_LINE_JOBS?.length);
@@ -335,22 +335,22 @@ plugin({
                         NEW_DUE_DATE(
                             FIRST_IN_LINE_TIMER = (
                                 // If the streamer hasn't been on for longer than 10mins, wait until then
-                                STREAMER.time < tenMin?
-                                    (
+                                STREAMER.time < tenMin
+                                    ? (
                                         // Boost is enabled
-                                        FIRST_IN_LINE_BOOST?
-                                            fiveMin + (tenMin - STREAMER.time):
+                                        FIRST_IN_LINE_BOOST
+                                            ? fiveMin + (tenMin - STREAMER.time)
                                         // Boost is disabled
-                                        FIRST_IN_LINE_WAIT_TIME * oneMin
-                                    ):
+                                        : FIRST_IN_LINE_WAIT_TIME * oneMin
+                                    )
                                 // Streamer has been live longer than 10mins
-                                (
+                                : (
                                     // Boost is enabled
-                                    FIRST_IN_LINE_BOOST?
+                                    FIRST_IN_LINE_BOOST
                                         // Boost is enabled
-                                        Math.min(GET_TIME_REMAINING(), fiveMin):
+                                        ? Math.min(GET_TIME_REMAINING(), fiveMin)
                                     // Boost is disabled
-                                    FIRST_IN_LINE_WAIT_TIME * oneMin
+                                    : FIRST_IN_LINE_WAIT_TIME * oneMin
                                 )
                             )
                         )
@@ -374,17 +374,17 @@ plugin({
             // Put a rainbow around repeating entries...
             setInterval(() =>
                 $.all('[id^="tt-balloon"i][name][live][href*="redo="i]').map(el => {
-                    let { searchParameters } = parseURL(el.getAttribute('href'));
-                    let name = el.getAttribute('name');
-                    let redo = (searchParameters?.redo ?? "").equals(name);
+                    const { searchParameters } = parseURL(el.getAttribute('href'));
+                    const name = el.getAttribute('name');
+                    const redo = (searchParameters?.redo ?? '').equals(name);
 
                     if(parseBool(el.getAttribute('rainbow-border')) != redo) {
                         el.setAttribute('rainbow-border', redo);
 
                         $('.tt-redo-btn svg', el).modStyle(
-                            redo?
-                                'animation: 1s linear 0s infinite normal none running spinner':
-                            'animation: !delete'
+                            redo
+                                ? 'animation: 1s linear 0s infinite normal none running spinner'
+                            : 'animation: !delete'
                         );
                     }
                 })
@@ -395,7 +395,7 @@ plugin({
                 if(from == to)
                     return;
 
-                $remark('Resetting timer. Location change detected:', { from, to });
+                $remark("Resetting timer. Location change detected:", { from, to });
 
                 // If the user clicks on a channel, reset the timer
                 if(!RESERVED_TWITCH_PATHNAMES.test(to))
@@ -404,9 +404,9 @@ plugin({
 
             // Controls what's listed under the Up Next balloon
             if(nullish(FIRST_IN_LINE_HREF) && ALL_FIRST_IN_LINE_JOBS.length) {
-                let [href] = ALL_FIRST_IN_LINE_JOBS,
-                    first = (RegExp(parseURL(STREAMER.href).pathname + '\\b', 'i').test(href)),
-                    channel = (null
+                const [href] = ALL_FIRST_IN_LINE_JOBS
+                    , first = (RegExp(parseURL(STREAMER.href).pathname + '\\b', 'i').test(href))
+                    , channel = (null
                         // Attempts to find the channel via "cache"
                         ?? ALL_CHANNELS
                             // Get all live channels listed
@@ -421,22 +421,22 @@ plugin({
                     );
 
                 if(nullish(channel) && !first) {
-                    let index = ALL_FIRST_IN_LINE_JOBS.findIndex(job => job == href),
-                        dead = ALL_FIRST_IN_LINE_JOBS[index];
+                    const index = ALL_FIRST_IN_LINE_JOBS.findIndex(job => job == href)
+                        , dead = ALL_FIRST_IN_LINE_JOBS[index];
 
-                    $log('Restoring dead channel (initializer)...', dead);
+                    $log("Restoring dead channel (initializer)...", dead);
 
-                    let { pathname } = parseURL(dead),
-                        channelID = UUID.from(pathname).value;
+                    const { pathname } = parseURL(dead)
+                        , channelID = UUID.from(pathname).value;
 
-                    let name = pathname.slice(1);
+                    const name = pathname.slice(1);
 
                     new Search(name).then(Search.convertResults)
                         .then(streamer => {
-                            let restored = ({
+                            const restored = ({
                                 from: 'SEARCH',
                                 href,
-                                icon: (typeof streamer.icon == 'string'? Object.assign(new String(streamer.icon), parseURL(streamer.icon)): null),
+                                icon: (typeof streamer.icon == 'string' ? Object.assign(new String(streamer.icon), parseURL(streamer.icon)) : null),
                                 live: parseBool(streamer.live),
                                 name: streamer.name,
                             });
@@ -447,13 +447,13 @@ plugin({
                             REDO_FIRST_IN_LINE_QUEUE(FIRST_IN_LINE_HREF = href);
                         })
                         .catch(error => {
-                            let [removed] = (index < 0? []: ALL_FIRST_IN_LINE_JOBS.splice(index, 1)),
-                                name = parseURL(removed).pathname.slice(1);
+                            const [removed] = (index < 0 ? [] : ALL_FIRST_IN_LINE_JOBS.splice(index, 1))
+                                , name = parseURL(removed).pathname.slice(1);
 
                                 $notice(`Necromancy work:`, removed);
 
                                 // Necromancer
-                                REDO_FIRST_IN_LINE_QUEUE(ALL_FIRST_IN_LINE_JOBS[0], { redo: (parseURL(removed).searchParameters?.redo ?? "") });
+                                REDO_FIRST_IN_LINE_QUEUE(ALL_FIRST_IN_LINE_JOBS[0], { redo: (parseURL(removed).searchParameters?.redo ?? '') });
 
                             Cache.save({ ALL_FIRST_IN_LINE_JOBS }, () => {
                                 $warn(`Unable to perform search for "${ name }" - ${ error }`, removed);
@@ -465,23 +465,23 @@ plugin({
                     // Handlers.first_in_line({ href, innerText: `${ channel.name } is live [First in Line]` });
 
                     // $warn('Forcing queue update for', href);
-                    REDO_FIRST_IN_LINE_QUEUE(FIRST_IN_LINE_HREF = href);
+                    REDO_FIRST_IN_LINE_QUEUE(FIRST_IN_LINE_HREF = href)
                 } else if(first) {
-                    let [removed] = ALL_FIRST_IN_LINE_JOBS.splice(0, 1),
-                        name = parseURL(removed).pathname.slice(1);
+                    const [removed] = ALL_FIRST_IN_LINE_JOBS.splice(0, 1)
+                        , name = parseURL(removed).pathname.slice(1);
 
                     $notice(`Doppleganger work:`, removed);
 
                     // Doppleganger
-                    REDO_FIRST_IN_LINE_QUEUE(ALL_FIRST_IN_LINE_JOBS[0], { redo: (parseURL(removed).searchParameters?.redo ?? "") });
+                    REDO_FIRST_IN_LINE_QUEUE(ALL_FIRST_IN_LINE_JOBS[0], { redo: (parseURL(removed).searchParameters?.redo ?? '') });
 
                     [FIRST_IN_LINE_JOB, FIRST_IN_LINE_WARNING_JOB, FIRST_IN_LINE_WARNING_TEXT_UPDATE].forEach(clearInterval);
 
                     Cache.save({ ALL_FIRST_IN_LINE_JOBS }, () => {
-                        $warn('Removed duplicate job', removed);
+                        $warn("Removed duplicate job", removed);
                     });
                 }
             }
-        }
+        } // :__FirstInLine__
     },
 });

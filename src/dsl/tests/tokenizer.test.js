@@ -14,13 +14,13 @@
     const { DSLSyntaxError } = globalThis.TTV_DSL.errors;
 
     /** @param {String} source @return {Array<String>} the token types, in order */
-    let types = (source) => tokenize(source).map(token => token.type);
+    const types = (source) => tokenize(source).map(token => token.type);
 
     /** @param {String} source @return {Array<*>} the decoded values, `EOF` dropped */
-    let values = (source) => tokenize(source).slice(0, -1).map(token => token.value);
+    const values = (source) => tokenize(source).slice(0, -1).map(token => token.value);
 
     /** @param {String} source @param {Number} [index = 0] @return {Object} */
-    let first = (source, index = 0) => tokenize(source)[index];
+    const first = (source, index = 0) => tokenize(source)[index];
 
     describe('tokenizer / comments vs. the channel selector', () => {
         it('reads "//" as a comment, not a channel named "/"', () => {
@@ -179,7 +179,7 @@
         });
 
         it('reads an all-caps word glued to a path as a realm selector', () => {
-            let token = first('using DISCORD/779741119520571456\n', 1);
+            const token = first('using DISCORD/779741119520571456\n', 1);
 
             assert.equal(token.type, TokenType.SELECTOR_REALM);
             assert.deepEqual(token.value, { realm: 'DISCORD', path: '779741119520571456' });
@@ -214,7 +214,7 @@
         });
 
         it('emits one token for a template, carrying quasis and raw expressions', () => {
-            let token = first('`hi ${ .sender }!`\n');
+            const token = first('`hi ${ .sender }!`\n');
 
             assert.equal(token.type, TokenType.TEMPLATE);
             assert.deepEqual(token.value.quasis, ['hi ', '!']);
@@ -223,34 +223,34 @@
         });
 
         it('records the absolute offset of each interpolation', () => {
-            let source = 'REPLY `hi ${ .sender }`\n',
-                token = first(source, 1);
+            const source = 'REPLY `hi ${ .sender }`\n'
+                , token = first(source, 1);
 
             assert.equal(source.slice(token.value.expressions[0].offset, token.value.expressions[0].offset + 8), ' .sender');
         });
 
         it('treats an empty template as a single empty quasi', () => {
-            let token = first('``\n');
+            const token = first('``\n');
 
             assert.deepEqual(token.value.quasis, ['']);
             assert.deepEqual(token.value.expressions, []);
         });
 
         it('keeps braces that are not interpolations literal', () => {
-            let token = first('`a { plain } brace, 100$ and a }`\n');
+            const token = first('`a { plain } brace, 100$ and a }`\n');
 
             assert.deepEqual(token.value.quasis, ['a { plain } brace, 100$ and a }']);
         });
 
         it('matches nested "${" and "}" to the right depth', () => {
-            let token = first('`x${ any from (`y${ .z }`) }w`\n');
+            const token = first('`x${ any from (`y${ .z }`) }w`\n');
 
             assert.deepEqual(token.value.quasis, ['x', 'w']);
             assert.equal(token.value.expressions[0].source, ' any from (`y${ .z }`) ');
         });
 
         it('does not let a "}" inside a nested string close an interpolation early', () => {
-            let token = first('`a${ "}" }b`\n');
+            const token = first('`a${ "}" }b`\n');
 
             assert.deepEqual(token.value.quasis, ['a', 'b']);
             assert.equal(token.value.expressions[0].source, ' "}" ');
@@ -277,19 +277,19 @@
         it('closes several blocks at once on a multi-level dedent', () => {
             // Three levels open; the `POST \`y\`` line drops two of them in one step, and
             // end-of-input closes the last.
-            let stream = types('await *\n    using *\n        await 5:00\n            POST `x`\n    POST `y`\n');
+            const stream = types('await *\n    using *\n        await 5:00\n            POST `x`\n    POST `y`\n');
 
             assert.equal(stream.filter(type => TokenType.INDENT === type).length, 3);
             assert.equal(stream.filter(type => TokenType.DEDENT === type).length, 3);
 
-            let run = stream.indexOf(TokenType.DEDENT);
+            const run = stream.indexOf(TokenType.DEDENT);
 
             assert.equal(stream[run + 1], TokenType.DEDENT, 'the two-level dedent should emit two adjacent DEDENTs');
             assert.equal(stream[run + 2], TokenType.IDENT, 'and then resume with the sibling statement');
         });
 
         it('rejects leading whitespace that mixes tabs and spaces', () => {
-            let error = assert.throws(() => tokenize('await *\n \tPOST `x`\n'), DSLSyntaxError);
+            const error = assert.throws(() => tokenize('await *\n \tPOST `x`\n'), DSLSyntaxError);
 
             assert.match(error.message, /tabs and spaces/i);
         });
@@ -319,14 +319,14 @@
         });
 
         it('suppresses INDENT and DEDENT inside parentheses', () => {
-            let stream = types('POST any from (\n            `a`\n)\n');
+            const stream = types('POST any from (\n            `a`\n)\n');
 
             assert.ok(!stream.includes(TokenType.INDENT));
             assert.ok(!stream.includes(TokenType.DEDENT));
         });
 
         it('rejects an unclosed parenthesis', () => {
-            let error = assert.throws(() => tokenize('POST any from (\n    `a`\n'), DSLSyntaxError);
+            const error = assert.throws(() => tokenize('POST any from (\n    `a`\n'), DSLSyntaxError);
 
             assert.match(error.message, /unclosed/i);
         });
@@ -338,7 +338,7 @@
 
     describe('tokenizer / source locations', () => {
         it('reports 1-based line and column', () => {
-            let token = first('await *\n    POST `x`\n', 4);
+            const token = first('await *\n    POST `x`\n', 4);
 
             assert.equal(token.type, TokenType.IDENT);
             assert.equal(token.loc.line, 2);
@@ -346,8 +346,8 @@
         });
 
         it('renders a code frame that underlines the fault', () => {
-            let error = assert.throws(() => tokenize('await *\n    POST @\n'), DSLSyntaxError),
-                frame = error.codeFrame();
+            const error = assert.throws(() => tokenize('await *\n    POST @\n'), DSLSyntaxError)
+                , frame = error.codeFrame();
 
             assert.match(frame, /> 2 \|/);
             assert.match(frame, /\^/);
@@ -399,7 +399,7 @@
         });
 
         it('refuses a "+" that is not a permission, and says why', () => {
-            let error = assert.throws(() => tokenize('POST 1 + 2\n'), DSLSyntaxError);
+            const error = assert.throws(() => tokenize('POST 1 + 2\n'), DSLSyntaxError);
 
             assert.match(error.message, /no arithmetic/i);
             assert.match(error.message, /using. header/i);
@@ -427,7 +427,7 @@
 
     describe('tokenizer / templates and a literal "${"', () => {
         it('treats an unterminated "${" as text', () => {
-            let token = first('`cost: ${ dollars`\n');
+            const token = first('`cost: ${ dollars`\n');
 
             assert.equal(token.type, TokenType.TEMPLATE);
             assert.deepEqual(token.value.quasis, ['cost: ${ dollars']);
@@ -435,7 +435,7 @@
         });
 
         it('still interpolates a "${" that closes', () => {
-            let token = first('`hi ${ .name }`\n');
+            const token = first('`hi ${ .name }`\n');
 
             assert.equal(token.value.expressions.length, 1);
             assert.deepEqual(token.value.quasis, ['hi ', '']);
@@ -443,7 +443,7 @@
 
         it('supports the documented escape idiom', () => {
             // The outer pair is a real interpolation of a string that happens to read `${x}`.
-            let token = first('`${ "${x}" }`\n');
+            const token = first('`${ "${x}" }`\n');
 
             assert.equal(token.value.expressions.length, 1);
             assert.equal(token.value.expressions[0].source.trim(), '"${x}"');
@@ -473,5 +473,5 @@
     });
 })();
 
-if (typeof module === 'object' && module?.exports)
+if(typeof module === 'object' && module?.exports)
     module.exports = globalThis.TTV_DSL;

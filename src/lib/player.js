@@ -8,10 +8,11 @@
 async function GetQuality() {
     const lock = { configurable: false, enumerable: true, writable: false };
 
-    let { videoHeight } = $('[data-a-target="video-player"i] video') ?? ({ videoHeight: $('[class*="player"i][class*="controls"i]')?.getElementByText(/\d+p/i)?.textContent });
+    const { videoHeight } = $('[data-a-target="video-player"i] video') ?? ({ videoHeight: $('[class*="player"i][class*="controls"i]')?.getElementByText(/\d+p/i)?.textContent });
+
     if((parseInt(videoHeight) | 0) > 0) {
-        let value = parseInt(videoHeight),
-            quality = new String(`${ value }p`);
+        const value = parseInt(videoHeight)
+            , quality = new String(`${ value }p`);
 
         Object.defineProperties(quality, {
             auto:   { value: true, ...lock },
@@ -24,7 +25,7 @@ async function GetQuality() {
         return quality;
     }
 
-    let buttons = {
+    const buttons = {
         get settings() {
             return $('[data-a-target*="player"i][data-a-target*="button"i]:is([data-a-target*="option"i], [data-a-target*="setting"i])');
         },
@@ -47,9 +48,9 @@ async function GetQuality() {
         })
         .catch($error);
 
-    let textOf = text => (text?.textContent ?? text?.value ?? text);
+    const textOf = text => (text?.textContent ?? text?.value ?? text);
 
-    let qualities = $.all('[data-a-target*="quality"i]:is([data-a-target*="option"i], [data-a-target*="setting"i]) input[type="radio"i]')
+    const qualities = $.all('[data-a-target*="quality"i]:is([data-a-target*="option"i], [data-a-target*="setting"i]) input[type="radio"i]')
         .map(input => ({ input, label: input.parentElement.querySelector(`label[for="${ input.id }"]`), uuid: input.id }))
         .map(option => ({ value: (textOf(option.label) ?? 'Unknown'), ...option }))
         .sort((a, b) => parseInt(b.value) - parseInt(a.value));
@@ -66,12 +67,12 @@ async function GetQuality() {
         current = ({ label: { textContent: `${ videoHeight }p` } });
     }
 
-    let quality = new String(current.label.textContent);
+    const quality = new String(current.label.textContent);
 
-    let source = current.uuid == qualities.find(({ value }) => /source/i.test(value))?.uuid,
-        auto   = current.uuid == qualities.find(({ value }) => /auto/i.test(value))?.uuid,
-        high   = current.uuid == qualities.find(({ value }) => /^\d+p/i.test(value))?.uuid,
-        low    = current.uuid == qualities.at(-1)?.uuid;
+    const source = current.uuid == qualities.find(({ value }) => /source/i.test(value))?.uuid
+        , auto   = current.uuid == qualities.find(({ value }) => /auto/i.test(value))?.uuid
+        , high   = current.uuid == qualities.find(({ value }) => /^\d+p/i.test(value))?.uuid
+        , low    = current.uuid == qualities.at(-1)?.uuid;
 
     Object.defineProperties(quality, {
         auto:   { value: auto, ...lock },
@@ -88,7 +89,7 @@ async function GetQuality() {
 // Change the video quality
     // SetQuality(quality:string?, backup:string?) → Object<{ oldValue:object<{ input:Element, label:Element }>, newValue:object<{ input:Element, label:Element }> }>
 async function SetQuality(quality = 'auto', backup = 'source') {
-    let buttons = {
+    const buttons = {
         get settings() {
             return $('[data-a-target*="player"i][data-a-target*="button"i]:is([data-a-target*="option"i], [data-a-target*="setting"i])');
         },
@@ -111,9 +112,9 @@ async function SetQuality(quality = 'auto', backup = 'source') {
         })
         .catch($error);
 
-    let textOf = text => (text?.textContent ?? text?.value ?? text);
+    const textOf = text => (text?.textContent ?? text?.value ?? text);
 
-    let qualities = $.all('[data-a-target*="quality"i]:is([data-a-target*="option"i], [data-a-target*="setting"i]) input[type="radio"i]')
+    const qualities = $.all('[data-a-target*="quality"i]:is([data-a-target*="option"i], [data-a-target*="setting"i]) input[type="radio"i]')
         .map(input => ({ input, label: input.parentElement.querySelector(`label[for="${ input.id }"]`), uuid: input.id }))
         .map(option => ({ value: (textOf(option.label) ?? 'Unknown'), ...option }))
         .sort((a, b) => parseInt(b.value) - parseInt(a.value));
@@ -123,8 +124,8 @@ async function SetQuality(quality = 'auto', backup = 'source') {
     qualities.high   = qualities.find(({ value }) => /^\d+p/i.test(value));
     qualities.low    = qualities.at(-1);
 
-    let current = qualities.find(({ input }) => input.checked),
-        desired;
+    let current = qualities.find(({ input }) => input.checked)
+        , desired;
 
     if(/(auto|high|low|source)/i.test(quality))
         desired = qualities[RegExp.$1];
@@ -145,9 +146,9 @@ async function SetQuality(quality = 'auto', backup = 'source') {
     buttons.settings?.click();
 
     return new Promise((resolve, reject) => {
-        let checker = setInterval(() => {
-            let video = $.all('video').pop(),
-            computed = (video?.videoHeight | 0) + 'p';
+        const checker = setInterval(() => {
+            const video = $.all('video').pop()
+            , computed = (video?.videoHeight | 0) + 'p';
 
             if(desired !== computed) {
                 clearInterval(checker);
@@ -161,16 +162,16 @@ async function SetQuality(quality = 'auto', backup = 'source') {
 // Get the video volume
     // GetVolume(fromVideoElement:boolean?) → number<Percentage>
 function GetVolume(fromVideoElement = true) {
-    let video = $('[data-a-target="video-player"i] video'),
-        slider = $('[data-a-target*="player"i][data-a-target*="volume"i]');
+    const video = $('[data-a-target="video-player"i] video')
+        , slider = $('[data-a-target*="player"i][data-a-target*="volume"i]');
 
-    return parseFloat(fromVideoElement? video?.volume: slider?.value);
+    return parseFloat(fromVideoElement ? video?.volume : slider?.value);
 }
 
 Object.defineProperties(GetVolume, {
     onchange: {
         set(callback) {
-            let name = callback.name || UUID.from(callback.toString()).value;
+            const name = callback.name || UUID.from(callback.toString()).value;
 
             if(GetVolume.__onchange__.has(name))
                 return GetVolume.__onchange__.get(name);
@@ -190,9 +191,9 @@ Object.defineProperties(GetVolume, {
 // Change the video volume
     // SetVolume(volume:number<Percentage>) → undefined
 function SetVolume(volume = 0.5) {
-    let video = $('[data-a-target="video-player"i] video'),
-        thumb = $('[data-a-target*="player"i][data-a-target*="volume"i]'),
-        slider = $(':is(video, [class*="video"i][class*="render"i]) ~ * .player-controls + * [style]');
+    const video = $('[data-a-target="video-player"i] video')
+        , thumb = $('[data-a-target*="player"i][data-a-target*="volume"i]')
+        , slider = $(':is(video, [class*="video"i][class*="render"i]) ~ * .player-controls + * [style]');
 
     volume = parseFloat(volume?.toFixed?.(2) || 1);
 
@@ -209,10 +210,10 @@ function SetVolume(volume = 0.5) {
 // Get the view mode
     // GetViewMode() → string<{ "fullscreen" | "fullwidth" | "theatre" | "default" }>
 function GetViewMode() {
-    let mode = 'default',
-        theatre = false,
-        overview = false,
-        fullwidth = false;
+    let mode = 'default'
+        , theatre = false
+        , overview = false
+        , fullwidth = false;
 
     if(theatre
         ||= /theatre/i.test([...$(`[data-test-selector*="video-container"i]`).classList].join(' '))
@@ -229,12 +230,12 @@ function GetViewMode() {
     )
         mode = 'fullwidth';
 
-    let container = $(`button[data-a-target*="fullscreen"i]`)?.closest('div');
+    const container = $(`button[data-a-target*="fullscreen"i]`)?.closest('div');
 
     if(nullish(container))
         return mode;
 
-    let classes = ['', ...container.classList].join('.');
+    const classes = ['', ...container.classList].join('.');
 
     if(false
         || (true
@@ -252,8 +253,8 @@ function GetViewMode() {
 // Change the view mode
     // SetViewMode(mode:string<{ "fullscreen" | "fullwidth" | "theatre" | "default" }>) → undefined
 function SetViewMode(mode = 'default') {
-    let buttons = [],
-        toggles = {
+    const buttons = []
+        , toggles = {
             overview: {
                 off: `[class*="root"i][class*="home"i] [href]`,
                 on: `[class*="root"i][class*="chat"i] [href]`,
@@ -288,7 +289,7 @@ function SetViewMode(mode = 'default') {
         case 'default': {
             buttons.push(toggles.theatre.on, toggles.chat.on);
         } break;
-    }
+    } // switch mode
 
     for(let button of buttons) {
         button = $(button);

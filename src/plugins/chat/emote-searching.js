@@ -12,7 +12,7 @@ plugin({
 
     init(context) {
         context.EmoteSearch = {};
-        context.EmoteDragCommand = undefined;
+        context.EmoteDragCommand = void null;
     },
 
     handler: (context) => {
@@ -20,25 +20,29 @@ plugin({
 
         context.EmoteDragCommand = (lang => {
             switch(lang) {
-                case 'de':
+                case 'de': {
                     return 'Ziehen, um zu benutzen';
+                }
 
-                case 'es':
+                case 'es': {
                     return 'Arrastre para usar';
+                }
 
-                case 'ru':
+                case 'ru': {
                     return 'Перетащите для использования';
+                }
 
                 case 'en':
-                default:
+                default: {
                     return 'Drag to use';
-            }
+                }
+            } // switch lang
         })(top.LANGUAGE);
 
         if(defined(context.EmoteSearch.input?.value))
             if(context.EmoteSearch.input.value != context.EmoteSearch.value)
                 if((context.EmoteSearch.value = context.EmoteSearch.input.value.trim())?.length >= 3)
-                    for(let [name, callback] of context.EmoteSearch.__onquery__)
+                    for(const [name, callback] of context.EmoteSearch.__onquery__)
                         wait(250).then(() => {
                             if(context.EmoteSearch.value == context.EmoteSearch.input.value)
                                 callback(context.EmoteSearch.value);
@@ -53,7 +57,7 @@ plugin({
         Object.defineProperties(context.EmoteSearch, {
             onquery: {
                 set(callback) {
-                    let name = callback.name || UUID.from(callback.toString()).value;
+                    const name = callback.name || UUID.from(callback.toString()).value;
 
                     if(context.EmoteSearch.__onquery__.has(name))
                         return context.EmoteSearch.__onquery__.get(name);
@@ -75,9 +79,9 @@ plugin({
                 value: function appendResults(nodes, type) {
                     $.all(`[tt-${ type }-emote-search-result]`).forEach(node => node.remove());
 
-                    let container = $('[class*="emote-picker"i] [class*="emote-picker"i][class*="block"i] > *:last-child');
+                    const container = $('[class*="emote-picker"i] [class*="emote-picker"i][class*="block"i] > *:last-child');
 
-                    for(let node of nodes) {
+                    for(const node of nodes) {
                         if(nullish(node))
                             continue;
 
@@ -86,7 +90,7 @@ plugin({
                         container.append(node);
                     }
 
-                    let title = (null
+                    const title = (null
                         ?? $('p', container.previousElementSibling)
                         ?? $('[class*="emote-picker"i] p')
                     );

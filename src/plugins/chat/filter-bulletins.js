@@ -27,7 +27,7 @@ plugin({
     handler: (context) => {
         new context.StopWatch('filter_bulletins');
 
-        for(let [key, subjects] of BULLETIN_FILTERS)
+        for(const [key, subjects] of BULLETIN_FILTERS)
             if(key.endsWith('bullets_paid') && parseBool(Settings[key]))
                 PINNED_FILTER = setInterval(() => $('[class*="pinned"i]:is([class*="by"i], [class*="card"i]), [class*="happening"i][class*="notification"i]')?.closest('[class*="chat"] > div:not([class])')?.remove(), 100);
             else if(parseBool(Settings[key]))
@@ -37,7 +37,7 @@ plugin({
     },
 
     unhandler: () => {
-        for(let [key, subjects] of BULLETIN_FILTERS)
+        for(const [key, subjects] of BULLETIN_FILTERS)
             RemoveCustomCSSBlock(`FilterBulletType${ key.slice(-5) }`);
         clearInterval(PINNED_FILTER);
     },

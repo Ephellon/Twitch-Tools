@@ -11,19 +11,19 @@ plugin({
     timer: 500,
 
     handler: () => {
-        let { action = '', channel, autosave, controls, filetype, quality, slug, volume } = parseURL(window.location).searchParameters;
+        const { action = '', channel, autosave, controls, filetype, quality, slug, volume } = parseURL(window.location).searchParameters;
 
         if(action.unlike('dvr'))
             return;
 
-        let video = $('video');
-        let live = $.nullish('[class*="channel-status"i][class*="offline"i]');
+        const video = $('video');
+        const live = $.nullish('[class*="channel-status"i][class*="offline"i]');
 
         if(nullish(video) || !live)
             return (
-                parseBool(autosave)?
-                    video?.stopRecording():
-                null
+                parseBool(autosave)
+                    ? video?.stopRecording()
+                : null
             );
 
         if(defined(video.__recorder__))
@@ -31,15 +31,15 @@ plugin({
 
         video.startRecording(Infinity, { mimeType: `video/${ filetype }` })
             .then(chunks => {
-                let blob = new Blob(chunks, { type: chunks.type });
-                let link = furnish(`a#${ slug }`, { href: URL.createObjectURL(blob), download: `${ slug }.${ window.MIME_Types.find(video.mimeType) }`, hidden: true }, slug);
+                const blob = new Blob(chunks, { type: chunks.type });
+                const link = furnish(`a#${ slug }`, { href: URL.createObjectURL(blob), download: `${ slug }.${ window.MIME_Types.find(video.mimeType) }`, hidden: true }, slug);
 
                 $.head.append(link);
                 link.click();
             })
             .catch($warn)
             .finally(() => {
-                let link = $(`#${ slug }`);
+                const link = $(`#${ slug }`);
 
                 // Free up the memory
                 URL.revokeObjectURL(link?.href);

@@ -12,21 +12,21 @@ plugin({
         setInterval(() => {
             $.all('.search-tray [role="cell"i] [data-a-target="nav-search-item"i]')
                 .map(element => {
-                    let [thumbnail, searchTerm] = element.children;
-                    let image = $('img', thumbnail)?.src,
-                        name = searchTerm.textContent.trim(),
-                        live = $.defined('[data-test-selector="live-badge"i]', element);
+                    const [thumbnail, searchTerm] = element.children;
+                    const image = $('img', thumbnail)?.src
+                        , name = searchTerm.textContent.trim()
+                        , live = $.defined('[data-test-selector="live-badge"i]', element);
 
                     if(!live)
                         return;
 
-                    let f = furnish;
-                    let button = $('[tt-pip]', element.closest('[role]'));
+                    const f = furnish;
+                    const button = $('[tt-pip]', element.closest('[role]'));
 
                     if(defined(button))
                         return;
 
-                    let anchor = element.closest('[href]');
+                    const anchor = element.closest('[href]');
 
                     anchor.modStyle('display:inline-block;width:calc(100% - 5rem)');
                     anchor.insertAdjacentElement('afterend', f(`button[tt-pip]`, {

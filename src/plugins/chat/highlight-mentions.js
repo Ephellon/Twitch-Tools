@@ -12,7 +12,7 @@ plugin({
 
     handler: (context) => {
         Chat.get().map(Chat.onmessage = async line => {
-            let usernames = [context.USERNAME];
+            const usernames = [context.USERNAME];
 
             if(parseBool(Settings.highlight_mentions_extra))
                 usernames.push('all', 'chat', 'everyone');
@@ -23,13 +23,13 @@ plugin({
             if(Queue.messages.missing(line.uuid)) {
                 Queue.messages.push(line.uuid);
 
-                when(line => (defined(line.element)? line: false), 1000, line).then(async line => {
-                    let { author, message, style } = line;
-                    let element = await line.element;
+                when(line => (defined(line.element) ? line : false), 1000, line).then(async line => {
+                    const { author, message, style } = line;
+                    const element = await line.element;
 
                     // $log('Highlighting message:', { author, message });
 
-                    let [color] = style.split(/color:([^;]+)/i).map(s => s.trim()).filter(s => s.length).map(Color.destruct);
+                    const [color] = style.split(/color:([^;]+)/i).map(s => s.trim()).filter(s => s.length).map(Color.destruct);
 
                     element.modStyle(`background-color: var(--color-opac-p-8); border:1px solid ${ color }; border-radius:3px;`);
                 });

@@ -10,13 +10,13 @@ plugin({
 
     async install() {
         Handlers.phone_number = () => {
-            let syntax = /(?<countryCode>\+?\d{1,3})?[\s\.\-\(]?(?<areaCode>\d{3})?[\)\.\-\s]?(?<officeCode>\d{3})[\s\.\-]?(?<lineNumber>\d{1,4})/;
+            const syntax = /(?<countryCode>\+?\d{1,3})?[\s\.\-\(]?(?<areaCode>\d{3})?[\)\.\-\s]?(?<officeCode>\d{3})[\s\.\-]?(?<lineNumber>\d{1,4})/;
         };
         Timers.phone_number = 250;
 
         __PhoneNumber__:
         if(parseBool(Settings.phone_number)) {
-            $remark('Parsing phone numbers...');
+            $remark("Parsing phone numbers...");
 
             RegisterJob('phone_number');
         }
@@ -32,12 +32,12 @@ plugin({
          *
          */
         Handlers.common_phrase_translations = () => {
-            let translations = [
+            const translations = [
                 [/(Twitch|T.?T.?V|The)(.?s)?\s+(T\W?o\W?S\W?|Terms(?:.+of.+Service)?)/i, [`<a href="/legal/terms-of-service/" target="_blank">$&</a>`, e => defined(e.closest('[href]'))]], // Twitch's ToS
             ];
 
-            for(let [phrases, [replacement, ignoreIf]] of translations)
-                for(let element of $.getAllElementsByText(phrases)) {
+            for(const [phrases, [replacement, ignoreIf]] of translations)
+                for(const element of $.getAllElementsByText(phrases)) {
                     if(element != element.getElementByText(phrases))
                         continue; // Not lowest child
                     if(ignoreIf(element))
@@ -50,7 +50,7 @@ plugin({
 
         __CommonPhraseTranslations__:
         if(true) {
-            RegisterJob('common_phrase_translations');
+            RegisterJob('common_phrase_translations')
         }
     },
 });

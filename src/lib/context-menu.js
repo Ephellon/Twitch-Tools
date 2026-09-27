@@ -10,8 +10,8 @@ class ContextMenu {
     static #RootCloseOnComplete = when.defined(() => $('#root'))
         .then(root => root
             .addEventListener('mouseup', event => {
-                let { path, button = -1 } = event,
-                    menu = $('.tt-context-menu');
+                let { path, button = -1 } = event
+                    , menu = $('.tt-context-menu');
 
                 if(defined(menu))
                     menu.remove();
@@ -25,27 +25,27 @@ class ContextMenu {
 
         let styling = [];
 
-        for(let key in fineTuning) {
-            let [value, unit] = (fineTuning[key] ?? "").toString().split(/([\-\+]?[\d\.]+)([^\d\.]+)/).filter(string => string.length);
+        for(const key in fineTuning) {
+            let [value, unit] = (fineTuning[key] ?? '').toString().split(/([\-\+]?[\d\.]+)([^\d\.]+)/).filter(string => string.length);
 
             if(nullish(value))
                 continue;
 
             if(parseFloat(value) >= -Infinity)
-                unit ??= "px";
+                unit ??= 'px';
             else
-                unit ??= "";
+                unit ??= '';
 
             styling.push(`${ key }:${ value }${ unit }`);
         }
 
         styling = styling.join(';');
 
-        let f = furnish;
+        const f = furnish;
 
-        let container = $('#root'),
-            menu = f(`.tt-context-menu.tt-absolute`, { style: styling }),
-            uuid = UUID.from(options.map(Object.values).join('\n')).value;
+        const container = $('#root')
+            , menu = f(`.tt-context-menu.tt-absolute`, { style: styling })
+            , uuid = UUID.from(options.map(Object.values).join('\n')).value;
 
         menu.id = uuid;
 
@@ -57,7 +57,7 @@ class ContextMenu {
                 // The options...
                 f('div', { style: 'display:inline-block; min-width:16rem; max-width:48rem; width:max-content', role: 'dialog' },
                     f('div', { style: 'padding:0.25rem;' },
-                        ...options.map(({ text = "", icon = "", shortcut = "", favicon = "", action = () => {} }) => {
+                        ...options.map(({ text = '', icon = '', shortcut = '', favicon = '', action = () => {} }) => {
                             if(icon?.length)
                                 icon = f('div', { style: 'display:inline-block; float:left; margin-left:calc(-1rem - 16px); margin-right:1rem', innerHTML: Glyphs.modify(icon, { height: '16px', width: '16px', style: 'vertical-align:-3px' }) });
                             if(text?.length)
@@ -78,7 +78,7 @@ class ContextMenu {
 
         container.append(menu);
 
-        let offset = getOffset(menu.firstElementChild);
+        const offset = getOffset(menu.firstElementChild);
 
         if(offset.screenOverflow) {
             if(offset.screenOverflowX)

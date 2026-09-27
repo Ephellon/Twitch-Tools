@@ -20,7 +20,7 @@ plugin({
             new StopWatch('video_clips__dvr');
 
             // Add the button to all channels
-            let actionPanel = $('.about-section__actions');
+            const actionPanel = $('.about-section__actions');
 
             if(nullish(actionPanel))
                 return StopWatch.stop('video_clips__dvr');
@@ -33,11 +33,11 @@ plugin({
                     DVRChannels ??= {};
                 }
 
-                let f = furnish,
-                    s = string => string.replace(/$/, "'").replace(/(?<!s)'$/, "'s"),
-                    DVR_ID = STREAMER.name.toLowerCase(),
-                    enabled = parseBool(DVRChannels[DVR_ID]?.length),
-                    [title, subtitle, icon] = [
+                let f = furnish
+                    , s = string => string.replace(/$/, "'").replace(/(?<!s)'$/, "'s")
+                    , DVR_ID = STREAMER.name.toLowerCase()
+                    , enabled = parseBool(DVRChannels[DVR_ID]?.length)
+                    , [title, subtitle, icon] = [
                         ['Turn DVR on', `${ s(STREAMER.name) } live streams will be recorded`, 'host'],
                         ['Turn DVR off', `${ s(STREAMER.name) } live streams will no longer be recorded`, 'clip']
                     ][+!!enabled];
@@ -45,13 +45,13 @@ plugin({
                 icon = Glyphs.modify(icon, { style: 'fill:var(--user-contrast-color)!important', height: '20px', width: '20px' });
 
                 // Create the action button...
-                let action =
+                const action =
                 f('div', { 'tt-action': 'auto-dvr', 'for': DVR_ID, enabled, 'action-origin': 'foreign', style: `animation:1s fade-in 1;` },
                     f('button', {
                         onmouseup: async event => {
-                            let { currentTarget, isTrusted = false, button = -1 } = event;
+                            const { currentTarget, isTrusted = false, button = -1 } = event;
 
-                            if(!!button)
+                            if(button)
                                 return /* Not the primary button */;
 
                             Cache.load('DVRChannels', async({ DVRChannels }) => {
@@ -62,10 +62,10 @@ plugin({
                                     DVRChannels ??= {};
                                 }
 
-                                let s = string => string.replace(/$/, "'").replace(/(?<!s)'$/, "'s"),
-                                    DVR_ID = STREAMER.name.toLowerCase(),
-                                    enabled = !parseBool(DVRChannels[DVR_ID]?.length),
-                                    [title, subtitle, icon] = [
+                                let s = string => string.replace(/$/, "'").replace(/(?<!s)'$/, "'s")
+                                    , DVR_ID = STREAMER.name.toLowerCase()
+                                    , enabled = !parseBool(DVRChannels[DVR_ID]?.length)
+                                    , [title, subtitle, icon] = [
                                         ['Turn DVR on', `${ s(STREAMER.name) } live streams will be recorded`, 'host'],
                                         ['Turn DVR off', `${ s(STREAMER.name) } live streams will no longer be recorded`, 'clip']
                                     ][+!!enabled];
@@ -78,6 +78,7 @@ plugin({
 
                                 // Add the DVR...
                                 let message;
+
                                 if(enabled) {
                                     message = `${ s(STREAMER.name) } streams will be recorded.`;
 
@@ -129,24 +130,24 @@ plugin({
                             });
                         });
 
-                    let leaveHandler = STREAMER.onraid = STREAMER.onhost = top.beforeleaving = top.onlocationchange = async({ hosting = false, raiding = false, raided = false, from, to, persisted }) => {
+                    const leaveHandler = STREAMER.onraid = STREAMER.onhost = top.beforeleaving = top.onlocationchange = async({ hosting = false, raiding = false, raided = false, from, to, persisted }) => {
                         if(STASH_SAVED)
                             return;
                         STASH_SAVED = true;
 
-                        for(let [guid, { recording }] of Recording.__RECORDERS__)
+                        for(const [guid, { recording }] of Recording.__RECORDERS__)
                             if(recording == MASTER_VIDEO.DEFAULT_RECORDING)
                                 recording?.stop()?.save(DVR_CLIP_PRECOMP_NAME);
                             else
                                 recording?.stop()?.save();
 
-                        let next = await GetNextStreamer();
+                        const next = await GetNextStreamer();
 
-                        $log('Saving current DVR stash. Reason (DVR leave handler):', { hosting, raiding, raided, leaving: defined(from) }, 'Moving onto:', next);
+                        $log("Saving current DVR stash. Reason (DVR leave handler):", { hosting, raiding, raided, leaving: defined(from) }, "Moving onto:", next);
                     };
 
                     $.on('focusin', event => {
-                        let DVR_ID = STREAMER.name.toLowerCase();
+                        const DVR_ID = STREAMER.name.toLowerCase();
 
                         if(top.focusedin)
                             return;
@@ -169,18 +170,18 @@ plugin({
             Object.defineProperties(top, {
                 DVR_CLIP_PRECOMP_NAME: {
                     get() {
-                        let chunks = MASTER_VIDEO.getRecording(Recording.ANY)?.blobs;
+                        const chunks = MASTER_VIDEO.getRecording(Recording.ANY)?.blobs;
 
                         if(!chunks?.length)
                             return new ClipName(2);
 
-                        let now = new Date;
+                        const now = new Date;
 
                         // File Name
                         return [
                             STREAMER.name,
                             now.toLocaleDateString().replace(/[\/\\:\*\?"<>\|]+/g, '-'),
-                            `(${ (parseBool(Settings.show_stats)? toTimeString(chunks.recordingLength, 'short'): ((now.getHours() % 12) || 12) + now.getMeridiem()).replace(/\b(0+[ydhms])+/ig, '') })`,
+                            `(${ (parseBool(Settings.show_stats) ? toTimeString(chunks.recordingLength, 'short') : ((now.getHours() % 12) || 12) + now.getMeridiem()).replace(/\b(0+[ydhms])+/ig, '') })`,
                         ]
                             .filter(s => s?.length)
                             .map(s => s.trim())
@@ -194,15 +195,15 @@ plugin({
                     return;
                 STASH_SAVED = true;
 
-                for(let [guid, { recording }] of Recording.__RECORDERS__)
+                for(const [guid, { recording }] of Recording.__RECORDERS__)
                     if(recording == MASTER_VIDEO.DEFAULT_RECORDING)
                         recording?.stop()?.save(DVR_CLIP_PRECOMP_NAME);
                     else
                         recording?.stop()?.save();
 
-                let next = await GetNextStreamer();
+                const next = await GetNextStreamer();
 
-                $log('Saving current DVR stash. Reason (beforeunload):', { hosting, raiding, raided, leaving: defined(from) }, 'Moving onto:', next);
+                $log("Saving current DVR stash. Reason (beforeunload):", { hosting, raiding, raided, leaving: defined(from) }, "Moving onto:", next);
             });
         } catch(error) {
             /* Ignore these errors :P */
@@ -210,10 +211,10 @@ plugin({
 
         Handlers.__MASTER_AUTO_DVR_HANDLER__ = event => {
             MASTER_VIDEO.DEFAULT_RECORDING?.then(({ target }) => {
-                let chunks = target.blobs;
-                let feed = null /* No prompt exists for the master recording */,
-                    halt = parseBool(feed?.getAttribute('halt')),
-                    name = (feed?.getAttribute('value') || DVR_CLIP_PRECOMP_NAME).replace(GetFileSystem().allIllegalFilenameCharacters, '-');
+                const chunks = target.blobs;
+                const feed = null /* No prompt exists for the master recording */
+                    , halt = parseBool(feed?.getAttribute('halt'))
+                    , name = (feed?.getAttribute('value') || DVR_CLIP_PRECOMP_NAME).replace(GetFileSystem().allIllegalFilenameCharacters, '-');
             })
             ?.stop()
             ?.save(DVR_CLIP_PRECOMP_NAME)
@@ -227,7 +228,7 @@ plugin({
         };
 
         Unhandlers.video_clips__dvr = () => {
-            let DVR_ID = STREAMER.name.toLowerCase();
+            const DVR_ID = STREAMER.name.toLowerCase();
 
             MASTER_VIDEO.DEFAULT_RECORDING?.stop();
         };
@@ -236,19 +237,19 @@ plugin({
             if(nullish(top.titleInterval))
                 top.titleInterval = setInterval(() => {
                     document.title = (
-                        MASTER_VIDEO.hasRecording(Recording.ANY)?
-                            `\u{1f534} ${ STREAMER.name } - ${ toTimeString((new Date) - MASTER_VIDEO.getRecording(Recording.ANY)?.creationTime, 'clock') }`:
-                        `${ STREAMER.name } - Twitch`
+                        MASTER_VIDEO.hasRecording(Recording.ANY)
+                            ? `\u{1f534} ${ STREAMER.name } - ${ toTimeString((new Date) - MASTER_VIDEO.getRecording(Recording.ANY)?.creationTime, 'clock') }`
+                        : `${ STREAMER.name } - Twitch`
                     );
                 }, 250);
         }, 1000);
 
         __AutoDVR__:
         if(parseBool(Settings?.video_clips__dvr)) {
-            $remark('Adding DVR functionality...');
+            $remark("Adding DVR functionality...");
 
             function HandleAd(adCountdown) {
-                let [main, mini] = $.all('video');
+                const [main, mini] = $.all('video');
 
                 if(false
                     || nullish(main)
@@ -257,14 +258,14 @@ plugin({
                 )
                     return when.defined(() => $('[data-a-target*="ad-countdown"i]')).then(HandleAd);
 
-                let blobs = main.getRecording('AUTO_DVR')?.blobs ?? [];
+                const blobs = main.getRecording('AUTO_DVR')?.blobs ?? [];
 
-                let InsertChunksAt = blobs.length;
+                const InsertChunksAt = blobs.length;
 
-                let AdBreak = Recording.proxy(mini, { name: 'AUTO_DVR:AD_HANDLER', mimeType: main.mimeType });
+                const AdBreak = Recording.proxy(mini, { name: 'AUTO_DVR:AD_HANDLER', mimeType: main.mimeType });
 
                 AdBreak.then(event => {
-                    let chunks = event.target.blobs;
+                    const chunks = event.target.blobs;
 
                     $notice(`Adding chunks to main <video> @ ${ InsertChunksAt }`, { blobs, chunks, event });
 
@@ -273,7 +274,7 @@ plugin({
 
                 when.nullish(() => $('[data-a-target*="ad-countdown"i]'))
                     .then(() => {
-                        let [main, mini] = $.all('video');
+                        const [main, mini] = $.all('video');
 
                         main?.resumeRecording('AUTO_DVR');
                         mini?.stopRecording('AUTO_DVR:AD_HANDLER');
@@ -309,13 +310,14 @@ plugin({
 
                         checking:
                         // Only check for the stream when it's live; if the dates don't match, it just went live again
-                        for(let DVR_ID in DVRChannels) {
-                            let streamer = (DVR_ID + '').toLowerCase();
-                            let channel = await new Search(streamer).then(Search.convertResults),
-                                ok = parseBool(channel?.ok);
+                        for(const DVR_ID in DVRChannels) {
+                            const streamer = (DVR_ID + '').toLowerCase();
+                            let channel = await new Search(streamer).then(Search.convertResults)
+                                , ok = parseBool(channel?.ok);
 
                             // Search did not complete...
                             let num = 3;
+
                             while(!ok && num-- > 0) {
 
                                 Search.void(streamer);
@@ -341,26 +343,26 @@ plugin({
                                 continue checking;
                             }
 
-                            let { name, live, icon, href, data = { actualStartTime: null } } = channel,
-                                slug = DVRChannels[name.toLowerCase()],
-                                enabled = defined(slug);
-                            let index = (ALL_FIRST_IN_LINE_JOBS.findIndex(href => parseURL(href).pathname.slice(1).equals(name))),
-                                job = ALL_FIRST_IN_LINE_JOBS[index];
+                            let { name, live, icon, href, data = { actualStartTime: null } } = channel
+                                , slug = DVRChannels[name.toLowerCase()]
+                                , enabled = defined(slug);
+                            const index = (ALL_FIRST_IN_LINE_JOBS.findIndex(href => parseURL(href).pathname.slice(1).equals(name)))
+                                , job = ALL_FIRST_IN_LINE_JOBS[index];
 
                             if(defined(job) && name.unlike(STREAMER.name) && enabled) {
                                 // Skip the queue!
-                                let [removed] = ALL_FIRST_IN_LINE_JOBS.splice(index, 1),
-                                    name = parseURL(removed).pathname.slice(1);
+                                const [removed] = ALL_FIRST_IN_LINE_JOBS.splice(index, 1)
+                                    , name = parseURL(removed).pathname.slice(1);
 
                                 $notice(`Skipper work:`, removed);
 
                                 FIRST_IN_LINE_DUE_DATE = NEW_DUE_DATE(FIRST_IN_LINE_TIMER);
 
                                 // Skipper
-                                REDO_FIRST_IN_LINE_QUEUE(ALL_FIRST_IN_LINE_JOBS[0], { redo: (parseURL(removed).searchParameters?.redo ?? "") });
+                                REDO_FIRST_IN_LINE_QUEUE(ALL_FIRST_IN_LINE_JOBS[0], { redo: (parseURL(removed).searchParameters?.redo ?? '') });
 
                                 Cache.save({ ALL_FIRST_IN_LINE_JOBS, FIRST_IN_LINE_DUE_DATE }, () => {
-                                    $log('Skipping queue in favor of a DVR channel', job);
+                                    $log("Skipping queue in favor of a DVR channel", job);
 
                                     goto(parseURL(job).addSearch({ dvr: true }).href);
                                 });
@@ -386,7 +388,7 @@ plugin({
 
                 $('.about-section')?.append?.(actionPanel);
             } else {
-                for(let child of actionPanel.children)
+                for(const child of actionPanel.children)
                     child.setAttribute('action-origin', 'native');
             }
 
@@ -403,13 +405,13 @@ plugin({
                         DVRChannels ??= {};
                     }
 
-                    for(let DVR_ID in DVRChannels) {
-                        let streamer = (DVR_ID + '').toLowerCase();
+                    for(const DVR_ID in DVRChannels) {
+                        const streamer = (DVR_ID + '').toLowerCase();
 
                         if(parseBool(DVRChannels[DVR_ID]) && [STREAMER.name, STREAMER.sole].map(s => (s + '').toLowerCase()).contains(streamer))
                             when.defined(() => $('#up-next-control'))
                                 .then(button => {
-                                    let paused = parseBool(button.getAttribute('paused'));
+                                    const paused = parseBool(button.getAttribute('paused'));
 
                                     if(paused)
                                         return;
@@ -435,7 +437,7 @@ plugin({
 
                                     when.nullish(() => $('[data-a-target*="ad-countdown"i]'))
                                         .then(() => {
-                                            let recordingKey = 'AUTO_DVR:AD_COUNTDOWN';
+                                            const recordingKey = 'AUTO_DVR:AD_COUNTDOWN';
 
                                             SetQuality(VideoClips.quality, 'auto').then(() => {
                                                 Recording.proxy(MASTER_VIDEO, { name: recordingKey, mimeType: `video/${ VideoClips.filetype }`, hidden: !Settings.show_stats })
@@ -456,26 +458,26 @@ plugin({
                                             });
                                         });
 
-                                    let leaveHandler = STREAMER.onraid = STREAMER.onhost = top.beforeleaving = top.onlocationchange = async({ hosting = false, raiding = false, raided = false, from, to, persisted }) => {
+                                    const leaveHandler = STREAMER.onraid = STREAMER.onhost = top.beforeleaving = top.onlocationchange = async({ hosting = false, raiding = false, raided = false, from, to, persisted }) => {
                                         if(STASH_SAVED)
                                             return;
                                         STASH_SAVED = true;
 
-                                        let DVR_ID = STREAMER.name.toLowerCase();
+                                        const DVR_ID = STREAMER.name.toLowerCase();
 
-                                        for(let [guid, { recording }] of Recording.__RECORDERS__)
+                                        for(const [guid, { recording }] of Recording.__RECORDERS__)
                                             if(recording == MASTER_VIDEO.DEFAULT_RECORDING)
                                                 recording?.stop()?.save(DVR_CLIP_PRECOMP_NAME);
                                             else
                                                 recording?.stop()?.save();
 
-                                        let next = await GetNextStreamer();
+                                        const next = await GetNextStreamer();
 
-                                        $log('Saving current DVR stash. Reason (panel leave handler):', { hosting, raiding, raided, leaving: defined(from) }, 'Moving onto:', next);
+                                        $log("Saving current DVR stash. Reason (panel leave handler):", { hosting, raiding, raided, leaving: defined(from) }, "Moving onto:", next);
                                     };
 
                                     $.on('focusin', event => {
-                                        let DVR_ID = STREAMER.name.toLowerCase();
+                                        const DVR_ID = STREAMER.name.toLowerCase();
 
                                         if(top.focusedin)
                                             return;
@@ -493,6 +495,6 @@ plugin({
 
             AUTO_DVR__CHECKING?.();
             RegisterJob('video_clips__dvr');
-        }
+        } // :__AutoDVR__
     },
 });

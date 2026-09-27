@@ -14,22 +14,22 @@ plugin({
         EXACT_POINTS_SPENT = 0;
         let EXACT_POINTS_DEBTED = 0;
         let EXACT_POINTS_EARNED = 0;
-        let COUNTING_HREF = NORMALIZED_PATHNAME;
-        let OBSERVED_COLLECTION_ANIMATIONS = new Map;
+        const COUNTING_HREF = NORMALIZED_PATHNAME;
+        const OBSERVED_COLLECTION_ANIMATIONS = new Map;
         let DISPLAYING_RANK;
         let RANK_TOOLTIP;
-        let TALLY = new Map;
+        const TALLY = new Map;
         let CHANNEL_POINTS_MULTIPLIER;
 
         function UpdateReceiptDisplay() {
-            let receipt = EXACT_POINTS_EARNED - (EXACT_POINTS_SPENT + EXACT_POINTS_DEBTED),
-                glyph = Glyphs.modify('channelpoints', { height: '20px', width: '20px', style: 'vertical-align:bottom' }),
-                { abs } = Math;
+            let receipt = EXACT_POINTS_EARNED - (EXACT_POINTS_SPENT + EXACT_POINTS_DEBTED)
+                , glyph = Glyphs.modify('channelpoints', { height: '20px', width: '20px', style: 'vertical-align:bottom' })
+                , { abs } = Math;
 
             receipt = receipt.floorToNearest(parseInt(String(Settings.channelpoints_receipt_display ?? '').replace('round', '')) || 1);
 
-            let TIME_LEFT = ((STREAMER.data?.dailyBroadcastTime ?? 16_200_000) - STREAMER.time);
-            let AVAILABLE_POINTS = TIME_LEFT < 1? -1: ((120 + 200 * +!top.TWITCH_INTEGRITY_FAIL) * CHANNEL_POINTS_MULTIPLIER * (TIME_LEFT / 3_600_000)) | 0;
+            const TIME_LEFT = ((STREAMER.data?.dailyBroadcastTime ?? 16_200_000) - STREAMER.time);
+            let AVAILABLE_POINTS = TIME_LEFT < 1 ? -1 : ((120 + 200 * +!top.TWITCH_INTEGRITY_FAIL) * CHANNEL_POINTS_MULTIPLIER * (TIME_LEFT / 3_600_000)) | 0;
 
             if(AVAILABLE_POINTS < 1)
                 AVAILABLE_POINTS = Infinity;
@@ -40,21 +40,21 @@ plugin({
                 // Spent
                 abs(EXACT_POINTS_SPENT + EXACT_POINTS_DEBTED).suffix(' &darr;', 1, 'natural'),
                 // Available (according to stremer's average stream time)
-                parseBool(Settings.show_stats)?
-                    [furnish(`marquee[direction=left][scrollamount=1]`, { style: 'width:fit-content;vertical-align:top' }).html(`&larr;`), Glyphs.modify('channelpoints', { height: '12px', width: '12px', style: 'vertical-align:-1px;position:relative' }).asNode, furnish(`span#tt-points-left-this-stream`).html(AVAILABLE_POINTS.prefix('', 1, 'natural'))].map(e => e.outerHTML).join(''):
-                null
+                parseBool(Settings.show_stats)
+                    ? [furnish(`marquee[direction=left][scrollamount=1]`, { style: 'width:fit-content;vertical-align:top' }).html(`&larr;`), Glyphs.modify('channelpoints', { height: '12px', width: '12px', style: 'vertical-align:-1px;position:relative' }).asNode, furnish(`span#tt-points-left-this-stream`).html(AVAILABLE_POINTS.prefix('', 1, 'natural'))].map(e => e.outerHTML).join('')
+                : null
             ].filter(defined).join(' | ');
             $('#tt-points-receipt').innerHTML = `${ glyph } ${ abs(receipt).suffix(`&${ 'du'[+(receipt >= 0)] }arr;`, 1, 'natural') }`;
         }
 
         setInterval(() => {
-            let container = $('#tt-points-left-this-stream');
+            const container = $('#tt-points-left-this-stream');
 
             if(nullish(container))
                 return;
 
-            let TIME_LEFT = ((STREAMER.data?.dailyBroadcastTime ?? 16_200_000) - STREAMER.time);
-            let AVAILABLE_POINTS = TIME_LEFT < 1? -1: ((120 + 200 * +!top.TWITCH_INTEGRITY_FAIL) * CHANNEL_POINTS_MULTIPLIER * (TIME_LEFT / 3_600_000)) | 0;
+            const TIME_LEFT = ((STREAMER.data?.dailyBroadcastTime ?? 16_200_000) - STREAMER.time);
+            let AVAILABLE_POINTS = TIME_LEFT < 1 ? -1 : ((120 + 200 * +!top.TWITCH_INTEGRITY_FAIL) * CHANNEL_POINTS_MULTIPLIER * (TIME_LEFT / 3_600_000)) | 0;
 
             if(AVAILABLE_POINTS < 1)
                 AVAILABLE_POINTS = Infinity;
@@ -64,7 +64,7 @@ plugin({
 
         __GetMultiplierAmount__:
         if(nullish(CHANNEL_POINTS_MULTIPLIER)) {
-            let button = $('[data-test-selector*="points"i][data-test-selector*="summary"i] button');
+            const button = $('[data-test-selector*="points"i][data-test-selector*="summary"i] button');
 
             if(defined(button)) {
                 button.click();
@@ -78,7 +78,7 @@ plugin({
 
                 button.click();
             } else {
-                CHANNEL_POINTS_MULTIPLIER = 1;
+                CHANNEL_POINTS_MULTIPLIER = 1
             }
         }
 
@@ -89,34 +89,35 @@ plugin({
             DisplayRanking: {
                 let placement;
 
-                if((placement = Settings.points_receipt_placement ??= "null").equals("null")) {
+                if((placement = Settings.points_receipt_placement ??= 'null').equals('null')) {
                     StopWatch.stop('points_receipt_placement__ranking');
+
                     break DisplayRanking;
                 }
 
                 DISPLAYING_RANK = setInterval(async() => {
-                    let container = $('[data-test-selector="chat-input-buttons-container"i]'),
-                        ranking = $('#tt-channel-point-ranking');
+                    let container = $('[data-test-selector="chat-input-buttons-container"i]')
+                        , ranking = $('#tt-channel-point-ranking');
 
                     if(nullish(container))
                         return StopWatch.stop('points_receipt_placement__ranking');
 
                     // Field tests show that generally (for established streams): ≤1% of followers are actively watching at any given time during a stream
-                    let scale = n => n**9;
-                    let { cult, poll, rank } = STREAMER,
-                        place = (100 * scale(rank / cult)).clamp(1, 100) | 0,
-                        string = nth((rank * scale(rank / cult)).clamp(1, cult).round().toLocaleString(LANGUAGE)),
-                        color = (null
+                    const scale = n => n ** 9;
+                    let { cult, poll, rank } = STREAMER
+                        , place = (100 * scale(rank / cult)).clamp(1, 100) | 0
+                        , string = nth((rank * scale(rank / cult)).clamp(1, cult).round().toLocaleString(LANGUAGE))
+                        , color = (null
                             ?? ['#FFD700', '#C0C0C0', '#CD7F32'][((place / 10).ceil() || 1) - 1]
                             ?? '#91FF47'
                         );
 
                     rank = (
-                        rank < 1 || isNaN(rank)?
-                            '&infin;':
-                        place <= 30?
-                            `<span style="text-decoration:${ 4 - ((place / 10).ceil() || 1) }px underline ${ color }">${ string }</span>`:
-                        string
+                        rank < 1 || isNaN(rank)
+                            ? '&infin;'
+                        : place <= 30
+                            ? `<span style="text-decoration:${ 4 - ((place / 10).ceil() || 1) }px underline ${ color }">${ string }</span>`
+                        : string
                     );
 
                     if(nullish(ranking))
@@ -135,7 +136,7 @@ plugin({
                     if(rank.equals('&infin;'))
                         placementString = `Unable to get your rank for this channel`;
                     else
-                        placementString = `You are in the top ${ place }% of ${ (STREAMER.ping? 'follow': 'view') }ers`;
+                        placementString = `You are in the top ${ place }% of ${ (STREAMER.ping ? 'follow' : 'view') }ers`;
 
                     if(RANK_TOOLTIP.innerHTML.unlike(placementString))
                         RANK_TOOLTIP.innerHTML = placementString;
@@ -150,21 +151,21 @@ plugin({
             DisplayReceipt: {
                 let placement;
 
-                if((placement = Settings.points_receipt_placement ??= "null").equals("null"))
+                if((placement = Settings.points_receipt_placement ??= 'null').equals('null'))
                     return StopWatch.stop('points_receipt_placement');
 
-                let live_time = $('.live-time');
+                const live_time = $('.live-time');
 
                 if(nullish(live_time))
                     return RestartJob('points_receipt_placement', 'missing:live_time');
 
-                let classes = element => [...element.classList].map(label => '.' + label).join('');
+                const classes = element => [...element.classList].map(label => '.' + label).join('');
 
-                let container = live_time.closest(`*:not(${ classes(live_time) })`),
-                    parent = container.closest(`*:not(${ classes(container) })`);
+                const container = live_time.closest(`*:not(${ classes(live_time) })`)
+                    , parent = container.closest(`*:not(${ classes(container) })`);
 
-                let f = furnish;
-                let points_receipt =
+                const f = furnish;
+                const points_receipt =
                     f(`${ container.tagName }${ classes(container) }`, { style: 'min-width:7rem; text-align:center' },
                         f(`${ live_time.tagName }#tt-points-receipt${ classes(live_time).replace(/\blive-time\b/gi, 'points-receipt') }`, { receipt: 0, innerHTML: `${ Glyphs.modify('channelpoints', { height: '20px', width: '20px', style: 'vertical-align:bottom' }) } 0 &uarr;` })
                     );
@@ -174,18 +175,18 @@ plugin({
                 RECEIPT_TOOLTIP = new Tooltip(points_receipt);
 
                 COUNTING_POINTS = setInterval(async() => {
-                    let points_receipt = $('#tt-points-receipt'),
-                        balance = $.last('[data-test-selector*="balance-string"i]'),
-                        exact_debt = $('[data-test-selector^="prediction-checkout"i], [data-test-selector*="user-prediction"i][data-test-selector*="points"i], [data-test-selector*="user-prediction"i] p, [class*="points-icon"i] ~ p *:not(:empty)'),
-                        exact_change = $('[class*="points"i][class*="summary"i][class*="add-text"i]');
+                    let points_receipt = $('#tt-points-receipt')
+                        , balance = $.last('[data-test-selector*="balance-string"i]')
+                        , exact_debt = $('[data-test-selector^="prediction-checkout"i], [data-test-selector*="user-prediction"i][data-test-selector*="points"i], [data-test-selector*="user-prediction"i] p, [class*="points-icon"i] ~ p *:not(:empty)')
+                        , exact_change = $('[class*="points"i][class*="summary"i][class*="add-text"i]');
 
                     if(nullish(points_receipt))
                         return RestartJob('points_receipt_placement', 'missing:points_receipt');
 
-                    let [chat] = $.all('[role] ~ *:is([role="log"i], [class~="chat-room"i], [data-a-target*="chat"i], [data-test-selector*="chat"i]), [data-test-selector*="banned"i][data-test-selector*="message"i], [data-test-selector^="video-chat"i]');
+                    const [chat] = $.all('[role] ~ *:is([role="log"i], [class~="chat-room"i], [data-a-target*="chat"i], [data-test-selector*="chat"i]), [data-test-selector*="banned"i][data-test-selector*="message"i], [data-test-selector^="video-chat"i]');
 
                     if(nullish(chat)) {
-                        let framedData = PostOffice.get('points_receipt_placement');
+                        const framedData = PostOffice.get('points_receipt_placement');
 
                         window.PostOffice = PostOffice;
 
@@ -199,15 +200,15 @@ plugin({
 
                     EXACT_POINTS_DEBTED = parseCoin(exact_debt?.textContent ?? EXACT_POINTS_DEBTED) | 0;
 
-                    let animationID = ((exact_change?.textContent ?? exact_debt?.textContent ?? -EXACT_POINTS_SPENT) | 0).toString(),
-                        animationTimeStamp = +new Date;
+                    const animationID = ((exact_change?.textContent ?? exact_debt?.textContent ?? -EXACT_POINTS_SPENT) | 0).toString()
+                        , animationTimeStamp = +new Date;
 
                     if(!/^([\+\-, \d]+)$/.test(animationID))
                         return;
 
                     // Don't keep adding the exact change while the animation is playing
                     if(OBSERVED_COLLECTION_ANIMATIONS.has(animationID)) {
-                        let time = OBSERVED_COLLECTION_ANIMATIONS.get(animationID);
+                        const time = OBSERVED_COLLECTION_ANIMATIONS.get(animationID);
 
                         // It's been less than 5 minutes
                         if(nullish(animationID) || !parseBool(animationID) || Math.abs(animationTimeStamp - time) < 300_000)
@@ -231,7 +232,7 @@ plugin({
 
                     UpdateReceiptDisplay();
                 }, 2_5_0);
-            }
+            } // :DisplayReceipt
 
             StopWatch.stop('points_receipt_placement');
         };
@@ -244,7 +245,7 @@ plugin({
                 .forEach(span => span?.parentElement?.remove());
         };
 
-        let REDEMPTION_LISTENERS = {};
+        const REDEMPTION_LISTENERS = {};
 
         __PointsReceiptPlacement__:
         if(parseBool(Settings.points_receipt_placement)) {
@@ -265,9 +266,10 @@ plugin({
                         // The message is from the user (for embedded messages)
                         || $('[class*="message"i] [class*="username"i] [data-a-user]', element)?.dataset?.aUser?.equals(USERNAME)
                     )
-                )) return;
+                ))
+                    return;
 
-                let [item] = (await STREAMER.shop).filter(reward => reward.title.length && message.mutilate().contains(reward.title.mutilate()));
+                const [item] = (await STREAMER.shop).filter(reward => reward.title.length && message.mutilate().contains(reward.title.mutilate()));
 
                 if(nullish(item))
                     return;
@@ -288,8 +290,8 @@ plugin({
                                 REDEMPTION_LISTENERS.UNLOCKED_REWARDS = true;
 
                                 element.closest('button').addEventListener('mouseup', ({ currentTarget }) => {
-                                    let title = $('[id*="reward"i][id*="header"i]').textContent.trim(),
-                                        amount = parseCoin(currentTarget?.previousSibling?.nodeValue) | 0;
+                                    const title = $('[id*="reward"i][id*="header"i]').textContent.trim()
+                                        , amount = parseCoin(currentTarget?.previousSibling?.nodeValue) | 0;
 
                                     EXACT_POINTS_SPENT += amount;
                                     TALLY.set(`Reward: "${ title }" @ ${ (new Date).toJSON() }`, amount);
@@ -314,8 +316,8 @@ plugin({
                                 REDEMPTION_LISTENERS.BRIBABLE_VOTES = true;
 
                                 button.addEventListener('mouseup', ({ currentTarget }) => {
-                                    let title = $('[class*="community"i][class*="stack"i] [data-test-selector="header"i] ~ *')?.textContent ?? 'Something? No real title given',
-                                        [amount] = /\p{N}+/u.exec(currentTarget?.textContent) || '';
+                                    let title = $('[class*="community"i][class*="stack"i] [data-test-selector="header"i] ~ *')?.textContent ?? 'Something? No real title given'
+                                        , [amount] = /\p{N}+/u.exec(currentTarget?.textContent) || '';
 
                                     EXACT_POINTS_SPENT += (amount |= 0);
                                     TALLY.set(`Poll: "${ title }" @ ${ (new Date).toJSON() }`, amount | 0);
@@ -334,6 +336,6 @@ plugin({
 
                 addListener();
             }
-        }
+        } // :__PointsReceiptPlacement__
     },
 });

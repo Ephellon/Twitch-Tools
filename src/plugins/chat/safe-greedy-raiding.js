@@ -18,17 +18,17 @@ plugin({
     },
 
     handler: () => {
-        let raiding = $.defined('[data-test-selector="raid-banner"i]'),
-            atTop = (top == window);
+        const raiding = $.defined('[data-test-selector="raid-banner"i]')
+            , atTop = (top == window);
 
         if(RAID_LOGGED || atTop || !raiding)
             return;
         RAID_LOGGED ||= raiding;
 
-        let { current = false } = parseBool(parseURL(location).searchParameters);
-        let raid_banner = $.all('[data-test-selector="raid-banner"i] strong').map(strong => strong?.innerText),
-            [,from,] = location.pathname.split(/(?<!^)\//),
-            [to] = raid_banner.filter(name => !RegExp(`^${ from }$`, 'i').test(name));
+        const { current = false } = parseBool(parseURL(location).searchParameters);
+        let raid_banner = $.all('[data-test-selector="raid-banner"i] strong').map(strong => strong?.innerText)
+            , [,from] = location.pathname.split(/(?<!^)\//)
+            , [to] = raid_banner.filter(name => !RegExp(`^${ from }$`, 'i').test(name));
 
         // Already on the channeling that's raiding...
         if(current)
@@ -37,9 +37,9 @@ plugin({
         $warn(`There is a raid happening on another channel... ${ from } → ${ to } (${ raid_banner.join(' to ') })`);
 
         Runtime.sendMessage({ action: 'LOG_RAID_EVENT', data: { from, to } }, async({ events }) => {
-            $warn(`${ from } has raided ${ events } time${ (events != 1? 's': '') } this week. Current raid: ${ to } @ ${ (new Date) }`);
+            $warn(`${ from } has raided ${ events } time${ (events != 1 ? "s" : "") } this week. Current raid: ${ to } @ ${ (new Date) }`);
 
-            let payable = $.defined('[data-test-selector*="balance-string"i]');
+            const payable = $.defined('[data-test-selector*="balance-string"i]');
 
             top.postMessage({ action: 'raid', from, to, events, payable }, location.origin);
         });

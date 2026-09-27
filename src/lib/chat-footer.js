@@ -6,20 +6,20 @@
 // Creates a Twitch-style chat footer
     // new ChatFooter(title:string, options:object?) → Element<ChatFooter>
 class ChatFooter {
-    static #FOOTERS = new Map()
-    static #FOOTER_TIMEOUT = -1
+    static #FOOTERS = new Map();
+    static #FOOTER_TIMEOUT = -1;
 
     constructor(title, options = {}) {
-        let f = furnish;
+        const f = furnish;
 
-        let uuid = UUID.from(title).value,
-            existing = ChatFooter.#FOOTERS.get(title);
+        const uuid = UUID.from(title).value
+            , existing = ChatFooter.#FOOTERS.get(title);
 
         if(defined(existing))
             return existing;
 
-        let parent = $('[data-a-target="chat-scroller"i]'),
-            footer =
+        const parent = $('[data-a-target="chat-scroller"i]')
+            , footer =
             f('#tt-chat-footer.tt-absolute.tt-border-radius-medium.tt-bottom-0.tt-mg-b-1',
                 {
                     uuid,

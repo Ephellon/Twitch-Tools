@@ -14,7 +14,7 @@ plugin({
     timer: 1000,
 
     init() {
-        NATIVE_REPLY_POLYFILL = undefined;
+        NATIVE_REPLY_POLYFILL = void null;
     },
 
     handler: (context) => {
@@ -32,30 +32,30 @@ plugin({
 
         NATIVE_REPLY_POLYFILL ??= {
             // Button above chat elements
-            NewReplyButton: ({ uuid, style, handle, message, mentions, }) => {
-                let f = furnish;
+            NewReplyButton: ({ uuid, style, handle, message, mentions }) => {
+                const f = furnish;
 
-                let addedClasses = {
-                    bubbleContainer: ['chat-input-tray__open','tt-block','tt-border-b','tt-border-l','tt-border-r','tt-border-radius-large','tt-border-t','tt-c-background-base','tt-elevation-1','tt-left-0','tt-pd-05','tt-right-0','tt-z-below'],
-                    chatContainer: ['chat-input-container__open','tt-block','tt-border-bottom-left-radius-large','tt-border-bottom-right-radius-large','tt-c-background-base','tt-pd-05'],
+                const addedClasses = {
+                    bubbleContainer: ['chat-input-tray__open', 'tt-block', 'tt-border-b', 'tt-border-l', 'tt-border-r', 'tt-border-radius-large', 'tt-border-t', 'tt-c-background-base', 'tt-elevation-1', 'tt-left-0', 'tt-pd-05', 'tt-right-0', 'tt-z-below'],
+                    chatContainer: ['chat-input-container__open', 'tt-block', 'tt-border-bottom-left-radius-large', 'tt-border-bottom-right-radius-large', 'tt-c-background-base', 'tt-pd-05'],
                     chatContainerChild: ['chat-input-container__input-wrapper'],
-                },
-                removedClasses = {
-                    bubbleContainer: ['tt-block','tt-border-radius-large','tt-elevation-0','tt-left-0','tt-pd-0','tt-right-0','tt-z-below'],
-                    chatContainer: ['tt-block','tt-border-radius-large','tt-pd-0'],
+                }
+                , removedClasses = {
+                    bubbleContainer: ['tt-block', 'tt-border-radius-large', 'tt-elevation-0', 'tt-left-0', 'tt-pd-0', 'tt-right-0', 'tt-z-below'],
+                    chatContainer: ['tt-block', 'tt-border-radius-large', 'tt-pd-0'],
                 };
 
                 return f('.chat-line__reply-icon.tt-absolute.tt-border-radius-medium.tt-c-background-base.tt-elevation-1').with(
                     f('button.tt-align-items-center.tt-align-middle.tt-border-bottom-left-radius-medium.tt-border-bottom-right-radius-medium.tt-border-top-left-radius-medium.tt-border-top-right-radius-medium.tt-button-icon.tt-core-button.tt-inline-flex.tt-interactive.tt-justify-content-center.tt-overflow-hidden.tt-relative[@testSelector=chat-reply-button]',
                         {
                             onclick: event => {
-                                let { currentTarget } = event,
-                                    messageElement = currentTarget.closest('div').previousElementSibling,
-                                    chatInput = $('[data-a-target="chat-input"i]'),
-                                    [bubbleContainer, chatContainer] = $.all('.chat-input > :last-child > :first-child > :not(:first-child)'),
-                                    chatContainerChild = $('div', chatContainer);
+                                let { currentTarget } = event
+                                    , messageElement = currentTarget.closest('div').previousElementSibling
+                                    , chatInput = $('[data-a-target="chat-input"i]')
+                                    , [bubbleContainer, chatContainer] = $.all('.chat-input > :last-child > :first-child > :not(:first-child)')
+                                    , chatContainerChild = $('div', chatContainer);
 
-                                let f = furnish;
+                                const f = furnish;
 
                                 AddNativeReplyBubble: {
                                     bubbleContainer.classList.remove(...removedClasses.bubbleContainer);
@@ -82,9 +82,9 @@ plugin({
                                                 f('button#tt-close-native-twitch-reply.tt-align-items-center.tt-align-middle.tt-border-bottom-left-radius-medium.tt-border-bottom-right-radius-medium.tt-border-top-left-radius-medium.tt-border-top-right-radius-medium.tt-button-icon.tt-core-button.tt-inline-flex.tt-interactive.tt-justify-content-center.tt-overflow-hidden.tt-relative',
                                                     {
                                                         onclick: event => {
-                                                            let chatInput = $('[data-a-target="chat-input"i]'),
-                                                                [bubbleContainer, chatContainer] = $.all('.chat-input > :last-child > :first-child > :not(:first-child)'),
-                                                                chatContainerChild = $('div', chatContainer);
+                                                            const chatInput = $('[data-a-target="chat-input"i]')
+                                                                , [bubbleContainer, chatContainer] = $.all('.chat-input > :last-child > :first-child > :not(:first-child)')
+                                                                , chatContainerChild = $('div', chatContainer);
 
                                                             RemoveNativeReplyBubble: {
                                                                 bubbleContainer.classList.remove(...addedClasses.bubbleContainer);
@@ -95,7 +95,7 @@ plugin({
 
                                                                 $.all('[id^="tt-native-twitch-reply"i]').forEach(element => element.remove());
 
-                                                                chatInput.setAttribute('placeholder', 'Send a message');
+                                                                chatInput.setAttribute('placeholder', "Send a message");
                                                             }
                                                         },
 
@@ -112,7 +112,7 @@ plugin({
                                         )
                                     );
 
-                                    chatInput.setAttribute('placeholder', 'Send a reply');
+                                    chatInput.setAttribute('placeholder', "Send a reply");
                                 }
 
                                 chatInput.focus();
@@ -132,8 +132,8 @@ plugin({
 
             // Highlighter for chat elements
             AddNativeReplyButton: line => {
-                when(line => (defined(line.element)? line: false), 1000, line).then(async line => {
-                    let { uuid, style, handle, message, mentions, element } = line;
+                when(line => (defined(line.element) ? line : false), 1000, line).then(async line => {
+                    const { uuid, style, handle, message, mentions, element } = line;
 
                     if($.defined('.chat-line__message-container', element))
                         return;
@@ -141,18 +141,22 @@ plugin({
                     if(handle == context.USERNAME)
                         return;
 
-                    let parent = $('div', element);
-                    if(nullish(parent)) return;
+                    const parent = $('div', element);
 
-                    let target = $('div', parent);
-                    if(nullish(target)) return;
+                    if(nullish(parent))
+                        return;
 
-                    let highlighter = furnish('.chat-line__message-highlight.tt-absolute.tt-border-radius-medium[@testSelector=chat-message-highlight]', {});
+                    const target = $('div', parent);
+
+                    if(nullish(target))
+                        return;
+
+                    const highlighter = furnish('.chat-line__message-highlight.tt-absolute.tt-border-radius-medium[@testSelector=chat-message-highlight]', {});
 
                     target.classList.add('chat-line__message-container');
 
                     parent.insertBefore(highlighter, parent.firstElementChild);
-                    parent.append(NATIVE_REPLY_POLYFILL.NewReplyButton({ uuid, style, handle, message, mentions, }));
+                    parent.append(NATIVE_REPLY_POLYFILL.NewReplyButton({ uuid, style, handle, message, mentions }));
                 });
             },
         };

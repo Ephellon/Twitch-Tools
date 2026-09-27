@@ -21,8 +21,8 @@ plugin({
                         'ogg',
                     ]
                         .map(type => {
-                            let types = { mp3: 'mpeg' },
-                                src = Runtime.getURL(`aud/${ Settings.whisper_audio_sound ?? "goes-without-saying-608" }.${ type }`);
+                            const types = { mp3: 'mpeg' }
+                                , src = Runtime.getURL(`aud/${ Settings.whisper_audio_sound ?? 'goes-without-saying-608' }.${ type }`);
                             type = `audio/${ types[type] ?? type }`;
 
                             return furnish('source', { src, type }).outerHTML;

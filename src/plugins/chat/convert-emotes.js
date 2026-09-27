@@ -9,16 +9,16 @@ plugin({
     id: 'chat.convert_emotes',
 
     async install(context) {
-        let OWNED_EMOTES = (top.OWNED_EMOTES ??= new Map),
-            CAPTURED_EMOTES = (top.CAPTURED_EMOTES ??= new Map),
-            CONVERT_TO_CAPTURED_EMOTE = (emote, makeTooltip = true) => {
-                let { name, src } = emote;
+        const OWNED_EMOTES = (top.OWNED_EMOTES ??= new Map)
+            , CAPTURED_EMOTES = (top.CAPTURED_EMOTES ??= new Map)
+            , CONVERT_TO_CAPTURED_EMOTE = (emote, makeTooltip = true) => {
+                const { name, src } = emote;
 
                 // Try to filter out Twitch-provided emotes...
                 if(/^\W/.test(name))
                     return;
 
-                let emoteContainer =
+                const emoteContainer =
                 furnish('.tt-emote-captured.tt-pd-x-05.tt-relative').with(
                     furnish('.emote-button').with(
                         furnish('.tt-inline-flex').with(
@@ -28,14 +28,14 @@ plugin({
                                     name,
 
                                     onclick: event => {
-                                        let name = event.currentTarget.getAttribute('name'),
-                                            chat = $('[data-a-target="chat-input"i]');
+                                        const name = event.currentTarget.getAttribute('name')
+                                            , chat = $('[data-a-target="chat-input"i]');
 
                                         // chat.innerHTML = (chat.value += `${ name } `);
                                     },
 
                                     ondragstart: event => {
-                                        let { currentTarget } = event;
+                                        const { currentTarget } = event;
 
                                         event.dataTransfer.setData('text/plain', currentTarget.getAttribute('name').trim() + ' ');
                                         event.dataTransfer.dropEffect = 'move';
@@ -67,9 +67,9 @@ plugin({
             };
 
         // Convert emote URL to a short url
-        let shrt = url => url.replace(/https:\/\/static-cdn\.jtvnw\.net\/emoticons\/v1\/(\d+)\/([\d\.]+)/i, ($0, $1, $2, $$, $_) => {
-                let id = parseInt($1).toString(36),
-                    version = $2;
+        const shrt = url => url.replace(/https:\/\/static-cdn\.jtvnw\.net\/emoticons\/v1\/(\d+)\/([\d\.]+)/i, ($0, $1, $2, $$, $_) => {
+                const id = parseInt($1).toString(36)
+                    , version = $2;
 
                 return [id, version].join('-');
             });
@@ -80,22 +80,22 @@ plugin({
             if(defined(emoteSection))
                 return;
 
-            let parent = $('[data-test-selector^="chat-room-component"i] .emote-picker__scroll-container > *');
+            const parent = $('[data-test-selector^="chat-room-component"i] .emote-picker__scroll-container > *');
 
             if(nullish(parent))
                 return RestartJob('convert_emotes', 'missing:convert_emotes.parent');
 
             // Get the streamer's emotes and make them draggable
-            let streamersEmotes = $(`[class^="emote-picker"i] img[alt="${ context.STREAMER.name }"i]`)?.closest('div')?.nextElementSibling;
+            const streamersEmotes = $(`[class^="emote-picker"i] img[alt="${ context.STREAMER.name }"i]`)?.closest('div')?.nextElementSibling;
 
             if(nullish(streamersEmotes))
                 return RegisterJob('convert_emotes');
 
-            for(let lock of $.all('[data-test-selector*="lock"i]', streamersEmotes)) {
-                let emote = lock.nextElementSibling,
-                    { alt, src } = emote,
-                    parent = emote.closest('[class^="emote-picker"i]').parentElement,
-                    container = parent.parentElement;
+            for(const lock of $.all('[data-test-selector*="lock"i]', streamersEmotes)) {
+                const emote = lock.nextElementSibling
+                    , { alt, src } = emote
+                    , parent = emote.closest('[class^="emote-picker"i]').parentElement
+                    , container = parent.parentElement;
 
                 container.insertBefore(CONVERT_TO_CAPTURED_EMOTE({ name: alt, src }, false), parent);
 
@@ -105,9 +105,9 @@ plugin({
             }
 
             // Put all collected emotes into the emote-picker list
-            let caughtEmotes = [];
+            const caughtEmotes = [];
 
-            for(let [name, src] of CAPTURED_EMOTES)
+            for(const [name, src] of CAPTURED_EMOTES)
                 caughtEmotes.push({ name, src });
 
             emoteSection =
@@ -151,7 +151,7 @@ plugin({
         __ConvertEmotes__:
         if(parseBool(Settings.convert_emotes)) {
             // Collect emotes
-            let chat_emote_button = $('[data-a-target="emote-picker-button"i]');
+            const chat_emote_button = $('[data-a-target="emote-picker-button"i]');
 
             if(nullish(chat_emote_button))
                 break __ConvertEmotes__;
@@ -159,7 +159,7 @@ plugin({
             function CollectEmotes() {
                 chat_emote_button.click();
 
-                let chat_emote_scroll = $('.emote-picker .simplebar-scroll-content');
+                const chat_emote_scroll = $('.emote-picker .simplebar-scroll-content');
 
                 if(nullish(chat_emote_scroll)) {
                     chat_emote_button.click();
@@ -204,13 +204,13 @@ plugin({
             Chat.get().map(Chat.onmessage = async line => {
                 let regexp;
 
-                for(let emote in line.emotes)
+                for(const emote in line.emotes)
                     if(!OWNED_EMOTES.has(emote) && !CAPTURED_EMOTES.has(emote) && !context.BTTV_EMOTES.has(emote)) {
                         // $log(`Adding emote "${ emote }"`);
 
                         CAPTURED_EMOTES.set(emote, line.emotes[emote]);
 
-                        let capturedEmote = CONVERT_TO_CAPTURED_EMOTE({ name: emote, src: line.emotes[emote] });
+                        const capturedEmote = CONVERT_TO_CAPTURED_EMOTE({ name: emote, src: line.emotes[emote] });
 
                         if(defined(capturedEmote))
                             $('#tt-captured-emotes-container')?.append?.(capturedEmote);
@@ -223,19 +223,19 @@ plugin({
                     Queue.emotes = [];
                 Queue.emotes.push(line.uuid);
 
-                for(let [emote, url] of CAPTURED_EMOTES)
+                for(const [emote, url] of CAPTURED_EMOTES)
                     if((regexp = RegExp('\\b' + emote.replace(/(\W)/g, '\\$1') + '\\b', 'g')).test(line.message)) {
-                        let alt = emote,
-                            src = 'https://static-cdn.jtvnw.net/emoticons/v1/' + url.split('-').map((v, i) => i == 0? parseInt(v, 36): v).join('/'),
-                            srcset;
+                        let alt = emote
+                            , src = 'https://static-cdn.jtvnw.net/emoticons/v1/' + url.split('-').map((v, i) => i == 0 ? parseInt(v, 36) : v).join('/')
+                            , srcset;
 
                         if(/\/https?:\/\//i.test(src))
                             src = src.replace(/[^]*\/(https?:\/\/[^]*)(?:\/https?:\/\/)?$/i, '$1');
                         else
                             srcset = [1, 2, 4].map((v, i) => src.replace(/[\d\.]+$/, `${ (i + 1).toFixed(1) } ${ v }x`)).join(',');
 
-                        let f = furnish;
-                        let img =
+                        const f = furnish;
+                        const img =
                         f('.chat-line__message--emote-button[@testSelector=emote-button]').with(
                             f('span[@aTarget=emote-name]').with(
                                 f('.class.chat-image__container.tt-align-center.tt-inline-block').with(
@@ -246,16 +246,16 @@ plugin({
                             )
                         );
 
-                        when(line => (defined(line.element)? line: false), 1000, line).then(async element => {
+                        when(line => (defined(line.element) ? line : false), 1000, line).then(async element => {
                             alt = alt.replace(/\s+/g, '_');
 
                             $.all(`.text-fragment:not([tt-converted-emotes~="${ alt }"i])`, element).map(fragment => {
-                                let container = furnish(`.chat-line__message--emote-button[@testSelector=emote-button][@capturedEmote=${ alt }]`).html(img.innerHTML),
-                                    converted = (fragment.getAttribute('tt-converted-emotes') ?? "").split(' ');
+                                const container = furnish(`.chat-line__message--emote-button[@testSelector=emote-button][@capturedEmote=${ alt }]`).html(img.innerHTML)
+                                    , converted = (fragment.getAttribute('tt-converted-emotes') ?? '').split(' ');
 
                                 converted.push(alt);
 
-                                let tte = fragment.getAttribute('data-tt-emote') ?? '';
+                                const tte = fragment.getAttribute('data-tt-emote') ?? '';
 
                                 fragment.setAttribute('data-tt-emote', [...tte.split(' '), alt].join(' '));
                                 fragment.setAttribute('tt-converted-emotes', converted.join(' ').trim());
@@ -263,7 +263,7 @@ plugin({
 
                                 $.all('[data-captured-emote]', fragment)
                                     .forEach(element => {
-                                        let { capturedEmote } = element.dataset;
+                                        const { capturedEmote } = element.dataset;
                                         // ... //
                                     });
                                 context.REFURBISH_BTTV_EMOTE_TOOLTIPS(fragment);
@@ -275,10 +275,10 @@ plugin({
             $remark("Adding emote search listener...");
 
             context.EmoteSearch.onquery = query => {
-                let results = [...CAPTURED_EMOTES]
+                const results = [...CAPTURED_EMOTES]
                     .filter(([key, value]) => {
-                        let pattern = RegExp(query.replace(/(\W)/g, '\\$1'), 'i').test(key),
-                            distance = context.EmoteSearch.getTextDistance(query, key);
+                        const pattern = RegExp(query.replace(/(\W)/g, '\\$1'), 'i').test(key)
+                            , distance = context.EmoteSearch.getTextDistance(query, key);
 
                         return pattern || (distance < query.length / 2);
                     })
@@ -290,13 +290,13 @@ plugin({
             // top.CAPTURED_EMOTES = CAPTURED_EMOTES;
             // top.OWNED_EMOTES = OWNED_EMOTES;
             RegisterJob('convert_emotes');
-        }
+        } // :__ConvertEmotes__
 
         // Update rules
             // UPDATE_RULES(ruleType:string<"filter" | "phrase" | "lurking">) → object<{ text:RegExp, user:RegExp, emote:RegExp, badge:RegExp, channel:array<object>, rules:array<string>{ specific:array<string{ channel:array<string>, user:array<string>, badge:array<string>, emote:array<string> }>, general:array<string> } }>
         context.UPDATE_RULES = (ruleType, delimeter = ',') => {
             let rules = Settings[`${ ruleType }_rules`];
-            let channel = [], user = [], badge = [], emote = [], text = [];
+            const channel = [], user = [], badge = [], emote = [], text = [];
 
             if(defined(rules?.length)) {
                 rules = rules.split(RegExp(`\\s*${ delimeter }\\s*`)).map(rule => rule.trim()).filter(rule => rule.length);
@@ -306,11 +306,12 @@ plugin({
                     general: { value: [] },
                 });
 
-                let R = RegExp;
-                for(let rule of rules)
+                const R = RegExp;
+
+                for(const rule of rules)
                     // /channel `rule(s)`
                     if(/^\/[\w\-]+/.test(rule)) {
-                        let caught = /^\/(?<name>[\w\-]+) +(?:(?:<(?<badge>[^>]+)>)?(?::(?<emote>[^:]+):|@(?<user>[\w\-]+)|(?<text>[^$]*))?)$/i.exec(rule).groups;
+                        const caught = /^\/(?<name>[\w\-]+) +(?:(?:<(?<badge>[^>]+)>)?(?::(?<emote>[^:]+):|@(?<user>[\w\-]+)|(?<text>[^$]*))?)$/i.exec(rule).groups;
 
                         channel.push(caught);
                         rules.specific.push(rule);
@@ -318,7 +319,7 @@ plugin({
                     }
                     // @username
                     else if(/^@([\w\-]+)/.test(rule) && ['@everyone', '@chat', '@all'].missing(rule.toLowerCase())) {
-                        let caught = /^@(?<user>[\w\-]+)(?<text>.*)/.exec(rule).groups;
+                        const caught = /^@(?<user>[\w\-]+)(?<text>.*)/.exec(rule).groups;
 
                         user.push(R.$1);
                         rules.specific.push(rule);
@@ -326,7 +327,7 @@ plugin({
                     }
                     // <badge>
                     else if(/^<([\w\- ]+)>/.test(rule)) {
-                        let caught = /^<(?<badge>[\w\- ]+)>(?<text>.*)/.exec(rule).groups;
+                        const caught = /^<(?<badge>[\w\- ]+)>(?<text>.*)/.exec(rule).groups;
 
                         badge.push(R.$1);
                         rules.specific.push(rule);
@@ -340,24 +341,24 @@ plugin({
                     }
                     // text
                     else if(rule) {
-                        text.push(/^[\w\s]+$/.test(rule)? `\\b${ rule }\\b`: rule);
+                        text.push(/^[\w\s]+$/.test(rule) ? `\\b${ rule }\\b` : rule);
                         rules.general.push(rule);
                     }
             }
 
-            let channels = RegExp(`^(${ (channel.length? channel.map(({ name }) => name).join('|'): '[\\b]') })$`, 'i');
+            const channels = RegExp(`^(${ (channel.length ? channel.map(({ name }) => name).join('|') : '[\\b]') })$`, 'i');
             Object.defineProperties(channel, {
                 test: { value: channels.test.bind(channels) },
                 exec: { value: channels.exec.bind(channels) },
             });
 
             return {
-                text: (text.length? RegExp(`(${ text.join('|') })`, 'i'): /^[\b]$/),
-                user: (user.length? RegExp(`^(${ user.join('|') })$`, 'i'): /^[\b]$/),
-                emote: (emote.length? RegExp(`(${ emote.join('|') })`, 'i'): /^[\b]$/),
-                badge: (badge.length? RegExp(`(${ badge.join('|') })`, 'i'): /^[\b]$/),
+                text: (text.length ? RegExp(`(${ text.join('|') })`, 'i') : /^[\b]$/),
+                user: (user.length ? RegExp(`^(${ user.join('|') })$`, 'i') : /^[\b]$/),
+                emote: (emote.length ? RegExp(`(${ emote.join('|') })`, 'i') : /^[\b]$/),
+                badge: (badge.length ? RegExp(`(${ badge.join('|') })`, 'i') : /^[\b]$/),
                 channel, rules
-            }
+            };
         };
     },
 });

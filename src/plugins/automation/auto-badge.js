@@ -11,20 +11,20 @@ plugin({
 
     handler: () => {
         $('[data-a-target="chat-input"i]')?.addEventListener('keyup', delay(async event => {
-            let { target, code, altKey, ctrlKey, metaKey, shiftKey } = event,
-                value = (target?.value ?? target?.textContent ?? target?.innerText),
-                f = furnish;
+            let { target, code, altKey, ctrlKey, metaKey, shiftKey } = event
+                , value = (target?.value ?? target?.textContent ?? target?.innerText)
+                , f = furnish;
 
             if(['Tab', 'Space', 'Enter', 'Escape'].contains(code) || !value?.contains('@'))
                 return /* No username is present... */;
 
-            let elements = $.all('[class*="autocomplete"i] button[data-a-target^="@"]')
+            const elements = $.all('[class*="autocomplete"i] button[data-a-target^="@"]')
                 .isolate()
                 .filter(defined);
 
-            for(let element of elements) {
-                let name = element.dataset.aTarget.slice(1);
-                let p = $('p', element);
+            for(const element of elements) {
+                const name = element.dataset.aTarget.slice(1);
+                const p = $('p', element);
 
                 // Broadcaster
                 if(STREAMER.name.equals(name) && $.nullish('img[data-badge="owner"i]', p))

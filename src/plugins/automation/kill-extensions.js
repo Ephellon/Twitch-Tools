@@ -14,7 +14,7 @@ plugin({
     handler({ StopWatch }) {
         new StopWatch('kill_extensions');
 
-        for(let view of $.all(EXTENSION_VIEWS))
+        for(const view of $.all(EXTENSION_VIEWS))
             view.modStyle('display:none!important');
 
         StopWatch.stop('kill_extensions');
@@ -22,7 +22,7 @@ plugin({
 
     // Un-hide the same views the handler hid (it used to look for `[class^="extension-view"i]` only)
     unhandler() {
-        for(let view of $.all(EXTENSION_VIEWS))
+        for(const view of $.all(EXTENSION_VIEWS))
             view.removeAttribute('style');
     },
 

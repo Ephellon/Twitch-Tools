@@ -13,12 +13,12 @@ plugin({
     timer: 1000,
 
     init() {
-        AwayModeButton = undefined;
+        AwayModeButton = void null;
         AwayModeStatus = false;
         AwayModeEnabled = false;
-        InitialQuality = undefined;
-        InitialVolume = undefined;
-        InitialViewMode = undefined;
+        InitialQuality = void null;
+        InitialVolume = void null;
+        InitialViewMode = void null;
         MAINTAIN_VOLUME_CONTROL = true;
         NUMBER_OF_FAILED_QUALITY_FETCHES = 0;
     },
@@ -26,8 +26,8 @@ plugin({
     handler: async({ StopWatch }) => {
         new StopWatch('away_mode');
 
-        let button = $('#away-mode'),
-            currentQuality = (Handlers.away_mode.quality ??= await GetQuality());
+        let button = $('#away-mode')
+            , currentQuality = (Handlers.away_mode.quality ??= await GetQuality());
 
         // Alt + A | Opt + A
         if(nullish(GLOBAL_EVENT_LISTENERS.KEYDOWN_ALT_A))
@@ -50,9 +50,9 @@ plugin({
         ) {
             // If the quality controls have failed to load for 1min, leave the page
             if(nullish(currentQuality) && ++NUMBER_OF_FAILED_QUALITY_FETCHES > 60) {
-                let scapeGoat = await GetNextStreamer();
+                const scapeGoat = await GetNextStreamer();
 
-                $warn(`The following page failed to load correctly (no quality controls present): ${ STREAMER.name } @ ${ (new Date) }`)
+                $warn(`The following page failed to load correctly (no quality controls present): ${ STREAMER.name } @ ${ (new Date) }`);
                     // .toNativeStack();
 
                 goto(parseURL(scapeGoat.href).addSearch({ tool: 'away-mode--scape-goat' }).href);
@@ -61,7 +61,7 @@ plugin({
             // Twitch can reset the volume (player reload, ad break) without the viewer touching it (#26);
             // while Lurking still owns the volume, put it back
             if(defined(button) && AwayModeStatus && MAINTAIN_VOLUME_CONTROL && parseBool(Settings.away_mode__volume_control)) {
-                let target = parseFloat(Settings.away_mode__volume);
+                const target = parseFloat(Settings.away_mode__volume);
 
                 if(!Number.isNaN(target) && Math.abs(GetVolume() - target) > 0.01)
                     SetVolume(target);
@@ -72,12 +72,12 @@ plugin({
 
         await Cache.load({ AwayModeEnabled }, cache => AwayModeEnabled = cache.AwayModeEnabled ?? false);
 
-        let enabled = AwayModeStatus = AwayModeEnabled || (currentQuality.low && !(currentQuality.auto || currentQuality.high || currentQuality.source));
+        const enabled = AwayModeStatus = AwayModeEnabled || (currentQuality.low && !(currentQuality.auto || currentQuality.high || currentQuality.source));
 
         if(nullish(button)) {
-            let sibling, parent, before,
-                extra = () => {},
-                placement = (Settings.away_mode_placement ??= "null");
+            let sibling, parent, before
+                , extra = () => {}
+                , placement = (Settings.away_mode_placement ??= 'null');
 
             switch(placement) {
                 // Option 1 "over" - video overlay, play button area
@@ -98,7 +98,7 @@ plugin({
                     before = 'last';
                     extra = ({ container }) => {
                         // Remove extra classes
-                        let classes = $('button', container)?.closest('div')?.classList ?? [];
+                        const classes = $('button', container)?.closest('div')?.classList ?? [];
 
                         [...classes].map(value => {
                             if(/[-_]/.test(value))
@@ -109,7 +109,7 @@ plugin({
                     };
                 } break;
 
-                default: return StopWatch.stop('away_mode');
+                default: { return StopWatch.stop('away_mode') }
             }
 
             if(nullish(parent) || nullish(sibling))
@@ -128,10 +128,10 @@ plugin({
             parent.insertBefore(container, parent[before + 'ElementChild']);
 
             if(['over'].contains(placement)) {
-                container.firstElementChild.classList.remove('tt-mg-l-1');
+                container.firstElementChild.classList.remove('tt-mg-l-1')
             } else if(['under'].contains(placement)) {
                 $('span', container)?.remove();
-                $('[style]', container)?.modStyle('opacity: 1; transform: translateX(15%) translateZ(0px);')
+                $('[style]', container)?.modStyle('opacity: 1; transform: translateX(15%) translateZ(0px);');
             }
 
             extra({ container, sibling, parent, before, placement });
@@ -142,7 +142,7 @@ plugin({
                 icon: $('svg', container),
                 background: $('button', container),
                 get offset() { return getOffset(container) },
-                tooltip: new Tooltip(container, `${ ['Start','Stop'][+enabled] } Lurking (${ GetMacro('alt+a') })`, { from: 'top', left: +5 }),
+                tooltip: new Tooltip(container, `${ ['Start', 'Stop'][+enabled] } Lurking (${ GetMacro('alt+a') })`, { from: 'top', left: +5 }),
             };
 
             // button.tooltip.id = new UUID().toString().replace(/-/g, '');
@@ -155,7 +155,7 @@ plugin({
             ].filter(defined).join('');
             button.icon = $('svg', container);
         } else {
-            let container = $('#away-mode');
+            const container = $('#away-mode');
 
             button = {
                 enabled,
@@ -173,12 +173,12 @@ plugin({
             InitialVolume = (Handlers.away_mode.volume ??= GetVolume());
             InitialViewMode = (Handlers.away_mode.viewMode ??= GetViewMode());
 
-            await SetQuality(['auto','low'][+enabled])
+            await SetQuality(['auto', 'low'][+enabled])
                 .then(() => {
                     if(parseBool(Settings.away_mode__volume_control))
                         SetVolume([InitialVolume, Settings.away_mode__volume][+enabled]);
 
-                    let controls = $(':is(video, [class*="video"i][class*="render"i]) ~ * .player-controls');
+                    const controls = $(':is(video, [class*="video"i][class*="render"i]) ~ * .player-controls');
 
                     if(defined(controls))
                         controls.dataset.automatic = MAINTAIN_VOLUME_CONTROL && enabled && parseBool(Settings.away_mode__volume_control);
@@ -191,32 +191,32 @@ plugin({
                 });
         }
 
-        let [accent, contrast] = (Settings.accent_color ?? 'blue/12').split('/');
+        const [accent, contrast] = (Settings.accent_color ?? 'blue/12').split('/');
 
         // if(init === true) →
         // Don't use above, event listeners won't work
-        button.background?.modStyle(`background:${ [`var(--user-accent-color)`, 'var(--color-background-button-secondary-default)'][+(button.container.getAttribute('tt-away-mode-enabled').equals("true"))] } !important;`);
+        button.background?.modStyle(`background:${ [`var(--user-accent-color)`, 'var(--color-background-button-secondary-default)'][+(button.container.getAttribute('tt-away-mode-enabled').equals('true'))] } !important;`);
         // button.icon.setAttribute('height', '20px');
         // button.icon.setAttribute('width', '20px');
 
         button.container.onclick ??= async event => {
-            let enabled = !parseBool(AwayModeButton.container.getAttribute('tt-away-mode-enabled')),
-                { container, background, tooltip } = AwayModeButton;
+            const enabled = !parseBool(AwayModeButton.container.getAttribute('tt-away-mode-enabled'))
+                , { container, background, tooltip } = AwayModeButton;
 
             container.setAttribute('tt-away-mode-enabled', enabled);
-            tooltip.innerHTML = `${ ['Start','Stop'][+enabled] } Lurking (${ GetMacro('alt+a') })`;
+            tooltip.innerHTML = `${ ['Start', 'Stop'][+enabled] } Lurking (${ GetMacro('alt+a') })`;
             background?.modStyle(`background:${ [`var(--user-accent-color)`, 'var(--color-background-button-secondary-default)'][+enabled] } !important;`);
 
             // Return control when Lurking is engaged
             MAINTAIN_VOLUME_CONTROL = true;
 
-            let controls = $(':is(video, [class*="video"i][class*="render"i]) ~ * .player-controls');
+            const controls = $(':is(video, [class*="video"i][class*="render"i]) ~ * .player-controls');
 
             if(defined(controls))
                 controls.dataset.automatic = MAINTAIN_VOLUME_CONTROL && enabled && parseBool(Settings.away_mode__volume_control);
 
             // Sets the size according to the video's physical size
-            let size = (parseBool(Settings.low_data_mode)? getOffset($('video')).height.floorToNearest(100): -1);
+            let size = (parseBool(Settings.low_data_mode) ? getOffset($('video')).height.floorToNearest(100) : -1);
 
             switch(size) {
                 case 0:
@@ -238,9 +238,9 @@ plugin({
 
                 default:
                     { size = 'auto' } break;
-            }
+            } // switch size
 
-            await SetQuality([size,'low'][+enabled])
+            await SetQuality([size, 'low'][+enabled])
                 .then(() => {
                     if(parseBool(Settings.away_mode__volume_control))
                         SetVolume([InitialVolume, Settings.away_mode__volume][+enabled]);
@@ -256,21 +256,21 @@ plugin({
         };
 
         button.container.onmouseenter ??= event => {
-            let { currentTarget } = event,
-                svgContainer = $('figure', currentTarget),
-                svgShow = $('svg#tt-away-mode--show', svgContainer),
-                svgHide = $('svg#tt-away-mode--hide', svgContainer);
-            let enabled = parseBool(currentTarget.closest('#away-mode').getAttribute('tt-away-mode-enabled'));
+            let { currentTarget } = event
+                , svgContainer = $('figure', currentTarget)
+                , svgShow = $('svg#tt-away-mode--show', svgContainer)
+                , svgHide = $('svg#tt-away-mode--hide', svgContainer);
+            const enabled = parseBool(currentTarget.closest('#away-mode').getAttribute('tt-away-mode-enabled'));
 
             svgShow?.setAttribute('preview', !enabled);
             svgHide?.setAttribute('preview', !!enabled);
         };
 
         button.container.onmouseleave ??= event => {
-            let { currentTarget } = event,
-                svgContainer = $('figure', currentTarget),
-                svgShow = $('svg#tt-away-mode--show', svgContainer),
-                svgHide = $('svg#tt-away-mode--hide', svgContainer);
+            let { currentTarget } = event
+                , svgContainer = $('figure', currentTarget)
+                , svgShow = $('svg#tt-away-mode--show', svgContainer)
+                , svgHide = $('svg#tt-away-mode--hide', svgContainer);
 
             svgShow?.removeAttribute('preview');
             svgHide?.removeAttribute('preview');
@@ -295,7 +295,7 @@ plugin({
             if(!MAINTAIN_VOLUME_CONTROL || !isTrusted)
                 return;
 
-            $warn('[Lurking] is releasing volume control due to user interaction...');
+            $warn("[Lurking] is releasing volume control due to user interaction...");
 
             MAINTAIN_VOLUME_CONTROL = !isTrusted;
 
@@ -310,23 +310,23 @@ plugin({
 
         // Scheduling logic...
         when.defined(() => $('#away-mode'), 3000).then(awayMode => {
-            let schedules = JSON.parse(Settings?.away_mode_schedule || '[]');
-            let today = new Date(),
-                YEAR = today.getFullYear(),
-                MONTH = today.getMonth(),
-                DATE = today.getDate(),
-                TODAY = today.getDay(),
-                H = today.getHours(),
-                M = today.getMinutes(),
-                S = today.getSeconds();
+            const schedules = JSON.parse(Settings?.away_mode_schedule || '[]');
+            const today = new Date()
+                , YEAR = today.getFullYear()
+                , MONTH = today.getMonth()
+                , DATE = today.getDate()
+                , TODAY = today.getDay()
+                , H = today.getHours()
+                , M = today.getMinutes()
+                , S = today.getSeconds();
 
-            let weekdays = 'Sun Mon Tue Wed Thu Fri Sat'.split(' '),
-                months = 'Jan Feb Mar Apr May Jun Jul Aug Sep Oct Nov Dec'.split(' ');
+            const weekdays = 'Sun Mon Tue Wed Thu Fri Sat'.split(' ')
+                , months = 'Jan Feb Mar Apr May Jun Jul Aug Sep Oct Nov Dec'.split(' ');
 
-            let desiredStatus,
-                currentStatus = parseBool(awayMode.getAttribute('tt-away-mode-enabled'));
+            let desiredStatus
+                , currentStatus = parseBool(awayMode.getAttribute('tt-away-mode-enabled'));
 
-            for(let schedule of schedules) {
+            for(const schedule of schedules) {
                 let { day, time, duration, status } = schedule;
 
                 if(TODAY != day)
@@ -337,7 +337,7 @@ plugin({
 
                 duration *= 3_600_000;
 
-                $warn(`Lurking is scheduled to be "${ ['off','on'][+status] }" for ${ weekdays[day] } @ ${ time }:00 for ${ toTimeString(duration, '?hours_h') }`);
+                $warn(`Lurking is scheduled to be "${ ['off', 'on'][+status] }" for ${ weekdays[day] } @ ${ time }:00 for ${ toTimeString(duration, '?hours_h') }`);
 
                 // Found at least one schedule...
                 if(defined(desiredStatus = status))

@@ -161,7 +161,7 @@ globalThis.TTV_DSL ??= {};
      * @param {Object} loc
      * @return {Object}
      */
-    let node = (type, fields, loc) => Object.assign({ type }, fields, { loc: (loc ?? null) });
+    const node = (type, fields, loc) => Object.assign({ type }, fields, { loc: (loc ?? null) });
 
     /** One factory per node type. Going through these rather than object literals keeps
      * field names honest — a typo'd key fails at the factory, not three passes later. */
@@ -374,7 +374,7 @@ globalThis.TTV_DSL ??= {};
      * @param {*} value
      * @return {Boolean} true when `value` looks like an AST node
      */
-    let isNode = (value) => (null != value && typeof value === 'object' && typeof value.type === 'string' && value.type in CHILD_KEYS);
+    const isNode = (value) => (null != value && typeof value === 'object' && typeof value.type === 'string' && value.type in CHILD_KEYS);
 
     /** Depth-first traversal.
      *
@@ -385,19 +385,19 @@ globalThis.TTV_DSL ??= {};
      * @param {Object} [visitors]
      * @return {Object} `root`, for chaining
      */
-    let walk = (root, visitors = {}) => {
-        let visit = (current, parent, key) => {
-            if (!isNode(current))
+    const walk = (root, visitors = {}) => {
+        const visit = (current, parent, key) => {
+            if(!isNode(current))
                 return;
 
             visitors.enter?.(current, parent, key);
             visitors[current.type]?.(current, parent, key);
 
-            for (let childKey of CHILD_KEYS[current.type]) {
-                let child = current[childKey];
+            for(const childKey of CHILD_KEYS[current.type]) {
+                const child = current[childKey];
 
-                if (Array.isArray(child))
-                    for (let entry of child)
+                if(Array.isArray(child))
+                    for(const entry of child)
                         visit(entry, current, childKey);
                 else
                     visit(child, current, childKey);
@@ -415,5 +415,5 @@ globalThis.TTV_DSL ??= {};
     globalThis.TTV_DSL.NodeType = NodeType;
 })();
 
-if (typeof module === 'object' && module?.exports)
+if(typeof module === 'object' && module?.exports)
     module.exports = globalThis.TTV_DSL;

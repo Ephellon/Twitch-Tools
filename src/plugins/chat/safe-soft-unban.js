@@ -15,19 +15,19 @@ plugin({
 
             $log(`Performing Soft Unban...`);
 
-            let f = furnish;
+            const f = furnish;
 
-            let name = (context.STREAMER.name || location.pathname.split(/\W/, 2)[1]).replace('/', ''),
-                fiat = (context.STREAMER.fiat || 'Channel Points'),
-                url = parseURL(`https://nightdev.com/hosted/obschat/`).addSearch({
+            let name = (context.STREAMER.name || location.pathname.split(/\W/, 2)[1]).replace('/', '')
+                , fiat = (context.STREAMER.fiat || 'Channel Points')
+                , url = parseURL(`https://nightdev.com/hosted/obschat/`).addSearch({
                     theme: `bttv_${ context.THEME }`,
                     channel: name,
                     fade: parseBool(Settings.soft_unban_fade_old_messages),
                     bot_activity: parseBool(Settings.soft_unban_keep_bots),
                     prevent_clipping: parseBool(Settings.soft_unban_prevent_clipping),
-                }),
-                iframe = f(`iframe#tt-proxy-chat`, { src: url.href, style: `width: 100%; height: 100%` }),
-                preBanner =
+                })
+                , iframe = f(`iframe#tt-proxy-chat`, { src: url.href, style: `width: 100%; height: 100%` })
+                , preBanner =
                     f('#tt-banned-banner.tt-pd-b-2.tt-pd-x-2').with(
                         f('.tt-border-t.tt-pd-b-1.tt-pd-x-2'),
                         f('.tt-align-center').with(
@@ -38,10 +38,10 @@ plugin({
                                 `Unable to collect ${ fiat }.`
                             )
                         )
-                    ),
-                chat, cont, banner;
+                    )
+                , chat, cont, banner;
 
-            name = name?.replace(/(.)$/, ($0, $1, $$, $_) => $1 + (/([s])/i.test($1)? "'": "'s")) || 'this';
+            name = name?.replace(/(.)$/, ($0, $1, $$, $_) => $1 + (/([s])/i.test($1) ? "'" : "'s")) || 'this';
             fiat = fiat.replace(/([^s])$/i, '$1s');
 
             // Try the "old" method, then the new one
@@ -55,7 +55,7 @@ plugin({
                 );
 
                 chat.classList.remove(...chat.classList);
-                chat.classList.add("chat-list--default", "scrollable-area");
+                chat.classList.add('chat-list--default', 'scrollable-area');
                 chat.replaceChild(iframe, chat.firstChild);
             } catch(error) {
                 $warn(`Could not perform "old" unban method`, error);
@@ -78,8 +78,8 @@ plugin({
         Timers.soft_unban = -2_500;
 
         Unhandlers.soft_unban = () => {
-            let iframe = $('iframe#tt-proxy-chat'),
-                div = furnish('.tt-flex');
+            const iframe = $('iframe#tt-proxy-chat')
+                , div = furnish('.tt-flex');
 
             if(nullish(iframe))
                 return;
@@ -89,7 +89,7 @@ plugin({
 
         __SoftUnban__:
         if(parseBool(Settings.soft_unban)) {
-            RegisterJob('soft_unban');
+            RegisterJob('soft_unban')
         }
 
         // Helpers

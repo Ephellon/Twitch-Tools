@@ -16,13 +16,13 @@
      * @param {Object} [options]
      * @return {Object} `{ runtime, clock, realm }`
      */
-    let harness = ({ seed = 1, channels, current = 'ginger_enby', constants, limits, realms } = {}) => {
-        let clock = createFakeClock(0),
+    const harness = ({ seed = 1, channels, current = 'ginger_enby', constants, limits, realms } = {}) => {
+        const clock = createFakeClock(0)
             // The budget's sense of elapsed time is deliberately separate from the
             // script's, so a test can jump the script forward five minutes without
             // spending the handler's allowance.
-            wall = { at: 0 },
-            realm = createTwitchRealm({
+            , wall = { at: 0 }
+            , realm = createTwitchRealm({
                 current,
                 channels: (channels ?? {
                     ginger_enby: { live: true, badges: ['moderator', 'vip'] },
@@ -30,7 +30,7 @@
                 }),
             });
 
-        let runtime = createRuntime({
+        const runtime = createRuntime({
             clock,
             wallClock: () => wall.at,
             random: createSeededRandom(seed),
@@ -44,7 +44,7 @@
     };
 
     /** @return {Array<String>} the text of everything sent */
-    let sent = (runtime) => runtime.sink.map(entry => entry.text);
+    const sent = (runtime) => runtime.sink.map(entry => entry.text);
 
     describe('runtime / durations', () => {
         it('reads clock-style durations', () => {
@@ -64,8 +64,8 @@
     });
 
     describe('runtime / timers on a fake clock', () => {
-        it('does not fire before its time', async () => {
-            let { runtime, clock } = harness();
+        it('does not fire before its time', async() => {
+            const { runtime, clock } = harness();
 
             await run('await 5:00\n    POST `tick`\n', runtime);
             await clock.advance(299000);
@@ -73,8 +73,8 @@
             assert.deepEqual(sent(runtime), []);
         });
 
-        it('fires once the duration elapses', async () => {
-            let { runtime, clock } = harness();
+        it('fires once the duration elapses', async() => {
+            const { runtime, clock } = harness();
 
             await run('await 5:00\n    POST `tick`\n', runtime);
             await clock.advance(300000);
@@ -82,8 +82,8 @@
             assert.deepEqual(sent(runtime), ['tick']);
         });
 
-        it('repeats, so `await 5:00` means "every five minutes"', async () => {
-            let { runtime, clock } = harness();
+        it('repeats, so `await 5:00` means "every five minutes"', async() => {
+            const { runtime, clock } = harness();
 
             await run('await 5:00\n    POST `tick`\n', runtime);
             await clock.advance(900000);
@@ -91,9 +91,9 @@
             assert.deepEqual(sent(runtime), ['tick', 'tick', 'tick']);
         });
 
-        it('stops when the context is cancelled', async () => {
-            let { runtime, clock } = harness(),
-                context = await run('await 5:00\n    POST `tick`\n', runtime);
+        it('stops when the context is cancelled', async() => {
+            const { runtime, clock } = harness()
+                , context = await run('await 5:00\n    POST `tick`\n', runtime);
 
             await clock.advance(300000);
             context.stop();
@@ -102,8 +102,8 @@
             assert.deepEqual(sent(runtime), ['tick']);
         });
 
-        it('runs nested timers at their own cadence', async () => {
-            let { runtime, clock } = harness();
+        it('runs nested timers at their own cadence', async() => {
+            const { runtime, clock } = harness();
 
             await run('await 15:00\n    await 5:00\n        POST `inner`\n', runtime);
             await clock.advance(900000);
@@ -117,35 +117,35 @@
     });
 
     describe('runtime / events', () => {
-        it('runs the body for an event that satisfies the condition', async () => {
-            let { runtime } = harness();
+        it('runs the body for an event that satisfies the condition', async() => {
+            const { runtime } = harness();
 
             await run('await (.message is *)\n    REPLY `heard you`\n', runtime);
-            await runtime.dispatch({ message: 'hello', sender: 'jjay_89' });
+            await runtime.dispatch({ message: "hello", sender: 'jjay_89' });
 
             assert.deepEqual(sent(runtime), ['heard you']);
         });
 
-        it('ignores an event that does not', async () => {
-            let { runtime } = harness();
+        it('ignores an event that does not', async() => {
+            const { runtime } = harness();
 
             await run('await (.command is *)\n    REPLY `command`\n', runtime);
-            await runtime.dispatch({ message: 'not a command' });
+            await runtime.dispatch({ message: "not a command" });
 
             assert.deepEqual(sent(runtime), []);
         });
 
-        it('binds `.prop` to the event', async () => {
-            let { runtime } = harness();
+        it('binds `.prop` to the event', async() => {
+            const { runtime } = harness();
 
             await run('await (.message is *)\n    REPLY `hi ${ .sender }`\n', runtime);
-            await runtime.dispatch({ message: 'yo', sender: 'Jjay_89' });
+            await runtime.dispatch({ message: "yo", sender: 'Jjay_89' });
 
             assert.deepEqual(sent(runtime), ['hi Jjay_89']);
         });
 
-        it('applies a `with` filter on top of the condition', async () => {
-            let { runtime } = harness();
+        it('applies a `with` filter on top of the condition', async() => {
+            const { runtime } = harness();
 
             await run('await * with (.sender is "streamcord")\n    REPLY `bot`\n', runtime);
             await runtime.dispatch({ sender: 'streamcord' });
@@ -154,8 +154,8 @@
             assert.deepEqual(sent(runtime), ['bot']);
         });
 
-        it('compares strings case-insensitively, as Twitch does', async () => {
-            let { runtime } = harness();
+        it('compares strings case-insensitively, as Twitch does', async() => {
+            const { runtime } = harness();
 
             await run('await (.sender is "jjay_89")\n    REPLY `hey`\n', runtime);
             await runtime.dispatch({ sender: 'JJay_89' });
@@ -163,119 +163,119 @@
             assert.deepEqual(sent(runtime), ['hey']);
         });
 
-        it('resolves a bare identifier from the constant table', async () => {
-            let { runtime } = harness();
+        it('resolves a bare identifier from the constant table', async() => {
+            const { runtime } = harness();
 
             await run('await (USERNAME in .message)\n    REPLY `you rang?`\n', runtime);
-            await runtime.dispatch({ message: 'hey ephellon look at this' });
+            await runtime.dispatch({ message: "hey ephellon look at this" });
 
             assert.deepEqual(sent(runtime), ['you rang?']);
         });
 
-        it('refuses an unknown identifier loudly', async () => {
-            let failures = [],
-                { runtime } = harness();
+        it('refuses an unknown identifier loudly', async() => {
+            const failures = []
+                , { runtime } = harness();
 
             runtime.logger.error = (entry) => failures.push(entry);
 
             await run('await (NOPE in .message)\n    REPLY `x`\n', runtime);
-            await runtime.dispatch({ message: 'anything' });
+            await runtime.dispatch({ message: "anything" });
 
             assert.equal(failures.length, 1);
         });
     });
 
     describe('runtime / verbs', () => {
-        it('drops a blank message rather than sending it', async () => {
-            let { runtime } = harness();
+        it('drops a blank message rather than sending it', async() => {
+            const { runtime } = harness();
 
             await run('await (.message is *)\n    REPLY ``\n', runtime);
-            await runtime.dispatch({ message: 'hi', sender: 'a' });
+            await runtime.dispatch({ message: "hi", sender: 'a' });
 
             assert.deepEqual(runtime.sink, []);
         });
 
-        it('records who a REPLY was aimed at', async () => {
-            let { runtime } = harness();
+        it('records who a REPLY was aimed at', async() => {
+            const { runtime } = harness();
 
             await run('await (.message is *)\n    REPLY `sup`\n', runtime);
-            await runtime.dispatch({ message: 'hi', sender: 'jjay_89' });
+            await runtime.dispatch({ message: "hi", sender: 'jjay_89' });
 
             assert.equal(runtime.sink[0].to, 'jjay_89');
             assert.equal(runtime.sink[0].verb, 'REPLY');
         });
 
-        it('refuses an unregistered verb', async () => {
-            let failures = [],
-                { runtime } = harness();
+        it('refuses an unregistered verb', async() => {
+            const failures = []
+                , { runtime } = harness();
 
             runtime.logger.error = (entry) => failures.push(entry);
 
             await run('await (.message is *)\n    WHISPER `psst`\n', runtime);
-            await runtime.dispatch({ message: 'hi' });
+            await runtime.dispatch({ message: "hi" });
 
             assert.equal(failures.length, 1);
             assert.deepEqual(runtime.sink, []);
         });
 
-        it('accepts a host-supplied verb', async () => {
-            let seen = [],
-                { runtime } = harness();
+        it('accepts a host-supplied verb', async() => {
+            const seen = []
+                , { runtime } = harness();
 
             runtime.verbs.SHOUT = (context, value) => seen.push(String(value).toUpperCase());
 
             await run('await (.message is *)\n    SHOUT `hello`\n', runtime);
-            await runtime.dispatch({ message: 'hi' });
+            await runtime.dispatch({ message: "hi" });
 
             assert.deepEqual(seen, ['HELLO']);
         });
     });
 
     describe('runtime / `any from` with a seeded generator', () => {
-        it('picks deterministically for a given seed', async () => {
-            let first = harness({ seed: 7 }),
-                second = harness({ seed: 7 });
+        it('picks deterministically for a given seed', async() => {
+            const first = harness({ seed: 7 })
+                , second = harness({ seed: 7 });
 
-            let script = 'await (.message is *)\n    REPLY any from (\n        `burger`\n        `burrito`\n        `taco`\n    )\n';
+            const script = 'await (.message is *)\n    REPLY any from (\n        `burger`\n        `burrito`\n        `taco`\n    )\n';
 
             await run(script, first.runtime);
-            await first.runtime.dispatch({ message: 'hi' });
+            await first.runtime.dispatch({ message: "hi" });
 
             await run(script, second.runtime);
-            await second.runtime.dispatch({ message: 'hi' });
+            await second.runtime.dispatch({ message: "hi" });
 
             assert.deepEqual(sent(first.runtime), sent(second.runtime));
             assert.equal(sent(first.runtime).length, 1);
         });
 
-        it('only ever picks from the listed items', async () => {
-            let { runtime } = harness({ seed: 3 }),
-                options = ['burger', 'burrito', 'taco'];
+        it('only ever picks from the listed items', async() => {
+            const { runtime } = harness({ seed: 3 })
+                , options = ['burger', 'burrito', 'taco'];
 
             await run('await (.message is *)\n    REPLY any from (\n        `burger`\n        `burrito`\n        `taco`\n    )\n', runtime);
 
-            for (let turn = 0; turn < 12; ++turn)
+            for(let turn = 0; turn < 12; ++turn)
                 await runtime.dispatch({ message: `hi ${ turn }` });
 
             assert.ok(sent(runtime).every(text => options.includes(text)));
             assert.equal(sent(runtime).length, 12);
         });
 
-        it('draws a number from an exclusive range', async () => {
-            let { runtime } = harness({ seed: 11 });
+        it('draws a number from an exclusive range', async() => {
+            const { runtime } = harness({ seed: 11 });
 
             await run('await (.message is *)\n    REPLY `${ any from (1 .. 10) }`\n', runtime);
 
-            for (let turn = 0; turn < 20; ++turn)
+            for(let turn = 0; turn < 20; ++turn)
                 await runtime.dispatch({ message: `hi ${ turn }` });
 
-            let drawn = sent(runtime).map(Number);
+            const drawn = sent(runtime).map(Number);
 
             assert.ok(drawn.every(value => value >= 1 && value <= 9), 'an exclusive range stops short of its end');
         });
 
-        it('includes the end of an inclusive range', async () => {
-            let { runtime } = harness();
+        it('includes the end of an inclusive range', async() => {
+            const { runtime } = harness();
 
             assert.deepEqual(runtime.range(1, 5, false), [1, 2, 3, 4]);
             assert.deepEqual(runtime.range(1, 5, true), [1, 2, 3, 4, 5]);
@@ -283,26 +283,26 @@
     });
 
     describe('runtime / selectors and scoping', () => {
-        it('reads a channel property through `#prop`', async () => {
-            let { runtime } = harness();
+        it('reads a channel property through `#prop`', async() => {
+            const { runtime } = harness();
 
             await run('await (.message is *)\n    REPLY `${ #name }`\n', runtime);
-            await runtime.dispatch({ message: 'hi' });
+            await runtime.dispatch({ message: "hi" });
 
             assert.deepEqual(sent(runtime), ['ginger_enby']);
         });
 
-        it('gates on a channel property', async () => {
-            let { runtime } = harness();
+        it('gates on a channel property', async() => {
+            const { runtime } = harness();
 
             await run('await (.message is *)\n    if #name is "ginger_enby"\n        REPLY `right channel`\n', runtime);
-            await runtime.dispatch({ message: 'hi' });
+            await runtime.dispatch({ message: "hi" });
 
             assert.deepEqual(sent(runtime), ['right channel']);
         });
 
-        it('binds `.prop` lexically, so a `where` filter sees the item and not the event', async () => {
-            let { runtime } = harness();
+        it('binds `.prop` lexically, so a `where` filter sees the item and not the event', async() => {
+            const { runtime } = harness();
 
             // `.href` inside the filter is the link; `.sender` outside it is still the event.
             await run('await (.links is *)\n    goto 1st <| .links where ("twitch.tv" in .href)\n', runtime);
@@ -318,8 +318,8 @@
             assert.deepEqual(runtime.realm('TWITCH').visited, [{ href: 'https://twitch.tv/ginger_enby' }]);
         });
 
-        it('counts a negative ordinal from the end', async () => {
-            let { runtime } = harness();
+        it('counts a negative ordinal from the end', async() => {
+            const { runtime } = harness();
 
             await run('await (.links is *)\n    goto -1st <| .links\n', runtime);
             await runtime.dispatch({ links: [{ href: 'a' }, { href: 'b' }, { href: 'c' }] });
@@ -327,11 +327,11 @@
             assert.deepEqual(runtime.realm('TWITCH').visited, [{ href: 'c' }]);
         });
 
-        it('runs a `using` body once per subject that resolves', async () => {
-            let { runtime } = harness();
+        it('runs a `using` body once per subject that resolves', async() => {
+            const { runtime } = harness();
 
             await run('using <moderator>\n    await (.message is *)\n        REPLY `mod`\nusing <subscriber>\n    await (.message is *)\n        REPLY `sub`\n', runtime);
-            await runtime.dispatch({ message: 'hi' });
+            await runtime.dispatch({ message: "hi" });
 
             // The current channel holds `moderator` but not `subscriber`.
             assert.deepEqual(sent(runtime), ['mod']);
@@ -339,16 +339,16 @@
     });
 
     describe('runtime / realms', () => {
-        it('leaves DISCORD unregistered, because the extension has no Discord support', async () => {
-            let { runtime } = harness();
+        it('leaves DISCORD unregistered, because the extension has no Discord support', async() => {
+            const { runtime } = harness();
 
             assert.ok(runtime.hasRealm('TWITCH'));
             assert.ok(!runtime.hasRealm('DISCORD'));
             assert.throws(() => runtime.realm('DISCORD'), DSLRuntimeError);
         });
 
-        it('accepts a realm the host registers', async () => {
-            let { runtime } = harness({
+        it('accepts a realm the host registers', async() => {
+            const { runtime } = harness({
                 realms: {
                     DISCORD: {
                         name: 'DISCORD',
@@ -365,16 +365,16 @@
 
     describe('runtime / limits', () => {
         it('raises DSLLimitError once the step budget is spent', () => {
-            let { runtime } = harness({ limits: { steps: 5 } });
+            const { runtime } = harness({ limits: { steps: 5 } });
 
             assert.throws(() => {
-                for (let turn = 0; turn < 50; ++turn)
+                for(let turn = 0; turn < 50; ++turn)
                     runtime.step();
             }, DSLLimitError);
         });
 
         it('raises DSLLimitError once the wall-clock budget is spent', () => {
-            let { runtime, wall } = harness({ limits: { wallMs: 1000 } });
+            const { runtime, wall } = harness({ limits: { wallMs: 1000 } });
 
             runtime.step();
             wall.at = 5000;
@@ -383,21 +383,21 @@
         });
 
         it('restores the budget at the start of each turn', () => {
-            let { runtime, wall } = harness({ limits: { steps: 5, wallMs: 1000 } });
+            const { runtime, wall } = harness({ limits: { steps: 5, wallMs: 1000 } });
 
-            for (let turn = 0; turn < 4; ++turn)
+            for(let turn = 0; turn < 4; ++turn)
                 runtime.step();
 
             wall.at = 5000;
             runtime.beginTurn();
 
             // A long-lived script must not accumulate its way into a limit error.
-            for (let turn = 0; turn < 4; ++turn)
+            for(let turn = 0; turn < 4; ++turn)
                 runtime.step();
         });
 
-        it('does not spend the budget while merely waiting', async () => {
-            let { runtime, clock } = harness({ limits: { wallMs: 1000 } });
+        it('does not spend the budget while merely waiting', async() => {
+            const { runtime, clock } = harness({ limits: { wallMs: 1000 } });
 
             await run('await 5:00\n    POST `tick`\n', runtime);
             await clock.advance(900000);
@@ -406,7 +406,7 @@
         });
 
         it('caps an expensive range instead of hanging', () => {
-            let { runtime } = harness({ limits: { steps: 100 } });
+            const { runtime } = harness({ limits: { steps: 100 } });
 
             assert.throws(() => runtime.range(1, 1000000, true), DSLLimitError);
         });
@@ -414,7 +414,7 @@
 
     describe('runtime / the mockup end to end', () => {
         /** The mockup names DISCORD, so it needs a stub to get past `using DISCORD/...`. */
-        let mockupHarness = () => harness({
+        const mockupHarness = () => harness({
             realms: {
                 DISCORD: {
                     name: 'DISCORD',
@@ -428,23 +428,23 @@
             },
         });
 
-        let source = (typeof require === 'function' && typeof __dirname !== 'undefined'
+        const source = (typeof require === 'function' && typeof __dirname !== 'undefined'
             ? require('fs').readFileSync(require('path').join(__dirname, 'fixtures', 'mockup.ttv'), 'utf8')
             : null);
 
-        if (null === source) {
+        if(null === source) {
             it.skip('compiles and starts the mockup', 'no filesystem in this runtime');
 
             return;
         }
 
-        it('compiles and starts the mockup without error', async () => {
-            let { runtime } = mockupHarness(),
-                failures = [];
+        it('compiles and starts the mockup without error', async() => {
+            const { runtime } = mockupHarness()
+                , failures = [];
 
             runtime.logger.error = (entry) => failures.push(entry);
 
-            let context = await run(source, runtime);
+            const context = await run(source, runtime);
 
             assert.ok(runtime.listenerCount > 0, 'the top-level `await` should have installed a listener');
 
@@ -453,9 +453,9 @@
             assert.deepEqual(failures, []);
         });
 
-        it('reacts to a live channel going live and drives the chat rules', async () => {
-            let { runtime, clock } = mockupHarness(),
-                failures = [];
+        it('reacts to a live channel going live and drives the chat rules', async() => {
+            const { runtime, clock } = mockupHarness()
+                , failures = [];
 
             runtime.logger.error = (entry) => failures.push(entry);
 
@@ -463,8 +463,8 @@
 
             // The top-level `await * with (#live is true)` fires for any event while the
             // channel in scope is live, installing the inner rules.
-            await runtime.dispatch({ kind: 'live', message: 'stream started' });
-            await runtime.dispatch({ message: 'hello there', sender: 'jjay_89' });
+            await runtime.dispatch({ kind: 'live', message: "stream started" });
+            await runtime.dispatch({ message: "hello there", sender: 'jjay_89' });
             await clock.advance(300000);
 
             assert.deepEqual(failures, []);
@@ -473,5 +473,5 @@
     });
 })();
 
-if (typeof module === 'object' && module?.exports)
+if(typeof module === 'object' && module?.exports)
     module.exports = globalThis.TTV_DSL;

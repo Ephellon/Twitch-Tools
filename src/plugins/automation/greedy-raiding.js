@@ -17,8 +17,8 @@ plugin({
     },
 
     handler: () => {
-        let online = [STREAMER, ...STREAMERS].filter(isLive).filter(({ name }) => name.unlike(STREAMER.name)),
-            container = (null
+        const online = [STREAMER, ...STREAMERS].filter(isLive).filter(({ name }) => name.unlike(STREAMER.name))
+            , container = (null
                 ?? $('#tt-greedy-raiding--container')
                 ?? furnish('#tt-greedy-raiding--container', {
                     style: new CSSObject(`
@@ -35,9 +35,9 @@ plugin({
                 })
             );
 
-        for(let channel of online) {
-            let { name } = channel;
-            let frame = (null
+        for(const channel of online) {
+            const { name } = channel;
+            const frame = (null
                 ?? $(`#tt-greedy-raiding--${ name }`)
                 ?? furnish(`iframe#tt-greedy-raiding--${ name }`, {
                     src: `./popout/${ name }/chat?hidden=true&parent=twitch.tv&current=${ STREAMER.name.equals(name) }&allow=greedy_raiding`,
@@ -58,7 +58,7 @@ plugin({
     },
 
     unhandler: () => {
-        for(let [name, frame] of GREEDY_RAIDING_FRAMES)
+        for(const [name, frame] of GREEDY_RAIDING_FRAMES)
             frame?.remove();
     },
 
@@ -67,6 +67,6 @@ plugin({
     },
 
     setup() {
-        $remark('Adding raid-watching logic...');
+        $remark("Adding raid-watching logic...");
     },
 });

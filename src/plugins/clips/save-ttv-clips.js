@@ -11,8 +11,8 @@ plugin({
     timer: -500,
 
     handler: () => {
-        let EDITOR_MODE = location.pathname.equals('/create');
-        let { src } = $('video');
+        const EDITOR_MODE = location.pathname.equals('/create');
+        const { src } = $('video');
         let title, author, original, textContainer, placeBefore, carryQuery;
 
         if(EDITOR_MODE) {
@@ -25,11 +25,11 @@ plugin({
             if(nullish(original))
                 return;
 
-            $notice('Clip editor mode.');
+            $notice("Clip editor mode.");
         } else {
-            let [streamerInfo,, clipInfo] = $.all('[class*="clip"i][class*="info"i]');
+            const [streamerInfo,, clipInfo] = $.all('[class*="clip"i][class*="info"i]');
             let [views, meta] = clipInfo.children;
-            let [clipTitle, data] = meta.children;
+            const [clipTitle, data] = meta.children;
             let [timestamp, clipAuthor] = $.queryBy('span, a', data);
 
             views = parseInt(views.textContent.replace(/\D+/g, ''));
@@ -41,20 +41,20 @@ plugin({
             placeBefore = original.parentElement.lastElementChild;
             carryQuery = '.tw-tooltip';
 
-            $notice('Clip data!', { src, views, title, timestamp, author });
+            $notice("Clip data!", { src, views, title, timestamp, author });
         }
 
-        let { filename } = parseURL(src);
+        const { filename } = parseURL(src);
         let [ext, ...name] = filename.split('.').reverse();
         name = name.join('.');
 
-        let parent = original.parentElement;
-        let container = original.cloneNode(true);
-        let button = $('button', container);
-        let id = 'tt_download_link';
+        const parent = original.parentElement;
+        const container = original.cloneNode(true);
+        const button = $('button', container);
+        const id = 'tt_download_link';
 
-        for(let child of $.all('[class*="clip"i]', container))
-            for(let key of child.classList)
+        for(const child of $.all('[class*="clip"i]', container))
+            for(const key of child.classList)
                 child.classList.replace(key, key.replaceAll('clip', 'download'));
 
         textContainer ??= $(carryQuery, container);

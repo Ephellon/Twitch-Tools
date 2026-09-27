@@ -20,7 +20,7 @@ plugin({
     handler: async({ StopWatch }) => {
         new StopWatch('recover_video');
 
-        let errorMessage = $('[data-a-target*="player"i]:is([data-a-target*="content"i], [data-a-target*="gate"i]) [data-a-target*="text"i]');
+        const errorMessage = $('[data-a-target*="player"i]:is([data-a-target*="content"i], [data-a-target*="gate"i]) [data-a-target*="text"i]');
 
         if(nullish(errorMessage))
             return StopWatch.stop('recover_video');
@@ -29,10 +29,10 @@ plugin({
             return StopWatch.stop('recover_video');
         RECOVERING_VIDEO = true;
 
-        $error('The stream ran into an error:', errorMessage.textContent, new Date);
+        $error("The stream ran into an error:", errorMessage.textContent, new Date);
 
         if(/\b(subscribe|mature)\b/i.test(errorMessage.textContent)) {
-            let next = await window.GetNextStreamer?.();
+            const next = await window.GetNextStreamer?.();
 
             // Subscriber only, etc.
             if(defined(next))

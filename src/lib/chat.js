@@ -7,8 +7,9 @@ function Chat(message = '', ...mentions) {
     if(!message.length)
         return Chat.get();
 
-    let finalMsg = [message.trim()];
-    for(let mention of [mentions].flat())
+    const finalMsg = [message.trim()];
+
+    for(const mention of [mentions].flat())
         finalMsg.push(mention.replace(/^(?!@)/, '@'));
 
     return Chat.send(finalMsg.join(' '));
@@ -19,7 +20,7 @@ Object.defineProperties(Chat, {
 
     badges: {
         get() {
-            let badges = (null
+            const badges = (null
                 ?? JUMP_DATA?.[STREAMER.name.toLowerCase()]?.stream?.badges
                 ?? {}
             );
@@ -38,7 +39,7 @@ Object.defineProperties(Chat, {
                         mod: 'https://static-cdn.jtvnw.net/badges/v1/3267646d-33f0-4b17-b3df-f923a41db1d0/3',
                         admin: 'https://static-cdn.jtvnw.net/badges/v1/d97c37bd-a6f5-4c38-8f57-4e4bef88af34/3',
                         owner: 'https://static-cdn.jtvnw.net/badges/v1/5527c58c-fb7d-422d-b71b-f309dcb85cc1/3',
-                    }[(type ?? 'everyone').toString().toLowerCase()])
+                    }[(type ?? 'everyone').toString().toLowerCase()]);
                 },
             };
         },
@@ -53,16 +54,16 @@ Object.defineProperties(Chat, {
             // Chat.get(mostRecent:number?, keepEmotes:boolean?) → [...object<{ style<string{ CSS }>, author<string>, emotes<array{ string }>, message<string>, mentions<array{ string }>, element?<Element>, uuid<string>, reply?<Element>, deleted?<boolean>, highlighted?<boolean> }>]
         value:
         function get(mostRecent = 250, keepEmotes = true) {
-            let results = [];
+            const results = [];
 
-            for(let [uuid, object] of [...Chat.__allmessages__].slice(-mostRecent)) {
+            for(const [uuid, object] of [...Chat.__allmessages__].slice(-mostRecent)) {
                 let { message, emotes } = object;
 
                 if(!keepEmotes)
-                    for(let emote of emotes)
+                    for(const emote of emotes)
                         message = message.replaceAll(emote, '');
 
-                let O = Object.assign({}, object, { message });
+                const O = Object.assign({}, object, { message });
 
                 Object.defineProperties(O, {
                     deleted: {
@@ -115,7 +116,7 @@ Object.defineProperties(Chat, {
     defer: {
         value: {
             set onmessage(callback) {
-                let name = callback.name || UUID.from(callback.toString()).value;
+                const name = callback.name || UUID.from(callback.toString()).value;
 
                 if(Chat.__deferredEvents__.__onmessage__.has(name))
                     return Chat.__deferredEvents__.__onmessage__.get(name);
@@ -132,7 +133,7 @@ Object.defineProperties(Chat, {
             },
 
             set onpinned(callback) {
-                let name = callback.name || UUID.from(callback.toString()).value;
+                const name = callback.name || UUID.from(callback.toString()).value;
 
                 if(Chat.__deferredEvents__.__onpinned__.has(name))
                     return Chat.__deferredEvents__.__onpinned__.get(name);
@@ -149,7 +150,7 @@ Object.defineProperties(Chat, {
             },
 
             set onwhisper(callback) {
-                let name = callback.name || UUID.from(callback.toString()).value;
+                const name = callback.name || UUID.from(callback.toString()).value;
 
                 if(Chat.__deferredEvents__.__onwhisper__.has(name))
                     return Chat.__deferredEvents__.__onwhisper__.get(name);
@@ -164,7 +165,7 @@ Object.defineProperties(Chat, {
             },
 
             set onbullet(callback) {
-                let name = callback.name || UUID.from(callback.toString()).value;
+                const name = callback.name || UUID.from(callback.toString()).value;
 
                 if(Chat.__deferredEvents__.__onbullet__.has(name))
                     return Chat.__deferredEvents__.__onbullet__.get(name);
@@ -179,7 +180,7 @@ Object.defineProperties(Chat, {
             },
 
             set oncommand(callback) {
-                let name = callback.name || UUID.from(callback.toString()).value;
+                const name = callback.name || UUID.from(callback.toString()).value;
 
                 if(Chat.__deferredEvents__.__oncommand__.has(name))
                     return Chat.__deferredEvents__.__oncommand__.get(name);
@@ -200,7 +201,7 @@ Object.defineProperties(Chat, {
     consume: {
         value: {
             set onmessage(callback) {
-                let name = callback.name || UUID.from(callback.toString()).value;
+                const name = callback.name || UUID.from(callback.toString()).value;
 
                 if(Chat.__consumableEvents__.__onmessage__.has(name))
                     return Chat.__consumableEvents__.__onmessage__.get(name);
@@ -217,7 +218,7 @@ Object.defineProperties(Chat, {
             },
 
             set onpinned(callback) {
-                let name = callback.name || UUID.from(callback.toString()).value;
+                const name = callback.name || UUID.from(callback.toString()).value;
 
                 if(Chat.__consumableEvents__.__onpinned__.has(name))
                     return Chat.__consumableEvents__.__onpinned__.get(name);
@@ -234,7 +235,7 @@ Object.defineProperties(Chat, {
             },
 
             set onwhisper(callback) {
-                let name = callback.name || UUID.from(callback.toString()).value;
+                const name = callback.name || UUID.from(callback.toString()).value;
 
                 if(Chat.__consumableEvents__.__onwhisper__.has(name))
                     return Chat.__consumableEvents__.__onwhisper__.get(name);
@@ -249,7 +250,7 @@ Object.defineProperties(Chat, {
             },
 
             set onbullet(callback) {
-                let name = callback.name || UUID.from(callback.toString()).value;
+                const name = callback.name || UUID.from(callback.toString()).value;
 
                 if(Chat.__consumableEvents__.__onbullet__.has(name))
                     return Chat.__consumableEvents__.__onbullet__.get(name);
@@ -264,7 +265,7 @@ Object.defineProperties(Chat, {
             },
 
             set oncommand(callback) {
-                let name = callback.name || UUID.from(callback.toString()).value;
+                const name = callback.name || UUID.from(callback.toString()).value;
 
                 if(Chat.__consumableEvents__.__oncommand__.has(name))
                     return Chat.__consumableEvents__.__oncommand__.get(name);
@@ -284,7 +285,7 @@ Object.defineProperties(Chat, {
     // Regular events...
     onmessage: {
         set(callback) {
-            let name = callback.name || UUID.from(callback.toString()).value;
+            const name = callback.name || UUID.from(callback.toString()).value;
 
             if(Chat.__onmessage__.has(name))
                 return Chat.__onmessage__.get(name);
@@ -304,7 +305,7 @@ Object.defineProperties(Chat, {
 
     onpinned: {
         set(callback) {
-            let name = callback.name || UUID.from(callback.toString()).value;
+            const name = callback.name || UUID.from(callback.toString()).value;
 
             if(Chat.__onpinned__.has(name))
                 return Chat.__onpinned__.get(name);
@@ -324,7 +325,7 @@ Object.defineProperties(Chat, {
 
     onwhisper: {
         set(callback) {
-            let name = callback.name || UUID.from(callback.toString()).value;
+            const name = callback.name || UUID.from(callback.toString()).value;
 
             if(Chat.__onwhisper__.has(name))
                 return Chat.__onwhisper__.get(name);
@@ -342,7 +343,7 @@ Object.defineProperties(Chat, {
 
     onbullet: {
         set(callback) {
-            let name = callback.name || UUID.from(callback.toString()).value;
+            const name = callback.name || UUID.from(callback.toString()).value;
 
             if(Chat.__onbullet__.has(name))
                 return Chat.__onbullet__.get(name);
@@ -360,7 +361,7 @@ Object.defineProperties(Chat, {
 
     oncommand: {
         set(callback) {
-            let name = callback.name || UUID.from(callback.toString()).value;
+            const name = callback.name || UUID.from(callback.toString()).value;
 
             if(Chat.__oncommand__.has(name))
                 return Chat.__oncommand__.get(name);

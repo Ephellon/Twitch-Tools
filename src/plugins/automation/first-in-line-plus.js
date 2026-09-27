@@ -12,30 +12,30 @@ plugin({
         let OLD_STREAMERS, NEW_STREAMERS, BAD_STREAMERS, ON_INSTALLED_REASON;
 
         await Cache.load(['OLD_STREAMERS', 'BAD_STREAMERS'], cache => {
-            OLD_STREAMERS = cache.OLD_STREAMERS ?? "";
-            BAD_STREAMERS = cache.BAD_STREAMERS ?? "";
+            OLD_STREAMERS = cache.OLD_STREAMERS ?? '';
+            BAD_STREAMERS = cache.BAD_STREAMERS ?? '';
         });
 
         Handlers.first_in_line_plus = async() => {
             new StopWatch('first_in_line_plus');
 
-            let streamers = [...STREAMERS, STREAMER].filter(isLive).map(streamer => streamer.name).isolate().sort();
+            const streamers = [...STREAMERS, STREAMER].filter(isLive).map(streamer => streamer.name).isolate().sort();
 
             NEW_STREAMERS = streamers.join(',').toLowerCase();
 
             if(nullish(OLD_STREAMERS))
                 OLD_STREAMERS = NEW_STREAMERS;
 
-            let old_names = OLD_STREAMERS.split(',').filter(defined),
-                new_names = NEW_STREAMERS.split(',').filter(defined),
-                bad_names = BAD_STREAMERS?.split(',')?.filter(defined)?.filter(parseBool);
+            let old_names = OLD_STREAMERS.split(',').filter(defined)
+                , new_names = NEW_STREAMERS.split(',').filter(defined)
+                , bad_names = BAD_STREAMERS?.split(',')?.filter(defined)?.filter(parseBool);
 
             // Detect if the channels got removed incorrectly?
             if(bad_names?.length) {
-                $warn('Twitch failed to add these channels correctly:', bad_names)
+                $warn("Twitch failed to add these channels correctly:", bad_names);
                     // .toNativeStack();
 
-                BAD_STREAMERS = "";
+                BAD_STREAMERS = '';
 
                 Cache.save({ BAD_STREAMERS });
 
@@ -43,8 +43,8 @@ plugin({
             } else if($.nullish('[id*="side"i][id*="nav"i] .side-nav-section[aria-label][tt-svg-label="followed"i] a[class*="side-nav-card"i]') && !/^User_Not_Logged_In_\d+$/.test(USERNAME)) {
                 wait(3000).then(() => {
                     // Is the nav open?
-                    let alreadyOpen = $.defined('[data-a-target="side-nav-search-input"i], [data-a-target="side-nav-header-expanded"i]'),
-                        sidenav = $('[data-a-target="side-nav-arrow"i]')
+                    const alreadyOpen = $.defined('[data-a-target="side-nav-search-input"i], [data-a-target="side-nav-header-expanded"i]')
+                        , sidenav = $('[data-a-target="side-nav-arrow"i]')
                             ?.closest('[class*="expand"i]')
                             ?.querySelector('button');
 
@@ -96,23 +96,23 @@ plugin({
                 default: {
                     // Should function normally
                 } break;
-            }
+            } // :installation_viewer | switch ON_INSTALLED_REASON ||= Settings.onInsta
 
             creating_new_events:
-            for(let name of new_names) {
+            for(const name of new_names) {
                 // TODID? `STREAMERS` → `ALL_CHANNELS`
-                let streamer = STREAMERS.find(streamer => RegExp(name, 'i').test(streamer.name)),
-                    { searchParameters } = parseURL(location.href);
+                const streamer = STREAMERS.find(streamer => RegExp(name, 'i').test(streamer.name))
+                    , { searchParameters } = parseURL(location.href);
 
                 if(nullish(streamer) || searchParameters.obit?.equals(streamer.name) || !name?.length)
                     continue creating_new_events;
 
-                let { href } = streamer;
+                const { href } = streamer;
 
                 if(!streamer?.name?.length)
                     continue creating_new_events;
 
-                $log('A channel just appeared:', name, new Date);
+                $log("A channel just appeared:", name, new Date);
 
                 Handlers.first_in_line({ href, innerText: `${ name } is live [First in Line+]` });
             }
@@ -129,7 +129,7 @@ plugin({
 
         __FirstInLinePlus__:
         if(parseBool(Settings.first_in_line_plus) || parseBool(Settings.first_in_line_all)) {
-            RegisterJob('first_in_line_plus');
+            RegisterJob('first_in_line_plus')
         }
     },
 });

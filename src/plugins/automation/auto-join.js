@@ -17,7 +17,7 @@ plugin({
             '[data-a-target*="mature"i]:is([data-a-target*="overlay"i], [data-a-target*="accept"i]) button',
             '[data-a-target*="class"i]:is([data-a-target*="overlay"i], [data-a-target*="accept"i]) button',
             '[data-a-target*="watchparty"i] button',
-            (IGNORE_ZOOM_STATE? '': '.home:not([user-intended="true"i]) [data-a-target^="home"i]')
+            (IGNORE_ZOOM_STATE ? '' : '.home:not([user-intended="true"i]) [data-a-target^="home"i]')
         ].filter(s => s.length).join(','))?.click();
     },
 
@@ -25,7 +25,7 @@ plugin({
         $.all(`[class*="info"i] [href$="${ STREAMER.name }"i] [class*="title"i], main [href$="${ STREAMER.name }"i]`).map(element => {
             element.closest('div[class]').addEventListener('mousedown', async({ isTrusted, button = -1 }) => {
                 !button && (await when.defined(() => $('.home')))?.setAttribute?.('user-intended', IGNORE_ZOOM_STATE = isTrusted);
-            })
+            });
         });
     },
 });

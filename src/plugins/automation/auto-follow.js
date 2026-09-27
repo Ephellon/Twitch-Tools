@@ -30,17 +30,17 @@ plugin({
             if(nullish(STREAMER))
                 return StopWatch.stop('auto_follow_raids');
 
-            let url = parseURL(location),
-                data = url.searchParameters;
+            const url = parseURL(location)
+                , data = url.searchParameters;
 
-            let { like, follow } = STREAMER,
-                raid = parseBool(data.referrer?.equals('raid') || data.raided);
+            let { like, follow } = STREAMER
+                , raid = parseBool(data.referrer?.equals('raid') || data.raided);
 
             if(!like && raid)
                 follow();
 
             Cache.load('LastRaid', ({ LastRaid }) => {
-                let { from, to, type } = LastRaid || {};
+                const { from, to, type } = LastRaid || {};
 
                 if(!like && to?.equals?.(STREAMER.name))
                     follow();
@@ -52,18 +52,18 @@ plugin({
 
         __AutoFollowRaid__:
         if(parseBool(Settings.auto_follow_raids) || parseBool(Settings.auto_follow_all)) {
-            RegisterJob('auto_follow_raids');
+            RegisterJob('auto_follow_raids')
         }
 
         let AUTO_FOLLOW_EVENT;
         Handlers.auto_follow_time = async() => {
             new StopWatch('auto_follow_time');
 
-            let { like, follow } = STREAMER,
-                mins = parseInt(Settings.auto_follow_time_minutes) | 0;
+            let { like, follow } = STREAMER
+                , mins = parseInt(Settings.auto_follow_time_minutes) | 0;
 
             if(!like) {
-                let secs = GET_WATCH_TIME() / 1000;
+                const secs = GET_WATCH_TIME() / 1000;
 
                 if(secs > (mins * 60))
                     follow();
@@ -77,7 +77,7 @@ plugin({
 
         __AutoFollowTime__:
         if(parseBool(Settings.auto_follow_time) || parseBool(Settings.auto_follow_all)) {
-            RegisterJob('auto_follow_time');
+            RegisterJob('auto_follow_time')
         }
     },
 });

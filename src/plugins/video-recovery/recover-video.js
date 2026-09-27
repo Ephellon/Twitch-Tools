@@ -19,7 +19,7 @@ plugin({
     handler: async({ StopWatch }) => {
         new StopWatch('recover_video');
 
-        let errorMessage = $('[data-a-target*="player"i]:is([data-a-target*="content"i], [data-a-target*="gate"i]) [data-a-target*="text"i]');
+        const errorMessage = $('[data-a-target*="player"i]:is([data-a-target*="content"i], [data-a-target*="gate"i]) [data-a-target*="text"i]');
 
         if(nullish(errorMessage))
             return StopWatch.stop('recover_video');
@@ -28,13 +28,13 @@ plugin({
             return StopWatch.stop('recover_video');
         RECOVERING_VIDEO = true;
 
-        $error('The stream ran into an error:', errorMessage.textContent, new Date);
+        $error("The stream ran into an error:", errorMessage.textContent, new Date);
 
-        let latin = top.location.pathname.slice(1).split('/').shift();
-        let native = $(`a[href$="${ latin }"i] [class*="title"]`)?.textContent ?? latin;
+        const latin = top.location.pathname.slice(1).split('/').shift();
+        const native = $(`a[href$="${ latin }"i] [class*="title"]`)?.textContent ?? latin;
 
         if(errorMessage.closest('[class*="content"i]:is([role], [data-a-target])')?.textContent?.includes(native)) {
-            let next = await GetNextStreamer(latin);
+            const next = await GetNextStreamer(latin);
 
             // Subscriber only, etc.
             if(defined(next))

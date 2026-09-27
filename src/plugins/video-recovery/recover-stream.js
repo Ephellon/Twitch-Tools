@@ -22,9 +22,9 @@ plugin({
         if(nullish(video))
             return StopWatch.stop('recover_stream');
 
-        let { paused } = video,
-            isTrusted = $.defined('button[data-a-player-state="paused"i]'),
-            isAdvert = $.defined('[data-a-target*="ad-countdown"i]');
+        let { paused } = video
+            , isTrusted = $.defined('button[data-a-player-state="paused"i]')
+            , isAdvert = $.defined('[data-a-target*="ad-countdown"i]');
 
         // Leave the video alone
             // if the video isn't paused
@@ -39,16 +39,16 @@ plugin({
 
         __RecoverVideoProgramatically__:
         try {
-            let playing = video.play();
+            const playing = video.play();
 
             if(defined(playing))
                 playing.catch($error);
         } catch(error) {
             $error(error);
 
-            let control = $('button[data-a-player-state]'),
-                playing = control.dataset?.aPlayerState?.equals('playing'),
-                attempts = control.dataset?.recoveryAttempts | 0;
+            let control = $('button[data-a-player-state]')
+                , playing = control.dataset?.aPlayerState?.equals('playing')
+                , attempts = control.dataset?.recoveryAttempts | 0;
 
             if(nullish(control)) {
                 $warn("No video controls presented.");
@@ -62,7 +62,7 @@ plugin({
 
             if(!playing) {
                 // PAUSED → PLAY
-                control.click();
+                control.click()
             } else if(playing) {
                 // PLAYING → PAUSE, PLAY
                 control.click();
@@ -72,8 +72,8 @@ plugin({
             control.dataset.recoveryAttempts = ++attempts;
 
             wait(5000).then(() => {
-                let control = $('button[data-a-player-state]'),
-                    attempts = control.dataset?.recoveryAttempts | 0;
+                let control = $('button[data-a-player-state]')
+                    , attempts = control.dataset?.recoveryAttempts | 0;
 
                 control.dataset.recoveryAttempts = --attempts;
             });
@@ -84,7 +84,7 @@ plugin({
 
     setup() {
         __RecoverStream__: {
-            let video = $('video');
+            const video = $('video');
 
             if(nullish(video))
                 break __RecoverStream__;

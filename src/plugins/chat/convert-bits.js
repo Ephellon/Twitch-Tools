@@ -13,20 +13,20 @@ plugin({
     handler: (context) => {
         new context.StopWatch('convert_bits');
 
-        let dropdown = $('[class*="bits-buy"i]'),
-            bits_counter = $.all('[class*="bits-count"i]:not([tt-tusda])'),
-            bits_cheer = $.all('[class*="cheer-amount"i]:not([tt-tusda])'),
-            hype_trains = $.all('[class*="community-highlight-stack"i] p:not([tt-tusda])');
+        const dropdown = $('[class*="bits-buy"i]')
+            , bits_counter = $.all('[class*="bits-count"i]:not([tt-tusda])')
+            , bits_cheer = $.all('[class*="cheer-amount"i]:not([tt-tusda])')
+            , hype_trains = $.all('[class*="community-highlight-stack"i] p:not([tt-tusda])');
 
-        let bits_num_regexp = /([\d,]+)(?: +bits)?/i,
-            bits_alp_regexp = /([\d,]+) +bits/i;
+        const bits_num_regexp = /([\d,]+)(?: +bits)?/i
+            , bits_alp_regexp = /([\d,]+) +bits/i;
 
-        let _0 = /(\D\d)$/;
+        const _0 = /(\D\d)$/;
 
         if(defined(dropdown))
             $.all('h5:not([tt-tusda])', dropdown).map(header => {
-                let bits = parseInt(header.textContent.replace(/\D+/g, '')),
-                    usd;
+                let bits = parseInt(header.textContent.replace(/\D+/g, ''))
+                    , usd;
 
                 usd = (bits * .01).toFixed(2);
 
@@ -35,13 +35,13 @@ plugin({
                 header.setAttribute('tt-tusda', usd);
             });
 
-        for(let counter of bits_counter) {
-            let { innerHTML } = counter;
+        for(const counter of bits_counter) {
+            const { innerHTML } = counter;
 
             if(bits_alp_regexp.test(innerHTML))
                 counter.innerHTML = innerHTML.replace(bits_alp_regexp, ($0, $1, $$, $_) => {
-                    let bits = parseInt($1.replace(/\D+/g, '')),
-                        usd;
+                    let bits = parseInt($1.replace(/\D+/g, ''))
+                        , usd;
 
                     usd = (bits * .01).toFixed(2);
 
@@ -51,13 +51,13 @@ plugin({
                 });
         }
 
-        for(let cheer of bits_cheer) {
-            let { innerHTML } = cheer;
+        for(const cheer of bits_cheer) {
+            const { innerHTML } = cheer;
 
             if(bits_num_regexp.test(innerHTML))
                 cheer.innerHTML = innerHTML.replace(bits_num_regexp, ($0, $1, $$, $_) => {
-                    let bits = parseInt($1.replace(/\D+/g, '')),
-                        usd;
+                    let bits = parseInt($1.replace(/\D+/g, ''))
+                        , usd;
 
                     usd = (bits * .01).toFixed(2);
 
@@ -67,13 +67,13 @@ plugin({
                 });
         }
 
-        for(let train of hype_trains) {
-            let { innerHTML } = train;
+        for(const train of hype_trains) {
+            const { innerHTML } = train;
 
             if(bits_alp_regexp.test(innerHTML))
                 train.innerHTML = innerHTML.replace(bits_alp_regexp, ($0, $1, $$, $_) => {
-                    let bits = parseInt($1.replace(/\D+/g, '')),
-                        usd;
+                    let bits = parseInt($1.replace(/\D+/g, ''))
+                        , usd;
 
                     usd = (bits * .01).toFixed(2);
 

@@ -40,18 +40,18 @@ const TESTS = [
     'v2.test.js',
 ];
 
-for (let name of MODULES)
+for(const name of MODULES)
     require(PATH.join(ROOT, name));
 
 require(PATH.join(__dirname, 'harness.js'));
 
-for (let name of TESTS)
+for(const name of TESTS)
     require(PATH.join(__dirname, name));
 
 globalThis.TTV_DSL.testing
     .run()
     .then(({ failed }) => {
-        process.exitCode = (failed > 0? 1: 0);
+        process.exitCode = (failed > 0 ? 1 : 0);
     })
     .catch(error => {
         console.error(error);

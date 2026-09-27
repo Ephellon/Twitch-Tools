@@ -13,14 +13,14 @@ plugin({
     handler: () => {
         let placement;
 
-        if((placement = Settings.points_receipt_placement ??= "null").equals("null"))
+        if((placement = Settings.points_receipt_placement ??= 'null').equals('null'))
             return;
 
-        let coin = $.last('[data-test-selector*="balance-string"i]')?.closest('button')?.querySelector('img[alt]');
+        const coin = $.last('[data-test-selector*="balance-string"i]')?.closest('button')?.querySelector('img[alt]');
 
-        let balance = $.last('[data-test-selector*="balance-string"i]')?.innerText,
-            exact_debt = $('[data-test-selector^="prediction-checkout"i], [data-test-selector*="user-prediction"i][data-test-selector*="points"i], [data-test-selector*="user-prediction"i] p')?.innerText,
-            exact_change = $('[class*="points"i][class*="summary"i][class*="add-text"i]')?.innerText;
+        const balance = $.last('[data-test-selector*="balance-string"i]')?.innerText
+            , exact_debt = $('[data-test-selector^="prediction-checkout"i], [data-test-selector*="user-prediction"i][data-test-selector*="points"i], [data-test-selector*="user-prediction"i] p')?.innerText
+            , exact_change = $('[class*="points"i][class*="summary"i][class*="add-text"i]')?.innerText;
 
         top.postMessage({ action: 'jump', points_receipt_placement: { balance, coin_face: coin?.src, coin_name: coin?.alt, exact_debt, exact_change } }, location.origin);
     },

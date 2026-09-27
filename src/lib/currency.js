@@ -44,20 +44,21 @@ function parseCoin(amount = '') {
             default: {
                 booklet = '_ K M B T';
             } break;
-        }
+        } // switch lang?.toLowerCase()
 
         let book = {}, index = 0;
-        for(let symbol of booklet.split(' '))
+
+        for(const symbol of booklet.split(' '))
             book[symbol] = index++;
 
         return book;
     };
 
-    let units = getUnits(LITERATURE);
-    let points = amount?.toString()?.replace(RegExp(`(\\d{1,3})(${ '(?:\\D\\d{1,3})?'.repeat(9) })?(?:\\s*(\\D))?`, 'i'), ($0, $1, $2 = '0', $3 = '_', $$, $_) => {
+    const units = getUnits(LITERATURE);
+    const points = amount?.toString()?.replace(RegExp(`(\\d{1,3})(${ '(?:\\D\\d{1,3})?'.repeat(9) })?(?:\\s*(\\D))?`, 'i'), ($0, $1, $2 = '0', $3 = '_', $$, $_) => {
         $2 = $2.replace(/\D/g, '');
 
-        return parseFloat([$1, $2].join($2.length > 2? '': '.')) * (1e3 ** units[$3.toUpperCase()]);
+        return parseFloat([$1, $2].join($2.length > 2 ? '' : '.')) * (1e3 ** units[$3.toUpperCase()]);
     });
 
     return parseInt(points) | 0;

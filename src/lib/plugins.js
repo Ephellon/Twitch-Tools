@@ -29,12 +29,12 @@ const PLUGINS = (globalThis.__TTV_PLUGINS__ ??= new Map);
  * @param {object}   [definition.settings]          The feature's settings and their defaults (used by the Settings page, Phase 5)
  */
 export function plugin(definition) {
-    let { id } = definition;
+    const { id } = definition;
 
     if(PLUGINS.has(id))
         throw new Error(`Plugin "${ id }" is already registered`);
 
-    let job = definition.job ?? id;
+    const job = definition.job ?? id;
 
     PLUGINS.set(id, {
         frames: ['main'],
@@ -50,7 +50,7 @@ export function plugin(definition) {
  * @simply start(frame:string, context:object?) → undefined
  */
 export async function start(frame, context = {}) {
-    for(let [id, feature] of PLUGINS)
+    for(const [id, feature] of PLUGINS)
         if(feature.frames.includes(frame) && !feature.started)
             await run(id, context);
 }
@@ -61,7 +61,7 @@ export async function start(frame, context = {}) {
  * @simply run(id:string, context:object?) → Promise~undefined
  */
 export async function run(id, context = {}) {
-    let feature = PLUGINS.get(id);
+    const feature = PLUGINS.get(id);
 
     if(!feature)
         throw new Error(`No plugin "${ id }"`);
@@ -71,7 +71,7 @@ export async function run(id, context = {}) {
     if(feature.install)
         return await feature.install(context);
 
-    let { job } = feature;
+    const { job } = feature;
 
     await feature.init?.(context);
 

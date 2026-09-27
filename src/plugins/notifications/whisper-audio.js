@@ -21,8 +21,8 @@ plugin({
         };
 
         // Play message on pill-change
-        let pill = $('.whispers__pill'),
-            unread = parseInt(pill?.textContent) | 0;
+        const pill = $('.whispers__pill')
+            , unread = parseInt(pill?.textContent) | 0;
 
         if(nullish(pill))
             return StopWatch.stop('whisper_audio'), NOTIFIED.whisper = 0;

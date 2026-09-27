@@ -23,7 +23,7 @@ plugin({
                 // applies `muted=true` (#49); keep the video muted until the viewer uses the player themselves
                 if(muted) {
                     let viewerTouched = false;
-                    let silence = video => {
+                    const silence = video => {
                         video.muted = true;
                         video.addEventListener('volumechange', () => viewerTouched || (video.muted = true));
                     };

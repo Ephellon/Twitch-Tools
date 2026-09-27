@@ -23,12 +23,12 @@ plugin({
         else if(Settings.auto_chat__vip === false)
             Settings.set({ auto_chat__vip: null });
 
-        let goTime = (+new Date) + parseInt(Settings.auto_chat__wait_time) * 60_000;
+        const goTime = (+new Date) + parseInt(Settings.auto_chat__wait_time) * 60_000;
 
         when(() => (+new Date) >= goTime, 5e3).then(ready => {
             Cache.load(AUTO_CHAT_NAME, results => {
-                let old = results[AUTO_CHAT_NAME],
-                    now = new Date;
+                let old = results[AUTO_CHAT_NAME]
+                    , now = new Date;
 
                 if(nullish(old))
                     old = now;
@@ -39,19 +39,19 @@ plugin({
                 if((now - old) && (now - old < parseTime('8:00:00')))
                     return;
 
-                let Rules = context.UPDATE_RULES('lurking', ';');
-                let userSent = [...Chat.messages].find(([,{ author }]) => author.equals(context.USERNAME));
+                const Rules = context.UPDATE_RULES('lurking', ';');
+                const userSent = [...Chat.messages].find(([,{ author }]) => author.equals(context.USERNAME));
 
                 // The user isn't lurking!
                 if(defined(userSent)) {
-                    let [uuid, line] = userSent;
+                    const [uuid, line] = userSent;
 
-                    now = defined(line.timestamp)? new Date(line.timestamp): now;
+                    now = defined(line.timestamp) ? new Date(line.timestamp) : now;
 
                     $notice(`The user already sent a message!`, line);
                 } else {
-                    let channel = context.STREAMER.name?.toLowerCase();
-                    let badges = context.STREAMER.perm?.all ?? ['everyone'];
+                    const channel = context.STREAMER.name?.toLowerCase();
+                    const badges = context.STREAMER.perm?.all ?? ['everyone'];
                     let message, messages, reason;
 
                     if(Rules.channel.test(channel)) {
@@ -99,7 +99,8 @@ plugin({
                 && mentions.map(username => username.toLowerCase()).missing(context.USERNAME.toLowerCase())
                 // Only accept exact matches, instead of partials; e.g. "Hey @SomeUserName, wyd?" vs. "Hey User, wyd?"
                 && message.toLowerCase().missing(context.USERNAME)
-            ) return;
+            )
+                return;
 
             // Wouldn't make sense to reply to a deleted message...
             if(await deleted)
@@ -117,7 +118,7 @@ plugin({
                     Chat.reply(uuid, 'AFK. BRB');
                 } break;
 
-                default: return;
+                default: { return }
             }
         };
     },

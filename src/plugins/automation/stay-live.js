@@ -13,9 +13,9 @@ plugin({
     timer: 3000,
 
     init() {
-        ClearIntent = undefined;
-        WATCHED_LIVE = undefined;       // The channel seen live during this visit
-        USER_INTENT = undefined;        // A channel the viewer chose themselves (see user-intent.js)
+        ClearIntent = void null;
+        WATCHED_LIVE = void null;       // The channel seen live during this visit
+        USER_INTENT = void null;        // A channel the viewer chose themselves (see user-intent.js)
         twitch_pathnames = [
             USERNAME,
 
@@ -27,8 +27,8 @@ plugin({
     handler: async({ StopWatch }) => {
         new StopWatch('stay_live');
 
-        let next = await GetNextStreamer(STREAMER.name),
-            { pathname } = location;
+        const next = await GetNextStreamer(STREAMER.name)
+            , { pathname } = location;
 
         try {
             await Cache.load('UserIntent', async({ UserIntent }) => {
@@ -43,7 +43,7 @@ plugin({
             return StopWatch.stop('stay_live'), Cache.remove('UserIntent');
         }
 
-        let ignoreReruns = parseBool(Settings.stay_live__ignore_channel_reruns);
+        const ignoreReruns = parseBool(Settings.stay_live__ignore_channel_reruns);
 
         if(STREAMER.live && !(ignoreReruns && STREAMER.redo))
             WATCHED_LIVE = STREAMER.name;
@@ -64,7 +64,7 @@ plugin({
 
             // Only move on when the stream ended while being watched, or the extension brought the viewer
             // here; a channel the viewer opened while it was offline is theirs to look at (#50)
-            let broughtHere = defined(parseURL(location).searchParameters?.tool);
+            const broughtHere = defined(parseURL(location).searchParameters?.tool);
 
             if(USER_INTENT?.equals?.(STREAMER?.name) || !(WATCHED_LIVE?.equals?.(STREAMER?.name) || broughtHere))
                 break NotLive;
@@ -74,8 +74,8 @@ plugin({
 
                 REDO_FIRST_IN_LINE_QUEUE( parseURL(FIRST_IN_LINE_HREF)?.addSearch?.({ from: STREAMER?.name })?.href );
 
-                let index = ALL_FIRST_IN_LINE_JOBS.indexOf(FIRST_IN_LINE_HREF),
-                    [removed] = (index < 0? []: ALL_FIRST_IN_LINE_JOBS.splice(index, 1));
+                const index = ALL_FIRST_IN_LINE_JOBS.indexOf(FIRST_IN_LINE_HREF)
+                    , [removed] = (index < 0 ? [] : ALL_FIRST_IN_LINE_JOBS.splice(index, 1));
 
                 if(UP_NEXT_ALLOW_THIS_TAB)
                     Cache.save({ ALL_FIRST_IN_LINE_JOBS, FIRST_IN_LINE_DUE_DATE }, () => goto(parseURL(next.href)?.addSearch?.({ obit: STREAMER?.name, tool: 'stay-live' })?.href ?? '?tool=stay-live'));
@@ -86,13 +86,13 @@ plugin({
                         goto(parseURL(next).addSearch({ obit, tool: 'stay-live--steal' }).href);
                     });
             } else  {
-                $warn(`${ STREAMER?.name } is no longer live. There doesn't seem to be any followed channels on right now`, new Date);
+                $warn(`${ STREAMER?.name } is no longer live. There doesn't seem to be any followed channels on right now`, new Date)
             }
 
             // After 30 seconds, remove the intent
             ClearIntent ??= setTimeout(Cache.remove, 30_000, 'UserIntent');
         } else if(/\/search\b/i.test(pathname)) {
-            let { term } = parseURL(location).searchParameters;
+            const { term } = parseURL(location).searchParameters;
 
             Cache.save({ UserIntent: term });
         }
@@ -101,6 +101,6 @@ plugin({
     },
 
     setup() {
-        $remark('Ensuring Twitch stays live...');
+        $remark("Ensuring Twitch stays live...");
     },
 });

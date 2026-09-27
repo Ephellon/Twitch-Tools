@@ -14,27 +14,27 @@ plugin({
 
     init() {
         SECONDS_VIDEO_PAUSED_UNSAFELY = 0;
-        VIDEO_CREATION_TIME = undefined;
-        TOTAL_VIDEO_FRAMES = undefined;
-        PAGE_HAS_FOCUS = document.visibilityState.equals("visible");
+        VIDEO_CREATION_TIME = void null;
+        TOTAL_VIDEO_FRAMES = void null;
+        PAGE_HAS_FOCUS = document.visibilityState.equals('visible');
         VIDEO_OVERRIDE = false;
         FRAME_HASH_ALLOWED = (navigator.deviceMemory ?? 0) > 1;
-        PREVIOUS_FRAME_HASH = undefined;
+        PREVIOUS_FRAME_HASH = void null;
     },
 
     handler: ({ StopWatch }) => {
         new StopWatch('recover_frames');
 
-        let video = $('video') ?? $('video', $('#tt-embedded-video')?.contentDocument);
+        const video = $('video') ?? $('video', $('#tt-embedded-video')?.contentDocument);
 
         if(nullish(video))
             return StopWatch.stop('recover_frames');
 
-        let { paused } = video,
-            isTrusted = $.defined('button[data-a-player-state="paused"i]'),
-            isAdvert = $.defined('[data-a-target*="ad-countdown"i]'),
-            { creationTime, totalVideoFrames } = video.getVideoPlaybackQuality(),
-            cframe = () => ($.defined('#tt-embedded-video')? performance.now(): FRAME_HASH_ALLOWED? UUID.from($('video').captureFrame()).value: null);
+        let { paused } = video
+            , isTrusted = $.defined('button[data-a-player-state="paused"i]')
+            , isAdvert = $.defined('[data-a-target*="ad-countdown"i]')
+            , { creationTime, totalVideoFrames } = video.getVideoPlaybackQuality()
+            , cframe = () => ($.defined('#tt-embedded-video') ? performance.now() : FRAME_HASH_ALLOWED ? UUID.from($('video').captureFrame()).value : null);
 
         // Time that's passed since creation. Should constantly increase
         VIDEO_CREATION_TIME ??= creationTime;
@@ -62,7 +62,7 @@ plugin({
             )
         ) {
             if(SECONDS_VIDEO_PAUSED_UNSAFELY > 0 && !(SECONDS_VIDEO_PAUSED_UNSAFELY % 5))
-                $warn(`The video has been stalling for ${ SECONDS_VIDEO_PAUSED_UNSAFELY }s`, { VIDEO_CREATION_TIME, TOTAL_VIDEO_FRAMES, SECONDS_VIDEO_PAUSED_UNSAFELY }, 'Frames fallen behind:', totalVideoFrames - TOTAL_VIDEO_FRAMES);
+                $warn(`The video has been stalling for ${ SECONDS_VIDEO_PAUSED_UNSAFELY }s`, { VIDEO_CREATION_TIME, TOTAL_VIDEO_FRAMES, SECONDS_VIDEO_PAUSED_UNSAFELY }, "Frames fallen behind:", totalVideoFrames - TOTAL_VIDEO_FRAMES);
 
             // Give each recovery attempt 10s before the next one (#31)
             if(SECONDS_VIDEO_PAUSED_UNSAFELY > 5 && !(SECONDS_VIDEO_PAUSED_UNSAFELY % 10)) {
@@ -71,14 +71,14 @@ plugin({
                     $warn(`Attempting to override the video`);
                     $('#tt-embedded-video')?.remove();
 
-                    let container = $('video')?.closest('[class*="container"i]');
+                    const container = $('video')?.closest('[class*="container"i]');
 
                     if(nullish(container))
                         break __RecoverFrames_Embed__;
 
-                    let { name } = STREAMER,
-                        controls = true,
-                        iframe;
+                    let { name } = STREAMER
+                        , controls = true
+                        , iframe;
 
                     container.insertAdjacentElement('afterbegin', iframe =
                         furnish(`iframe#tt-embedded-video`, {
@@ -86,7 +86,7 @@ plugin({
                             src: parseURL(`https://player.twitch.tv/`).addSearch({
                                 channel: name,
                                 parent: 'twitch.tv',
-                                [video.muted? 'muted': 'volume']: video[video.muted? 'muted': 'volume'],
+                                [video.muted ? 'muted' : 'volume']: video[video.muted ? 'muted' : 'volume'],
 
                                 controls,
                             }).href,
@@ -98,12 +98,12 @@ plugin({
 
                             onload(event) {
                                 when.defined(() => {
-                                    let iDocument = $('#tt-embedded-video')?.contentDocument;
+                                    const iDocument = $('#tt-embedded-video')?.contentDocument;
 
                                     if(nullish(iDocument))
                                         return /* No iframe document */;
 
-                                    let iVideo = $('video', iDocument), video = $('video');
+                                    const iVideo = $('video', iDocument), video = $('video');
 
                                     if(nullish(iVideo))
                                         return /* No iframe video */;
@@ -112,18 +112,18 @@ plugin({
                                         return /* iframe video not loading */;
 
                                     // Continue recordings...
-                                    for(let [key, { recording }] of video.getRecording(Recording.ALL)) {
+                                    for(const [key, { recording }] of video.getRecording(Recording.ALL)) {
                                         let { name, as, maxTime } = recording;
 
                                         maxTime = parseFloat(maxTime);
-                                        maxTime = maxTime < 0? Infinity: maxTime;
+                                        maxTime = maxTime < 0 ? Infinity : maxTime;
 
                                         if(!/^\[\[(.+)\]\]$/.test(key)) {
                                             recording.save();
                                             Recording.proxy(iVideo, { name, as, maxTime }).then(event => {
-                                                let { target } = event;
-                                                let { recording } = target;
-                                                let { name, as } = recording;
+                                                const { target } = event;
+                                                const { recording } = target;
+                                                const { name, as } = recording;
 
                                                 if(name.startsWith('AUTO_DVR'))
                                                     Handlers.__MASTER_AUTO_DVR_HANDLER__.call(target, event);
@@ -141,7 +141,7 @@ plugin({
 
                     $('video').muted = true;
                     $('video', container).modStyle(`display:none`);
-                    $('[data-a-player-state]')?.setTooltip(`${ name }'${ /s$/.test(name)? '': 's' } stream ran into an error`);
+                    $('[data-a-player-state]')?.setTooltip(`${ name }'${ /s$/.test(name) ? '' : 's' } stream ran into an error`);
                 } else {
                     $warn(`Attempting to pause/play the video`);
 
@@ -150,7 +150,7 @@ plugin({
 
                         wait(1000).then(() => $('button[data-a-player-state]')?.click());
                     }
-                }
+                } // :__RecoverFrames_Embed__
             }
 
             // Try constantly overwriting to see if the video plays
@@ -182,7 +182,7 @@ plugin({
     },
 
     setup() {
-        $.on('visibilitychange', event => PAGE_HAS_FOCUS = document.visibilityState.equals("visible"));
+        $.on('visibilitychange', event => PAGE_HAS_FOCUS = document.visibilityState.equals('visible'));
 
         RegisterJob('recover_frames');
 

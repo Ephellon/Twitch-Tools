@@ -19,28 +19,28 @@
 
 window.IS_A_FRAMED_CONTAINER = (top != window);
 
-let Queue = top.Queue = { balloons: [], bullets: [], bttv_emotes: [], emotes: [], messages: [], message_popups: [], popups: [] },
-    Messages = top.Messages = new Map(),
-    PostOffice = top.PostOffice = new Map(),
-    UserMenuToggleButton, SignUpBanner,
+let Queue = top.Queue = { balloons: [], bullets: [], bttv_emotes: [], emotes: [], messages: [], message_popups: [], popups: [] }
+    , Messages = top.Messages = new Map()
+    , PostOffice = top.PostOffice = new Map()
+    , UserMenuToggleButton, SignUpBanner
     // These won't change (often)
-    ACTIVITY,
-    USERNAME,
-    LANGUAGE,
-    THEME,
-    ANTITHEME,
-    THEME__CHANNEL_DARK,
-    THEME__CHANNEL_LIGHT,
-    THEME__BASE_CONTRAST,
-    THEME__PREFERRED_CONTRAST,
-    LITERATURE,
-    SPECIAL_MODE = $.defined('[data-test-selector="exit-button"i]'),
-    NORMAL_MODE = !SPECIAL_MODE,
+    , ACTIVITY
+    , USERNAME
+    , LANGUAGE
+    , THEME
+    , ANTITHEME
+    , THEME__CHANNEL_DARK
+    , THEME__CHANNEL_LIGHT
+    , THEME__BASE_CONTRAST
+    , THEME__PREFERRED_CONTRAST
+    , LITERATURE
+    , SPECIAL_MODE = $.defined('[data-test-selector="exit-button"i]')
+    , NORMAL_MODE = !SPECIAL_MODE
     // Hmm...
-    JUMPED_FRAMES = false,
-    JUMP_DATA = {},
-    STASH_SAVED = false,
-    UP_NEXT_ALLOW_THIS_TAB;
+    , JUMPED_FRAMES = false
+    , JUMP_DATA = {}
+    , STASH_SAVED = false
+    , UP_NEXT_ALLOW_THIS_TAB;
 
 top.WINDOW_STATE = document.readyState;
 top.TWITCH_INTEGRITY_FAIL = false;
@@ -75,12 +75,12 @@ when.defined(() => {
     });
 
 top.onpagehide = ({ persisted }) => {
-    top.WINDOW_STATE = (persisted? document.readyState: 'unloading');
+    top.WINDOW_STATE = (persisted ? document.readyState : 'unloading');
 };
 
 // Twitch-wide errors
 when(() => top.TWITCH_INTEGRITY_FAIL, 5_000).then(() => {
-    let error = `<div hidden controller title="Twitch Integrity Fail" okay="OK" deny="OK. Do not show again">${ (new Date).toJSON() }</div>
+    const error = `<div hidden controller title="Twitch Integrity Fail" okay="OK" deny="OK. Do not show again">${ (new Date).toJSON() }</div>
     Unable to perform some Twitch-wide actions right now.
 
     <br><br>
@@ -143,40 +143,43 @@ let { Glyphs } = top;
 let nth = (n, s = '') => {
     n += '';
 
-    let c = (s = '') => {
+    const c = (s = '') => {
         switch(s.trim()) {
             case 'ordinal-position': {
                 switch(window.LANGUAGE) {
-                    case 'bg': return ' място';
-                    case 'cs': return ' místo';
-                    case 'da': return ' plads';
-                    case 'de': return ' Reihe';
-                    case 'en': return ' in line';
-                    case 'el': return ' θέση';
-                    case 'es': return ' en línea';
-                    case 'fi': return ' sija';
-                    case 'fr': return 'ème en ligne';
-                    case 'hu': return ' a sorban';
-                    case 'it': return ' di fila';
-                    case 'nl': return 'e in de rij';
-                    case 'no': return ' i rekken';
-                    case 'pl': return ' w kolejce';
-                    case 'ro': return ' pe linie';
-                    case 'ru': return ' в строке';
-                    case 'sk': return ' v poradí';
-                    case 'sv': return 'a i raden';
-                    case 'tr': return ' sırada';
-                    case 'vi': return ' trong dòng';
+                    case 'bg': { return ' място' }
+                    case 'cs': { return ' místo' }
+                    case 'da': { return ' plads' }
+                    case 'de': { return ' Reihe' }
+                    case 'en': { return ' in line' }
+                    case 'el': { return ' θέση' }
+                    case 'es': { return ' en línea' }
+                    case 'fi': { return ' sija' }
+                    case 'fr': { return 'ème en ligne' }
+                    case 'hu': { return ' a sorban' }
+                    case 'it': { return ' di fila' }
+                    case 'nl': { return 'e in de rij' }
+                    case 'no': { return ' i rekken' }
+                    case 'pl': { return ' w kolejce' }
+                    case 'ro': { return ' pe linie' }
+                    case 'ru': { return ' в строке' }
+                    case 'sk': { return ' v poradí' }
+                    case 'sv': { return 'a i raden' }
+                    case 'tr': { return ' sırada' }
+                    case 'vi': { return ' trong dòng' }
 
-                    default: return '';
-                }
+                    default: { return '' }
+                } // switch s.trim() | 'ordinal-position' | switch window.LANGUAGE
             } break;
 
-            default: switch(window.LANGUAGE) {
-                case 'fr':
-                case 'sv':
-                    return 'e';
-                case 'ro': return '';
+            default: {
+                switch(window.LANGUAGE) {
+                    case 'fr':
+                    case 'sv': {
+                        return 'e';
+                    }
+                    case 'ro': { return '' }
+                } // switch s.trim() | default | switch window.LANGUAGE
             }
         }
 
@@ -302,10 +305,10 @@ let nth = (n, s = '') => {
                 .replace(/3$/, '3rd')
             + c(s);
         } break;
-    }
+    } // switch window.LANGUAGE
 
     return n;
-}
+};
 
 // Returns a unique list of channels (used with `Array..filter`)
     // uniqueChannels(channel:object<Channel>, index:number, channels:array) → boolean
@@ -330,26 +333,26 @@ let isLive = channel => parseBool(channel?.live);
 ;
 
 // Update common variables
-let PATHNAME = top.location.pathname,
-    NORMALIZED_PATHNAME = PATHNAME
+let PATHNAME = top.location.pathname
+    , NORMALIZED_PATHNAME = PATHNAME
         // Remove common "modes"
         .replace(/^\/(?:moderator|popout)\/(\/[^\/]+?)/i, '$1')
-        .replace(/^(\/[^\/]+?)\/(?:about|schedule|squad|videos)\b/i, '$1'),
+        .replace(/^(\/[^\/]+?)\/(?:about|schedule|squad|videos)\b/i, '$1')
     // The current streamer
-    STREAMER,
+    , STREAMER
     // The followed streamers (excluding STREAMER)
-    STREAMERS,
+    , STREAMERS
     // All channels on the side-panel (excluding STREAMER)
-    CHANNELS,
+    , CHANNELS
     // The currently searched-for channels (excluding STREAMER)
-    SEARCH,
-    SEARCH_CACHE = new Map(),
+    , SEARCH
+    , SEARCH_CACHE = new Map()
     // Visible, actionable notifications
-    NOTIFICATIONS,
+    , NOTIFICATIONS
     // All channel commands
-    COMMANDS = [],
+    , COMMANDS = []
     // All of the above
-    ALL_CHANNELS;
+    , ALL_CHANNELS;
 
 // Yes, I could make this fail go away... or I can use it to force once-a-page events...
 // The following will only execute in the top frame, once
@@ -362,11 +365,11 @@ try {
             },
 
             set(name) {
-                let f = furnish;
-                let src = `https://player.twitch.tv/?channel=${ name }&controls=false&muted=true&parent=twitch.tv&quality=360p&private=true`;
+                const f = furnish;
+                const src = `https://player.twitch.tv/?channel=${ name }&controls=false&muted=true&parent=twitch.tv&quality=360p&private=true`;
 
-                let pbyp = $('[class*="picture-by-picture-player"i] video'),
-                    pip = $('#tt-pip-player');
+                let pbyp = $('[class*="picture-by-picture-player"i] video')
+                    , pip = $('#tt-pip-player');
 
                 $('#tt-exit-pip')?.remove();
                 $('[data-test-selector="picture-by-picture-player-container"i]')?.modStyle('max-height:!delete');
@@ -428,14 +431,14 @@ try {
                 function keepOpen() {
                     when.defined(() => $('.picture-by-picture-player[class*="collapsed"i]'))
                         .then(player => {
-                            let keep = $.defined('#tt-exit-pip');
+                            const keep = $.defined('#tt-exit-pip');
 
                             if(keep)
                                 player.classList.remove('picture-by-picture-player--collapsed');
 
                             return keep;
                         })
-                        .then(keep => (keep? keepOpen(): null));
+                        .then(keep => (keep ? keepOpen() : null));
                 }
                 keepOpen();
 
@@ -459,13 +462,13 @@ try {
                     data = await Cache.load(key);
                 }
 
-                let { dataRetrievedAt } = data;
+                const { dataRetrievedAt } = data;
 
                 // If there isn't a proper date, remove the data...
                 if(+dataRetrievedAt < 0)
                     return Cache.remove(key);
 
-                let lastFetch = Math.abs(dataRetrievedAt - +new Date);
+                const lastFetch = Math.abs(dataRetrievedAt - +new Date);
 
                 // If the last fetch was more than 30 days ago, remove the data...
                 if(lastFetch > (30 * 24 * 60 * 60 * 1000)) {
@@ -480,17 +483,17 @@ try {
 
     // Add storage listener
     Storage.onChanged.addListener((changes, namespace) => {
-        let reload = false,
-            refresh = [];
+        let reload = false
+            , refresh = [];
 
-        for(let key in changes) {
+        for(const key in changes) {
             if(SPECIAL_MODE && !!~NORMALIZED_FEATURES.findIndex(feature => feature.test(key)))
                 continue;
 
-            let change = changes[key],
-                { oldValue, newValue } = change;
+            const change = changes[key]
+                , { oldValue, newValue } = change;
 
-            let name = key
+            const name = key
                 // Title conversion legend
                 .replace(/\$\$/g, ' | ')
                 .replace(/\$(\D)/g, '/$1')
@@ -509,21 +512,21 @@ try {
                 .trim();
 
             if(newValue === false) {
-                if(!!~EXPERIMENTAL_FEATURES.findIndex(feature => feature.test(key)))
+                if(~EXPERIMENTAL_FEATURES.findIndex(feature => feature.test(key)))
                     $warn(`Disabling experimental feature: ${ name }`, new Date);
                 else
                     $remark(`Disabling feature: ${ name }`, new Date);
 
                 UnregisterJob(key, 'disable');
             } else if(newValue === true) {
-                if(!!~EXPERIMENTAL_FEATURES.findIndex(feature => feature.test(key)))
+                if(~EXPERIMENTAL_FEATURES.findIndex(feature => feature.test(key)))
                     $warn(`Enabling experimental feature: ${ name }`, new Date);
                 else
                     $remark(`Enabling feature: ${ name }`, new Date);
 
                 RegisterJob(key, 'enable');
             } else {
-                if(!!~EXPERIMENTAL_FEATURES.findIndex(feature => feature.test(key)))
+                if(~EXPERIMENTAL_FEATURES.findIndex(feature => feature.test(key)))
                     $warn(`Modifying experimental feature: ${ name }`, { oldValue, newValue }, new Date);
                 else
                     $remark(`Modifying feature: ${ name }`, { oldValue, newValue }, new Date);
@@ -542,7 +545,7 @@ try {
                     } break;
 
                     case 'user_language_preference': {
-                        let [documentLanguage] = (document.documentElement?.lang ?? navigator?.userLanguage ?? navigator?.language ?? 'en').toLowerCase().split('-');
+                        const [documentLanguage] = (document.documentElement?.lang ?? navigator?.userLanguage ?? navigator?.language ?? 'en').toLowerCase().split('-');
 
                         window.LANGUAGE = LANGUAGE = newValue || documentLanguage;
                     } break;
@@ -558,12 +561,12 @@ try {
                         RestartJob('whisper_audio', 'modify');
                     } break;
 
-                    default: break;
-                }
+                    default: { break }
+                } // switch key
             }
 
             reload ||= !!~[...EXPERIMENTAL_FEATURES, ...SENSITIVE_FEATURES].findIndex(feature => feature.test(key));
-            if(!!~[...REFRESHABLE_FEATURES].findIndex(feature => feature.test(key)))
+            if(~[...REFRESHABLE_FEATURES].findIndex(feature => feature.test(key)))
                 refresh.push(key);
 
             Settings[key] = newValue;
@@ -572,7 +575,7 @@ try {
         if(reload)
             return ReloadPage();
 
-        for(let job of refresh) {
+        for(const job of refresh) {
             RestartJob(job, 'modify');
             (top.REFRESH_ON_CHILD ??= []).push(job);
         }
@@ -588,20 +591,20 @@ try {
         if(!/(\.|\b)twitch\.tv\b/i.test(event.origin))
             return /* Not meant for us... */;
 
-        let R = RegExp;
+        const R = RegExp;
         let { data } = event;
 
         switch(data?.action || data?.eventName) {
             case 'jump': {
-                let BroadcastSettings = {},
-                    Channel = {},
-                    Badges = {},
-                    Points = {},
-                    Stream = {},
-                    User = {},
-                    Game = {},
-                    Tags = {},
-                    Form = {};
+                let BroadcastSettings = {}
+                    , Channel = {}
+                    , Badges = {}
+                    , Points = {}
+                    , Stream = {}
+                    , User = {}
+                    , Game = {}
+                    , Tags = {}
+                    , Form = {};
 
                 if(nullish(data))
                     break;
@@ -610,28 +613,28 @@ try {
 
                 // Not jump data
                 if(!('ROOT_QUERY' in data)) {
-                    for(let target in data)
+                    for(const target in data)
                         PostOffice.set(target, data[target]);
                 } else {
-                    for(let key in data) {
-                        if(/^BroadcastSettings:([^$]+)/.test(key))
-                            BroadcastSettings[R.$1] = data[key];
-                        else if(/^Channel:([^$]+)/.test(key))
-                            Channel = data[key];
-                        else if(/^User:([^$]+)/.test(key))
-                            User[R.$1] = data[key];
-                        else if(/^Stream:([^$]+)/.test(key))
-                            Stream[R.$1] = data[key];
-                        else if(/^(Game:[^$]+)/.test(key))
-                            Game[R.$1] = data[key];
-                        else if(/^(Tag:[^$]+)/.test(key))
-                            Tags[R.$1] = data[key];
-                        else if(/^(Freeform(?:Tag):[^$]+)/.test(key))
-                            Form[R.$1] = data[key];
-                        else if(/^Badge:([^$]+)/.test(key)) {
-                            let [type, length, owner] = atob(R.$1).split(';'),
-                                badge = data[key],
-                                id = [owner, type, length].join('_');
+                    for(const key in data) {
+                        if(/^BroadcastSettings:([^$]+)/.test(key)) {
+                            BroadcastSettings[R.$1] = data[key]
+                        } else if(/^Channel:([^$]+)/.test(key)) {
+                            Channel = data[key]
+                        } else if(/^User:([^$]+)/.test(key)) {
+                            User[R.$1] = data[key]
+                        } else if(/^Stream:([^$]+)/.test(key)) {
+                            Stream[R.$1] = data[key]
+                        } else if(/^(Game:[^$]+)/.test(key)) {
+                            Game[R.$1] = data[key]
+                        } else if(/^(Tag:[^$]+)/.test(key)) {
+                            Tags[R.$1] = data[key]
+                        } else if(/^(Freeform(?:Tag):[^$]+)/.test(key)) {
+                            Form[R.$1] = data[key]
+                        } else if(/^Badge:([^$]+)/.test(key)) {
+                            const [type, length, owner] = atob(R.$1).split(';')
+                                , badge = data[key]
+                                , id = [owner, type, length].join('_');
 
                             Badges[id] = ({
                                 id,
@@ -643,18 +646,17 @@ try {
 
                                 meta: badge,
                             });
-                        }
-                        else if(/^CommunityPoints(Automatic|Custom)Reward:([^$]+)/.test(key)) {
-                            let [type, id] = [R.$1, R.$2].map(s => s.toLowerCase());
-                            let store = Points[type] ??= {};
+                        } else if(/^CommunityPoints(Automatic|Custom)Reward:([^$]+)/.test(key)) {
+                            const [type, id] = [R.$1, R.$2].map(s => s.toLowerCase());
+                            const store = Points[type] ??= {};
 
                             if(type.equals('automatic')) {
-                                let [channel, name] = id.split(':', 2);
+                                const [channel, name] = id.split(':', 2);
 
                                 if(STREAMER?.sole == parseInt(channel))
                                     store[name] = data[key];
                             } else {
-                                store[id] = data[key];
+                                store[id] = data[key]
                             }
                         }
 
@@ -666,17 +668,17 @@ try {
                         LIVE_CACHE?.set('sole', Channel.id);
 
                         if(JUMPED_FRAMES)
-                            for(let channel in BroadcastSettings) {
-                                let { id, title } = BroadcastSettings[channel],
-                                    { displayName, login, primaryColorHex } = User[channel];
+                            for(const channel in BroadcastSettings) {
+                                const { id, title } = BroadcastSettings[channel]
+                                    , { displayName, login, primaryColorHex } = User[channel];
 
-                                let profileImageURL = (channel => {
-                                    for(let key in channel)
+                                const profileImageURL = (channel => {
+                                    for(const key in channel)
                                         if(/^profileImageURL/i.test(key))
                                             return channel[key];
                                 })(User[channel]);
 
-                                let stream = (streams => {
+                                const stream = (streams => {
                                     destructing: for(let stream in streams) {
                                         if(streams[stream]?.broadcaster?.__ref?.contains?.(channel)) {
                                             stream = streams[stream];
@@ -684,7 +686,7 @@ try {
                                             stream.broadcaster = BroadcastSettings[channel];
                                             stream.game = Game[stream.game?.__ref];
                                         } else if(channel.equals(STREAMER?.sole)) {
-                                            let { name, sole, live, desc, game, coin, tags, poll, shop } = STREAMER;
+                                            const { name, sole, live, desc, game, coin, tags, poll, shop } = STREAMER;
 
                                             stream = {
                                                 broadcaster: {
@@ -696,11 +698,11 @@ try {
                                                 id: `stream:${ sole }`,
                                                 [`previewImageURL({"height":720,"width":1280})`]: `https://static-cdn.jtvnw.net/previews-ttv/live_user_${ name.toLowerCase() }-1280x720.jpg`,
                                                 tags: [...tags],
-                                                type: (live? "live": null),
+                                                type: (live ? 'live' : null),
                                                 viewersCount: poll,
                                             };
                                         } else {
-                                            continue destructing;
+                                            continue destructing
                                         }
 
                                         stream.tags = [
@@ -709,10 +711,11 @@ try {
                                         ].flat().filter(defined);
 
                                         // Preview images
-                                        let previews = {};
-                                        for(let key in stream)
+                                        const previews = {};
+
+                                        for(const key in stream)
                                             if(/^previewImageURL\(([^]+)\)\s*$/i.test(key)) {
-                                                let { height, width } = JSON.parse(R.$1);
+                                                const { height, width } = JSON.parse(R.$1);
 
                                                 previews[`${ width }x${ height }`] = stream[key];
 
@@ -722,15 +725,17 @@ try {
                                         stream.previewImageURL = previews;
 
                                         // Badges
-                                        let badges = { ...Badges };
+                                        const badges = { ...Badges };
+
                                         for(let badge in badges) {
                                             badge = badges[badge];
 
                                             let max = 0;
-                                            for(let key in badge.meta)
+
+                                            for(const key in badge.meta)
                                                 if(/^imageURL\b/i.test(key)) {
-                                                    let href = badge.meta[key],
-                                                        [path, version, uuid, size] = parseURL(href).pathname.slice(0).split('/');
+                                                    let href = badge.meta[key]
+                                                        , [path, version, uuid, size] = parseURL(href).pathname.slice(0).split('/');
                                                     size = parseInt(size);
 
                                                     if(size > max) {
@@ -749,12 +754,12 @@ try {
                                             stream.points = {
                                                 ...Points,
                                                 get balance() {
-                                                    return Channel.self?.communityPoints?.balance
+                                                    return Channel.self?.communityPoints?.balance;
                                                 },
                                             };
 
                                         return stream;
-                                    }
+                                    } // :destructing
 
                                     return null;
                                 })(Stream);
@@ -766,11 +771,11 @@ try {
                         // $log('Jumped frames, retrieved:', JUMP_DATA);
                     }
                 }
-            } break;
+            } break; // switch data?.action || data?.eventName | 'jump'
 
             case 'raid': {
-                let { from, to, events, payable } = data,
-                    method = Settings.prevent_raiding ?? "none";
+                let { from, to, events, payable } = data
+                    , method = Settings.prevent_raiding ?? 'none';
 
                 if(false
                     || (!UP_NEXT_ALLOW_THIS_TAB)
@@ -782,8 +787,8 @@ try {
                 if(true
                     && payable
                     && (false
-                        || (["all", "greed"].contains(method))
-                        || (method.equals("unfollowed") && STREAMERS.contains(({ name }) => RegExp(`^${ to }$`, 'i').test(name)))
+                        || (['all', 'greed'].contains(method))
+                        || (method.equals('unfollowed') && STREAMERS.contains(({ name }) => RegExp(`^${ to }$`, 'i').test(name)))
                     )
                 )
                     confirm
@@ -796,7 +801,7 @@ try {
                                 // The user clicked "OK"
                                 // Return to the current page eventually...
                                 if(!parseBool(Settings.first_in_line_none)) {
-                                    let { name, href } = STREAMER;
+                                    const { name, href } = STREAMER;
 
                                     Handlers.first_in_line({ href, innerText: `${ name } is live [Greedy Raiding]` }, 'start');
                                 }
@@ -804,7 +809,7 @@ try {
                                 goto(parseURL(`./${ from }`).addSearch({ tool: `raid-stopper--${ method }` }).href);
                             } else {
                                 // The user clicked "Cancel"
-                                $log('Canceled Greedy Raiding event', { from, to });
+                                $log("Canceled Greedy Raiding event", { from, to })
                             }
                         });
             } break;
@@ -823,13 +828,13 @@ try {
                     case 'player.js': {
                         $(`#${ data.slug }`)?.remove();
                     } break;
-                }
+                } // switch data?.action || data?.eventName | 'report-offline-dvr' | switch data.from
             } break;
 
             case 'open-options-page': {
                 Runtime.sendMessage({ action: 'OPEN_OPTIONS_PAGE' });
             } break;
-        }
+        } // switch data?.action || data?.eventName
     });
 
     // Add custom context menus
@@ -849,64 +854,67 @@ try {
         event.preventDefault(true);
         // event.stopPropagation();
 
-        let extras = [];
-        let { x, y } = event,
-            { availHeight, availWidth } = screen,
-            { innerHeight, innerWidth } = window;
+        const extras = [];
+        let { x, y } = event
+            , { availHeight, availWidth } = screen
+            , { innerHeight, innerWidth } = window;
 
         // Text Selection(s)
-        let selectionText = getSelection(),
-            { baseNode, baseOffset, extentNode, extentOffset } = selectionText;
+        let selectionText = getSelection()
+            , { baseNode, baseOffset, extentNode, extentOffset } = selectionText;
         selectionText = (selectionText + '').trim().normalize('NFKD');
 
         // Anchors
-        let anchor = event.target.closest('a, [href]');
+        const anchor = event.target.closest('a, [href]');
 
         // Images
-        let image = event.target.closest('img, picture');
+        const image = event.target.closest('img, picture');
 
         // Videos
-        let video = event.target.closest('[data-a-target="video-player"i]');
+        const video = event.target.closest('[data-a-target="video-player"i]');
 
         // Iframes
-        let iframe = event.target.closest('iframe:is([src^="https://player.twitch.tv/"i], [src^="//player.twitch.tv"i], [src^="player.twitch.tv"i])');
+        const iframe = event.target.closest('iframe:is([src^="https://player.twitch.tv/"i], [src^="//player.twitch.tv"i], [src^="player.twitch.tv"i])');
 
         // ---- ---- START ---- ---- //
 
         // Text Selection(s)
         if(selectionText?.length) {
-            let email = /(?:[a-z0-9!#$%&'*+/=?^_`{|}~-]+(?:\.[a-z0-9!#$%&'*+/=?^_`{|}~-]+)*|"(?:[\x01-\x08\x0b\x0c\x0e-\x1f\x21\x23-\x5b\x5d-\x7f]|\\[\x01-\x09\x0b\x0c\x0e-\x7f])*")@(?:(?:[a-z0-9](?:[a-z0-9-]*[a-z0-9])?\.)+[a-z0-9](?:[a-z0-9-]*[a-z0-9])?|\[(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?|[a-z0-9-]*[a-z0-9]:(?:[\x01-\x08\x0b\x0c\x0e-\x1f\x21-\x5a\x53-\x7f]|\\[\x01-\x09\x0b\x0c\x0e-\x7f])+)\])/i
+            const email = /(?:[a-z0-9!#$%&'*+/=?^_`{|}~-]+(?:\.[a-z0-9!#$%&'*+/=?^_`{|}~-]+)*|"(?:[\x01-\x08\x0b\x0c\x0e-\x1f\x21\x23-\x5b\x5d-\x7f]|\\[\x01-\x09\x0b\x0c\x0e-\x7f])*")@(?:(?:[a-z0-9](?:[a-z0-9-]*[a-z0-9])?\.)+[a-z0-9](?:[a-z0-9-]*[a-z0-9])?|\[(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?|[a-z0-9-]*[a-z0-9]:(?:[\x01-\x08\x0b\x0c\x0e-\x1f\x21-\x5a\x53-\x7f]|\\[\x01-\x09\x0b\x0c\x0e-\x7f])+)\])/i;
+
             if(email.test(selectionText)) {
-                let address = RegExp['$&'];
+                const address = RegExp['$&'];
 
                 extras.push({
                     text: `E-mail <strong>${ address }</strong>`,
                     icon: 'chat',
                     action: event => top.open(`mailto:${ address }`, '_blank'),
-                },{});
+                }, {});
             }
 
-            let phone = /(?<country>[\+]?\d{1,3})?[\.\-\s\(]{0,2}(?<area>[2-9]\d{2})[\)\.\-\s]{0,2}(?<office>[2-9][02-9]1|[2-9]1[02-9]|[2-9][02-9][02-9])[\.\-\s]?(?<line>\d{4})/;
+            const phone = /(?<country>[\+]?\d{1,3})?[\.\-\s\(]{0,2}(?<area>[2-9]\d{2})[\)\.\-\s]{0,2}(?<office>[2-9][02-9]1|[2-9]1[02-9]|[2-9][02-9][02-9])[\.\-\s]?(?<line>\d{4})/;
+
             if(phone.test(selectionText)) {
-                let number = RegExp['$&'];
+                const number = RegExp['$&'];
 
                 extras.push({
                     text: `Dial <strong>${ number }</strong>`,
                     icon: 'chat',
                     action: event => top.open(`tel:${ number.replace(/[^\d\+]/g, '') }`, '_blank'),
-                },{});
+                }, {});
             }
 
-            let website = /(https?:\/\/)?([^\/?#]+?\.\w{2,}\/)([^?#]*)(\?[^#]*)?(#.*)?/i;
+            const website = /(https?:\/\/)?([^\/?#]+?\.\w{2,}\/)([^?#]*)(\?[^#]*)?(#.*)?/i;
+
             if(website.test(selectionText)) {
-                let { protocol, host, pathname, search, hash } = parseURL(selectionText),
-                    url = [(protocol || 'https:') + '//', host, pathname, search, hash].join('');
+                const { protocol, host, pathname, search, hash } = parseURL(selectionText)
+                    , url = [(protocol || 'https:') + '//', host, pathname, search, hash].join('');
 
                 extras.push({
                     text: `Open link in new tab`,
                     icon: 'ne_arrow',
                     action: event => top.open(url, '_blank'),
-                },{
+                }, {
                     text: `Copy link address`,
                     icon: 'bolt',
                     action: event => navigator.clipboard.writeText(url),
@@ -916,18 +924,18 @@ try {
                     text: `Search Twitch for <strong>${ selectionText }</strong>`,
                     icon: 'twitch',
                     action: event => top.open(`https://www.twitch.tv/search?term=${ encodeURIComponent(selectionText.trim().replace(/\s+/g, ' ')).split(/(?:%20)+/).join(' ') }`, '_self'),
-                },{
+                }, {
                     text: `Search Google for <strong>${ selectionText }</strong>`,
                     icon: 'search',
                     action: event => top.open(`https://www.google.com/search?q=${ encodeURIComponent(selectionText.trim().replace(/\s+/g, ' ')).split(/(?:%20)+/).join('+').replace(/%22\b/g, '"') }`, '_blank'),
-                });
+                })
             }
         }
 
         // Anchors
         if(defined(anchor)) {
-            let { href, scheme, host } = parseURL(anchor.href),
-                text = anchor.textContent;
+            const { href, scheme, host } = parseURL(anchor.href)
+                , text = anchor.textContent;
 
             switch(scheme.toLowerCase()) {
                 case 'mailto': {
@@ -935,7 +943,7 @@ try {
                         text: `E-mail <strong>${ text }</strong>`,
                         icon: 'chat',
                         action: event => top.open(href, '_blank'),
-                    },{
+                    }, {
                         text: `Copy e-mail address`,
                         icon: 'bolt',
                         action: event => navigator.clipboard.writeText(host),
@@ -947,7 +955,7 @@ try {
                         text: `Dial <strong>${ text }</strong>`,
                         icon: 'chat',
                         action: event => top.open(href, '_blank'),
-                    },{
+                    }, {
                         text: `Copy telephone number`,
                         icon: 'bolt',
                         action: event => navigator.clipboard.writeText(host),
@@ -958,9 +966,9 @@ try {
                     extras.push({
                         text: `Open link in new tab`,
                         icon: 'ne_arrow',
-                        favicon: parseURL(href).origin.replace(/^(https?):\/\/.+$/i, ($0, $1, $$, $_) => furnish.span().text($1.toUpperCase()).css(`background:${ ($1.equals('https')? '#22FA7C': '#FCC21B') } !important!innate;`).html()),
+                        favicon: parseURL(href).origin.replace(/^(https?):\/\/.+$/i, ($0, $1, $$, $_) => furnish.span().text($1.toUpperCase()).css(`background:${ ($1.equals('https') ? '#22FA7C' : '#FCC21B') } !important!innate;`).html()),
                         action: event => top.open(href, '_blank'),
-                    },{
+                    }, {
                         text: `Copy link address`,
                         icon: 'bolt',
                         action: event => navigator.clipboard.writeText(href),
@@ -973,13 +981,13 @@ try {
 
         // Image
         else if(defined(image)) {
-            let { src } = image;
+            const { src } = image;
             let [tail = 'png', ...name] = parseURL(src).filename?.split('.')?.reverse() ?? [];
             name = (name ?? [image.alt]).join('.');
-            tail = /^(bmp|[gt]if+|ico|p?j(fif|p(e?g)?)|a?png|svg|webp)$/i.test(tail)? tail: 'jpeg';
+            tail = /^(bmp|[gt]if+|ico|p?j(fif|p(e?g)?)|a?png|svg|webp)$/i.test(tail) ? tail : 'jpeg';
 
-            let type = `image/${ tail }`,
-                real = MIME_Types.find(type);
+            let type = `image/${ tail }`
+                , real = MIME_Types.find(type);
 
             if(type == real)
                 [,real] = type.split('/');
@@ -988,7 +996,7 @@ try {
                 text: `Open image in new tab`,
                 icon: 'popout',
                 action: event => top.open(src, '_blank'),
-            },{
+            }, {
                 text: `Save image as...`,
                 icon: 'download',
                 action: event => showSaveFilePicker({
@@ -998,11 +1006,11 @@ try {
                         accept: { [type]: [`.${ real }`] },
                     }],
                 }),
-            },{
+            }, {
                 text: `Copy image`,
                 icon: 'loot',
                 action: event => image.copy(),
-            },{
+            }, {
                 text: `Copy image address`,
                 icon: 'bolt',
                 action: event => navigator.clipboard.writeText(src),
@@ -1011,7 +1019,7 @@ try {
 
         // Video
         else if(defined(video)) {
-            let VideoClips = {
+            const VideoClips = {
                 dvr: parseBool(Settings.video_clips__dvr),
                 filetype: (Settings.video_clips__file_type ?? 'webm'),
                 quality: (Settings.video_clips__quality ?? 'auto'),
@@ -1022,15 +1030,15 @@ try {
                 text: `Open video in new tab`,
                 icon: 'popout',
                 action: event => top.open(`//player.twitch.tv/?channel=${ STREAMER.name }&parent=twitch.tv`, '_blank'),
-            },{
+            }, {
                 text: GLOBAL_EVENT_LISTENERS.KEYDOWN_ALT_SHIFT_X.toTitle(),
                 icon: 'loot',
-                shortcut: (defined(GLOBAL_EVENT_LISTENERS.KEYDOWN_ALT_SHIFT_X)? 'alt+shift+x': ''),
+                shortcut: (defined(GLOBAL_EVENT_LISTENERS.KEYDOWN_ALT_SHIFT_X) ? 'alt+shift+x' : ''),
                 action: event => $.all('video').pop().copyFrame(),
-            },{
+            }, {
                 text: `Record the next ${ toTimeString(VideoClips.length) }`,
                 icon: 'video',
-                shortcut: (defined(GLOBAL_EVENT_LISTENERS.KEYDOWN_ALT_Z)? 'alt+z': ''),
+                shortcut: (defined(GLOBAL_EVENT_LISTENERS.KEYDOWN_ALT_Z) ? 'alt+z' : ''),
                 action: event => {
                     SetQuality().then(() => {
                         document.dispatchEvent(new KeyboardEvent('keydown', { key: 'z', altKey: true }));
@@ -1047,7 +1055,7 @@ try {
                 text: `Open video in new tab`,
                 icon: 'popout',
                 action: event => top.open(`//player.twitch.tv/?channel=${ STREAMER.name }&parent=twitch.tv`, '_blank'),
-            });
+            })
         }
 
         // ---- ---- STOP ---- ---- //
@@ -1056,6 +1064,7 @@ try {
             extras.splice(0, 0, {});
 
         let MAX = 10;
+
         while(nullish(extras.at(-1)?.text) && --MAX > 0)
             extras.splice(-1, 1);
 
@@ -1067,37 +1076,37 @@ try {
                 icon: 'rerun',
                 shortcut: 'ctrl+r',
                 action: event => top.ReloadPage(),
-            },{
+            }, {
                 // break
-            },{
+            }, {
                 text: `Save page (HTML)`,
                 icon: 'download',
                 shortcut: 'ctrl+s',
                 action: async event => {
                     alert.timed(`Gathering resources. Saving page in the background...<p tt-x>${ (new UUID).value }</p>`, 7000);
 
-                    let DOM = document.cloneNode(true);
-                    let type = DOM.contentType,
-                        name = DOM.title;
+                    const DOM = document.cloneNode(true);
+                    const type = DOM.contentType
+                        , name = DOM.title;
 
                     // Remove all TTV Tools helpers
-                    for(let element of $.all('[id*="tt-"i], [class*="tt-"i], [data-a-target*="tt-"i]', DOM))
+                    for(const element of $.all('[id*="tt-"i], [class*="tt-"i], [data-a-target*="tt-"i]', DOM))
                         element.remove();
 
                     // Download all scripts
-                    let scripts = $.all('script[src]', DOM).filter(script => /^(https?|\/\/)/i.test(parseURL(script.src).scheme)),
-                        JS_index = 0, JS_length = scripts.length;
+                    let scripts = $.all('script[src]', DOM).filter(script => /^(https?|\/\/)/i.test(parseURL(script.src).scheme))
+                        , JS_index = 0, JS_length = scripts.length;
 
                     // Remove non-HTTP(s) sources
                     $.all('script[src]', DOM)
                         .filter(script => !/^(https?|\/)/i.test(parseURL(script.src).scheme))
                         .map(script => script.remove());
 
-                    for(let script of scripts) {
+                    for(const script of scripts) {
                         fetchURL(script.src, { timeout: 10_000, native: true })
                             .then(response => response.text())
                             .then(js => {
-                                $log('Saving scripts...', script.src, (100 * (JS_index / JS_length)).suffix('%', 2), (js.length).suffix('B', 2, 'data'));
+                                $log("Saving scripts...", script.src, (100 * (JS_index / JS_length)).suffix('%', 2), (js.length).suffix('B', 2, 'data'));
 
                                 script.removeAttribute('src');
                                 script.textContent = js;
@@ -1112,19 +1121,19 @@ try {
                     }
 
                     // Download all styles
-                    let styles = $.all('style[href], link[rel="stylesheet"i]', DOM).filter(style => /^(https?|\/\/)/i.test(parseURL(style.href).scheme)),
-                        CSS_index = 0, CSS_length = styles.length;
+                    let styles = $.all('style[href], link[rel="stylesheet"i]', DOM).filter(style => /^(https?|\/\/)/i.test(parseURL(style.href).scheme))
+                        , CSS_index = 0, CSS_length = styles.length;
 
                     // Remove non-HTTP(s) sources
                     $.all('style[href], link[rel="stylesheet"i]', DOM)
                         .filter(style => !/^(https?|\/)/i.test(parseURL(style.href).scheme))
                         .map(style => style.remove());
 
-                    for(let style of styles) {
+                    for(const style of styles) {
                         fetchURL(style.href, { timeout: 10_000, native: true })
                             .then(response => response.text())
                             .then(css => {
-                                $log('Saving styles...', style.href, (100 * (CSS_index / CSS_length)).suffix('%', 2), (css.length).suffix('B', 2, 'data'));
+                                $log("Saving styles...", style.href, (100 * (CSS_index / CSS_length)).suffix('%', 2), (css.length).suffix('B', 2, 'data'));
 
                                 style.removeAttribute('href');
                                 style.textContent = css;
@@ -1140,10 +1149,10 @@ try {
 
                     // Wait for completion
                     when(() => ((JS_index >= JS_length) && (CSS_index >= CSS_length))).then(() => {
-                        let blob = new Blob([
+                        const blob = new Blob([
                                 `<!DOCTYPE ${ DOM.doctype.name }${ DOM.doctype.publicId.replace(/^([^$]+)$/, ' PUBLIC "$1"') }${ DOM.doctype.systemId.replace(/^([^$]+)$/, ' "$1"') }>\n${ DOM.documentElement.outerHTML }`
                             ], { type });
-                        let link = furnish('a', { href: URL.createObjectURL(blob), download: `${ name }.html`, hidden: true }, [name, (new Date).toJSON()].join('/'));
+                        const link = furnish('a', { href: URL.createObjectURL(blob), download: `${ name }.html`, hidden: true }, [name, (new Date).toJSON()].join('/'));
 
                         document.head.append(link);
                         link.click();
@@ -1151,16 +1160,16 @@ try {
                         alert.silent(`HTML content <a href="${ link.href }">ready to save</a>!`);
                     });
                 },
-            },{
+            }, {
                 text: `Print...`,
                 icon: 'export',
                 shortcut: 'ctrl+p',
                 action: event => top.print(),
             }, ...extras],
 
-            fineTuning: { top: (y > innerHeight * (0.85 - extras.length * 0.05)? innerHeight * 0.7: y), left: (x > innerWidth * (0.85 - extras.length * 0.00)? innerWidth * 0.7: x) },
+            fineTuning: { top: (y > innerHeight * (0.85 - extras.length * 0.05) ? innerHeight * 0.7 : y), left: (x > innerWidth * (0.85 - extras.length * 0.00) ? innerWidth * 0.7 : x) },
         });
-    },{
+    }, {
         capture: false,
         once: false,
         passive: false,
@@ -1187,24 +1196,24 @@ async function update() {
         // Current (followed) streamers
         ...$.all(`.search-tray a[href^="/"]:not([href*="/search?"i]):not([href$="${ PATHNAME }"i])`)
             .map(element => {
-                let icon = $('img', element)?.src;
-                let channel = {
+                const icon = $('img', element)?.src;
+                const channel = {
                     element,
 
                     from: 'SEARCH',
                     href: element.href,
-                    icon: (typeof icon == 'string'? Object.assign(new String(icon), parseURL(icon)): null),
+                    icon: (typeof icon == 'string' ? Object.assign(new String(icon), parseURL(icon)) : null),
                     get live() {
-                        let { href } = element,
-                            url = parseURL(href),
-                            { pathname } = url;
+                        let { href } = element
+                            , url = parseURL(href)
+                            , { pathname } = url;
 
-                        let parent = $(`.search-tray [href$="${ pathname }"i]:not([href*="/search?"])`);
+                        const parent = $(`.search-tray [href$="${ pathname }"i]:not([href*="/search?"])`);
 
                         if(nullish(parent))
                             return true;
 
-                        let live = $.defined(`[data-test-selector="live-badge"i]`, parent);
+                        const live = $.defined(`[data-test-selector="live-badge"i]`, parent);
 
                         return live;
                     },
@@ -1228,22 +1237,22 @@ async function update() {
         // Current (followed) streamers
         ...$.all(`[id*="side"i][id*="nav"i] .side-nav-section a:not([href$="${ PATHNAME }"i])`)
             .map(element => {
-                let icon = $('img', element)?.src;
-                let streamer = {
+                const icon = $('img', element)?.src;
+                const streamer = {
                     from: 'CHANNELS',
                     href: element.href,
-                    icon: (typeof icon == 'string'? Object.assign(new String(icon), parseURL(icon)): null),
+                    icon: (typeof icon == 'string' ? Object.assign(new String(icon), parseURL(icon)) : null),
                     get live() {
-                        let { href } = element,
-                            url = parseURL(href),
-                            { pathname } = url;
+                        let { href } = element
+                            , url = parseURL(href)
+                            , { pathname } = url;
 
-                        let parent = $(`[id*="side"i][id*="nav"i] .side-nav-section [href$="${ pathname }"i]`);
+                        const parent = $(`[id*="side"i][id*="nav"i] .side-nav-section [href$="${ pathname }"i]`);
 
                         if(nullish(parent))
                             return false;
 
-                        let live = defined(parent)
+                        const live = defined(parent)
                             && $.nullish(`[class*="--offline"i]`, parent);
 
                         return live;
@@ -1266,22 +1275,22 @@ async function update() {
         // Current (followed) streamers
         ...$.all(`[id*="side"i][id*="nav"i] .side-nav-section[aria-label][tt-svg-label="followed"i] a:not([href$="${ PATHNAME }"i])`)
             .map(element => {
-                let icon = $('img', element)?.src;
-                let streamer = {
+                const icon = $('img', element)?.src;
+                const streamer = {
                     from: 'STREAMERS',
                     href: element.href,
-                    icon: (typeof icon == 'string'? Object.assign(new String(icon), parseURL(icon)): null),
+                    icon: (typeof icon == 'string' ? Object.assign(new String(icon), parseURL(icon)) : null),
                     get live() {
-                        let { href } = element,
-                            url = parseURL(href),
-                            { pathname } = url;
+                        let { href } = element
+                            , url = parseURL(href)
+                            , { pathname } = url;
 
-                        let parent = $(`[id*="side"i][id*="nav"i] .side-nav-section[aria-label][tt-svg-label="followed"i] [href$="${ pathname }"i]`);
+                        const parent = $(`[id*="side"i][id*="nav"i] .side-nav-section[aria-label][tt-svg-label="followed"i] [href$="${ pathname }"i]`);
 
                         if(nullish(parent))
                             return false;
 
-                        let live = defined(parent)
+                        const live = defined(parent)
                             && $.nullish(`[class*="--offline"i]`, parent);
 
                         return live;
@@ -1304,12 +1313,12 @@ async function update() {
         // Notification elements
         ...$.all('[data-test-selector^="onsite-notifications"i] [data-test-selector^="onsite-notification"i]').map(
             element => {
-                let icon = $('img', element)?.src;
-                let streamer = {
+                const icon = $('img', element)?.src;
+                const streamer = {
                     live: true,
                     href: $('a', element)?.href,
-                    icon: (typeof icon == 'string'? Object.assign(new String(icon), parseURL(icon)): null),
-                    name: $('[class$="text"i]', element)?.textContent?.replace(/([^]+?) +(go(?:ing)?|is|went) +live\b([^$]+)/i, ($0, $1, $$, $_) => $1),
+                    icon: (typeof icon == 'string' ? Object.assign(new String(icon), parseURL(icon)) : null),
+                    name: $('[class$="text"i]', element)?.textContent?.replace(/([^]+?) +(go(?:ing)?|is|went) +live\b([^$]+)/i, ($0, $1, $2, $3, $$, $_) => $1),
                 };
 
                 if(nullish(streamer.name))
@@ -1330,16 +1339,16 @@ async function update() {
 }
 
 let // Features that require the experimental flag
-    EXPERIMENTAL_FEATURES = ['auto_focus', 'convert_emotes', 'greedy_raiding', 'soft_unban'].map(AsteriskFn),
+    EXPERIMENTAL_FEATURES = ['auto_focus', 'convert_emotes', 'greedy_raiding', 'soft_unban'].map(AsteriskFn)
 
     // Features that need the page reloaded when changed
-    SENSITIVE_FEATURES = ['away_mode*~schedule', 'auto_accept_mature', 'fine_details', 'first_in_line*', 'prevent_#', 'soft_unban*', '!up_next+', 'view_mode'].map(AsteriskFn),
+    , SENSITIVE_FEATURES = ['away_mode*~schedule', 'auto_accept_mature', 'fine_details', 'first_in_line*', 'prevent_#', 'soft_unban*', '!up_next+', 'view_mode'].map(AsteriskFn)
 
     // Features that need to be run on a "normal" page
-    NORMALIZED_FEATURES = ['away_mode*~schedule', 'auto_follow+', 'first_in_line*', 'prevent_#', 'kill+'].map(AsteriskFn),
+    , NORMALIZED_FEATURES = ['away_mode*~schedule', 'auto_follow+', 'first_in_line*', 'prevent_#', 'kill+'].map(AsteriskFn)
 
     // Features that need to be refreshed when changed
-    REFRESHABLE_FEATURES = ['auto_focus*', 'bttv_emotes*', 'filter_messages', 'highlight_phrases', 'native_twitch_reply', '*placement'].map(AsteriskFn);
+    , REFRESHABLE_FEATURES = ['auto_focus*', 'bttv_emotes*', 'filter_messages', 'highlight_phrases', 'native_twitch_reply', '*placement'].map(AsteriskFn);
 
 /*** Initialization #MARK:initializer
 *      _____       _ _   _       _ _          _   _
@@ -1389,8 +1398,8 @@ const TWITCH_PATHNAMES = [
         'user',
         'videos?',
         'wallet', 'watchparty',
-    ],
-    RESERVED_TWITCH_PATHNAMES = RegExp(`/(${ TWITCH_PATHNAMES.join('|') })(?:[/#?$])`, 'i');
+    ]
+    , RESERVED_TWITCH_PATHNAMES = RegExp(`/(${ TWITCH_PATHNAMES.join('|') })(?:[/#?$])`, 'i');
 
     const UNSAFE_PATHNAMES = window.UNSAFE_PATHNAMES = [
             '[up]/',
@@ -1410,8 +1419,8 @@ const TWITCH_PATHNAMES = [
             'user',
             'videos?',
             'wallet',
-        ],
-        UNSAFE_TWITCH_PATHNAMES = window.UNSAFE_TWITCH_PATHNAMES = RegExp(`/(${ UNSAFE_PATHNAMES.join('|') })(?:[/#?$])`, 'i');
+        ]
+        , UNSAFE_TWITCH_PATHNAMES = window.UNSAFE_TWITCH_PATHNAMES = RegExp(`/(${ UNSAFE_PATHNAMES.join('|') })(?:[/#?$])`, 'i');
 
 /*** First in Line Helpers - NOT A SETTING. Create, manage, and display the "Up Next" balloon
  *      ______ _          _     _         _      _              _    _      _
@@ -1423,21 +1432,21 @@ const TWITCH_PATHNAMES = [
  *                                                                           | |
  *                                                                           |_|
  */;
-let FIRST_IN_LINE_JOB = null,           // The current job (interval)
-    FIRST_IN_LINE_HREF = '#',           // The upcoming HREF
-    FIRST_IN_LINE_BOOST,                // The "Up Next Boost" toggle
-    FIRST_IN_LINE_TIMER,                // The current time left before the job is accomplished
-    FIRST_IN_LINE_PAUSED = false,       // The pause-state
-    FIRST_IN_LINE_PAUSED_AT,            // The pause-state's start time
-    FIRST_IN_LINE_BALLOON,              // The balloon controller
-    FIRST_IN_LINE_DUE_DATE,             // The due date of the next job
-    ALL_FIRST_IN_LINE_JOBS = [],        // All First in Line jobs
-    FIRST_IN_LINE_WAIT_TIME,            // The wait time (from settings)
-    FIRST_IN_LINE_LISTING_JOB,          // The job (interval) for listing all jobs (under the ballon)
-    FIRST_IN_LINE_WARNING_JOB,          // The job for warning the user (via timed confirmation dialog)
-    FIRST_IN_LINE_SAFETY_CATCH,         // Keeps the alert from not showing properly
-    FIRST_IN_LINE_SORTING_HANDLER,      // The Sortable object to handle the balloon
-    FIRST_IN_LINE_WARNING_TEXT_UPDATE;  // Sub-job for the warning text
+let FIRST_IN_LINE_JOB = null           // The current job (interval)
+    , FIRST_IN_LINE_HREF = '#'           // The upcoming HREF
+    , FIRST_IN_LINE_BOOST                // The "Up Next Boost" toggle
+    , FIRST_IN_LINE_TIMER                // The current time left before the job is accomplished
+    , FIRST_IN_LINE_PAUSED = false       // The pause-state
+    , FIRST_IN_LINE_PAUSED_AT            // The pause-state's start time
+    , FIRST_IN_LINE_BALLOON              // The balloon controller
+    , FIRST_IN_LINE_DUE_DATE             // The due date of the next job
+    , ALL_FIRST_IN_LINE_JOBS = []        // All First in Line jobs
+    , FIRST_IN_LINE_WAIT_TIME            // The wait time (from settings)
+    , FIRST_IN_LINE_LISTING_JOB          // The job (interval) for listing all jobs (under the ballon)
+    , FIRST_IN_LINE_WARNING_JOB          // The job for warning the user (via timed confirmation dialog)
+    , FIRST_IN_LINE_SAFETY_CATCH         // Keeps the alert from not showing properly
+    , FIRST_IN_LINE_SORTING_HANDLER      // The Sortable object to handle the balloon
+    , FIRST_IN_LINE_WARNING_TEXT_UPDATE;  // Sub-job for the warning text
 
 let DO_NOT_AUTO_ADD = []; // List of names to ignore for auto-adding; the user already canceled the job
 
@@ -1500,61 +1509,62 @@ let Initialize = async(START_OVER = false) => {
         }
 
         time() {
-            let stop = this.stop = new Date;
-            let span = this.span = Math.abs(this.start - stop);
-            let { max, name } = this;
+            const stop = this.stop = new Date;
+            const span = this.span = Math.abs(this.start - stop);
+            const { max, name } = this;
 
             if(span > max)
-                $warn(`"${ name.replace(/(^|_)(\w)/g, ($0, $1, $2, $$, $_) => ['',' '][+!!$1] + $2.toUpperCase()).replace(/_+/g, '- ') }" took ${ (span / 1000).suffix('s', 2).replace(/\.0+/, '') } to complete (max time allowed is ${ (max / 1000).suffix('s', 2).replace(/\.0+/, '') }). Offense time: ${ new Date }. Offending site: ${ location.pathname }`)
+                $warn(`"${ name.replace(/(^|_)(\w)/g, ($0, $1, $2, $$, $_) => ['', ' '][+!!$1] + $2.toUpperCase()).replace(/_+/g, '- ') }" took ${ (span / 1000).suffix('s', 2).replace(/\.0+/, '') } to complete (max time allowed is ${ (max / 1000).suffix('s', 2).replace(/\.0+/, '') }). Offense time: ${ new Date }. Offending site: ${ location.pathname }`)
                     .toNativeStack();
         }
     }
 
     // What plugins (src/plugins/) get from this scope; see docs/PLUGINS.md
-    let PLUGIN_CONTEXT = { StopWatch };
+    const PLUGIN_CONTEXT = { StopWatch };
 
     // Initialize all settings/features //
 
 
-    let GLOBAL_TWITCH_API = (window.GLOBAL_TWITCH_API ??= {});
+    const GLOBAL_TWITCH_API = (window.GLOBAL_TWITCH_API ??= {});
     GLOBAL_EVENT_LISTENERS = (window.GLOBAL_EVENT_LISTENERS ??= {
             KEYDOWN_ALT_X: function Clip() {/* Managed by Twitch */},
             KEYDOWN_ALT_T: function Toggle_Theatre_Mode() {/* Managed by Twitch */},
         });
 
     if(SPECIAL_MODE) {
-        let { $1, $2 } = RegExp,
-            normalized = [];
+        let { $1, $2 } = RegExp
+            , normalized = [];
 
-        for(let key in Settings)
-            if(!!~NORMALIZED_FEATURES.findIndex(regexp => regexp.test(key)))
+        for(const key in Settings)
+            if(~NORMALIZED_FEATURES.findIndex(regexp => regexp.test(key)))
                 normalized.push(key);
 
         $warn(`Currently viewing ${ $1 } in "${ $2 }" mode. Several features will be disabled:`, normalized);
     }
 
     let ERRORS = Initialize.errors |= 0;
+
     if(START_OVER) {
-        for(let job in Jobs)
+        for(const job in Jobs)
             UnregisterJob(job, 'reinit');
-        ERRORS = Initialize.errors++
+        ERRORS = Initialize.errors++;
     }
 
     // Disable experimental features
     if(!Settings.experimental_mode) {
-        for(let setting in Settings)
-            if(!!~EXPERIMENTAL_FEATURES.findIndex(feature => feature.test(setting)))
+        for(const setting in Settings)
+            if(~EXPERIMENTAL_FEATURES.findIndex(feature => feature.test(setting)))
                 Settings[setting] = null;
     }
 
     // Disable normalized features
     if(SPECIAL_MODE) {
-        for(let setting in Settings)
-            if(!!~NORMALIZED_FEATURES.findIndex(feature => feature.test(setting)))
+        for(const setting in Settings)
+            if(~NORMALIZED_FEATURES.findIndex(feature => feature.test(setting)))
                 Settings[setting] = null;
     }
 
-    let GLOBAL_ANCHORS = new Map;
+    const GLOBAL_ANCHORS = new Map;
     setInterval(() => {
         $.all('a[href]')
             .filter(a => !GLOBAL_ANCHORS.has(a))
@@ -1605,24 +1615,24 @@ let Initialize = async(START_OVER = false) => {
             return GetNextStreamer.cachedStreamer;
 
         Cache.load('ChannelPoints', ({ ChannelPoints = {} }) => {
-            let { random, round } = Math;
-            let online = [...STREAMERS, ...(GetNextStreamer.cachedReminders ??= [])].filter(isLive),
-                mostWatched = null,
-                mostPoints = 0,
-                mostLeft = 0,
-                mostProgressNeeded = 0,
-                furthestFromCompletion = null,
-                leastWatched = null,
-                leastPoints = +Infinity,
-                leastLeft = +Infinity,
-                leastProgressNeeded = +Infinity,
-                closestToCompletion = null;
+            const { random, round } = Math;
+            let online = [...STREAMERS, ...(GetNextStreamer.cachedReminders ??= [])].filter(isLive)
+                , mostWatched = null
+                , mostPoints = 0
+                , mostLeft = 0
+                , mostProgressNeeded = 0
+                , furthestFromCompletion = null
+                , leastWatched = null
+                , leastPoints = +Infinity
+                , leastLeft = +Infinity
+                , leastProgressNeeded = +Infinity
+                , closestToCompletion = null;
 
-            let [randomChannel] = online.shuffle();
+            const [randomChannel] = online.shuffle();
 
             filtering:
-            for(let channel in ChannelPoints) {
-                let [streamer] = online.filter(({ name }) => name.equals(channel));
+            for(const channel in ChannelPoints) {
+                const [streamer] = online.filter(({ name }) => name.equals(channel));
 
                 if(nullish(streamer))
                     continue filtering;
@@ -1716,12 +1726,12 @@ let Initialize = async(START_OVER = false) => {
                 default: {
                     GetNextStreamer.cachedStreamer = randomChannel;
                 } break;
-            }
+            } // :next_channel | switch Settings.next_channel_preference
 
             // There isn't a channel that fits the criteria
             if(parseBool(Settings.stay_live) && nullish(GetNextStreamer?.cachedStreamer) && online?.length) {
-                let preference = Settings.next_channel_preference,
-                    channel = (GetNextStreamer.cachedStreamer ??= randomChannel);
+                const preference = Settings.next_channel_preference
+                    , channel = (GetNextStreamer.cachedStreamer ??= randomChannel);
 
                 // `randomChannel` is one channel (not a list), so this warning never used to show
                 if(defined(channel))
@@ -1752,10 +1762,11 @@ let Initialize = async(START_OVER = false) => {
                     LiveReminders ??= {};
                 }
 
-                let cachedReminders = [...(GetNextStreamer.cachedReminders ??= [])];
-                for(let name in LiveReminders) {
-                    let now = new Date,
-                        time = new Date(LiveReminders[name]);
+                const cachedReminders = [...(GetNextStreamer.cachedReminders ??= [])];
+
+                for(const name in LiveReminders) {
+                    const now = new Date
+                        , time = new Date(LiveReminders[name]);
 
                     cachedReminders.push({
                         name,
@@ -1785,24 +1796,24 @@ let Initialize = async(START_OVER = false) => {
         // Current (followed) streamers
         ...$.all(`.search-tray a[href^="/"]:not([href*="/search?"i]):not([href$="${ NORMALIZED_PATHNAME }"i]), [data-test-selector*="search-result"i][data-test-selector*="channel"i] a:not([href*="/search?"i])`)
             .map(element => {
-                let icon = $('img', element)?.src;
-                let channel = {
+                const icon = $('img', element)?.src;
+                const channel = {
                     element,
 
                     from: 'SEARCH',
                     href: element.href,
-                    icon: (typeof icon == 'string'? Object.assign(new String(icon), parseURL(icon)): null),
+                    icon: (typeof icon == 'string' ? Object.assign(new String(icon), parseURL(icon)) : null),
                     get live() {
-                        let { href } = element,
-                            url = parseURL(href),
-                            { pathname } = url;
+                        let { href } = element
+                            , url = parseURL(href)
+                            , { pathname } = url;
 
-                            let parent = $(`.search-tray [href$="${ pathname }"i]:not([href*="/search?"])`);
+                            const parent = $(`.search-tray [href$="${ pathname }"i]:not([href*="/search?"])`);
 
                             if(nullish(parent))
                                 return false;
 
-                            let live = $.defined(`[data-test-selector="live-badge"i]`, parent);
+                            const live = $.defined(`[data-test-selector="live-badge"i]`, parent);
 
                         return live;
                     },
@@ -1866,22 +1877,22 @@ let Initialize = async(START_OVER = false) => {
      */
     STREAMER = window.STREAMER = {
         get chat() {
-            return Chat.get()
+            return Chat.get();
         },
 
         get coin() {
-            let exact = STREAMER.jump?.[STREAMER?.name?.toLowerCase()]?.stream?.points?.balance,
-                current = parseCoin($.last('[data-test-selector*="balance-string"i]')?.textContent),
-                _e = exact?.suffix('', 1, 'natural')?.replace('.0',''),
-                _c = current?.suffix('', 1, 'natural')?.replace('.0','');
+            const exact = STREAMER.jump?.[STREAMER?.name?.toLowerCase()]?.stream?.points?.balance
+                , current = parseCoin($.last('[data-test-selector*="balance-string"i]')?.textContent)
+                , _e = exact?.suffix('', 1, 'natural')?.replace('.0', '')
+                , _c = current?.suffix('', 1, 'natural')?.replace('.0', '');
 
             if(nullish(exact))
                 return current;
-            return _e == _c? exact: current;
+            return _e == _c ? exact : current;
         },
 
         get coms() {
-            return(async channel => {
+            return (async channel => {
                 if(COMMANDS?.length > 0)
                     return COMMANDS;
                 COMMANDS = [{ aliases: [], command: STREAMER.name, reply: '$(channel.display_name) is streaming $(game) for $(channel.viewers) viewers', availability: 'owner', enabled: false, cost: 0 }];
@@ -1895,7 +1906,7 @@ let Initialize = async(START_OVER = false) => {
                  * Super Moderator  →   1000 | admin
                  * Broadcaster      →   1500 | owner
                  */
-                let USER_LEVELS = ({
+                const USER_LEVELS = ({
                     everyone:           [100, 'everyone'],
                     subscriber:         [250, 'subscriber'],
                     regular:            [300, 'regular'],
@@ -1905,7 +1916,7 @@ let Initialize = async(START_OVER = false) => {
                     broadcaster:        [1500, 'owner'],
                 });
 
-                let match = level => Object.keys(USER_LEVELS).find(key => USER_LEVELS[key].contains(level));
+                const match = level => Object.keys(USER_LEVELS).find(key => USER_LEVELS[key].contains(level));
 
                 // StreamElements
                     // accessLevel: 100
@@ -1928,12 +1939,12 @@ let Initialize = async(START_OVER = false) => {
                     .then(r => r?.json?.())
                     .then(json => json?._id)
                     .then(async id => {
-                        let commands = {};
+                        const commands = {};
 
                         if(nullish(id))
                             return [];
 
-                        for(let type of ['public', 'default'])
+                        for(const type of ['public', 'default'])
                             await fetchURL.fromDisk(`https://api.streamelements.com/kappa/v2/bot/commands/${ id }/${ type }`, { mode: 'cors', hoursUntilEntryExpires: 168 })
                                 .then(r => r.json())
                                 .then(json => commands[type] ??= json);
@@ -1941,8 +1952,8 @@ let Initialize = async(START_OVER = false) => {
                         return [...commands.public, ...commands.default];
                     })
                     .then(commands => {
-                        for(let metadata of commands) {
-                            let { aliases, command, reply, accessLevel, enabled, count = 0, cooldown, cost } = metadata;
+                        for(const metadata of commands) {
+                            const { aliases, command, reply, accessLevel, enabled, count = 0, cooldown, cost } = metadata;
 
                             COMMANDS.push({ aliases: [...aliases, ...commands.filter(alias => alias.reply?.contains(command)).map(alias => alias.command)], command, reply, availability: match(accessLevel), enabled, origin: 'StreamElements', variables: { count, coolDown: cooldown.global, cost } });
                         }
@@ -1979,9 +1990,9 @@ let Initialize = async(START_OVER = false) => {
                         return commands;
                     })
                     .then(commands => {
-                        for(let metadata of commands) {
-                            let { name, message, userLevel, enabled = true, count, coolDown, cost = 0 } = metadata,
-                                regexp = /^[!]/;
+                        for(const metadata of commands) {
+                            let { name, message, userLevel, enabled = true, count, coolDown, cost = 0 } = metadata
+                                , regexp = /^[!]/;
 
                             if(!regexp.test(name))
                                 continue;
@@ -1991,80 +2002,81 @@ let Initialize = async(START_OVER = false) => {
                     })
                     .catch($warn);
 
-                let commands = new Map;
-                for(let command of await COMMANDS)
+                const commands = new Map;
+
+                for(const command of await COMMANDS)
                     commands.set(command.command, command);
 
                 return COMMANDS = [[...commands].map(([name, value]) => value)]
                     .flat()
                     .filter(c => defined(c.command))
-                    .sort((a, b) => a.command.length > b.command.length? -1: +1);
+                    .sort((a, b) => a.command.length > b.command.length ? -1 : +1);
             })(STREAMER);
         },
 
         get cult() {
-            return (STREAMER.data?.followers) || parseCoin($('.about-section span')?.getElementByText(/\d/)?.textContent)
+            return (STREAMER.data?.followers) || parseCoin($('.about-section span')?.getElementByText(/\d/)?.textContent);
         },
 
         // Gets values later...
         data: {},
 
         get desc() {
-            return $('[data-a-target="stream-title"i]')?.textContent
+            return $('[data-a-target="stream-title"i]')?.textContent;
         },
 
         get done() {
             return (async() => {
-                let shop = (await STREAMER.shop)
+                const shop = (await STREAMER.shop)
                     .filter(({ enabled, hidden, premium }) => enabled && !(hidden || (premium && !STREAMER.paid)));
 
                 if(shop.length < 1)
                     return false;
 
-                for(let item of shop)
+                for(const item of shop)
                     if(STREAMER.coin < item.cost)
                         return false;
 
                 return true;
-            })()
+            })();
         },
 
         get face() {
-            let balance = $.last('[data-test-selector*="balance-string"i]');
+            const balance = $.last('[data-test-selector*="balance-string"i]');
 
             if(nullish(balance))
                 return PostOffice.get('points_receipt_placement')?.coin_face;
 
-            let container = balance?.closest('button'),
-                icon = $.last('img[alt]', container);
+            const container = balance?.closest('button')
+                , icon = $.last('img[alt]', container);
 
-            return icon?.src
+            return icon?.src;
         },
 
         get fiat() {
-            let balance = $.last('[data-test-selector*="balance-string"i]');
+            const balance = $.last('[data-test-selector*="balance-string"i]');
 
             if(nullish(balance))
                 return PostOffice.get('points_receipt_placement')?.coin_name;
 
-            let container = balance?.closest('button'),
-                icon = $.last('img[alt]', container);
+            const container = balance?.closest('button')
+                , icon = $.last('img[alt]', container);
 
-            return icon?.alt ?? 'Channel Points'
+            return icon?.alt ?? 'Channel Points';
         },
 
         get from() {
-            return 'STREAMER'
+            return 'STREAMER';
         },
 
         get game() {
-            let element = $.all('[data-a-target$="game-link"i], [data-a-target$="game-name"i]').pop(),
-                name = element?.textContent,
-                game = new String(name ?? "");
+            const element = $.all('[data-a-target$="game-link"i], [data-a-target$="game-name"i]').pop()
+                , name = element?.textContent
+                , game = new String(name ?? '');
 
             Object.defineProperties(game, {
                 href: {
-                    value: Object.defineProperties(new String(element?.href ?? ""), {
+                    value: Object.defineProperties(new String(element?.href ?? ''), {
                         steam: { get() { return $('#steam-link')?.href } },
                         playstation: { get() { return $('#playstation-link')?.href } },
                         xbox: { get() { return $('#xbox-link')?.href } },
@@ -2074,26 +2086,26 @@ let Initialize = async(START_OVER = false) => {
                 },
             });
 
-            return game ?? LIVE_CACHE.get('game')
+            return game ?? LIVE_CACHE.get('game');
         },
 
         get href() {
-            return parseURL($(`a[href$="${ NORMALIZED_PATHNAME }"i]`)?.href).href
+            return parseURL($(`a[href$="${ NORMALIZED_PATHNAME }"i]`)?.href).href;
         },
 
         get icon() {
-            let url = $(`[class*="channel"i] *:is(a[href$="${ NORMALIZED_PATHNAME }"i], [data-a-channel]) img`)?.src;
+            const url = $(`[class*="channel"i] *:is(a[href$="${ NORMALIZED_PATHNAME }"i], [data-a-channel]) img`)?.src;
 
             if(typeof url == 'string')
                 return Object.assign(new String(url), parseURL(url));
         },
 
         get jump() {
-            return JUMP_DATA
+            return JUMP_DATA;
         },
 
         get like() {
-            return $.defined('[data-a-target="unfollow-button"i]')
+            return $.defined('[data-a-target="unfollow-button"i]');
         },
 
         get live() {
@@ -2130,18 +2142,18 @@ let Initialize = async(START_OVER = false) => {
         },
 
         get main() {
-            return STREAMER.paid && defined($('[tt-svg-label="prime-subscription"i]')?.closest('button[data-a-target^="subscribe"i]'))
+            return STREAMER.paid && defined($('[tt-svg-label="prime-subscription"i]')?.closest('button[data-a-target^="subscribe"i]'));
         },
 
         get mark() {
-            let tags = [],
-                f = furnish;
+            const tags = []
+                , f = furnish;
 
             $.all('.tw-tag').map(element => {
-                let { href } = element.closest('a[href]');
+                const { href } = element.closest('a[href]');
 
                 if(parseBool(Settings.show_stats)) {
-                    let score = scoreTagActivity(href);
+                    const score = scoreTagActivity(href);
 
                     new Tooltip(element, `${ '+-'[+(score < 0)] }${ score }`, { from: 'top' });
 
@@ -2151,7 +2163,7 @@ let Initialize = async(START_OVER = false) => {
                 tags.push(href);
             });
 
-            let score = scoreTagActivity(...tags);
+            const score = scoreTagActivity(...tags);
 
             if(parseBool(Settings.show_stats) && $.nullish('#tt-mark-total'))
                 when.defined(() => $('[id*="channel"i][id*="info"i] [class*="metadata"i][class*="support"i] + * div:not([class]) div[class] > *:last-child > div'))
@@ -2168,15 +2180,15 @@ let Initialize = async(START_OVER = false) => {
                         )
                     );
 
-            return score
+            return score;
         },
 
         get name() {
-            return ($(`[class*="channel-info"i] a[href$="${ NORMALIZED_PATHNAME }"i]${ ['', ' h1'][+NORMAL_MODE] }`)?.textContent ?? LIVE_CACHE.get('name') ?? top.location.pathname.slice(1).split('/').shift()).split(/\s/).shift()
+            return ($(`[class*="channel-info"i] a[href$="${ NORMALIZED_PATHNAME }"i]${ ['', ' h1'][+NORMAL_MODE] }`)?.textContent ?? LIVE_CACHE.get('name') ?? top.location.pathname.slice(1).split('/').shift()).split(/\s/).shift();
         },
 
         get paid() {
-            return $.defined('[data-a-target="subscribed-button"i]')
+            return $.defined('[data-a-target="subscribed-button"i]');
         },
 
         mods: [],
@@ -2193,46 +2205,46 @@ let Initialize = async(START_OVER = false) => {
          */
         get perm() {
             let level = 0;
-            let levels = [
+            const levels = [
                 (
-                    STREAMER.name == USERNAME?
-                        (level ||= 1500, 'owner'):
-                    ''
+                    STREAMER.name == USERNAME
+                        ? (level ||= 1500, 'owner')
+                    : ''
                 ),
                 (
-                    parseBool(Search.cookies?.twilight_user?.roles?.isStaff)?
-                        (level ||= 1000, 'admin'):
-                    ''
+                    parseBool(Search.cookies?.twilight_user?.roles?.isStaff)
+                        ? (level ||= 1000, 'admin')
+                    : ''
                 ),
                 (
-                    (STREAMER.mods = Chat.mods).contains(mod => mod.equals(USERNAME))?
-                        (level ||= 500, 'moderator'):
-                    ''
+                    (STREAMER.mods = Chat.mods).contains(mod => mod.equals(USERNAME))
+                        ? (level ||= 500, 'moderator')
+                    : ''
                 ),
                 (
-                    (STREAMER.vips = Chat.vips).contains(vip => vip.equals(USERNAME))?
-                        (level ||= 400, 'vip'):
-                    ''
+                    (STREAMER.vips = Chat.vips).contains(vip => vip.equals(USERNAME))
+                        ? (level ||= 400, 'vip')
+                    : ''
                 ),
                 (
-                    STREAMER.ping?
-                        (level ||= 300, 'regular'):
-                    ''
+                    STREAMER.ping
+                        ? (level ||= 300, 'regular')
+                    : ''
                 ),
                 (
-                    STREAMER.paid?
-                        (level ||= 250, 'subscriber'):
-                    ''
+                    STREAMER.paid
+                        ? (level ||= 250, 'subscriber')
+                    : ''
                 ),
                 (level ||= 100, 'everyone')
             ].filter(level => level.length);
 
-            let string = new String(levels[0]);
+            const string = new String(levels[0]);
 
             Object.defineProperties(string, {
                 find: {
                     value(permission) {
-                        let levels = {
+                        const levels = {
                             owner: 1500,
                             broadcaster: 1500,
                             administrator: 1000,
@@ -2245,7 +2257,7 @@ let Initialize = async(START_OVER = false) => {
                             anyone: 100,
                         };
 
-                        for(let level in levels)
+                        for(const level in levels)
                             if(level.startsWith(permission?.toLowerCase?.()))
                                 return levels[level];
 
@@ -2264,51 +2276,52 @@ let Initialize = async(START_OVER = false) => {
         },
 
         get ping() {
-            return $.defined('[data-a-target^="live-notifications"i][data-a-target$="on"i]')
+            return $.defined('[data-a-target^="live-notifications"i][data-a-target$="on"i]');
         },
 
         get plug() {
-            return $.defined('[data-a-target*="ad-countdown"i]')
+            return $.defined('[data-a-target*="ad-countdown"i]');
         },
 
         get poll() {
-            return parseInt($('[data-a-target$="viewers-count"i], [class*="stream-info-card"i] [data-test-selector$="description"i]')?.textContent?.replace(/\D+/g, '')) | 0
+            return parseInt($('[data-a-target$="viewers-count"i], [class*="stream-info-card"i] [data-test-selector$="description"i]')?.textContent?.replace(/\D+/g, '')) | 0;
         },
 
         get rank() {
-            let epoch = +new Date('2019-12-16T00:00:00.000Z'),
+            let epoch = +new Date('2019-12-16T00:00:00.000Z')
                 // epoch → when channel points were first introduced
                     // https://blog.twitch.tv/en/2019/12/16/channel-points-an-easy-way-to-engage-with-your-audience/
-                start = +new Date(STREAMER.data.firstSeen),
-                now = +new Date;
+                , start = +new Date(STREAMER.data.firstSeen)
+                , now = +new Date;
 
             start = epoch.max(start || epoch);
 
-            let intervals = (((STREAMER.data?.dailyBroadcastTime ?? 16_200_000) / 900_000) * (((now - start) / 86_400_000) * ((STREAMER.data?.activeDaysPerWeek ?? 5) / 7))), // How long the channel has been streaming (15min segments)
-                followers = (STREAMER.data.followers ?? STREAMER.cult), // The number of followers the channel has
-                watchers = (STREAMER.poll || followers).ceilToNearest(1000), // The current number of people watching
-                pointsPerInterval = 80, // The user normally gets 80 points per 15mins
-                maximum = (intervals * pointsPerInterval).round(); // The absolute maximum nubmer of points anyone (except the streamer) on the channel can have
+            const intervals = (((STREAMER.data?.dailyBroadcastTime ?? 16_200_000) / 900_000) * (((now - start) / 86_400_000) * ((STREAMER.data?.activeDaysPerWeek ?? 5) / 7))) // How long the channel has been streaming (15min segments)
+                , followers = (STREAMER.data.followers ?? STREAMER.cult) // The number of followers the channel has
+                , watchers = (STREAMER.poll || followers).ceilToNearest(1000) // The current number of people watching
+                , pointsPerInterval = 80 // The user normally gets 80 points per 15mins
+                , maximum = (intervals * pointsPerInterval).round(); // The absolute maximum nubmer of points anyone (except the streamer) on the channel can have
 
-            return (followers - (followers * (STREAMER.coin / maximum))).clamp(0, followers).round()
+            return (followers - (followers * (STREAMER.coin / maximum))).clamp(0, followers).round();
         },
 
         get redo() {
-            return /\brerun\b/i.test($(`[class*="video-player"i] [class*="media-card"i]`)?.textContent?.trim() ?? "")
+            return /\brerun\b/i.test($(`[class*="video-player"i] [class*="media-card"i]`)?.textContent?.trim() ?? '');
         },
 
         __shop__: [],
 
         get shop() {
-            let shop = STREAMER.jump?.[STREAMER.name?.toLowerCase?.()]?.stream?.points;
+            const shop = STREAMER.jump?.[STREAMER.name?.toLowerCase?.()]?.stream?.points;
 
             if(nullish(shop))
                 return STREAMER.__shop__;
 
-            let { automatic = {}, custom = {} } = shop,
-                inventory = [];
+            let { automatic = {}, custom = {} } = shop
+                , inventory = [];
 
-            let __ = { ...automatic, ...custom };
+            const __ = { ...automatic, ...custom };
+
             for(let _ in __) {
                 _ = __[_];
 
@@ -2317,7 +2330,7 @@ let Initialize = async(START_OVER = false) => {
                     cost: (_.cost || _.defaultCost || _.minimumCost),
                     id: _.id,
                     image: (_.image || _.defaultImage),
-                    type: (_.type || "CUSTOM").toUpperCase(),
+                    type: (_.type || 'CUSTOM').toUpperCase(),
 
                     enabled: _.isEnabled,
                     available: parseBool(_.isInStock),
@@ -2330,30 +2343,30 @@ let Initialize = async(START_OVER = false) => {
                     needsInput: parseBool(_.isUserInputRequired),
                     paused: parseBool(_.isPaused),
                     premium: parseBool(_.isSubOnly),
-                    prompt: (_.prompt || ""),
+                    prompt: (_.prompt || ''),
                     skips: parseBool(_.shouldRedemptionsSkipRequestQueue),
-                    title: (_.title || "").trim(),
+                    title: (_.title || '').trim(),
                     updated: (_.updatedForIndicatorAt || _.globallyUpdatedForIndicatorAt),
                 });
             }
 
             // Add any missing items...
-            for(let __item__ of STREAMER.__shop__)
+            for(const __item__ of STREAMER.__shop__)
                 if(inventory.missing(item => item.title.equals(__item__.title) && (item.cost == __item__.cost)))
                     inventory.push(__item__);
 
-            let cachedShopAddress = `points_shop_${ STREAMER.sole }`;
+            const cachedShopAddress = `points_shop_${ STREAMER.sole }`;
             Cache.large.load(cachedShopAddress, shop => {
                 shop = shop[cachedShopAddress];
 
                 if(nullish(shop))
                     return;
 
-                for(let item of shop)
+                for(const item of shop)
                     if(!~inventory.findIndex(i => i.id == item.id)) {
                         let j;
 
-                        if(!!~(j = inventory.findIndex(i => i.title.equals(item.title))))
+                        if(~(j = inventory.findIndex(i => i.title.equals(item.title))))
                             inventory.splice(j, 1, item);
                         else
                             inventory.push(item);
@@ -2362,11 +2375,11 @@ let Initialize = async(START_OVER = false) => {
 
             Cache.large.save({ [cachedShopAddress]: inventory });
 
-            return inventory.sort((a, b) => a.cost - b.cost)
+            return inventory.sort((a, b) => a.cost - b.cost);
         },
 
         get sole() {
-            let [channel_id] = [
+            const [channel_id] = [
                 ...$.all('[data-test-selector="image_test_selector"i]').map(img => img.src).filter(src => src.contains('/panel-')).map(src => parseURL(src).pathname.split('-', 3)),
                 ...$.all('[src][class*="channel"i][class*="points"i][class*="icon"i]').map(img => img.src).filter(src => src.contains('-icons/')).map(src => parseURL(src).pathname.slice(1).split('/')),
             ].flat().filter(parseFloat);
@@ -2374,12 +2387,12 @@ let Initialize = async(START_OVER = false) => {
             return (0
                 || parseInt(channel_id ?? LIVE_CACHE.get('sole'))
                 || STREAMER.__sole__
-            )
+            );
         },
 
         get song() {
-            let element = $('[class*="soundtrack"i]');
-            let song = new String(element?.textContent ?? "");
+            const element = $('[class*="soundtrack"i]');
+            const song = new String(element?.textContent ?? '');
 
             // Object.defineProperties(song, {
             //     href: { value: element?.closest('[href]')?.href }
@@ -2389,11 +2402,11 @@ let Initialize = async(START_OVER = false) => {
         },
 
         get tags() {
-            let tags = [];
+            const tags = [];
 
             $.all('.tw-tag').map(element => {
-                let name = element.textContent.toLowerCase(),
-                    { href } = element.closest('a[href]');
+                const name = element.textContent.toLowerCase()
+                    , { href } = element.closest('a[href]');
 
                 tags.push(name);
                 tags[name] = href;
@@ -2401,73 +2414,73 @@ let Initialize = async(START_OVER = false) => {
                 return name;
             });
 
-            return tags ?? LIVE_CACHE.get('tags')
+            return tags ?? LIVE_CACHE.get('tags');
         },
 
         get team() {
-            let element = $('[href^="/team"]'),
-                team = new String((element?.textContent ?? "").trim());
+            const element = $('[href^="/team"]')
+                , team = new String((element?.textContent ?? '').trim());
 
             Object.defineProperties(team, {
                 href: { value: element?.href }
             });
 
-            return team
+            return team;
         },
 
         get time() {
-            return parseTime(($('.live-time')?.innerText ?? '0').replace(/^\s*([\d\:]+)[^$]*$/, '$1'))
+            return parseTime(($('.live-time')?.innerText ?? '0').replace(/^\s*([\d\:]+)[^$]*$/, '$1'));
         },
 
         get tint() {
-            let color = window
+            const color = window
                 ?.getComputedStyle?.($(`main a[href$="${ NORMALIZED_PATHNAME }"i]`) ?? $(':root'))
                 ?.getPropertyValue?.('--color-accent');
 
-            return (color || '#9147FF').toUpperCase()
+            return (color || '#9147FF').toUpperCase();
         },
 
         get tone() {
-            let { H, S, L, R, G, B } = Color.HEXtoColor(STREAMER.tint),
-                [min, max] = [[0,30],[70,100]][+(THEME.unlike('dark'))];
+            const { H, S, L, R, G, B } = Color.HEXtoColor(STREAMER.tint)
+                , [min, max] = [[0, 30], [70, 100]][+(THEME.unlike('dark'))];
 
-            return Color.HSLtoRGB(H, S, (100 - L).clamp(min, max)).HEX.toUpperCase()
+            return Color.HSLtoRGB(H, S, (100 - L).clamp(min, max)).HEX.toUpperCase();
         },
 
         get aego() {
-            let { H, S, L, R, G, B } = Color.HEXtoColor(STREAMER.tint);
+            const { H, S, L, R, G, B } = Color.HEXtoColor(STREAMER.tint);
 
-            return Color.HSLtoRGB(H + 180, S, L).HEX.toUpperCase()
+            return Color.HSLtoRGB(H + 180, S, L).HEX.toUpperCase();
         },
 
         get veto() {
-            return !!$.all('[id*="banned"i], [class*="banned"i]').length
+            return !!$.all('[id*="banned"i], [class*="banned"i]').length;
         },
 
         get vods() {
-            let { name, sole } = STREAMER;
+            const { name, sole } = STREAMER;
 
             if(Number.isNaN(sole))
                 return fetchURL.fromDisk(`https://www.twitch.tv/${ name }/videos`, { hoursUntilEntryExpires: 1 })
                     .then(r => r.text())
                     .then(html => {
-                        let dom = (new DOMParser).parseFromString(html, 'text/html');
-                        let scripts = $.all('script[type*="json"i]', dom);
-                        let data = [];
+                        const dom = (new DOMParser).parseFromString(html, 'text/html');
+                        const scripts = $.all('script[type*="json"i]', dom);
+                        const data = [];
 
-                        for(let script of scripts)
+                        for(const script of scripts)
                             data.push(JSON.parse(script?.innerText ?? null));
                         return data.filter(defined);
                     })
                     .then(json => {
-                        for(let child of json)
+                        for(const child of json)
                             if(child instanceof Array)
-                                for(let item of child)
+                                for(const item of child)
                                     if(/^(ItemList)$/i.test(item['@type']))
                                         return item.itemListElement.map(({ name, url }) => (
-                                            (parseURL(url).pathname.contains('/videos/'))?
-                                                { name, href: url }:
-                                            null
+                                            (parseURL(url).pathname.contains('/videos/'))
+                                                ? { name, href: url }
+                                            : null
                                         )).filter(defined);
                     });
 
@@ -2479,11 +2492,11 @@ let Initialize = async(START_OVER = false) => {
         },
 
         follow() {
-            $('[data-a-target="follow-button"i]')?.click?.()
+            $('[data-a-target="follow-button"i]')?.click?.();
         },
 
         unfollow() {
-            $('[data-a-target="unfollow-button"i]')?.click?.()
+            $('[data-a-target="unfollow-button"i]')?.click?.();
         },
 
         __eventlisteners__: {
@@ -2492,24 +2505,24 @@ let Initialize = async(START_OVER = false) => {
         },
 
         set onhost(job) {
-            STREAMER.__eventlisteners__.onhost.add(job)
+            STREAMER.__eventlisteners__.onhost.add(job);
         },
 
         set onraid(job) {
-            STREAMER.__eventlisteners__.onraid.add(job)
+            STREAMER.__eventlisteners__.onraid.add(job);
         },
     };
 
     STREAMER.__sole__ = (await Cache.load('ChannelPoints')).ChannelPoints?.[STREAMER.name]?.split('|')?.at(2)?.split('/')?.at(0);
 
     // Make the main icon draggable...
-    let StreamerMainIcon = $(`main a[href$="${ NORMALIZED_PATHNAME }"i]`),
-        StreamerFilteredData = { ...STREAMER };
+    const StreamerMainIcon = $(`main a[href$="${ NORMALIZED_PATHNAME }"i]`)
+        , StreamerFilteredData = { ...STREAMER };
 
     if(nullish(StreamerMainIcon))
         return /* Leave the main function (Initialize) if there's no streamer icon... Probably not in a stream */;
 
-    for(let key of 'chat coin paid ping poll tags team time __eventlisteners__'.split(' '))
+    for(const key of 'chat coin paid ping poll tags team time __eventlisteners__'.split(' '))
         delete StreamerFilteredData[key];
 
     StreamerMainIcon.setAttribute('draggable', true);
@@ -2522,9 +2535,9 @@ let Initialize = async(START_OVER = false) => {
         if(!hosting && !raiding && !raided)
             return;
 
-        let next = await GetNextStreamer();
+        const next = await GetNextStreamer();
 
-        $log('Resetting timer. Reason:', { hosting, raiding, raided }, 'Moving onto:', next);
+        $log("Resetting timer. Reason:", { hosting, raiding, raided }, "Moving onto:", next);
 
         Cache.save({ FIRST_IN_LINE_DUE_DATE: FIRST_IN_LINE_DUE_DATE = NEW_DUE_DATE() });
     };
@@ -2538,13 +2551,13 @@ let Initialize = async(START_OVER = false) => {
     NOTIFICATIONS = [
         ...$.all('[data-test-selector^="onsite-notifications"i] [data-test-selector^="onsite-notification"i]')
             .map(element =>{
-                let icon = $('img', element)?.src;
+                const icon = $('img', element)?.src;
 
                 return {
                     live: true,
                     href: $('a', element)?.href,
-                    icon: (typeof icon == 'string'? Object.assign(new String(icon), parseURL(icon)): null),
-                    name: $('[class$="text"i]', element)?.textContent?.replace(/([^]+?) +(go(?:ing)?|is|went) +live\b([^$]+)/i, ($0, $1, $$, $_) => $1),
+                    icon: (typeof icon == 'string' ? Object.assign(new String(icon), parseURL(icon)) : null),
+                    name: $('[class$="text"i]', element)?.textContent?.replace(/([^]+?) +(go(?:ing)?|is|went) +live\b([^$]+)/i, ($0, $1, $2, $3, $$, $_) => $1),
                 };
             }),
     ].filter(uniqueChannels);
@@ -2557,8 +2570,8 @@ let Initialize = async(START_OVER = false) => {
         let element, max_show_more = 10, max_show_less = 10, max_panel_size = 10;
 
         // Is the nav open?
-        let alreadyOpen = $.defined('[data-a-target="side-nav-search-input"i], [data-a-target="side-nav-header-expanded"i]'),
-            sidenav = $('[data-a-target="side-nav-arrow"i]');
+        const alreadyOpen = $.defined('[data-a-target="side-nav-search-input"i], [data-a-target="side-nav-header-expanded"i]')
+            , sidenav = $('[data-a-target="side-nav-arrow"i]');
 
         // Open the Side Nav
         if(!alreadyOpen) // Only open it if it isn't already
@@ -2571,7 +2584,7 @@ let Initialize = async(START_OVER = false) => {
         )
             element.click();
 
-        let ALL_LIVE_SIDE_PANEL_CHANNELS = $.all('[id*="side"i][id*="nav"i] .side-nav-section[aria-label][tt-svg-label="followed"i] a').filter(e => $.nullish('[class*="--offline"i]', e));
+        const ALL_LIVE_SIDE_PANEL_CHANNELS = $.all('[id*="side"i][id*="nav"i] .side-nav-section[aria-label][tt-svg-label="followed"i] a').filter(e => $.nullish('[class*="--offline"i]', e));
 
         try {
             /** Hidden Channels Array - all channels/friends that appear on the side panel
@@ -2584,25 +2597,25 @@ let Initialize = async(START_OVER = false) => {
                 // Current (followed) streamers
                 ...$.all(`[id*="side"i][id*="nav"i] .side-nav-section a`)
                     .map(element => {
-                        let icon = $('img', element)?.src;
-                        let streamer = {
+                        const icon = $('img', element)?.src;
+                        const streamer = {
                             from: 'ALL_CHANNELS',
                             href: element.href,
-                            icon: (typeof icon == 'string'? Object.assign(new String(icon), parseURL(icon)): null),
+                            icon: (typeof icon == 'string' ? Object.assign(new String(icon), parseURL(icon)) : null),
                             get live() {
-                                let { href } = element,
-                                    url = parseURL(href),
-                                    { pathname } = url,
-                                    name = pathname.slice(1).toLowerCase();
+                                let { href } = element
+                                    , url = parseURL(href)
+                                    , { pathname } = url
+                                    , name = pathname.slice(1).toLowerCase();
 
                                 // Then the actual "does the channel show up" result
-                                let parent = $(`[id*="side"i][id*="nav"i] .side-nav-section [href$="${ pathname }"i]`);
+                                const parent = $(`[id*="side"i][id*="nav"i] .side-nav-section [href$="${ pathname }"i]`);
 
                                 if(nullish(parent))
                                     return false;
 
                                 // The "is it offline" result
-                                let live = defined(parent) && $.nullish(`[class*="--offline"i]`, parent);
+                                const live = defined(parent) && $.nullish(`[class*="--offline"i]`, parent);
 
                                 return live;
                             },
@@ -2615,7 +2628,7 @@ let Initialize = async(START_OVER = false) => {
                         };
 
                         // Activate (and set) the live status for the streamer
-                        let { live } = streamer;
+                        const { live } = streamer;
 
                         return streamer;
                     }),
@@ -2631,22 +2644,22 @@ let Initialize = async(START_OVER = false) => {
                 // Current (followed) streamers
                 ...$.all(`[id*="side"i][id*="nav"i] .side-nav-section a:not([href$="${ NORMALIZED_PATHNAME }"i])`)
                     .map(element => {
-                        let icon = $('img', element)?.src;
-                        let streamer = {
+                        const icon = $('img', element)?.src;
+                        const streamer = {
                             from: 'CHANNELS',
                             href: element.href,
-                            icon: (typeof icon == 'string'? Object.assign(new String(icon), parseURL(icon)): null),
+                            icon: (typeof icon == 'string' ? Object.assign(new String(icon), parseURL(icon)) : null),
                             get live() {
-                                let { href } = element,
-                                    url = parseURL(href),
-                                    { pathname } = url;
+                                let { href } = element
+                                    , url = parseURL(href)
+                                    , { pathname } = url;
 
-                                let parent = $(`[id*="side"i][id*="nav"i] .side-nav-section [href$="${ pathname }"i]`);
+                                const parent = $(`[id*="side"i][id*="nav"i] .side-nav-section [href$="${ pathname }"i]`);
 
                                 if(nullish(parent))
                                     return false;
 
-                                let live = defined(parent) && $.nullish(`[class*="--offline"i]`, parent);
+                                const live = defined(parent) && $.nullish(`[class*="--offline"i]`, parent);
 
                                 return live;
                             },
@@ -2672,22 +2685,22 @@ let Initialize = async(START_OVER = false) => {
                 // Current streamers
                 ...$.all(`[id*="side"i][id*="nav"i] .side-nav-section[aria-label][tt-svg-label="followed"i] a:not([href$="${ NORMALIZED_PATHNAME }"i])`)
                     .map(element => {
-                        let icon = $('img', element)?.src;
-                        let streamer = {
+                        const icon = $('img', element)?.src;
+                        const streamer = {
                             from: 'STREAMERS',
                             href: element.href,
-                            icon: (typeof icon == 'string'? Object.assign(new String(icon), parseURL(icon)): null),
+                            icon: (typeof icon == 'string' ? Object.assign(new String(icon), parseURL(icon)) : null),
                             get live() {
-                                let { href } = element,
-                                    url = parseURL(href),
-                                    { pathname } = url;
+                                let { href } = element
+                                    , url = parseURL(href)
+                                    , { pathname } = url;
 
-                                let parent = $(`[id*="side"i][id*="nav"i] .side-nav-section[aria-label][tt-svg-label="followed"i] [href$="${ pathname }"i]`);
+                                const parent = $(`[id*="side"i][id*="nav"i] .side-nav-section[aria-label][tt-svg-label="followed"i] [href$="${ pathname }"i]`);
 
                                 if(nullish(parent))
                                     return false;
 
-                                let live = defined(parent) && $.nullish(`[class*="--offline"i]`, parent);
+                                const live = defined(parent) && $.nullish(`[class*="--offline"i]`, parent);
 
                                 return live;
                             },
@@ -2726,7 +2739,7 @@ let Initialize = async(START_OVER = false) => {
         // Close the Side Nav
         if(!alreadyOpen) // Only close it if it wasn't open in the first place
             wait().then(() => sidenav?.click());
-    }
+    } // :__GetAllChannels__
 
     // Every channel
     ALL_CHANNELS = [...ALL_CHANNELS, ...SEARCH, ...NOTIFICATIONS, ...STREAMERS, ...CHANNELS, STREAMER].filter(defined).filter(uniqueChannels);
@@ -2735,7 +2748,7 @@ let Initialize = async(START_OVER = false) => {
     await new Search(null, 'auto')
         .then(Search.convertResults)
         .then(streamer => {
-            for(let key in streamer)
+            for(const key in streamer)
                 LIVE_CACHE.set(key, streamer[key]);
         })
         .catch($warn)
@@ -2743,8 +2756,8 @@ let Initialize = async(START_OVER = false) => {
             if(nullish(STREAMER))
                 return;
 
-            let element = $(`a[href$="${ NORMALIZED_PATHNAME }"i]`),
-                { href, icon, live, name } = STREAMER;
+            const element = $(`a[href$="${ NORMALIZED_PATHNAME }"i]`)
+                , { href, icon, live, name } = STREAMER;
 
             element.setAttribute('draggable', true);
             element.ondragstart ??= event => {
@@ -2755,15 +2768,15 @@ let Initialize = async(START_OVER = false) => {
             __FineDetails__:
             if(parseBool(Settings.fine_details)) {
                 // Get the cookie values
-                let { cookies } = Search;
+                const { cookies } = Search;
 
                 USERNAME = window.USERNAME = cookies.login || USERNAME;
 
                 // Get the channel/vod information
-                let channelName,
-                    videoID;
+                let channelName
+                    , videoID;
 
-                let { pathname } = location;
+                const { pathname } = location;
 
                 if(pathname.startsWith('/videos/'))
                     videoID = pathname.replace('/videos/', '').replace(/\//g, '').replace(/^v/i, '');
@@ -2771,9 +2784,9 @@ let Initialize = async(START_OVER = false) => {
                     channelName = pathname.replace(/^(moderator)\/(\/[^\/]+?)/i, '$1').replace(/^(\/[^\/]+?)\/(squad|videos)\b/i, '$1').replace(/\//g, '');
 
                 // Fetch an API request
-                let type = (defined(videoID)? 'vod': 'channel'),
-                    value = (defined(videoID)? videoID: channelName),
-                    token = cookies.auth_token;
+                const type = (defined(videoID) ? 'vod' : 'channel')
+                    , value = (defined(videoID) ? videoID : channelName)
+                    , token = cookies.auth_token;
 
                 if(!STREAMER.name?.length)
                     break __FineDetails__;
@@ -2796,8 +2809,8 @@ let Initialize = async(START_OVER = false) => {
                 // First, attempt to retrieve the cached data (no older than 4h)
                 try {
                     await Cache.load(`data/${ STREAMER.name }`, cache => {
-                        let data = cache[`data/${ STREAMER.name }`],
-                            { dataRetrievedAt, dataRetrievedOK } = data;
+                        let data = cache[`data/${ STREAMER.name }`]
+                            , { dataRetrievedAt, dataRetrievedOK } = data;
 
                         dataRetrievedAt ||= 0;
                         dataRetrievedOK ||= false;
@@ -2825,8 +2838,8 @@ let Initialize = async(START_OVER = false) => {
                     if(!sole)
                         break __FineDetails__;
 
-                    let $ErrGet = `TTV-Tools-failed-to-get`;
-                    let ErrGet = JSON.parse(null
+                    const $ErrGet = `TTV-Tools-failed-to-get`;
+                    const ErrGet = JSON.parse(null
                         ?? sessionStorage.getItem($ErrGet)
                         ?? '[]'
                     );
@@ -2860,26 +2873,26 @@ let Initialize = async(START_OVER = false) => {
                         // usualStartTime:string<Date-Time<{HH:MM}>>
                         // usualStopTime:string<Date-Time<{HH:MM}>>
                     www_twitchmetrics_net: if(!FETCHED_OK) {
-                        when(() => defined(STREAMER.sole)? STREAMER: false).then(({ name, sole }) => {
+                        when(() => defined(STREAMER.sole) ? STREAMER : false).then(({ name, sole }) => {
                             fetchURL.fromDisk(`https://www.twitchmetrics.net/c/${ sole }-${ name.toLowerCase() }/stream_time_values`, { mode: 'cors', hoursUntilEntryExpires: 168 })
                                 .then(response => response.json())
                                 .then(json => {
-                                    let data = { dailyBroadcastTime: 0, activeDaysPerWeek: 0, usualStartTime: '00:00', usualStopTime: '00:00', daysStreaming: [], dailyStartTimes: {}, dailyStopTimes: {} },
-                                        today = new Date;
+                                    const data = { dailyBroadcastTime: 0, activeDaysPerWeek: 0, usualStartTime: '00:00', usualStopTime: '00:00', daysStreaming: [], dailyStartTimes: {}, dailyStopTimes: {} }
+                                        , today = new Date;
 
-                                    let getWeekDays = (...days) => days.sort().map(day => ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'][day]);
+                                    const getWeekDays = (...days) => days.sort().map(day => ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'][day]);
 
-                                    let avgStartTime = [], avgStreamSpan = [], avgStopTime = [], dlyStartTime = {}, dlyStopTime = {};
+                                    const avgStartTime = [], avgStreamSpan = [], avgStopTime = [], dlyStartTime = {}, dlyStopTime = {};
 
-                                    let daysWithStreams = new Set(),
-                                        totalStreamHistory = (json ?? [])
+                                    const daysWithStreams = new Set()
+                                        , totalStreamHistory = (json ?? [])
                                             // All except today
                                             .slice(0, -1)
                                             // Last 2 weeks (excluding today)
                                             // .slice(-14)
                                             .reverse()
                                             .map(([start, stop]) => {
-                                                let date = new Date(start.toUpperCase());
+                                                const date = new Date(start.toUpperCase());
 
                                                 if(Math.abs(today - date) < (30 * 24 * 60 * 60 * 1000))
                                                     daysWithStreams.add(date.getDay());
@@ -2889,11 +2902,11 @@ let Initialize = async(START_OVER = false) => {
                                             .reverse()
                                             .map(([start, stop]) => {
                                                 // Set the average start/stop times (overall)
-                                                let [S_, _S] = [start, stop].map(date => new Date(date));
+                                                const [S_, _S] = [start, stop].map(date => new Date(date));
 
-                                                avgStartTime.push([ S_.getHours(), S_.getMinutes(), S_.getDay() ]);
+                                                avgStartTime.push([S_.getHours(), S_.getMinutes(), S_.getDay()]);
                                                 avgStreamSpan.push(Math.abs(+S_ - +_S));
-                                                avgStopTime.push([ _S.getHours(), _S.getMinutes(), _S.getDay() ]);
+                                                avgStopTime.push([_S.getHours(), _S.getMinutes(), _S.getDay()]);
 
                                                 return [start, stop];
                                             });
@@ -2901,14 +2914,14 @@ let Initialize = async(START_OVER = false) => {
                                     // Set the daily start time
                                     avgStartTime.map(([h, m, d]) => (dlyStartTime[d] ??= []).push([h, m]));
 
-                                    for(let day in dlyStartTime) {
+                                    for(const day in dlyStartTime) {
                                         let avgH = 0, avgM = 0;
 
                                         dlyStartTime[day]
                                             .map(([h, m]) => { avgH += h; avgM += m })
                                             .filter((v, i, a) => !i)
                                             .map(() => {
-                                                let { length } = dlyStartTime[day];
+                                                const { length } = dlyStartTime[day];
 
                                                 avgH = Math.round(avgH / length);
                                                 avgM = (avgM / length).floorToNearest(15);
@@ -2924,15 +2937,15 @@ let Initialize = async(START_OVER = false) => {
                                     // Set the daily stop time
                                     avgStopTime.map(([h, m, d]) => (dlyStopTime[d] ??= dlyStartTime[d]));
 
-                                    for(let day in dlyStartTime) {
-                                        let [H, M] = toTimeString(data.dailyBroadcastTime, '!hour:!minute').split(':').map(parseFloat);
+                                    for(const day in dlyStartTime) {
+                                        const [H, M] = toTimeString(data.dailyBroadcastTime, '!hour:!minute').split(':').map(parseFloat);
 
                                         data.dailyStopTimes[day] = data.dailyStopTimes[getWeekDays(day)] =
                                             data.dailyStartTimes[day]
                                                 .split(':')
                                                 .map(parseFloat)
                                                 .map((v, i) => ([H, M][i] + v) % [24, 60][i])
-                                                .map((v, i) => !!i? v.floorToNearest(15): v)
+                                                .map((v, i) => i ? v.floorToNearest(15) : v)
                                                 .map(t => ('00' + t).slice(-2))
                                                 .join(':');
                                     }
@@ -2949,15 +2962,15 @@ let Initialize = async(START_OVER = false) => {
                                     data.projectedWindDownPeriod = new Date(+data.actualStartTime + (data.dailyBroadcastTime * .9));
                                     data.projectedLastCall = new Date(+data.projectedStopTime - (
                                         (
-                                            parseBool(Settings.first_in_line)?
-                                                Settings.first_in_line_time_minutes:
-                                            parseBool(Settings.first_in_line_plus)?
-                                                Settings.first_in_line_plus_time_minutes:
-                                            parseBool(Settings.first_in_line_all)?
-                                                Settings.first_in_line_all_time_minutes:
-                                            parseBool(Settings.first_in_line_now)?
-                                                0:
-                                            15
+                                            parseBool(Settings.first_in_line)
+                                                ? Settings.first_in_line_time_minutes
+                                            : parseBool(Settings.first_in_line_plus)
+                                                ? Settings.first_in_line_plus_time_minutes
+                                            : parseBool(Settings.first_in_line_all)
+                                                ? Settings.first_in_line_all_time_minutes
+                                            : parseBool(Settings.first_in_line_now)
+                                                ? 0
+                                            : 15
                                         ) * 60_000
                                     ));
 
@@ -2971,7 +2984,7 @@ let Initialize = async(START_OVER = false) => {
                                     Cache.save({ [`data/${ STREAMER.name }`]: data });
                                 })
                                 .catch(error => {
-                                    $warn(`Failed to get STREAM details (1§1): ${ error }`)
+                                    $warn(`Failed to get STREAM details (1§1): ${ error }`);
                                         // .toNativeStack();
 
                                     if(!ErrGet.length)
@@ -2983,18 +2996,18 @@ let Initialize = async(START_OVER = false) => {
                                 .then(response => response.text())
                                 .then(html => (new DOMParser).parseFromString(html, 'text/html'))
                                 .then(DOM => {
-                                    let data = {};
+                                    const data = {};
 
                                     $.all('dt+dd', DOM).map(dd => {
-                                        let name = dd.previousElementSibling.textContent.trim().toLowerCase().replace(/\s+(\w)/g, ($0, $1, $$, $_) => $1.toUpperCase()),
-                                            value = dd.textContent.trim();
+                                        let name = dd.previousElementSibling.textContent.trim().toLowerCase().replace(/\s+(\w)/g, ($0, $1, $$, $_) => $1.toUpperCase())
+                                            , value = dd.textContent.trim();
 
                                         value = (
-                                            /^(followers)$/i.test(name)?
-                                                parseInt(value.replace(/\D/g, '')):
-                                            /^((first|last)seen)$/i.test(name)?
-                                                new Date($('time', dd).getAttribute('datetime')):
-                                            value
+                                            /^(followers)$/i.test(name)
+                                                ? parseInt(value.replace(/\D/g, ''))
+                                            : /^((first|last)seen)$/i.test(name)
+                                                ? new Date($('time', dd).getAttribute('datetime'))
+                                            : value
                                         );
 
                                         data[name] = value;
@@ -3010,14 +3023,14 @@ let Initialize = async(START_OVER = false) => {
                                     Cache.save({ [`data/${ STREAMER.name }`]: data });
                                 })
                                 .catch(error => {
-                                    $warn(`Failed to get CHANNEL details (1§2): ${ error }`)
+                                    $warn(`Failed to get CHANNEL details (1§2): ${ error }`);
                                         // .toNativeStack();
 
                                     if(!ErrGet.length)
                                         addReport({ [$ErrGet]: `https://www.twitchmetrics.net/c/${ sole }-${ name?.toLowerCase() }` });
                                 });
-                        }, 1e3);
-                    }
+                        }, 1e3)
+                    } // :__FineDetails__ | :www_twitchmetrics_net
 
                     /***
                      *      _______       _ _       _        _____ _        _
@@ -3049,25 +3062,25 @@ let Initialize = async(START_OVER = false) => {
                             .then(response => response.text())
                             .then(html => (new DOMParser).parseFromString(html, 'text/html'))
                             .then(dom => {
-                                let children = $.all('.conta > :not(:first-child, :last-child)', dom);
-                                let obj = { games: {} };
+                                const children = $.all('.conta > :not(:first-child, :last-child)', dom);
+                                const obj = { games: {} };
 
-                                let parse = (string = '') =>
+                                const parse = (string = '') =>
                                     (
-                                        /\b(da?y|h(?:ou)?r|min(?:ute)?)s?\b/i.test(string)?
-                                            parseTime(string.replace(/([a-z\s,]+)/gi, ':').replace(/:?$/, '00')):
-                                        /^([-])$/.test(string)?
-                                            '':
-                                        /^\d/.test(string)?
-                                            parseFloat(string.replace(/[^\d\.]+/g, '')) + '':
-                                        /^(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)/i.test(string)?
-                                            new Date(string) + '':
-                                        string
+                                        /\b(da?y|h(?:ou)?r|min(?:ute)?)s?\b/i.test(string)
+                                            ? parseTime(string.replace(/([a-z\s,]+)/gi, ':').replace(/:?$/, '00'))
+                                        : /^([-])$/.test(string)
+                                            ? ''
+                                        : /^\d/.test(string)
+                                            ? parseFloat(string.replace(/[^\d\.]+/g, '')) + ''
+                                        : /^(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)/i.test(string)
+                                            ? new Date(string) + ''
+                                        : string
                                     );
 
-                                parsing: for(let child of children)
+                                parsing: for(const child of children)
                                     if($.nullish('#allgames', child))
-                                        parsing_stats: for(let grandChild of child.children) {
+                                        parsing_stats: for(const grandChild of child.children) {
                                             let [key, val, ...etc] = grandChild.children;
 
                                             key = key?.textContent?.trim();
@@ -3076,7 +3089,7 @@ let Initialize = async(START_OVER = false) => {
                                             if(!parseBool(key?.length))
                                                 continue parsing_stats;
 
-                                            key = (key).replace(/\s+/g, '').replace(/^(?:[A-Z][a-z])/, ($0) => $0.toLowerCase());
+                                            key = (key).replace(/\s+/g, '').replace(/^(?:[A-Z][a-z])/, ($0, $$, $_) => $0.toLowerCase());
                                             val = parse(val);
 
                                             switch(key) {
@@ -3096,15 +3109,15 @@ let Initialize = async(START_OVER = false) => {
 
                                             obj[key] = val;
 
-                                            for(let e of etc) {
-                                                let [k, v] = e.textContent.split(/\s+/);
+                                            for(const e of etc) {
+                                                const [k, v] = e.textContent.split(/\s+/);
 
                                                 obj[key + k] = parse(v);
                                             }
                                         }
                                     else
-                                        parsing_games: for(let game of $.all('#allgames > *', child)) {
-                                            let [name, time] = game.children;
+                                        parsing_games: for(const game of $.all('#allgames > *', child)) {
+                                            const [name, time] = game.children;
 
                                             obj.games[name.textContent] = parse(time.textContent);
                                         }
@@ -3117,7 +3130,7 @@ let Initialize = async(START_OVER = false) => {
                                 Cache.save({ [`data/${ STREAMER.name }`]: data });
                             })
                             .catch(error => {
-                                $warn(`Failed to get CHANNEL details (2): ${ error }`)
+                                $warn(`Failed to get CHANNEL details (2): ${ error }`);
                                     // .toNativeStack();
 
                                 if(!ErrGet.length)
@@ -3139,8 +3152,8 @@ let Initialize = async(START_OVER = false) => {
                         fetchURL.fromDisk(`https://twitchtracker.com/api/channels/summary/${ name.toLowerCase() }`, { mode: 'cors', hoursUntilEntryExpires: 168 })
                             .then(text => text.json())
                             .then(json => {
-                                let data = {};
-                                let table = {
+                                const data = {};
+                                const table = {
                                     minutes_streamed: 'minutesStreamedThisMonth',
                                     avg_viewers: 'averageViewersThisMonth',
                                     max_viewers: 'maximumViewersThisMonth',
@@ -3151,13 +3164,13 @@ let Initialize = async(START_OVER = false) => {
                                     views_total: 'views',
                                 };
 
-                                for(let key in json)
+                                for(const key in json)
                                     data[table[key]] = json[key];
 
                                 Cache.save({ [`data/${ STREAMER.name }`]: { ...data, streamerID: STREAMER.sole, dataRetrievedOK: (FETCHED_OK ||= defined(data?.followers)), dataRetrievedAt: +new Date } });
                             })
                             .catch(error => {
-                                $warn(`Failed to get CHANNEL details (3): ${ error }`)
+                                $warn(`Failed to get CHANNEL details (3): ${ error }`);
                                     // .toNativeStack();
 
                                 if(!ErrGet.length)
@@ -3198,21 +3211,22 @@ let Initialize = async(START_OVER = false) => {
                             hoursUntilEntryExpires: 168,
                         })
                             .then(response => response.json())
-                            .then(json => JSON.parse(json.data ?? "null"))
+                            .then(json => JSON.parse(json.data ?? 'null'))
                             .then(json => {
                                 if(nullish(json))
                                     throw "Fine Detail JSON data could not be parsed...";
 
-                                $remark('Getting fine details...', { [type]: value, cookies }, json);
+                                $remark("Getting fine details...", { [type]: value, cookies }, json);
 
-                                let conversion = {
+                                const conversion = {
                                     ally: 'broadcaster_type',
                                     perm: 'type',
                                     sole: 'id',
                                 };
 
-                                let data = {};
-                                for(let key in conversion)
+                                const data = {};
+
+                                for(const key in conversion)
                                     data[key] = json[conversion[key]];
 
                                 return data;
@@ -3223,29 +3237,29 @@ let Initialize = async(START_OVER = false) => {
                                 Cache.save({ [`data/${ STREAMER.name }`]: data });
                             })
                             .catch(error => {
-                                $warn(`Failed to get CHANNEL details (4): ${ error }`)
+                                $warn(`Failed to get CHANNEL details (4): ${ error }`);
                                     // .toNativeStack();
 
                                 if(!ErrGet.length)
                                     addReport({ [$ErrGet]: `https://api.twitch.tv/helix/users?id=${ STREAMER.sole }` });
                             });
                 }
-            }
+            } // :__FineDetails__
         });
 
     setInterval(update, 2_5_0);
 
-    LIVE_REMINDERS__LISTING_INTERVAL = undefined; // List the live time of Live Reminders
+    LIVE_REMINDERS__LISTING_INTERVAL = void null; // List the live time of Live Reminders
 
     if(parseBool(Settings.up_next__one_instance)) {
-        $log('This tab is the Up Next owner', UP_NEXT_ALLOW_THIS_TAB);
+        $log("This tab is the Up Next owner", UP_NEXT_ALLOW_THIS_TAB);
 
         // Set the anon-ID
         fetchURL.idempotent(`/directory/category/just-chatting`, { timeout: 5_000 })
             .then(response => response.text())
             .then(html => (new DOMParser).parseFromString(html, 'text/html'))
             .then(DOM => {
-                let regexp = /client_?id\s?[:=](["'`])(\w+)\1/gi;
+                const regexp = /client_?id\s?[:=](["'`])(\w+)\1/gi;
 
                 $.getElementByText.call(DOM, regexp).innerText.replace(regexp, ($0, stringBarrier, hardcodedID, $$, $_) => Search.anonID = hardcodedID);
             });
@@ -3261,7 +3275,7 @@ let Initialize = async(START_OVER = false) => {
                     fetchURL(`https://id.twitch.tv/oauth2/token`, {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-                        body: top['atоb']("zqlTBes8gqKcjgx6Bql2B2zlFm8Pxok9AEzouQk9FgWlWEvoueliBpBMFQKKF2kyYqvMYmv8je5czqRoxq5+Y2Lfugc8uOW2JgRoWEHsFEC8AQ69FUB2YmSrWSa8ugLKjeAnwevrWSaMYmvcBes8weSnYPB9WQS8BEhrWeln")
+                        body: top['atоb']('zqlTBes8gqKcjgx6Bql2B2zlFm8Pxok9AEzouQk9FgWlWEvoueliBpBMFQKKF2kyYqvMYmv8je5czqRoxq5+Y2Lfugc8uOW2JgRoWEHsFEC8AQ69FUB2YmSrWSa8ugLKjeAnwevrWSaMYmvcBes8weSnYPB9WQS8BEhrWeln')
                     }).then(response => response.json()).then(({ access_token, expires_in, token_type, error, error_description }) => {
                         if(error && error_description)
                             throw new Error(`${ error }: ${ error_description }`);
@@ -3274,7 +3288,7 @@ let Initialize = async(START_OVER = false) => {
                     }).catch(async error => {
                         $warn(error);
 
-                        let { oauthToken: savedToken } = await Settings.get('oauthToken');
+                        const { oauthToken: savedToken } = await Settings.get('oauthToken');
 
                         if(defined(savedToken) && savedToken?.unlike('.DENIED')) {
                             Cache.save({ oauthToken: savedToken, clientID });
@@ -3293,14 +3307,14 @@ let Initialize = async(START_OVER = false) => {
                             if(answer === false)
                                 return Cache.save({ clientID: '.DENIED', oauthToken: '.DENIED' });
 
-                            const redirectURI = encodeURIComponent("https://ephellon.github.io/TTVAuth")
+                            const redirectURI = encodeURIComponent('https://ephellon.github.io/TTVAuth')
                                 , scope = encodeURIComponent(['user:read:follows', 'user:read:subscriptions', 'chat:read'].join(' '))
                                 , state = (new UUID).value;
 
-                            let oauth = open(`https://id.twitch.tv/oauth2/authorize?response_type=code&client_id=${ clientID }&redirect_uri=${ redirectURI }&response_type=token&scope=${ scope }&state=${ state }`, '_blank');
+                            const oauth = open(`https://id.twitch.tv/oauth2/authorize?response_type=code&client_id=${ clientID }&redirect_uri=${ redirectURI }&response_type=token&scope=${ scope }&state=${ state }`, '_blank');
 
                             when(() => oauth.closed).then(async() => {
-                                let { oauthToken } = await Settings.get('oauthToken');
+                                const { oauthToken } = await Settings.get('oauthToken');
 
                                 Cache.save({ oauthToken, clientID });
 
@@ -3308,14 +3322,14 @@ let Initialize = async(START_OVER = false) => {
                                 Search.clientID = clientID;
                             });
                         });
-                    });
+                    })
                 } else {
                     Cache.save({ oauthToken, clientID });
 
                     Search.authorization = `Bearer ${ oauthToken }`;
                     Search.clientID = clientID;
                 }
-            });
+            })
         } else {
             Cache.load(['clientID', 'oauthToken'], async({ clientID = 's8glgfv1nm23ts567xdsmwqu5wylof', oauthToken }) => {
                 if(false
@@ -3345,11 +3359,11 @@ let Initialize = async(START_OVER = false) => {
                     fetchURL(`https://id.twitch.tv/oauth2/token`, {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-                        body: top['atоb']("zqlTBes8gqKcjgx6Bql2B2zlFm8Pxok9AEzouQk9FgWlWEvoueliBpBMFQKKF2kyYqvMYmv8je5czqRoxq5+Y2Lfugc8uOW2JgRoWEHsFEC8AQ69FUB2YmSrWSa8ugLKjeAnwevrWSaMYmvcBes8weSnYPB9WQS8BEhrWeln")
+                        body: top['atоb']('zqlTBes8gqKcjgx6Bql2B2zlFm8Pxok9AEzouQk9FgWlWEvoueliBpBMFQKKF2kyYqvMYmv8je5czqRoxq5+Y2Lfugc8uOW2JgRoWEHsFEC8AQ69FUB2YmSrWSa8ugLKjeAnwevrWSaMYmvcBes8weSnYPB9WQS8BEhrWeln')
                     }).then(response => response.json()).then(({ access_token, expires_in, token_type, error, error_description }) => {
                         if(error && error_description) {
 
-                            throw new Error(`${ error }: ${ error_description }`);
+                            throw new Error(`${ error }: ${ error_description }`)
                         }
                         oauthToken = access_token;
 
@@ -3359,7 +3373,7 @@ let Initialize = async(START_OVER = false) => {
                         Search.clientID = clientID;
                     }).catch($warn);
                 });
-            });
+            })
         }
     } else {
         top.UP_NEXT_ALLOW_THIS_TAB = UP_NEXT_ALLOW_THIS_TAB = true;
@@ -3499,16 +3513,16 @@ let Initialize = async(START_OVER = false) => {
 };
 // End of Initialize
 
-let PAGE_CHECKER,
-    WAIT_FOR_PAGE,
-    PAGE_IS_READY = false,
-    RECOVERY_TRIALS = 0,
-    VIDEO_AD_COUNTDOWN,
-    NORMALIZED_AD_VOLUME = false,
-    NORMALIZED_AD_COUNTER = 0,
-    NORMALIZED_AD_COUNTER_CURRENT = 1,
-    LAST_TIME_AD_WAS_CHECKED,
-    LAST_VALUE_WHEN_AD_WAS_CHECKED;
+let PAGE_CHECKER
+    , WAIT_FOR_PAGE
+    , PAGE_IS_READY = false
+    , RECOVERY_TRIALS = 0
+    , VIDEO_AD_COUNTDOWN
+    , NORMALIZED_AD_VOLUME = false
+    , NORMALIZED_AD_COUNTER = 0
+    , NORMALIZED_AD_COUNTER_CURRENT = 1
+    , LAST_TIME_AD_WAS_CHECKED
+    , LAST_VALUE_WHEN_AD_WAS_CHECKED;
 
 // Do NOT run on iframes...
 if(top == window) {
@@ -3549,24 +3563,24 @@ if(top == window) {
      * @see https://stackoverflow.com/a/66618269/4211612
      */
     setInterval(() => {
-        let KeepAlive = Runtime.connect({ name: 'PING' });
+        const KeepAlive = Runtime.connect({ name: 'PING' });
 
         KeepAlive.postMessage('PING', () => KeepAlive.disconnect());
     }, 180e3);
 
     Runtime.sendMessage({ action: 'GET_VERSION' }, async({ version = null }) => {
-        let isProperRuntime = Manifest.version === version;
+        const isProperRuntime = Manifest.version === version;
 
-        PAGE_CHECKER = !isProperRuntime?
-            $error(`The current runtime (v${ Manifest.version }) is not correct (v${ version })`)
-                .toNativeStack():
-        setInterval(WAIT_FOR_PAGE = async() => {
+        PAGE_CHECKER = !isProperRuntime
+            ? $error(`The current runtime (v${ Manifest.version }) is not correct (v${ version })`)
+                .toNativeStack()
+        : setInterval(WAIT_FOR_PAGE = async() => {
             // Do NOT run on unsafe pages
             if(UNSAFE_TWITCH_PATHNAMES.test(location.pathname))
                 return false;
 
-            let sadOverlay = $('[data-test-selector*="sad"i][data-test-selector*="overlay"i]');
-            let adCountdown = $('[data-a-target*="ad-countdown"i]');
+            const sadOverlay = $('[data-test-selector*="sad"i][data-test-selector*="overlay"i]');
+            const adCountdown = $('[data-a-target*="ad-countdown"i]');
 
             // Ensure settings are loaded
             if(nullish(Settings?.versionRetrivalDate))
@@ -3604,35 +3618,35 @@ if(top == window) {
             // Enables previews on the home page (#19)
             live_previews_on_hompage: if(top.location.pathname == '/')
                 when(() => parseBool(Settings?.stream_preview), 3e3).then(() => {
-                    let scale = parseFloat(Settings.stream_preview_scale) || 1,
-                        muted = !parseBool(Settings.stream_preview_sound),
-                        quality = (scale > 1? 'auto': '720p'),
-                        controls = false;
+                    const scale = parseFloat(Settings.stream_preview_scale) || 1
+                        , muted = !parseBool(Settings.stream_preview_sound)
+                        , quality = (scale > 1 ? 'auto' : '720p')
+                        , controls = false;
 
                     $.all('[data-a-target*="preview"i][data-a-target*="card"i]:not([data-test-selector])').map(a => {
                         a.addEventListener('mouseenter', ({ currentTarget }) => {
-                            let { href } = currentTarget;
-                            let name = (parseURL(href).pathname ?? '/').slice(1).split('/').shift();
+                            const { href } = currentTarget;
+                            const name = (parseURL(href).pathname ?? '/').slice(1).split('/').shift();
 
                             if(!name?.length)
                                 return;
 
-                            let isOnline = $.defined('[class*="status"i][class*="indicator"i]', currentTarget);
+                            const isOnline = $.defined('[class*="status"i][class*="indicator"i]', currentTarget);
 
                             if($.defined('#tt-stream-preview--iframe'))
                                 return;
 
-                            let iframe = furnish(`iframe#tt-stream-preview--iframe[@index=0][@name=${ name }][@live=${ isOnline }][@controls=${ controls }][@muted=${ muted }][@quality=${ quality }]`, {
+                            const iframe = furnish(`iframe#tt-stream-preview--iframe[@index=0][@name=${ name }][@live=${ isOnline }][@controls=${ controls }][@muted=${ muted }][@quality=${ quality }]`, {
                                 allow: 'autoplay',
                                 src: parseURL(`https://player.twitch.tv/`).addSearch(
-                                    isOnline?
-                                        ({
+                                    isOnline
+                                        ? ({
                                             channel: name,
                                             parent: 'twitch.tv',
 
                                             controls, muted, quality,
-                                        }):
-                                    href
+                                        })
+                                    : href
                                 ).href,
 
                                 height: '100%',
@@ -3649,7 +3663,7 @@ if(top == window) {
                     });
                 });
 
-            let ready = (true
+            const ready = (true
                 // There is a valid username
                 && defined(USERNAME)
 
@@ -3709,7 +3723,7 @@ if(top == window) {
             $log("Main container ready");
 
             // Set the user's language
-            let [documentLanguage] = (document.documentElement?.lang ?? navigator?.userLanguage ?? navigator?.language ?? 'en').toLowerCase().split('-');
+            const [documentLanguage] = (document.documentElement?.lang ?? navigator?.userLanguage ?? navigator?.language ?? 'en').toLowerCase().split('-');
 
             window.LANGUAGE = LANGUAGE = Settings.user_language_preference || documentLanguage;
 
@@ -3718,66 +3732,66 @@ if(top == window) {
                 await Initialize(ready)
                     .then(() => {
                         // TTV Tools has the max Timer amount to initilize correctly...
-                        let REINIT_JOBS =
+                        const REINIT_JOBS =
                         when(() => {
-                            let NOT_LOADED_CORRECTLY = [],
-                                ALL_LOADED_CORRECTLY = (true
+                            const NOT_LOADED_CORRECTLY = []
+                                , ALL_LOADED_CORRECTLY = (true
                                     // Lurking
                                     && parseBool(
-                                            parseBool(Settings.away_mode)?
-                                                (false
+                                            parseBool(Settings.away_mode)
+                                                ? (false
                                                     || $.defined('#away-mode')
 
                                                     || !NOT_LOADED_CORRECTLY.push('away_mode')
-                                                ):
-                                            true
+                                                )
+                                            : true
                                         )
 
                                     // Auto-Claim Bonuses
                                     && parseBool(
-                                            parseBool(Settings.auto_claim_bonuses)?
-                                                (false
+                                            parseBool(Settings.auto_claim_bonuses)
+                                                ? (false
                                                     || $.defined('#tt-auto-claim-bonuses')
                                                     || $.nullish('[data-test-selector*="balance-string"i]')
                                                     || parseBool(Settings.view_mode)
                                                     || STREAMER.veto
 
                                                     || !NOT_LOADED_CORRECTLY.push('auto_claim_bonuses')
-                                                ):
-                                            true
+                                                )
+                                            : true
                                         )
 
                                     // Up Next
                                     && parseBool(
-                                            !parseBool(Settings.first_in_line_none)?
-                                                (false
+                                            !parseBool(Settings.first_in_line_none)
+                                                ? (false
                                                     || $.defined('[up-next--container]')
 
                                                     || !NOT_LOADED_CORRECTLY.push('first_in_line')
-                                                ):
-                                            true
+                                                )
+                                            : true
                                         )
 
                                     // Watch Time
                                     && parseBool(
-                                            parseBool(Settings.watch_time_placement)?
-                                                (false
+                                            parseBool(Settings.watch_time_placement)
+                                                ? (false
                                                     || $.defined('#tt-watch-time')
 
                                                     || !NOT_LOADED_CORRECTLY.push('watch_time_placement')
-                                                ):
-                                            true
+                                                )
+                                            : true
                                         )
 
                                     // Channel Points Receipt
                                     && parseBool(
-                                            parseBool(Settings.points_receipt_placement)?
-                                                (false
+                                            parseBool(Settings.points_receipt_placement)
+                                                ? (false
                                                     || $.defined('#tt-points-receipt')
 
                                                     || !NOT_LOADED_CORRECTLY.push('points_receipt_placement')
-                                                ):
-                                            true
+                                                )
+                                            : true
                                         )
                                 );
 
@@ -3792,7 +3806,7 @@ if(top == window) {
 
                             $warn(`The following did not activate properly: ${ NOT_LOADED_CORRECTLY }. Reloading...`);
 
-                            for(let job of NOT_LOADED_CORRECTLY)
+                            for(const job of NOT_LOADED_CORRECTLY)
                                 if(defined(job))
                                     RestartJob(job, 'FAILED_TO_ACTIVATE');
 
@@ -3811,31 +3825,31 @@ if(top == window) {
 
                 // Handle coin related bulletins
                 setInterval(async() => {
-                    let { sole, name, fiat } = STREAMER;
-                    let line = $('[data-test-selector="user-notice-line"i]:not([data-uuid])');
+                    const { sole, name, fiat } = STREAMER;
+                    const line = $('[data-test-selector="user-notice-line"i]:not([data-uuid])');
 
                     if(nullish(line))
                         return;
 
-                    let [head, body] = line.children,
-                        type = 'unknown';
+                    let [head, body] = line.children
+                        , type = 'unknown';
 
                     if($.defined(`img[class*="channel-points"i][class*="icon"i][alt="${ fiat }"i], [class*="channel-points"i][class*="icon"i] svg`, head))
                         type = 'coin';
                     else if($.defined(`a[target="_blank"i]:is([rel~="noopener"i], [rel~="noreferrer"i])`))
                         type = 'shoutout';
 
-                    let [user] = ($('[data-a-target$="username"i]', body) || head).textContent.split(' ');
+                    const [user] = ($('[data-a-target$="username"i]', body) || head).textContent.split(' ');
 
-                    let badges = $.all('img.chat-badge', body).map(badge => badge.alt.toLowerCase() + badge.src.replace(/^.*?\/(?:v(\d+))\/.*$/i, '/$1')),
-                        color = Color.destruct($('[data-a-target$="username"i]', body)?.style?.color || '#9147FF').HEX,
-                        mod = +STREAMER.perm.is('mod'),
-                        sub = +STREAMER.paid,
-                        shopID = await STREAMER.shop.find(entry => (true
+                    const badges = $.all('img.chat-badge', body).map(badge => badge.alt.toLowerCase() + badge.src.replace(/^.*?\/(?:v(\d+))\/.*$/i, '/$1'))
+                        , color = Color.destruct($('[data-a-target$="username"i]', body)?.style?.color || '#9147FF').HEX
+                        , mod = +STREAMER.perm.is('mod')
+                        , sub = +STREAMER.paid
+                        , shopID = await STREAMER.shop.find(entry => (true
                             && head.textContent.contains(entry.title)
                             && head.textContent.contains(comify(entry.cost))
-                        ))?.id,
-                        spotlight = $('a[target="_blank"i]', body)?.textContent;
+                        ))?.id
+                        , spotlight = $('a[target="_blank"i]', body)?.textContent;
 
                     line.dataset.uuid = UUID.from(line.getPath());
 
@@ -3852,7 +3866,7 @@ if(top == window) {
 
                 // Handle saved states...
                 wait(1000).then(() => {
-                    let { mini = '' } = parseURL(location).searchParameters;
+                    const { mini = '' } = parseURL(location).searchParameters;
 
                     if(mini.length)
                         MiniPlayer = mini;
@@ -3869,21 +3883,21 @@ if(top == window) {
                         element.addEventListener('mousedown', ({ currentTarget, isTrusted }) => {
                             currentTarget.closest('.player-controls').dataset.isTrusted = isTrusted;
 
-                            for(let [name, callback] of GetVolume.__onchange__)
+                            for(const [name, callback] of GetVolume.__onchange__)
                                 callback(currentTarget.value, { isTrusted });
                         });
 
                         element.addEventListener('mouseup', ({ currentTarget, isTrusted }) => {
                             currentTarget.closest('.player-controls').dataset.isTrusted = isTrusted;
 
-                            for(let [name, callback] of GetVolume.__onchange__)
+                            for(const [name, callback] of GetVolume.__onchange__)
                                 callback(currentTarget.value, { isTrusted });
                         });
 
                         element.addEventListener('change', ({ currentTarget, isTrusted }) => {
                             currentTarget.closest('.player-controls').dataset.isTrusted = isTrusted;
 
-                            for(let [name, callback] of GetVolume.__onchange__)
+                            for(const [name, callback] of GetVolume.__onchange__)
                                 callback(currentTarget.value, { isTrusted });
                         });
                     });
@@ -3891,54 +3905,54 @@ if(top == window) {
 
             // Set the SVGs' section IDs
             SectionLabeling: {
-                let conversions = {
+                const conversions = {
                     favorite: [
-                        "followed",
+                        'followed',
                     ],
 
                     video: [
-                        "related",
-                        "suggested",
+                        'related',
+                        'suggested',
                     ],
 
                     people: [
-                        "watch-channel-trailer",
-                        "friends",
+                        'watch-channel-trailer',
+                        'friends',
                     ],
 
                     inform: [
-                        "live-reminders",
+                        'live-reminders',
                     ],
 
                     checkmark: [
-                        "live-reminders",
+                        'live-reminders',
                     ],
 
                     rewind: [
-                        "rewind-stream",
+                        'rewind-stream',
                     ],
 
                     crown: [
-                        "prime-subscription",
+                        'prime-subscription',
                     ],
 
                     button_2to1_transparent: [
-                        "theatre-mode-off"
+                        'theatre-mode-off'
                     ],
 
                     button_2to1_opaque: [
-                        "theatre-mode-on"
+                        'theatre-mode-on'
                     ],
                 };
 
-                for(let container of $.all('[id*="side"i][id*="nav"i] .side-nav-section[aria-label], .about-section__actions > * > *, [data-target^="channel-header"i] button, :is([data-test-selector*="video-player"i], [data-test-selector*="video-container"i]) button')) {
-                    let svg = $('svg', container);
+                for(const container of $.all('[id*="side"i][id*="nav"i] .side-nav-section[aria-label], .about-section__actions > * > *, [data-target^="channel-header"i] button, :is([data-test-selector*="video-player"i], [data-test-selector*="video-container"i]) button')) {
+                    const svg = $('svg', container);
 
                     if(nullish(svg))
                         continue;
 
                     comparing:
-                    for(let glyph in Glyphs)
+                    for(const glyph in Glyphs)
                         if(Glyphs.__exclusionList__.contains(glyph))
                             continue comparing;
                         else if(conversions[glyph]?.length)
@@ -3952,12 +3966,12 @@ if(top == window) {
                                     analysisTime = parseInt(analysisTime);
                                     misMatchPercentage = parseFloat(misMatchPercentage);
 
-                                    let matchPercentage = 100 - misMatchPercentage;
+                                    const matchPercentage = 100 - misMatchPercentage;
 
                                     if(matchPercentage < 80 || container.getAttribute('tt-svg-label')?.length)
                                         return;
 
-                                    let family = conversions[glyph].pop();
+                                    const family = conversions[glyph].pop();
 
                                     if(!family)
                                         return;
@@ -3970,8 +3984,8 @@ if(top == window) {
                                         return;
 
                                     // Auto-toggle
-                                    let observer = new MutationObserver(function(mutations) {
-                                        for(let { target, attributeName, oldValue } of mutations) {
+                                    const observer = new MutationObserver(function(mutations) {
+                                        for(const { target, attributeName, oldValue } of mutations) {
                                             if(attributeName.unlike('aria-label'))
                                                 continue;
 
@@ -3985,7 +3999,7 @@ if(top == window) {
                                     observer.observe(container, { attributes: true, subtree: true });
                                 });
                 }
-            }
+            } // :SectionLabeling
 
             top.onlocationchange = () => {
                 $warn("[Parent] Re-initializing...");
@@ -3994,11 +4008,11 @@ if(top == window) {
 
                 // Do NOT soft-reset ("turn off, turn on") these settings
                 // They will be destroyed, including any data they are using
-                let VOLATILE = window.VOLATILE = ['first_in_line*'].map(AsteriskFn);
+                const VOLATILE = window.VOLATILE = ['first_in_line*'].map(AsteriskFn);
 
                 DestroyingJobs:
-                for(let job in Jobs)
-                    if(!!~VOLATILE.findIndex(name => name.test(job)))
+                for(const job in Jobs)
+                    if(~VOLATILE.findIndex(name => name.test(job)))
                         continue DestroyingJobs;
                     else
                         RestartJob(job, 'job-destruction');
@@ -4009,12 +4023,12 @@ if(top == window) {
                         PAGE_CHECKER ??= setInterval(WAIT_FOR_PAGE, 500);
 
                         // Save states...
-                        let states = {
+                        const states = {
                             mini: (MiniPlayer?.dataset?.name),
-                            redo: (parseURL(window.location).searchParameters?.redo ?? ""),
+                            redo: (parseURL(window.location).searchParameters?.redo ?? ''),
                         };
 
-                        for(let key in states)
+                        for(const key in states)
                             if(parseBool(states[key]))
                                 addToSearch({ [key]: states[key] });
 
@@ -4027,7 +4041,7 @@ if(top == window) {
 
             // Add custom styling
             CustomCSSInitializer: {
-                let [accent, contrast] = (Settings.accent_color || 'blue/12').split('/');
+                const [accent, contrast] = (Settings.accent_color || 'blue/12').split('/');
 
                 AddCustomCSSBlock('tools.js', `
                     :root {
@@ -4321,7 +4335,7 @@ if(top == window) {
                         display: none !important;
                     }
                 `);
-            }
+            } // :CustomCSSInitializer
 
             // Update the settings
             SettingsInitializer: {
@@ -4331,16 +4345,16 @@ if(top == window) {
                     case INSTALL: {
                         // Detect the user's desired language
                             // Capitalizing the language code notifies the Settings page the code was not manually input
-                        let [user_language_preference] = (document.documentElement?.lang ?? navigator?.userLanguage ?? navigator?.language ?? 'en').toUpperCase().split('-');
+                        const [user_language_preference] = (document.documentElement?.lang ?? navigator?.userLanguage ?? navigator?.language ?? 'en').toUpperCase().split('-');
 
                         Settings.set({ user_language_preference });
 
                         // Point out the newly added buttons
                         wait(10_000).then(() => {
-                            for(let element of $.all('#tt-auto-claim-bonuses, [up-next--container]'))
+                            for(const element of $.all('#tt-auto-claim-bonuses, [up-next--container]'))
                                 element.classList.add('tt-first-run');
 
-                            let style = new CSSObject({ verticalAlign: 'bottom', height: '20px', width: '20px', fill: '#ff9ab4' });
+                            const style = new CSSObject({ verticalAlign: 'bottom', height: '20px', width: '20px', fill: '#ff9ab4' });
 
                             // Make sure the user goes to the Settings page
                             alert
@@ -4371,7 +4385,7 @@ if(top == window) {
                 if(sender.id.unlike(Runtime.id))
                     return /* Not meant for us... */;
 
-                let R = RegExp;
+                const R = RegExp;
 
                 switch(request?.action) {
                     case 'heap-audit': {
@@ -4407,8 +4421,8 @@ if(top == window) {
                     } break;
 
                     case 'consume-up-next': {
-                        let { next, obit } = request,
-                            name = parseURL(next).pathname?.slice(1);
+                        let { next, obit } = request
+                            , name = parseURL(next).pathname?.slice(1);
 
                         if(nullish(name))
                             return;
@@ -4437,7 +4451,7 @@ if(top == window) {
 
                             respond({ ok: true });
                         } else {
-                            respond({ ok: false });
+                            respond({ ok: false })
                         }
                     } break;
 
@@ -4459,10 +4473,10 @@ if(top == window) {
                         $log("Updating pinned streamer...", request);
 
                         when.defined(() => top.GetNextStreamer).then(_ => {
-                            let imgSize = '70px';
+                            const imgSize = '70px';
 
                             unpin: if(defined(request.oldValue?.name)) {
-                                let pidged = $(`.tt-pinnable [data-name="${ request.oldValue.name }"i]`);
+                                const pidged = $(`.tt-pinnable [data-name="${ request.oldValue.name }"i]`);
 
                                 delete _.pinnedStreamer;
                                 $('#pinned-streamer').innerHTML = Glyphs.pinned;
@@ -4479,7 +4493,7 @@ if(top == window) {
                             }
 
                             pin: if(defined(request.newValue?.name)) {
-                                let currentTarget = $(`.tt-pinnable [data-name="${ request.newValue.name }"i]`);
+                                const currentTarget = $(`.tt-pinnable [data-name="${ request.newValue.name }"i]`);
 
                                 _.pinnedStreamer = request.newValue.name;
                                 $('#pinned-streamer')?.html(furnish(`.tt-border-radius-rounded`).with(furnish.img({ src: request.newValue.icon, style: `min-width:calc(${ imgSize }/2); border-radius:${ imgSize }` })).outerHTML);
@@ -4496,15 +4510,15 @@ if(top == window) {
 
                                 Cache.save({ PinnedStreamer: _.pinnedStreamer });
                             } else {
-                                Cache.remove(['PinnedStreamer']);
+                                Cache.remove(['PinnedStreamer'])
                             }
                         });
                     } break;
-                }
+                } // switch request?.action
             });
 
             // Lag reporter
-            Runtime.sendMessage({ action: `${ (Settings.auto_tab_reloads? 'BEGIN': 'WAIVE') }_REPORT` });
+            Runtime.sendMessage({ action: `${ (Settings.auto_tab_reloads ? 'BEGIN' : 'WAIVE') }_REPORT` });
         }, 500);
     });
 
@@ -4513,14 +4527,14 @@ if(top == window) {
         AntiTimeMachine:
         when.defined(() => $('main [data-a-target*="error"i][data-a-target*="message"i] ~ * [href$="directory"i]'))
             .then(() => {
-                let ErrorMessage = $('main [data-a-target*="error"i][data-a-target*="message"i]')?.textContent;
+                const ErrorMessage = $('main [data-a-target*="error"i][data-a-target*="message"i]')?.textContent;
 
                 when.defined(() => $(`[id*="side"i][id*="nav"i] .side-nav-section a:not([href$="${ PATHNAME }"i])`))
                     .then(channel => {
                         $warn(`${ location.pathname.slice(1) } is not available: ${ ErrorMessage }\nHeading to ${ channel.href }`);
 
                         goto(channel.href);
-                    })
+                    });
             });
 
         // Color compontents
@@ -4532,19 +4546,19 @@ if(top == window) {
 
             color = Color.destruct(color || '#9147FF');
 
-            AddCustomCSSBlock('Color Components', `:root { --user-accent-color:${ color.HSL }; --user-complement-color:hsl(${ [color.H + 180, color.S, color.L].map((v, i) => v+'%deg'.slice(+!i,1+3*!i)) }) }`);
+            AddCustomCSSBlock('Color Components', `:root { --user-accent-color:${ color.HSL }; --user-complement-color:hsl(${ [color.H + 180, color.S, color.L].map((v, i) => v + '%deg'.slice(+!i, 1 + 3 * !i)) }) }`);
         }
 
         // Alerts for users
         DisplayNews:
         Cache.load('ReadNews', async({ ReadNews }) => {
-            let TTVToolsNewsURL = `https://github.com/Ephellon/Twitch-Tools/wiki/News?fetched-at=${ +new Date }`,
-                TTVToolsNewsArticles = ReadNews || [];
+            const TTVToolsNewsURL = `https://github.com/Ephellon/Twitch-Tools/wiki/News?fetched-at=${ +new Date }`
+                , TTVToolsNewsArticles = ReadNews || [];
 
             fetchURL(TTVToolsNewsURL)
                 .then(r => r.text())
                 .then(html => {
-                    let dom = (new DOMParser).parseFromString(html, 'text/html');
+                    const dom = (new DOMParser).parseFromString(html, 'text/html');
 
                     return $('#wiki-body', dom)?.children ?? [];
                 })
@@ -4552,18 +4566,19 @@ if(top == window) {
                     if(nullish(main))
                         return;
 
-                    let articles = main.getAllElementsByText(/(\d{4}-\d{2}-\d{2})/)
+                    const articles = main.getAllElementsByText(/(\d{4}-\d{2}-\d{2})/)
                         .filter(({ tagName }) => /^h\d$/i.test(tagName))
                         .map(header => {
-                            let content = [];
+                            const content = [];
 
                             let e = header;
+
                             while(defined(e = e.nextElementSibling) && !/^h\d$/i.test(e.tagName))
                                 content.push(e);
 
                             return { header, content };
                         }).map(({ header, content }) => {
-                            let articleID = UUID.from(header.textContent, true).value;
+                            const articleID = UUID.from(header.textContent, true).value;
 
                             if(TTVToolsNewsArticles.contains(articleID))
                                 return;
@@ -4573,7 +4588,7 @@ if(top == window) {
 
                             header.textContent = new Date(header.textContent).toLocaleDateString();
 
-                            let article = furnish(`#tt-news-${ articleID }`).with(
+                            const article = furnish(`#tt-news-${ articleID }`).with(
                                 furnish('details.details').with(
                                     furnish('summary').with(header),
                                     ...content
@@ -4597,8 +4612,8 @@ if(top == window) {
         let CHAT_SELF_REFLECTOR;
 
         CommsObserver: if(!RESERVED_TWITCH_PATHNAMES.test(location.pathname)) {
-            let [CHANNEL] = location.pathname.toLowerCase().slice(1).split('/').slice(+IS_A_FRAMED_CONTAINER),
-                USERNAME = Search.cookies.login ?? `User_Not_Logged_In_${ +new Date }`;
+            let [CHANNEL] = location.pathname.toLowerCase().slice(1).split('/').slice(+IS_A_FRAMED_CONTAINER)
+                , USERNAME = Search.cookies.login ?? `User_Not_Logged_In_${ +new Date }`;
 
             CHANNEL = `#${ CHANNEL }`;
 
@@ -4616,7 +4631,7 @@ if(top == window) {
 
             let socket = (TTV_IRC.socket = new WebSocket(TTV_IRC.wsURL));
 
-            let START_WS = socket.onopen = event => {
+            const START_WS = socket.onopen = event => {
                 $log(`Chat Relay (main) connected to "${ CHANNEL }"`);
 
                 // CONNECTING → 0; OPEN → 1; CLOSING → 2; CLOSED → 3
@@ -4627,14 +4642,14 @@ if(top == window) {
                         socket.send(`NICK ${ USERNAME.toLowerCase() }`);
                     });
 
-                let restrictions = (TTV_IRC.restrictions ??= new Map);
+                const restrictions = (TTV_IRC.restrictions ??= new Map);
 
                 socket.onmessage = socket.reflect = CHAT_SELF_REFLECTOR = async event => {
-                    let messages = event.data.trim().split('\r\n').map(TTV_IRC.parseMessage).filter(defined);
+                    const messages = event.data.trim().split('\r\n').map(TTV_IRC.parseMessage).filter(defined);
 
                     // $remark('Chat Relay received messages', messages);
 
-                    for(let { command, parameters, source, tags } of messages) {
+                    for(const { command, parameters, source, tags } of messages) {
                         const channel = (command.channel ?? CHANNEL).toLowerCase();
                         const usable = parseBool(channel.equals(CHANNEL));
 
@@ -4672,8 +4687,8 @@ if(top == window) {
                             // Something happened...
                             case 'NOTICE': {
                                 if('room_mods mod_success unmod_success no_mods vips_success vip_success unvip_success no_vips'.contains(tags?.msg_id)) {
-                                    let msg = tags.msg_id,
-                                        typ = msg.replace(/.*((?:mod|vip)s?).*/i, '$1').toLowerCase();
+                                    const msg = tags.msg_id
+                                        , typ = msg.replace(/.*((?:mod|vip)s?).*/i, '$1').toLowerCase();
 
                                     if(msg.startsWith('no_'))
                                         /* Do nothing */;
@@ -4682,13 +4697,14 @@ if(top == window) {
                                     else if(/^un(mod|vip)_/i.test(msg))
                                         Chat[typ] = Chat[typ].filter(name => name.unlike(parameters.replace(/.*removed\s+(\S+).*/i, '$1')));
                                     else
-                                        Chat[typ].push(...parameters.replace(/^[^:]*(.+?)\.?$/, ($0, $1) => $1.replace(/[:\s]+/g, '').toLowerCase()).split(','));
+                                        Chat[typ].push(...parameters.replace(/^[^:]*(.+?)\.?$/, ($0, $1, $$, $_) => $1.replace(/[:\s]+/g, '').toLowerCase()).split(','));
                                 } else if('host_on host_off'.contains(tags?.msg_id)) {
-                                    if(!usable) continue;
+                                    if(!usable)
+                                        continue;
 
                                     when.defined(() => STREAMER)
                                         .then(() => {
-                                            for(let callback of STREAMER.__eventlisteners__.onhost)
+                                            for(const callback of STREAMER.__eventlisteners__.onhost)
                                                 when(() => PAGE_IS_READY, 250).then(() => callback({ hosting: parameters.toLowerCase().startsWith('now hosting') }));
                                         });
                                 } else {
@@ -4703,12 +4719,12 @@ if(top == window) {
 
                             // Status(es) of the room
                             case 'ROOMSTATE': {
-                                let { room_id, emote_only, followers_only, r9k, slow, subs_only } = tags;
+                                const { room_id, emote_only, followers_only, r9k, slow, subs_only } = tags;
 
                                 restrictions.set(channel, {
                                     room_id,
                                     emote_only: parseBool(+emote_only),
-                                    followers_only: (+followers_only > 0? +followers_only * 60_000: !1),
+                                    followers_only: (+followers_only > 0 ? +followers_only * 60_000 : !1),
                                     r9k: parseBool(+r9k),
                                     slow: (+slow * 1000),
                                     subs_only: parseBool(+subs_only),
@@ -4717,25 +4733,25 @@ if(top == window) {
 
                             // Something happened (alert)
                             case 'USERNOTICE': {
-                                let { id, msg_id, system_msg } = tags;
+                                const { id, msg_id, system_msg } = tags;
 
-                                let message = (system_msg ?? parameters).replace(/\\s/g, ' '),
-                                    mentions = message.split(/(@\S+)/).filter(s => s.startsWith('@')).map(s => s.slice(1).toLowerCase()),
-                                    subject = (
-                                        'sub resub'.split(' ').contains(msg_id)?
-                                            'dues':
-                                        'giftpaidupgrade anongiftpaidupgrade'.split(' ').contains(msg_id)?
-                                            'keep':
-                                        'subgift rewardgift submysterygift rewardmysterygift'.split(' ').contains(msg_id)?
-                                            'gift':
-                                        'raid unraid'.split(' ').contains(msg_id)?
-                                            'raid': // incoming raids
-                                        'pointsredeemed'.split(' ').contains(msg_id)?
-                                            'coin':
+                                const message = (system_msg ?? parameters).replace(/\\s/g, ' ')
+                                    , mentions = message.split(/(@\S+)/).filter(s => s.startsWith('@')).map(s => s.slice(1).toLowerCase())
+                                    , subject = (
+                                        'sub resub'.split(' ').contains(msg_id)
+                                            ? 'dues'
+                                        : 'giftpaidupgrade anongiftpaidupgrade'.split(' ').contains(msg_id)
+                                            ? 'keep'
+                                        : 'subgift rewardgift submysterygift rewardmysterygift'.split(' ').contains(msg_id)
+                                            ? 'gift'
+                                        : 'raid unraid'.split(' ').contains(msg_id)
+                                            ? 'raid' // incoming raids
+                                        : 'pointsredeemed'.split(' ').contains(msg_id)
+                                            ? 'coin'
                                         // ritual (new_chatter, etc.); bitsbadgetier (100, 1000, 10000, etc.)
-                                        'note'
-                                    ),
-                                    element = when.defined((message, subject) =>
+                                        : 'note'
+                                    )
+                                    , element = when.defined((message, subject) =>
                                         // @TODO: get bullets via text content
                                         $.all('[role] ~ *:is([role="log"i], [class~="chat-room"i], [data-a-target*="chat"i], [data-test-selector*="chat"i]) *:is(.tt-accent-region, [data-test-selector="user-notice-line"i], [class*="notice"i][class*="line"i], [class*="gift"i]:not([class*="count"i]), [data-test-selector="announcement-line"i], [class*="announcement"i][class*="line"i])')
                                             .find(element => {
@@ -4766,7 +4782,8 @@ if(top == window) {
                                                             && item.available
                                                             && item.enabled
                                                             && !(item.hidden || item.paused)
-                                                        ) I = item;
+                                                        )
+                                                            I = item;
                                                     });
 
                                                     if(defined(I))
@@ -4780,7 +4797,7 @@ if(top == window) {
                                             })
                                         , 100, message, subject);
 
-                                let results = {
+                                const results = {
                                     element,
                                     usable,
                                     message,
@@ -4794,13 +4811,13 @@ if(top == window) {
 
                                 Chat.__allbullets__.add(results);
 
-                                for(let [name, callback] of Chat.__onbullet__)
+                                for(const [name, callback] of Chat.__onbullet__)
                                     when(() => PAGE_IS_READY, 250).then(() => callback(results));
 
-                                for(let [name, callback] of Chat.__deferredEvents__.__onbullet__)
+                                for(const [name, callback] of Chat.__deferredEvents__.__onbullet__)
                                     when.defined.pipe(async(callback, results) => await results?.element, 250, callback, results).then(([callback, results]) => callback(results));
 
-                                for(let [name, callback] of Chat.__consumableEvents__.__onbullet__) {
+                                for(const [name, callback] of Chat.__consumableEvents__.__onbullet__) {
                                     when(() => PAGE_IS_READY, 250).then(() =>
                                         callback(results).then(complete => {
                                             if(complete)
@@ -4808,17 +4825,18 @@ if(top == window) {
                                         })
                                     );
                                 }
-                            } break;
+                            } break; // switch command.command | 'USERNOTICE'
 
                             // The channel is hosting...
                             case 'HOSTTARGET': {
-                                if(!usable) continue;
+                                if(!usable)
+                                    continue;
 
-                                let [to, amount] = parameters.split(' ', 2);
+                                const [to, amount] = parameters.split(' ', 2);
 
                                 when.defined(() => STREAMER)
                                     .then(() => {
-                                        for(let callback of STREAMER.__eventlisteners__.onhost)
+                                        for(const callback of STREAMER.__eventlisteners__.onhost)
                                             when(() => PAGE_IS_READY, 250).then(() => callback({ hosting: to.unlike('-') }));
                                     });
                             } break;
@@ -4829,15 +4847,15 @@ if(top == window) {
 
                                 // Bot commands...
                                 if(defined(command.botCommand)) {
-                                    let results = { name: command.botCommand, arguments: command.botCommandParams };
+                                    const results = { name: command.botCommand, arguments: command.botCommandParams };
 
-                                    for(let [name, callback] of Chat.__oncommand__)
+                                    for(const [name, callback] of Chat.__oncommand__)
                                         when(() => PAGE_IS_READY, 250).then(() => callback(results));
 
-                                    for(let [name, callback] of Chat.__deferredEvents__.__oncommand__)
+                                    for(const [name, callback] of Chat.__deferredEvents__.__oncommand__)
                                         when.defined.pipe(async(callback, results) => await results?.element, 1000, callback, results).then(([callback, results]) => callback(results));
 
-                                    for(let [name, callback] of Chat.__consumableEvents__.__oncommand__) {
+                                    for(const [name, callback] of Chat.__consumableEvents__.__oncommand__) {
                                         when(() => PAGE_IS_READY, 250).then(() =>
                                             callback(results).then(complete => {
                                                 if(complete)
@@ -4849,66 +4867,66 @@ if(top == window) {
                                     continue;
                                 }
 
-                                let author = source.nick,
-                                    badges = Object.keys(tags?.badges ?? {}),
-                                    message = parameters.replace(/^([\u0001-\u0007\u000e-\u001f])((?:\w+)\s*)([^]+)\1$/g, '$3').trim(),
+                                const author = source.nick
+                                    , badges = Object.keys(tags?.badges ?? {})
+                                    , message = parameters.replace(/^([\u0001-\u0007\u000e-\u001f])((?:\w+)\s*)([^]+)\1$/g, '$3').trim()
                                     // Have to wait on the page to play catch-up...
-                                    element = when.defined((message, uuid) =>
+                                    , element = when.defined((message, uuid) =>
                                         $.all('[data-test-selector$="message-container"i] [data-a-target$="message"i]')
                                             .find(div =>
                                                 $.all(`[data-a-user="${ author }"i]`, div)
                                                     .map(div => div.closest('[data-test-selector$="message"i], [data-a-target$="message"i]'))
                                                     .filter(defined)
                                                     .find(div => {
-                                                        let text = [],
-                                                            body = $('[data-test-selector$="message-body"i], [class*="message-container"i]', div);
+                                                        const text = []
+                                                            , body = $('[data-test-selector$="message-body"i], [class*="message-container"i]', div);
 
                                                         if(nullish(body))
                                                             return;
 
-                                                        for(let child of $.all('[class*="username"i][class*="container"i] ~ :last-child > *', body))
+                                                        for(const child of $.all('[class*="username"i][class*="container"i] ~ :last-child > *', body))
                                                             if(child.dataset.testSelector?.contains('emote')) {
-                                                                text.push($('img', child).alt);
+                                                                text.push($('img', child).alt)
                                                             } else if(child.dataset.aTarget?.contains('timestamp')) {
-                                                                continue;
+                                                                continue
                                                             } else if($.defined('var', child)) {
                                                                 let { textContent } = child;
 
-                                                                for(let v of $.all('var', child))
+                                                                for(const v of $.all('var', child))
                                                                     textContent = textContent.replace(v.textContent, '');
 
                                                                 child.textContent = textContent;
                                                             } else {
-                                                                text.push(child.textContent);
+                                                                text.push(child.textContent)
                                                             }
 
-                                                        let match = text.join('').mutilate(true).equals(message.mutilate(true));
+                                                        const match = text.join('').mutilate(true).equals(message.mutilate(true));
 
                                                         if(match)
                                                             div.dataset.uuid = uuid;
 
-                                                        return match
+                                                        return match;
                                                     })
                                             )
-                                        , 100, message, tags.id),
-                                    emotes = Object.keys(tags.emotes ?? {}).map(key => {
-                                        let emote = (tags.emotes[+key] || tags.emotes[key]).shift(),
-                                            name = parameters.substring(+emote.startPosition, ++emote.endPosition),
-                                            url = `https://static-cdn.jtvnw.net/emoticons/v2/${ key }/default/${ THEME }/1.0`;
+                                        , 100, message, tags.id)
+                                    , emotes = Object.keys(tags.emotes ?? {}).map(key => {
+                                        const emote = (tags.emotes[+key] || tags.emotes[key]).shift()
+                                            , name = parameters.substring(+emote.startPosition, ++emote.endPosition)
+                                            , url = `https://static-cdn.jtvnw.net/emoticons/v2/${ key }/default/${ THEME }/1.0`;
 
                                         Chat.__allemotes__.set(name, url);
 
                                         return name;
-                                    }),
-                                    handle = tags.display_name,
-                                    mentions = parameters.split(/(@\S+)/).filter(s => s.startsWith('@')).map(s => s.slice(1).toLowerCase()),
-                                    raw = [(handle.unlike(author)? `${ handle } (${ author })`: handle), message].join(': '),
-                                    reply = when.defined(e => e, 100, element).then(element => element?.querySelector('[class*="reply"i] button')),
-                                    style = `color: ${ tags.color || '#9147FF' };`,
-                                    uuid = tags.id,
-                                    sent = (new Date).toJSON();
+                                    })
+                                    , handle = tags.display_name
+                                    , mentions = parameters.split(/(@\S+)/).filter(s => s.startsWith('@')).map(s => s.slice(1).toLowerCase())
+                                    , raw = [(handle.unlike(author) ? `${ handle } (${ author })` : handle), message].join(': ')
+                                    , reply = when.defined(e => e, 100, element).then(element => element?.querySelector('[class*="reply"i] button'))
+                                    , style = `color: ${ tags.color || '#9147FF' };`
+                                    , uuid = tags.id
+                                    , sent = (new Date).toJSON();
 
-                                let results = {
+                                const results = {
                                     raw,
                                     sent,
                                     uuid,
@@ -4938,13 +4956,13 @@ if(top == window) {
 
                                 Chat.__allmessages__.set(uuid, results);
 
-                                for(let [name, callback] of Chat.__onmessage__)
+                                for(const [name, callback] of Chat.__onmessage__)
                                     when(() => PAGE_IS_READY, 250).then(() => callback(results));
 
-                                for(let [name, callback] of Chat.__deferredEvents__.__onmessage__)
+                                for(const [name, callback] of Chat.__deferredEvents__.__onmessage__)
                                     when.defined.pipe(async(callback, results) => await results?.element, 1000, callback, results).then(([callback, results]) => callback(results));
 
-                                for(let [name, callback] of Chat.__consumableEvents__.__onmessage__) {
+                                for(const [name, callback] of Chat.__consumableEvents__.__onmessage__) {
                                     when(() => PAGE_IS_READY, 250).then(() =>
                                         callback(results).then(complete => {
                                             if(complete)
@@ -4952,19 +4970,19 @@ if(top == window) {
                                         })
                                     );
                                 }
-                            } break;
+                            } break; // switch command.command | 'PRIVMSG'
 
                             // Got a whisper
                             case 'WHISPER': {
-                                let results = { unread: 1, from: channel, message: parameters, timestamp: new Date };
+                                const results = { unread: 1, from: channel, message: parameters, timestamp: new Date };
 
-                                for(let [name, callback] of Chat.__onwhisper__)
+                                for(const [name, callback] of Chat.__onwhisper__)
                                     when(() => PAGE_IS_READY, 250).then(() => callback(results));
 
-                                for(let [name, callback] of Chat.__deferredEvents__.__onwhisper__)
+                                for(const [name, callback] of Chat.__deferredEvents__.__onwhisper__)
                                     when.defined.pipe(async(callback, results) => await results?.element, 1000, callback, results).then(([callback, results]) => callback(results));
 
-                                for(let [name, callback] of Chat.__consumableEvents__.__onwhisper__) {
+                                for(const [name, callback] of Chat.__consumableEvents__.__onwhisper__) {
                                     when(() => PAGE_IS_READY, 250).then(() =>
                                         callback(results).then(complete => {
                                             if(complete)
@@ -4974,7 +4992,7 @@ if(top == window) {
                                 }
                             } break;
 
-                            default: continue;
+                            default: { continue }
                         };
                     }
                 };
@@ -5015,29 +5033,29 @@ if(top == window) {
             // Play catch-up...
             when.defined(() => $('[data-test-selector$="message-container"i]'), 100)
                 .then(chat => {
-                    let unhandled = $.all('[data-a-target="chat-line-message"i]:not([data-uuid])', chat);
+                    const unhandled = $.all('[data-a-target="chat-line-message"i]:not([data-uuid])', chat);
 
-                    for(let element of unhandled) {
-                        let raw = $('[class*="message"i][class*="container"i]', element).textContent.trim().replace($('[data-a-target="chat-timestamp"]', element)?.textContent || '', ''),
-                            uuid = UUID.from(raw).toString(),
-                            reply = $('[class*="reply"i] button', element),
-                            style = $('[data-a-user]', element)?.getAttribute('style')?.trim(),
-                            author = $('[data-a-user]', element).dataset.aUser,
-                            emotes = new Set,
-                            badges = new Set,
-                            __bs__ = $.all('[class*="username"i][class*="container"i] [data-a-target*="badge"i] img', element).map(e => badges.add(e.alt.toLowerCase())),
-                            handle = $('[data-a-user]', element).textContent,
-                            usable = false,
-                            message = raw.replace(/^[^:]+?:/, '').trim(),
-                            mentions = $.all('[data-a-target*="mention"i]', element).map(e => e.textContent),
-                            highlighted = parseBool(element.dataset.testSelector?.contains('notice'));
+                    for(const element of unhandled) {
+                        let raw = $('[class*="message"i][class*="container"i]', element).textContent.trim().replace($('[data-a-target="chat-timestamp"]', element)?.textContent || '', '')
+                            , uuid = UUID.from(raw).toString()
+                            , reply = $('[class*="reply"i] button', element)
+                            , style = $('[data-a-user]', element)?.getAttribute('style')?.trim()
+                            , author = $('[data-a-user]', element).dataset.aUser
+                            , emotes = new Set
+                            , badges = new Set
+                            , __bs__ = $.all('[class*="username"i][class*="container"i] [data-a-target*="badge"i] img', element).map(e => badges.add(e.alt.toLowerCase()))
+                            , handle = $('[data-a-user]', element).textContent
+                            , usable = false
+                            , message = raw.replace(/^[^:]+?:/, '').trim()
+                            , mentions = $.all('[data-a-target*="mention"i]', element).map(e => e.textContent)
+                            , highlighted = parseBool(element.dataset.testSelector?.contains('notice'));
 
                         element.dataset.uuid = uuid;
 
                         emotes = [...emotes];
                         badges = [...badges];
 
-                        let results = {
+                        const results = {
                             raw,
                             uuid,
                             reply,
@@ -5056,13 +5074,13 @@ if(top == window) {
 
                         Chat.__allmessages__.set(uuid, results);
 
-                        for(let [name, callback] of Chat.__onmessage__)
+                        for(const [name, callback] of Chat.__onmessage__)
                             when(() => PAGE_IS_READY, 250).then(() => callback(results));
 
-                        for(let [name, callback] of Chat.__deferredEvents__.__onmessage__)
+                        for(const [name, callback] of Chat.__deferredEvents__.__onmessage__)
                             when.defined.pipe(async(callback, results) => await results?.element, 1000, callback, results).then(([callback, results]) => callback(results));
 
-                        for(let [name, callback] of Chat.__consumableEvents__.__onmessage__) {
+                        for(const [name, callback] of Chat.__consumableEvents__.__onmessage__) {
                             when(() => PAGE_IS_READY, 250).then(() =>
                                 callback(results).then(complete => {
                                     if(complete)
@@ -5072,6 +5090,6 @@ if(top == window) {
                         }
                     }
                 });
-        }
+        } // :CommsObserver
     };
 }

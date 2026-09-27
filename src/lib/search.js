@@ -11,8 +11,9 @@
 class Search {
     static cookies = {
         ...((cookies = []) => {
-            let object = ({});
-            for(let cookie of cookies) {
+            const object = ({});
+
+            for(const cookie of cookies) {
                 let [name, value] = cookie.split('=', 2);
 
                 if(/^[\{\[]/.test(value))
@@ -31,11 +32,11 @@ class Search {
     static cacheLeaseTime = 300_000 * (parseInt(Settings.low_data_mode) || 1);
 
     constructor(ID = null, type = 'channel', as = null) {
-        let spadeEndpoint = `https://spade.twitch.tv/track`,
-            twilightBuildID = '5fc26188-666b-4bf4-bdeb-19bd4a9e13a4';
+        const spadeEndpoint = `https://spade.twitch.tv/track`
+            , twilightBuildID = '5fc26188-666b-4bf4-bdeb-19bd4a9e13a4';
 
-        let pathname = location.pathname.slice(1),
-            options = ({
+        const pathname = location.pathname.slice(1)
+            , options = ({
                 method: 'POST',
                 headers: {
                     "Accept-Language":  'en-US',
@@ -44,8 +45,8 @@ class Search {
                     "Client-ID":        Search.clientID,
                     "Content-Type":     `text/plain; charset=UTF-8`,
                 }
-            }),
-            player = ({
+            })
+            , player = ({
                 type: 'site',
                 routes: {
                     exact: ['activate', 'bits', 'bits-checkout', 'directory', 'following', 'luna', 'popout', 'prime', 'store', 'subs'],
@@ -54,21 +55,22 @@ class Search {
             });
 
         let vodID = null, channelName = null;
+
         if(nullish(ID) && /^auto(?:matic)?$/i.test(type)) {
             if(true
                 && player.routes.exact.missing(pathname)
                 && !player.routes.start.filter(route => pathname.startsWith(route)).length
                 && (
                     // Is a VOD
-                    pathname.startsWith('videos/')?
-                        (
+                    pathname.startsWith('videos/')
+                        ? (
                             vodID = pathname
                                 .replace('videos/', '')
                                 .replace(/\//g, '')
                                 .replace(/^v/, '')
-                        ):
+                        )
                     // Is a channel
-                    (
+                    : (
                         channelName = pathname.replace(/\//g, '')
                     )
                 )
@@ -92,8 +94,8 @@ class Search {
         if(type.equals('channel'))
             channelName = ID;
 
-        let searchID = UUID.from([ID, type, as, new Date((+new Date).floorToNearest(Search.cacheLeaseTime)).toJSON()].join('~')).value,
-            searchResults;
+        let searchID = UUID.from([ID, type, as, new Date((+new Date).floorToNearest(Search.cacheLeaseTime)).toJSON()].join('~')).value
+            , searchResults;
 
         if(Search.#cache.has(searchID))
             return Search.#cache.get(searchID);
@@ -101,35 +103,35 @@ class Search {
         let template;
         switch(Search.parseType = as) {
             case 'query': {
-                let query = ('query PlaybackAccessToken_Template($login: String!, $isLive: Boolean!, $vodID: ID!, $isVod: Boolean!, $playerType: String!) { streamPlaybackAccessToken(channelName: $login, params: { platform: "web", playerBackend: "mediaplayer", playerType: $playerType }) @include(if: $isLive) { value signature __typename } videoPlaybackAccessToken(id: $vodID, params: { platform: "web", playerBackend: "mediaplayer", playerType: $playerType }) @include(if: $isVod) { value signature __typename }}');
+                const query = ('query PlaybackAccessToken_Template($login: String!, $isLive: Boolean!, $vodID: ID!, $isVod: Boolean!, $playerType: String!) { streamPlaybackAccessToken(channelName: $login, params: { platform: "web", playerBackend: "mediaplayer", playerType: $playerType }) @include(if: $isLive) { value signature __typename } videoPlaybackAccessToken(id: $vodID, params: { platform: "web", playerBackend: "mediaplayer", playerType: $playerType }) @include(if: $isVod) { value signature __typename }}');
 
                 template = ({ operationName: 'PlaybackAccessToken_Template', query });
             } break;
 
             case 'chat.info': {
-                let variables = { login: channelName },
-                    extensions = { persistedQuery: "SHA-256", version: 1 };
+                const variables = { login: channelName }
+                    , extensions = { persistedQuery: 'SHA-256', version: 1 };
 
                 template = ({ operationName: 'StreamChat', variables, extensions });
             } break;
 
             case 'chat.user': {
-                let variables = {},
-                    extensions = { persistedQuery: "SHA-256", version: 1 };
+                const variables = {}
+                    , extensions = { persistedQuery: 'SHA-256', version: 1 };
 
                 template = ({ operationName: 'Chat_UserData', variables, extensions });
             } break;
 
             case 'video.ad': {
-                let variables = { login: channelName, ownsCollectionID: null, ownsVideoID: vodID },
-                    extensions = { persistedQuery: "SHA-256", version: 1 };
+                const variables = { login: channelName, ownsCollectionID: null, ownsVideoID: vodID }
+                    , extensions = { persistedQuery: 'SHA-256', version: 1 };
 
                 template = ({ operationName: 'VideoAdBanner', variables, extensions });
             } break;
 
             case 'video.info': {
-                let variables = { id: STREAMER.sole },
-                    extensions = { persistedQuery: "SHA-256", version: 1 };
+                const variables = { id: STREAMER.sole }
+                    , extensions = { persistedQuery: 'SHA-256', version: 1 };
 
                 template = ({ operationName: 'WithIsStreamLiveQuery', variables, extensions });
             } break;
@@ -159,7 +161,7 @@ class Search {
                 return fetchURL.fromDisk(`https://api.twitch.tv/helix/channels?broadcaster_id=${ ID }`, { headers: { "Authorization": Search.authorization, "Client-ID": Search.clientID }, hoursUntilEntryExpires: 168 })
                     .then(response => response.json())
                     .then(json => {
-                        let id = parseInt(json?.data?.shift?.()?.broadcaster_id);
+                        const id = parseInt(json?.data?.shift?.()?.broadcaster_id);
 
                         if(nullish(id))
                             throw `${ json.error }: ${ json.message }`;
@@ -191,8 +193,8 @@ class Search {
             } break;
 
             default: {
-                let languages = `bg cs da de el en es es-mx fi fr hu it ja ko nl no pl ro ru sk sv th tr vi zh-cn zh-tw x-default`.split(' ');
-                let name = channelName?.toLowerCase();
+                const languages = `bg cs da de el en es es-mx fi fr hu it ja ko nl no pl ro ru sk sv th tr vi zh-cn zh-tw x-default`.split(' ');
+                const name = channelName?.toLowerCase();
 
                 if(nullish(name) || type.unlike('channel'))
                     break;
@@ -204,8 +206,8 @@ class Search {
                     .then(response => response.text())
                     .then(html => (new DOMParser).parseFromString(html, 'text/html'))
                     .then(async doc => {
-                        let alt_languages = $.all('link[rel^="alt"i][hreflang]', doc).map(link => link.hreflang),
-                            data = $('head>script[type^="application"i][type$="json"i]', doc)?.textContent;
+                        let alt_languages = $.all('link[rel^="alt"i][hreflang]', doc).map(link => link.hreflang)
+                            , data = $('head>script[type^="application"i][type$="json"i]', doc)?.textContent;
 
                         try {
                             [data] = JSON.parse(data || `{"@graph":[]}`)['@graph'];
@@ -219,15 +221,15 @@ class Search {
                             }
                         }
 
-                        let display_name = (data?.name ?? `${ channelName } - Twitch`).split('-').slice(0, -1).join('-').trim(),
-                            [language] = languages.filter(lang => alt_languages.missing(lang)),
-                            name = display_name?.trim()?.toLowerCase(),
-                            profile_image = ($('meta[property$="image"i]', doc)?.content || Runtime.getURL('profile.png')),
-                            live = parseBool(data?.publication?.isLiveBroadcast),
-                            started_at = new Date(data?.publication?.startDate).toJSON(),
-                            status = (data?.description ?? $('meta[name$="description"i]', doc)?.content),
-                            updated_at = new Date(data?.publication?.endDate).toJSON(),
-                            broadcaster_id;
+                        let display_name = (data?.name ?? `${ channelName } - Twitch`).split('-').slice(0, -1).join('-').trim()
+                            , [language] = languages.filter(lang => alt_languages.missing(lang))
+                            , name = display_name?.trim()?.toLowerCase()
+                            , profile_image = ($('meta[property$="image"i]', doc)?.content || Runtime.getURL('profile.png'))
+                            , live = parseBool(data?.publication?.isLiveBroadcast)
+                            , started_at = new Date(data?.publication?.startDate).toJSON()
+                            , status = (data?.description ?? $('meta[name$="description"i]', doc)?.content)
+                            , updated_at = new Date(data?.publication?.endDate).toJSON()
+                            , broadcaster_id;
 
                         try {
                             broadcaster_id = parseInt(await fetchURL.fromDisk(`https://api.twitchinsights.net/v1/user/status/${ name }`, { hoursUntilEntryExpires: 744 }).then(r => r.json()).then(j => j.id)) | 0;
@@ -235,11 +237,11 @@ class Search {
                             // Do nothing...
                         }
 
-                        let json = { display_name, broadcaster_id, language, live, name, profile_image, started_at, status, updated_at, href: `https://www.twitch.tv/${ display_name }` };
+                        const json = { display_name, broadcaster_id, language, live, name, profile_image, started_at, status, updated_at, href: `https://www.twitch.tv/${ display_name }` };
 
                         Search.parseType = 'pure';
 
-                        let channelData = await Search.convertResults({ async json() { return json } });
+                        const channelData = await Search.convertResults({ async json() { return json } });
 
                         SEARCH_CACHE.set(display_name.toLowerCase(), channelData);
                         ALL_CHANNELS = [...ALL_CHANNELS, channelData].filter(defined).filter(uniqueChannels);
@@ -263,8 +265,9 @@ class Search {
                             },
 
                             async formData() {
-                                let form = new FormData;
-                                for(let key of Object.keys(json))
+                                const form = new FormData;
+
+                                for(const key of Object.keys(json))
                                     form.set(key, json[key]);
                                 return form;
                             },
@@ -279,8 +282,8 @@ class Search {
                 Search.#cache.set(searchID, searchResults);
 
                 return searchResults;
-            } break;
-        }
+            } break; // switch Search.parseType = as | default
+        } // switch Search.parseType = as
 
         let body, results;
         switch(type) {
@@ -324,10 +327,10 @@ class Search {
                 };
             } break;
 
-            default: throw `Unable to search for item of type "${ type }"`;
+            default: { throw `Unable to search for item of type "${ type }"` }
         }
 
-        let blob = new Blob([
+        const blob = new Blob([
             `data=${
                 encodeURIComponent(
                     btoa(
@@ -349,7 +352,7 @@ class Search {
             type: `application/x-www-form-urlencoded; charset=UTF-8`
         });
 
-        let request = new XMLHttpRequest;
+        const request = new XMLHttpRequest;
 
         request.open('POST', spadeEndpoint);
         request.send(blob);
@@ -360,8 +363,8 @@ class Search {
     }
 
     static void(ID = null, type = 'channel', as = null) {
-        let pathname = location.pathname.slice(1),
-            player = ({
+        const pathname = location.pathname.slice(1)
+            , player = ({
                 type: 'site',
                 routes: {
                     exact: ['activate', 'bits', 'bits-checkout', 'directory', 'following', 'luna', 'popout', 'prime', 'store', 'subs'],
@@ -370,21 +373,22 @@ class Search {
             });
 
         let vodID = null, channelName = null;
+
         if(nullish(ID) && /^auto(?:matic)?$/i.test(type)) {
             if(true
                 && player.routes.exact.missing(pathname)
                 && !player.routes.start.filter(route => pathname.startsWith(route)).length
                 && (
                     // Is a VOD
-                    pathname.startsWith('videos/')?
-                        (
+                    pathname.startsWith('videos/')
+                        ? (
                             vodID = pathname
                                 .replace('videos/', '')
                                 .replace(/\//g, '')
                                 .replace(/^v/, '')
-                        ):
+                        )
                     // Is a channel
-                    (
+                    : (
                         channelName = pathname.replace(/\//g, '')
                     )
                 )
@@ -408,7 +412,7 @@ class Search {
         if(type.equals('channel'))
             channelName = ID;
 
-        let searchID = UUID.from([ID, type, as, new Date((+new Date).floorToNearest(Search.cacheLeaseTime)).toJSON()].join('~')).value;
+        const searchID = UUID.from([ID, type, as, new Date((+new Date).floorToNearest(Search.cacheLeaseTime)).toJSON()].join('~')).value;
 
         SEARCH_CACHE.delete(ID?.toLowerCase());
 
@@ -420,7 +424,7 @@ class Search {
             return fetchURL('https://gql.twitch.tv/gql', query);
 
         return new Promise((onSuccess, onError) => {
-            let request = new XMLHttpRequest;
+            const request = new XMLHttpRequest;
 
             request.open('POST', `https://gql.twitch.tv/gql`);
 
@@ -456,8 +460,8 @@ class Search {
         let json = (null
                 ?? (await response?.json?.())
                 ?? ({})
-            ),
-            data = {};
+            )
+            , data = {};
 
         let ConversionKey = {
             banStatus:          'veto',
@@ -481,17 +485,17 @@ class Search {
 
             display_name:       'name',
             status:             'desc',
-            title:              'desc',
+            title:              "desc",
             live:               'live',
             href:               'href',
             profile_image:      'icon',
-        },
-        DataConversionKey = {
+        }
+        , DataConversionKey = {
             started_at:         'actualStartTime',
             updated_at:         'lastSeen',
             stream:             'broadcast',
-        },
-            deeper = [];
+        }
+            , deeper = [];
 
         switch(Search.parseType) {
             case 'advanced': {
@@ -542,12 +546,13 @@ class Search {
                     throw `Unable to parse results: ${ error }`;
                 }
             } break;
-        }
+        } // switch Search.parseType
 
         // Deeper levels
-        let deeperLevels = {};
-        for(let key in json) {
-            let to = ConversionKey[key];
+        const deeperLevels = {};
+
+        for(const key in json) {
+            const to = ConversionKey[key];
 
             if(to?.length)
                 data[to] = json[key];
@@ -555,8 +560,8 @@ class Search {
                 deeperLevels[to] = json[key];
         }
 
-        for(let key in deeperLevels) {
-            let to = ConversionKey[key];
+        for(const key in deeperLevels) {
+            const to = ConversionKey[key];
 
             if(to?.length)
                 data[to] = deeperLevels[key];
@@ -565,9 +570,10 @@ class Search {
         // Deeper data levels
         data.data ??= {};
 
-        let deeperDataLevels = {};
-        for(let key in json) {
-            let to = DataConversionKey[key];
+        const deeperDataLevels = {};
+
+        for(const key in json) {
+            const to = DataConversionKey[key];
 
             if(to?.length)
                 data.data[to] ??= json[key];
@@ -575,8 +581,8 @@ class Search {
                 deeperDataLevels[to] = json[key];
         }
 
-        for(let key in deeperDataLevels) {
-            let to = DataConversionKey[key];
+        for(const key in deeperDataLevels) {
+            const to = DataConversionKey[key];
 
             if(to?.length)
                 data.data[to] ??= deeperDataLevels[key];
@@ -589,7 +595,7 @@ class Search {
         return fetchURL.fromDisk(`https://api.twitchinsights.net/v1/user/status/${ username }`)
             .then(response => response.json())
             .then(json => {
-                let id = parseInt(json?.id);
+                const id = parseInt(json?.id);
 
                 if(nullish(id))
                     throw `[${ json.status }] An error occurred: ${ json.error }`;
@@ -603,7 +609,7 @@ class Search {
         return fetchURL.fromDisk(`https://api.twitchinsights.net/v1/user/status/${ userID }`)
             .then(response => response.json())
             .then(json => {
-                let name = json?.displayName;
+                const name = json?.displayName;
 
                 if(nullish(name))
                     throw `[${ json.status }] An error occurred: ${ json.error }`;
@@ -614,9 +620,9 @@ class Search {
     }
 
     static async getUserStatus(username = null) {
-        return fetchURL.idempotent(`https://static-cdn.jtvnw.net/previews-ttv/live_user_${ username.toLowerCase() }-80x45.jpg`, { as: 'native', hoursUntilEntryExpires: 1/12, keepDefectiveEntry: true })
+        return fetchURL.idempotent(`https://static-cdn.jtvnw.net/previews-ttv/live_user_${ username.toLowerCase() }-80x45.jpg`, { as: 'native', hoursUntilEntryExpires: 1 / 12, keepDefectiveEntry: true })
             .then(response => {
-                let { pathname, filename } = parseURL(response.url);
+                const { pathname, filename } = parseURL(response.url);
 
                 return !(/\/404_/.test(pathname) || !/\/previews-ttv\//i.test(pathname));
             });

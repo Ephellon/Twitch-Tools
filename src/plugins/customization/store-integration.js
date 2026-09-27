@@ -10,13 +10,13 @@ plugin({
     timer: 5_000,
 
     handler: () => {
-        let existing = $('#game-overview-card');
+        const existing = $('#game-overview-card');
 
         if(existing?.dataset?.game?.equals(STREAMER.game))
             return;
         existing?.remove();
 
-        let { href = '', origin, protocol, scheme, host, hostname, domainPath = [], port, pathname, search, hash } = parseURL(STREAMER.game.href);
+        const { href = '', origin, protocol, scheme, host, hostname, domainPath = [], port, pathname, search, hash } = parseURL(STREAMER.game.href);
 
         if(false
             || (href.trim().length < 4)
@@ -24,10 +24,10 @@ plugin({
         )
             return;
 
-        let timerStart = +new Date;
+        const timerStart = +new Date;
 
-        let MATURE_HINTS = ['ADULT', 'MATUR', 'NSFW', ...16..to(99)],
-            RATING_STYLING = `max-height:10rem; max-width:6rem; position:absolute; left:50%; bottom:-9rem; transform:translate(-50%);`;
+        const MATURE_HINTS = ['ADULT', 'MATUR', 'NSFW', ...16..to(99)]
+            , RATING_STYLING = `max-height:10rem; max-width:6rem; position:absolute; left:50%; bottom:-9rem; transform:translate(-50%);`;
 
         /*await*/ fetchURL.fromDisk(href, { hoursUntilEntryExpires: 8, keepDefectiveEntry: true })
             .then(response => response.text())
@@ -38,13 +38,13 @@ plugin({
                 if(!(DOM instanceof Document))
                     throw TypeError(`No DOM available. Page not loaded`);
 
-                let f = furnish;
-                let get = property => DOM.get(property);
+                const f = furnish;
+                const get = property => DOM.get(property);
 
-                let [title, description, image] = ["title", "description", "image"].map(get),
-                    error = DOM.querySelector('parsererror')?.textContent;
+                let [title, description, image] = ['title', 'description', 'image'].map(get)
+                    , error = DOM.querySelector('parsererror')?.textContent;
 
-                let ok = $.defined('meta[property="og:image"i]');
+                const ok = $.defined('meta[property="og:image"i]');
 
                 if(!ok)
                     throw `No metadata available for "${ STREAMER.game }"`;
@@ -60,7 +60,7 @@ plugin({
 
                 title = title.replace(/[\s\-]*twitch\s*$/i, '').replace(/^\s*$/, STREAMER.game);
 
-                let card = f('.tt-iframe-card.tt-border-radius-medium.tt-elevation-1').with(
+                const card = f('.tt-iframe-card.tt-border-radius-medium.tt-elevation-1').with(
                     f('.tt-border-radius-medium.tt-c-background-base.tt-flex.tt-full-width').with(
                         f('.tt-block.tt-border-radius-medium.tt-full-width.tt-interactable', { style: 'color:inherit; text-decoration:none; min-height:12rem; height:fit-content' },
                             f('.chat-card.tt-flex.tt-flex-nowrap.tt-pd-05', {
@@ -109,7 +109,7 @@ plugin({
                     )
                 );
 
-                let container = f(`#game-overview-card[@game="${ STREAMER.game }"]`, {
+                const container = f(`#game-overview-card[@game="${ STREAMER.game }"]`, {
                     style: `animation:1s fade-in 1; max-width:fit-content; overflow:visible; overflow-wrap:normal; margin-bottom:3rem`
                 },
                     f('.tt-relative').with(
@@ -130,11 +130,11 @@ plugin({
 
             if(parseBool(Settings.simplify_look_auto_marquee))
                 setInterval(() => {
-                    for(let auto of $.all('.tt-auto-marquee')) {
-                        let { textOverflowX = false } = getOffset(auto);
+                    for(const auto of $.all('.tt-auto-marquee')) {
+                        const { textOverflowX = false } = getOffset(auto);
 
                         if(textOverflowX) {
-                            let html = auto.innerHTML;
+                            const html = auto.innerHTML;
 
                             auto.innerHTML = furnish(`marquee[behavior=alternate][scrollamount=2]`).html(html).outerHTML;
                             auto.classList.remove('tt-auto-marquee');
@@ -157,20 +157,20 @@ plugin({
             if(nullish(Settings.store_integration) || parseBool(Settings.store_integration)) {
                 // Get the Country code and Language code
                 // e.g. "en-US"
-                let lang = navigator.language,
-                    [langCode, counCode = ''] = lang.split('-'),
-                    [langName] = (ISO_639_1[langCode]?.names || [navigator.language]),
-                    game = STREAMER.game,
-                    gameURI = encodeURIComponent(game);
+                const lang = navigator.language
+                    , [langCode, counCode = ''] = lang.split('-')
+                    , [langName] = (ISO_639_1[langCode]?.names || [navigator.language])
+                    , game = STREAMER.game
+                    , gameURI = encodeURIComponent(game);
 
-                let timeout = 15_000;
+                const timeout = 15_000;
 
                 // Removes quotations and apostrophes
-                let LE_QUOTES = /[\u2033\u2036\u275d\u275e]/gu,
-                    LE_APOSTE = /[\u0312-\u0315\u031b\u2032\u2035\u275b\u275c\u2019\u201a]/gu;
+                const LE_QUOTES = /[\u2033\u2036\u275d\u275e]/gu
+                    , LE_APOSTE = /[\u0312-\u0315\u031b\u2032\u2035\u275b\u275c\u2019\u201a]/gu;
 
                 // Removes symbols like ™ ® © etc.
-                let NON_ASCII = /[^\p{L}\d `\-=~!@#\$%^&\*\(\)\+\{\}\|\[\]\\:;"'<>\?,\.\/]/gu;
+                const NON_ASCII = /[^\p{L}\d `\-=~!@#\$%^&\*\(\)\+\{\}\|\[\]\\:;"'<>\?,\.\/]/gu;
 
                 // The item can not be found
                 const ITEM_NOT_FOUND = Symbol('NOT_FOUND');
@@ -179,22 +179,22 @@ plugin({
                 const PARTIAL_MATCH_THRESHOLD = .015;
 
                 // Remove trademarks to better match games
-                let PlayStationRegExp = /\bPS\s*(\d|one|p(ortable)?|v(ita)?|(plus|\+)|move|vr(\s*\d)?).*$/i,
+                const PlayStationRegExp = /\bPS\s*(\d|one|p(ortable)?|v(ita)?|(plus|\+)|move|vr(\s*\d)?).*$/i
                     // Removes common trademarks → PS one,PS1,PS2,PS3,PS4,PS5,PSP,PS Portable,PSV,PSVita,PS Plus,PS+,PS Move,PS VR,PS VR2
 
-                    XboxRegExp = /\bXbox\s*(\d+|live|one\s*(series\s*)?([x\|s]+\s*)?(enhanced)?)?.*$/i,
+                    , XboxRegExp = /\bXbox\s*(\d+|live|one\s*(series\s*)?([x\|s]+\s*)?(enhanced)?)?.*$/i
                     // Removes common trademarks → Xbox,Xbox 360,Xbox Live,Xbox One,Xbox One X|S,Xbox One X,Xbox One X Enhanced,Xbox One S,Xbox One Series X|S,Xbox One Series X,Xbox One Series X Enhanced,Xbox One Series S
 
-                    NintendoRegExp = /\bNintendo\s*(64|[23]?DS\s*(i|XL)?|Switch|Game[\s-]?(Boy(\s*Advance)?|Cube)|Wii([\s-]?U)?)/i,
+                    , NintendoRegExp = /\bNintendo\s*(64|[23]?DS\s*(i|XL)?|Switch|Game[\s-]?(Boy(\s*Advance)?|Cube)|Wii([\s-]?U)?)/i
                     // Removes common trademarks → Nintendo Switch,Nintendo 3DS,Nintendo 2DS,Nintendo 64,Nintendo DSi,Nintendo DS,Nintendo GameBoy,Nintendo GameBoy Advance,Nintendo Wii,Nintendo Wii U
 
-                    SteamRegExp = /(Valve\s+)?\bSteam\s+(Deck(\s+O?LED)?)/i,
+                    , SteamRegExp = /(Valve\s+)?\bSteam\s+(Deck(\s+O?LED)?)/i
                     // Removes common trademarks → Steam
 
-                    EpicRegExp = /(?:Epic\s+Games)/i,
+                    , EpicRegExp = /(?:Epic\s+Games)/i
                     // Removes common trademarks → Epic
 
-                    EditionsRegExp = /\s*(([-~:]\s*)?([\p{L}\s'-]){3,}\s*)(Edition|Season|Episode)s?(\s+[:\-\dIVXLCD]+)?[^$]+/iu;
+                    , EditionsRegExp = /\s*(([-~:]\s*)?([\p{L}\s'-]){3,}\s*)(Edition|Season|Episode)s?(\s+[:\-\dIVXLCD]+)?[^$]+/iu;
                     // Removes common "editions" → Standard,Digital,Deluxe,Digital Deluxe,Definitive,Anniversary,Complete,Extended,Ultiamte,Collector's,Bronze,Silver,Gold,Platinum,Enhanced,Premium,Complete Season,etc.
 
                 function normalize(string, ...conditions) {
@@ -204,7 +204,7 @@ plugin({
                         [NON_ASCII, ''],
                     ].concat(conditions);
 
-                    for(let [expression, replacement] of conditions)
+                    for(const [expression, replacement] of conditions)
                         string = string?.replace(expression, replacement);
 
                     return string?.replace(/[\u2010-\u2015]/g, '-')?.replace(EditionsRegExp, '') ?? '';
@@ -225,7 +225,7 @@ plugin({
                         return fetchURL.fromDisk(`https://raw.githubusercontent.com/Ephellon/game-store-catalog/main/steam/${ (game[0].toLowerCase().replace(/[^a-z]/, '_')) }.json`, { hoursUntilEntryExpires: 168 })
                             .then(r => r.json())
                             .then(data => {
-                                let [best, ...othr] = data.sort((prev, next) =>
+                                const [best, ...othr] = data.sort((prev, next) =>
                                     normalize(prev.name, [SteamRegExp, ''])
                                         .errs(game)
                                     - normalize(next.name, [SteamRegExp, ''])
@@ -255,7 +255,8 @@ plugin({
                                         .equals(game)
                                     || normalize(best.name, [SteamRegExp, ''])
                                         .errs(game) < PARTIAL_MATCH_THRESHOLD
-                                ) return ({
+                                )
+                                    return ({
                                     game,
                                     good: (
                                         normalize(best.name, [SteamRegExp, ''])
@@ -276,12 +277,12 @@ plugin({
                                         .then(r => r.text())
                                         .then(html => (new DOMParser).parseFromString(html, 'text/html'))
                                         .then(DOM => {
-                                            for(let item of $.all('[data-ds-appid]', DOM)) {
-                                                let href = item.href || `//store.steampowered.com/app/${ item.uuid }`,
-                                                    name = normalize($('[class*="name"i]', item)?.textContent)?.normalize('NFKD'),
-                                                    img = $('[class*="img"i] img', item)?.src,
-                                                    price = $('[class*="price"i], [class*="subtitle"i]', item)?.textContent || 'More...',
-                                                    good = game.errs(name, true) < PARTIAL_MATCH_THRESHOLD;
+                                            for(const item of $.all('[data-ds-appid]', DOM)) {
+                                                const href = item.href || `//store.steampowered.com/app/${ item.uuid }`
+                                                    , name = normalize($('[class*="name"i]', item)?.textContent)?.normalize('NFKD')
+                                                    , img = $('[class*="img"i] img', item)?.src
+                                                    , price = $('[class*="price"i], [class*="subtitle"i]', item)?.textContent || 'More...'
+                                                    , good = game.errs(name, true) < PARTIAL_MATCH_THRESHOLD;
 
                                                 if(good)
                                                     return { game, name, href, img, price, good };
@@ -300,19 +301,19 @@ plugin({
 
                         suff = suff.replace(/s$/, '');
 
-                        let jbpp = `The ${ main } ${ suff } ${ vers }`.trim();
+                        const jbpp = `The ${ main } ${ suff } ${ vers }`.trim();
 
                         // Make multiples' links
                         fetchSteamGame(jbpp)
                             .then((info = {}) => {
-                                let { game, name, href, img, price, good = false } = info;
+                                const { game, name, href, img, price, good = false } = info;
 
                                 if(!href?.length)
                                     return;
 
-                                let f = furnish;
+                                const f = furnish;
 
-                                let purchase =
+                                const purchase =
                                     f(`.tt-store-purchase--container.is-steam[name="${ name }"][@goodMatch=${ good }]`).with(
                                         // Price
                                         f('.tt-store-purchase--price').with(price),
@@ -341,7 +342,7 @@ plugin({
                                                     // Too much text...
                                                     // || $('[id*="age"i][id*="gate"i], [id*="content"i][id*="desc"i]', DOM)?.textContent
                                                     || $.defined('[id*="error"i], [id*="mature"i], [id*="age"i][id*="gate"i], [id*="content"i][id*="desc"i]', DOM)
-                                                )
+                                                );
                                             })
                                             .catch(error => {
                                                 $warn(`Unable to fetch Steam pricing information for "${ jbpp }"`, error);
@@ -354,16 +355,16 @@ plugin({
                                             .then(DOMParser.stripBody)
                                             .then(html => (new DOMParser).parseFromString(html, 'text/html'))
                                             .then(DOM => {
-                                                let description = (null
+                                                const description = (null
                                                     ?? $('[id][class*="description"i]', DOM)?.textContent
                                                     ?? $('meta[name="description"i]', DOM)?.content
                                                 );
 
                                                 // Load an actual game description
-                                                let gameDesc = $('[data-twitch-provided-description]');
+                                                const gameDesc = $('[data-twitch-provided-description]');
 
                                                 if(defined(gameDesc) && good) {
-                                                    $('[data-test-selector="chat-card-title"]').innerHTML += ' &mdash; Steam&reg;';
+                                                    $('[data-test-selector="chat-card-title"]').innerHTML += " &mdash; Steam&reg;";
 
                                                     gameDesc.innerText = description || gameDesc.innerText;
                                                     gameDesc.removeAttribute('data-twitch-provided-description');
@@ -377,11 +378,11 @@ plugin({
                                                     if(nullish(data?.specificPrices))
                                                         return;
 
-                                                    let mature = data.contentRating?.rating || '',
-                                                        price = data.specificPrices?.purchaseable?.shift?.()?.listPrice;
+                                                    const mature = data.contentRating?.rating || ''
+                                                        , price = data.specificPrices?.purchaseable?.shift?.()?.listPrice;
 
                                                     $('.tt-store-purchase--container.is-steam').dataset.matureContent = mature;
-                                                    $('.is-steam .tt-store-purchase--price').textContent = /^\p{Sc}?(\d+(?:[\.,]\d+)?|\w+)$/u.test(price ?? '')? price: info.price;
+                                                    $('.is-steam .tt-store-purchase--price').textContent = /^\p{Sc}?(\d+(?:[\.,]\d+)?|\w+)$/u.test(price ?? '') ? price : info.price;
                                                 }
                                             });
 
@@ -394,14 +395,14 @@ plugin({
                     } else {
                         fetchSteamGame(game)
                             .then((info = {}) => {
-                                let { game, name, href, img, price, good = false } = info;
+                                const { game, name, href, img, price, good = false } = info;
 
                                 if(!href?.length)
                                     return;
 
-                                let f = furnish;
+                                const f = furnish;
 
-                                let purchase =
+                                const purchase =
                                     f(`.tt-store-purchase--container.is-steam[name="${ name }"][@goodMatch=${ good }]`).with(
                                         // Price
                                         f('.tt-store-purchase--price').with(price),
@@ -430,7 +431,7 @@ plugin({
                                                     // Too much text...
                                                     // || $('[id*="age"i][id*="gate"i], [id*="content"i][id*="desc"i]', DOM)?.textContent
                                                     || $.defined('[id*="error"i], [id*="mature"i], [id*="age"i][id*="gate"i], [id*="content"i][id*="desc"i]', DOM)
-                                                )
+                                                );
                                             })
                                             .catch(error => {
                                                 $warn(`Unable to fetch Steam pricing information for "${ game }"`, error);
@@ -443,9 +444,9 @@ plugin({
                             })
                             .catch(error => {
                                 $warn(`Unable to connect to Steam. Tried to look for "${ game }"`, error);
-                            });
+                            })
                         }
-                }
+                } // :Steam
 
                 /*** Get the PlayStation link (if applicable)
                  *      _____  _              _____ _        _   _
@@ -462,7 +463,7 @@ plugin({
                         return fetchURL.fromDisk(`https://raw.githubusercontent.com/Ephellon/game-store-catalog/main/psn/${ (game[0].toLowerCase().replace(/[^a-z]/, '_')) }.json`, { hoursUntilEntryExpires: 168 })
                             .then(r => r.json())
                             .then(data => {
-                                let [best, ...othr] = data.sort((prev, next) =>
+                                const [best, ...othr] = data.sort((prev, next) =>
                                     normalize(prev.name, [PlayStationRegExp, ''])
                                         .errs(game)
                                     - normalize(next.name, [PlayStationRegExp, ''])
@@ -492,7 +493,8 @@ plugin({
                                         .equals(game)
                                     || normalize(best.name, [PlayStationRegExp, ''])
                                         .errs(game) < PARTIAL_MATCH_THRESHOLD
-                                ) return ({
+                                )
+                                    return ({
                                     game,
                                     good: (
                                         normalize(best.name, [PlayStationRegExp, ''])
@@ -515,7 +517,7 @@ plugin({
                                         .then(async DOM => {
                                             let items = [];
 
-                                            for(let element of $.all('#main li > [data-qa^="search"i]', DOM))
+                                            for(const element of $.all('#main li > [data-qa^="search"i]', DOM))
                                                 items.push({
                                                     id: $('[href]', element)?.href?.slice(1).split('/').pop(),
                                                     name: $('[data-qa*="product-name"i]', element)?.textContent,
@@ -541,7 +543,7 @@ plugin({
                                                         .distanceFrom(game.toLowerCase())
                                                 );
 
-                                            for(let item of items)
+                                            for(const item of items)
                                                 if(true
                                                     && item.platforms?.length
                                                     && (false
@@ -555,7 +557,7 @@ plugin({
                                                     return ({
                                                         game,
                                                         good: (
-                                                            normalize(item.name , [PlayStationRegExp, ''])
+                                                            normalize(item.name, [PlayStationRegExp, ''])
                                                                 ?.errs(game, true) < PARTIAL_MATCH_THRESHOLD
                                                         ) || 0,
                                                         name: item.name,
@@ -577,19 +579,19 @@ plugin({
 
                         suff = suff.replace(/s$/, '');
 
-                        let jbpp = `The ${ main } ${ suff } ${ vers }`.trim();
+                        const jbpp = `The ${ main } ${ suff } ${ vers }`.trim();
 
                         // Make multiples' links
                         fetchPlayStationGame(jbpp)
                             .then((info = {}) => {
-                                let { game, name, href, img, price, good = false } = info;
+                                const { game, name, href, img, price, good = false } = info;
 
                                 if(!href?.length)
                                     return;
 
-                                let f = furnish;
+                                const f = furnish;
 
-                                let purchase =
+                                const purchase =
                                     f(`.tt-store-purchase--container.is-playstation[name="${ name }"][@goodMatch=${ good }]`).with(
                                         // Price
                                         f('.tt-store-purchase--price').with(price),
@@ -609,14 +611,14 @@ plugin({
                                             .then(r => r.text())
                                             .then(html => (new DOMParser).parseFromString(html, 'text/html'))
                                             .then(DOM => {
-                                                let data = $('[class*="content"i][class*="rating"i] script[type*="json"i]', DOM)?.textContent,
-                                                    description = $('[data-qa*="overview"i][data-qa*="description"i]', DOM)?.innerHTML;
+                                                let data = $('[class*="content"i][class*="rating"i] script[type*="json"i]', DOM)?.textContent
+                                                    , description = $('[data-qa*="overview"i][data-qa*="description"i]', DOM)?.innerHTML;
 
                                                 // Load an actual game description
-                                                let gameDesc = $('[data-twitch-provided-description]');
+                                                const gameDesc = $('[data-twitch-provided-description]');
 
                                                 if(defined(gameDesc) && good) {
-                                                    $('[data-test-selector="chat-card-title"]').innerHTML += ' &mdash; PlayStation&reg;';
+                                                    $('[data-test-selector="chat-card-title"]').innerHTML += " &mdash; PlayStation&reg;";
 
                                                     gameDesc.innerHTML = description?.replace(/([\.!\?])\s*([^\.!\?]+(?:\.{3}|…))\s*$/, '$1') || gameDesc.innerHTML;
                                                     gameDesc.removeAttribute('data-twitch-provided-description');
@@ -627,9 +629,9 @@ plugin({
 
                                                 data = JSON.parse(data);
 
-                                                finder: for(let key in data.cache)
+                                                finder: for(const key in data.cache)
                                                     if(/^product/i.test(key)) {
-                                                        let { authority, description, name, url } = data.cache[key].contentRating;
+                                                        const { authority, description, name, url } = data.cache[key].contentRating;
 
                                                         $('.tt-store-purchase--container.is-playstation').dataset.matureContent = description?.replace(authority, '')?.trim() || parseBool(name?.contains(...MATURE_HINTS));
                                                         $('#tt-content-rating-placeholder')?.replaceWith(f.img({ alt: description, src: url, style: RATING_STYLING }));
@@ -659,15 +661,15 @@ plugin({
 
                                 // Correct game image...
                                 if($.defined('.game-card-img[ok="false"i]')) {
-                                    let i = new Image;
-                                    i.crossOrigin = "anonymous";
+                                    const i = new Image;
+                                    i.crossOrigin = 'anonymous';
                                     i.addEventListener('load', event => {
-                                        let I = $('.game-card-img[ok="false"i]');
+                                        const I = $('.game-card-img[ok="false"i]');
 
                                         if(nullish(I))
                                             return;
 
-                                        for(let { name, value } of I.attributes)
+                                        for(const { name, value } of I.attributes)
                                             if(['src', 'ok'].missing(name))
                                                 i.setAttribute(name, value);
                                         I.replaceWith(i);
@@ -679,9 +681,9 @@ plugin({
                                     i.src = img;
                                 }
 
-                                let f = furnish;
+                                const f = furnish;
 
-                                let purchase =
+                                const purchase =
                                     f(`.tt-store-purchase--container.is-playstation[name="${ name }"][@goodMatch=${ good }]`).with(
                                         // Price
                                         f('.tt-store-purchase--price').with(price),
@@ -703,14 +705,14 @@ plugin({
                                             .then(r => r.text())
                                             .then(html => (new DOMParser).parseFromString(html, 'text/html'))
                                             .then(DOM => {
-                                                let data = $('[class*="content"i][class*="rating"i] script[type*="json"i]', DOM)?.textContent,
-                                                    description = $('[data-qa*="overview"i][data-qa*="description"i]', DOM)?.innerHTML;
+                                                let data = $('[class*="content"i][class*="rating"i] script[type*="json"i]', DOM)?.textContent
+                                                    , description = $('[data-qa*="overview"i][data-qa*="description"i]', DOM)?.innerHTML;
 
                                                 // Load an actual game description
-                                                let gameDesc = $('[data-twitch-provided-description]');
+                                                const gameDesc = $('[data-twitch-provided-description]');
 
                                                 if(defined(gameDesc) && good) {
-                                                    $('[data-test-selector="chat-card-title"]').innerHTML += ' &mdash; PlayStation&reg;';
+                                                    $('[data-test-selector="chat-card-title"]').innerHTML += " &mdash; PlayStation&reg;";
 
                                                     gameDesc.innerHTML = description || gameDesc.innerHTML;
                                                     gameDesc.removeAttribute('data-twitch-provided-description');
@@ -722,9 +724,9 @@ plugin({
 
                                                 data = JSON.parse(data);
 
-                                                finder: for(let key in data.cache)
+                                                finder: for(const key in data.cache)
                                                     if(/^product/i.test(key)) {
-                                                        let { authority, description, name, url } = data.cache[key].contentRating;
+                                                        const { authority, description, name, url } = data.cache[key].contentRating;
 
                                                         $('.tt-store-purchase--container.is-playstation').dataset.matureContent = description?.replace(authority, '')?.trim() || parseBool(name?.contains(...MATURE_HINTS));
                                                         $('#tt-content-rating-placeholder')?.replaceWith(f.img({ alt: description, src: url, style: RATING_STYLING }));
@@ -743,9 +745,9 @@ plugin({
                             })
                             .catch(error => {
                                 $warn(`Unable to connect to PlayStation. Tried to look for "${ game }"`, error);
-                            });
+                            })
                         }
-                }
+                } // :PlayStation
 
                 /*** Get the Xbox link (if applicable)
                  *     __   ___
@@ -762,7 +764,7 @@ plugin({
                         return fetchURL.fromDisk(`https://raw.githubusercontent.com/Ephellon/game-store-catalog/main/xbox/${ (game[0].toLowerCase().replace(/[^a-z]/, '_')) }.json`, { hoursUntilEntryExpires: 168 })
                             .then(r => r.json())
                             .then(data => {
-                                let [best, ...othr] = data.sort((prev, next) =>
+                                const [best, ...othr] = data.sort((prev, next) =>
                                     normalize(prev.name, [XboxRegExp, ''])
                                         .errs(game)
                                     - normalize(next.name, [XboxRegExp, ''])
@@ -792,7 +794,8 @@ plugin({
                                         .equals(game)
                                     || normalize(best.name, [XboxRegExp, ''])
                                         .errs(game) < PARTIAL_MATCH_THRESHOLD
-                                ) return ({
+                                )
+                                    return ({
                                     game,
                                     good: (
                                         normalize(best.name, [XboxRegExp, ''])
@@ -812,7 +815,7 @@ plugin({
                                     return /*await*/ fetchURL.fromDisk(`https://www.microsoft.com/msstoreapiprod/api/autosuggest?market=${ lang }&sources=DCatAll-Products&filter=%2BClientType%3AStoreWeb&query=${ gameURI }`, { hoursUntilEntryExpires: 168 })
                                         .then(r => r.json())
                                         .then(json => {
-                                            let info = json
+                                            const info = json
                                                 ?.ResultSets
                                                 ?.shift()
                                                 ?.Suggests
@@ -821,11 +824,11 @@ plugin({
                                             if(nullish(info))
                                                 return {};
 
-                                            let name = normalize(info.Title).normalize('NFKD'),
-                                                href = info.Url,
-                                                img = info.ImageUrl,
-                                                price = 'More...',
-                                                errs = parseBool(info.Title?.errs(game) < PARTIAL_MATCH_THRESHOLD);
+                                            const name = normalize(info.Title).normalize('NFKD')
+                                                , href = info.Url
+                                                , img = info.ImageUrl
+                                                , price = 'More...'
+                                                , errs = parseBool(info.Title?.errs(game) < PARTIAL_MATCH_THRESHOLD);
 
                                             return { game, name, href, img, price, errs };
                                         });
@@ -840,19 +843,19 @@ plugin({
 
                         suff = suff.replace(/s$/, '');
 
-                        let jbpp = `The ${ main } ${ suff } ${ vers }`.trim();
+                        const jbpp = `The ${ main } ${ suff } ${ vers }`.trim();
 
                         // Make multiples' links
                         fetchXboxGame(jbpp)
                             .then((info = {}) => {
-                                let { game, name, href, img, price, good = false } = info;
+                                const { game, name, href, img, price, good = false } = info;
 
                                 if(!href?.length)
                                     return;
 
-                                let f = furnish;
+                                const f = furnish;
 
-                                let purchase =
+                                const purchase =
                                     f(`.tt-store-purchase--container.is-xbox[name="${ name }"][@goodMatch=${ good }]`).with(
                                         // Price
                                         f('.tt-store-purchase--price').with(price),
@@ -872,7 +875,7 @@ plugin({
                                             .then(r => r.text())
                                             .then(html => (new DOMParser).parseFromString(html, 'text/html'))
                                             .then(DOM => {
-                                                let price = (null
+                                                const price = (null
                                                     ?? $('[itemprop="price"i]', DOM)?.content
                                                     ?? (null
                                                         ?? $('[class^="price-mod"i][class*="discount"i]', DOM)
@@ -881,12 +884,12 @@ plugin({
                                                         ?? $('[class$="price-text"i] *', DOM)
                                                     )?.textContent?.trim()
                                                 );
-                                                let rating = $('[class*="age"i][class*="rating"i] img', DOM),
-                                                    mature = parseBool(rating?.alt?.toUpperCase()?.contains(...MATURE_HINTS));
+                                                const rating = $('[class*="age"i][class*="rating"i] img', DOM)
+                                                    , mature = parseBool(rating?.alt?.toUpperCase()?.contains(...MATURE_HINTS));
 
                                                 rating.modStyle(RATING_STYLING);
 
-                                                $('.is-xbox .tt-store-purchase--price').textContent = /^\p{Sc}?(\d+(?:[\.,]\d+)?|\w+)$/u.test(price ?? '')? price: info.price;
+                                                $('.is-xbox .tt-store-purchase--price').textContent = /^\p{Sc}?(\d+(?:[\.,]\d+)?|\w+)$/u.test(price ?? '') ? price : info.price;
                                                 $('.tt-store-purchase--container.is-xbox').dataset.matureContent = (rating.alt || mature);
 
                                                 if(rating)
@@ -903,16 +906,16 @@ plugin({
                                             .then(DOMParser.stripBody)
                                             .then(html => (new DOMParser).parseFromString(html, 'text/html'))
                                             .then(DOM => {
-                                                let description = (null
+                                                const description = (null
                                                     ?? $('[id][class*="description"i]', DOM)?.textContent
                                                     ?? $('meta[name="description"i]', DOM)?.content
                                                 );
 
                                                 // Load an actual game description
-                                                let gameDesc = $('[data-twitch-provided-description]');
+                                                const gameDesc = $('[data-twitch-provided-description]');
 
                                                 if(defined(gameDesc) && good) {
-                                                    $('[data-test-selector="chat-card-title"]').innerHTML += ' &mdash; Xbox&reg;';
+                                                    $('[data-test-selector="chat-card-title"]').innerHTML += " &mdash; Xbox&reg;";
 
                                                     gameDesc.innerText = description || gameDesc.innerText;
                                                     gameDesc.removeAttribute('data-twitch-provided-description');
@@ -928,11 +931,11 @@ plugin({
                                                     if(nullish(data?.specificPrices))
                                                         return;
 
-                                                    let mature = data.contentRating?.rating || '',
-                                                        price = data.specificPrices?.purchaseable?.shift?.()?.listPrice;
+                                                    const mature = data.contentRating?.rating || ''
+                                                        , price = data.specificPrices?.purchaseable?.shift?.()?.listPrice;
 
                                                     $('.tt-store-purchase--container.is-xbox').dataset.matureContent = mature;
-                                                    $('.is-xbox .tt-store-purchase--price').textContent = /^\p{Sc}?(\d+(?:[\.,]\d+)?|\w+)$/u.test(price ?? '')? price: info.price;
+                                                    $('.is-xbox .tt-store-purchase--price').textContent = /^\p{Sc}?(\d+(?:[\.,]\d+)?|\w+)$/u.test(price ?? '') ? price : info.price;
                                                 }
                                             });
 
@@ -945,22 +948,22 @@ plugin({
                     } else {
                         fetchXboxGame(game)
                             .then((info = {}) => {
-                                let { game, name, href, img, price, good = false } = info;
+                                const { game, name, href, img, price, good = false } = info;
 
                                 if(!href?.length)
                                     return;
 
                                 // Correct game image...
                                 if($.defined('.game-card-img[ok="false"i]')) {
-                                    let i = new Image;
-                                    i.crossOrigin = "anonymous";
+                                    const i = new Image;
+                                    i.crossOrigin = 'anonymous';
                                     i.addEventListener('load', event => {
-                                        let I = $('.game-card-img[ok="false"i]');
+                                        const I = $('.game-card-img[ok="false"i]');
 
                                         if(nullish(I))
                                             return;
 
-                                        for(let { name, value } of I.attributes)
+                                        for(const { name, value } of I.attributes)
                                             if(['src', 'ok'].missing(name))
                                                 i.setAttribute(name, value);
                                         I.replaceWith(i);
@@ -972,9 +975,9 @@ plugin({
                                     i.src = img;
                                 }
 
-                                let f = furnish;
+                                const f = furnish;
 
-                                let purchase =
+                                const purchase =
                                     f(`.tt-store-purchase--container.is-xbox[name="${ name }"][@goodMatch=${ good }]`).with(
                                         // Price
                                         f('.tt-store-purchase--price').with(price),
@@ -994,7 +997,7 @@ plugin({
                                             .then(r => r.text())
                                             .then(html => (new DOMParser).parseFromString(html, 'text/html'))
                                             .then(DOM => {
-                                                let price = (null
+                                                const price = (null
                                                     ?? $('[itemprop="price"i]', DOM)?.content
                                                     ?? (null
                                                         ?? $('[class^="price-mod"i][class*="discount"i]', DOM)
@@ -1003,12 +1006,12 @@ plugin({
                                                         ?? $('[class$="price-text"i] *', DOM)
                                                     )?.textContent?.trim()
                                                 );
-                                                let rating = $('[class*="age"i][class*="rating"i] img', DOM),
-                                                    mature = parseBool(rating?.alt?.toUpperCase()?.contains(...MATURE_HINTS));
+                                                const rating = $('[class*="age"i][class*="rating"i] img', DOM)
+                                                    , mature = parseBool(rating?.alt?.toUpperCase()?.contains(...MATURE_HINTS));
 
                                                 rating?.modStyle(RATING_STYLING);
 
-                                                $('.is-xbox .tt-store-purchase--price').textContent = /^\p{Sc}?(\d+(?:[\.,]\d+)?|\w+)$/u.test(price ?? '')? price: info.price;
+                                                $('.is-xbox .tt-store-purchase--price').textContent = /^\p{Sc}?(\d+(?:[\.,]\d+)?|\w+)$/u.test(price ?? '') ? price : info.price;
                                                 $('.tt-store-purchase--container.is-xbox').dataset.matureContent = (rating?.alt || mature);
 
                                                 if(rating)
@@ -1025,16 +1028,16 @@ plugin({
                                             .then(DOMParser.stripBody)
                                             .then(html => (new DOMParser).parseFromString(html, 'text/html'))
                                             .then(DOM => {
-                                                let description = (null
+                                                const description = (null
                                                     ?? $('[id][class*="description"i]', DOM)?.textContent
                                                     ?? $('meta[name="description"i]', DOM)?.content
                                                 );
 
                                                 // Load an actual game description
-                                                let gameDesc = $('[data-twitch-provided-description]');
+                                                const gameDesc = $('[data-twitch-provided-description]');
 
                                                 if(defined(gameDesc) && good) {
-                                                    $('[data-test-selector="chat-card-title"]').innerHTML += ' &mdash; Xbox&reg;';
+                                                    $('[data-test-selector="chat-card-title"]').innerHTML += " &mdash; Xbox&reg;";
 
                                                     gameDesc.innerText = description || gameDesc.innerText;
                                                     gameDesc.removeAttribute('data-twitch-provided-description');
@@ -1092,11 +1095,11 @@ plugin({
                                                     if(nullish(data?.specificPrices))
                                                         return;
 
-                                                    let mature = data.contentRating?.rating || '',
-                                                        price = data.specificPrices?.purchaseable?.shift?.()?.listPrice;
+                                                    const mature = data.contentRating?.rating || ''
+                                                        , price = data.specificPrices?.purchaseable?.shift?.()?.listPrice;
 
                                                     $('.tt-store-purchase--container.is-xbox').dataset.matureContent = mature;
-                                                    $('.is-xbox .tt-store-purchase--price').textContent = /^\p{Sc}?(\d+(?:[\.,]\d+)?|\w+)$/u.test(price ?? '')? price: info.price;
+                                                    $('.is-xbox .tt-store-purchase--price').textContent = /^\p{Sc}?(\d+(?:[\.,]\d+)?|\w+)$/u.test(price ?? '') ? price : info.price;
                                                 }
                                             });
 
@@ -1107,9 +1110,9 @@ plugin({
                             })
                             .catch(error => {
                                 $warn(`Unable to connect to Xbox. Tried to look for "${ game }"`, error);
-                            });
+                            })
                         }
-                }
+                } // :Xbox
 
                 /*** Get the Nintendo link (if applicable)
                  *      _   _ _       _                 _
@@ -1126,7 +1129,7 @@ plugin({
                         return fetchURL.fromDisk(`https://raw.githubusercontent.com/Ephellon/game-store-catalog/main/nintendo/${ (game[0].toLowerCase().replace(/[^a-z]/, '_')) }.json`, { hoursUntilEntryExpires: 168 })
                             .then(r => r.json())
                             .then(data => {
-                                let [best, ...othr] = data.sort((prev, next) =>
+                                const [best, ...othr] = data.sort((prev, next) =>
                                     normalize(prev.name, [NintendoRegExp, ''])
                                         .errs(game)
                                     - normalize(next.name, [NintendoRegExp, ''])
@@ -1156,7 +1159,8 @@ plugin({
                                         .equals(game)
                                     || normalize(best.name, [NintendoRegExp, ''])
                                         .errs(game) < .07
-                                ) return ({
+                                )
+                                    return ({
                                     game,
                                     good: (
                                         normalize(best.name, [NintendoRegExp, ''])
@@ -1293,10 +1297,10 @@ plugin({
                         vers = vers.split('/').map(v => v.trim());
 
                         // Make multiple links...
-                        for(let ver of vers)
+                        for(const ver of vers)
                             fetchNintendoGame(main + ver)
                                 .then((info = {}) => {
-                                    let { game, name, href, img, price, rating = 'none', good = false } = info;
+                                    const { game, name, href, img, price, rating = 'none', good = false } = info;
 
                                     // img = `https://assets.nintendo.com/image/upload/ar_16:9,b_auto:border,c_lpad/b_white/f_auto/q_auto/dpr_1.0/c_scale,w_700/${ img }`;
 
@@ -1308,25 +1312,25 @@ plugin({
                                         .then(DOMParser.stripBody)
                                         .then(html => (new DOMParser).parseFromString(html, 'text/html'))
                                         .then(DOM => {
-                                            let description = (null
-                                                ?? JSON.parse($('script[id*="data"i][type$="json"i]', DOM)?.textContent ?? "{}").props?.pageProps?.meta?.description
+                                            const description = (null
+                                                ?? JSON.parse($('script[id*="data"i][type$="json"i]', DOM)?.textContent ?? '{}').props?.pageProps?.meta?.description
                                                 ?? $('meta[name="description"i]', DOM)?.content
                                             );
 
                                             // Load an actual game description
-                                            let gameDesc = $('[data-twitch-provided-description]');
+                                            const gameDesc = $('[data-twitch-provided-description]');
 
                                             if(defined(gameDesc) && good) {
-                                                $('[data-test-selector="chat-card-title"]').innerHTML += ' &mdash; Nintendo&reg;';
+                                                $('[data-test-selector="chat-card-title"]').innerHTML += " &mdash; Nintendo&reg;";
 
                                                 gameDesc.innerText = [description, gameDesc.innerText].sort((a, b) => b?.length - a?.length).shift().replace(/([\.!\?])\s*(?:\.{3}|…)\s*$/, '$1');
                                                 gameDesc.removeAttribute('data-twitch-provided-description');
                                             }
                                         });
 
-                                    let f = furnish;
+                                    const f = furnish;
 
-                                    let purchase =
+                                    const purchase =
                                         f(`.tt-store-purchase--container.is-nintendo[name="${ name }"][@versionName="${ main } ${ ver }"][@goodMatch=${ good }]`).with(
                                             // Price
                                             f('.tt-store-purchase--price').with(price),
@@ -1362,21 +1366,21 @@ plugin({
 
                         suff = suff.replace(/s$/, '');
 
-                        let jbpp = `The ${ main } ${ suff } ${ vers }`.trim();
+                        const jbpp = `The ${ main } ${ suff } ${ vers }`.trim();
 
                         // Make multiples' links
                         fetchNintendoGame(jbpp)
                             .then((info = {}) => {
-                                let { game, name, href, img, price, rating = 'none', good = false } = info;
+                                const { game, name, href, img, price, rating = 'none', good = false } = info;
 
                                 // img = `https://assets.nintendo.com/image/upload/ar_16:9,b_auto:border,c_lpad/b_white/f_auto/q_auto/dpr_1.0/c_scale,w_700/${ img }`;
 
                                 if(!href?.length)
                                     return;
 
-                                let f = furnish;
+                                const f = furnish;
 
-                                let purchase =
+                                const purchase =
                                     f(`.tt-store-purchase--container.is-nintendo[@matureContent="${ rating.toUpperCase() }"][name="${ name }"][@goodMatch=${ good }]`).with(
                                         // Price
                                         f('.tt-store-purchase--price').with(price),
@@ -1398,7 +1402,7 @@ plugin({
                         // Just one version is available
                         fetchNintendoGame(game)
                             .then((info = {}) => {
-                                let { game, name, href, img, price, rating = 'none', good = false } = info;
+                                const { game, name, href, img, price, rating = 'none', good = false } = info;
 
                                 // img = `https://assets.nintendo.com/image/upload/ar_16:9,b_auto:border,c_lpad/b_white/f_auto/q_auto/dpr_1.0/c_scale,w_700/${ img }`;
 
@@ -1407,15 +1411,15 @@ plugin({
 
                                 // Correct game image...
                                 if($.defined('.game-card-img[ok="false"i]')) {
-                                    let i = new Image;
-                                    i.crossOrigin = "anonymous";
+                                    const i = new Image;
+                                    i.crossOrigin = 'anonymous';
                                     i.addEventListener('load', event => {
-                                        let I = $('.game-card-img[ok="false"i]');
+                                        const I = $('.game-card-img[ok="false"i]');
 
                                         if(nullish(I))
                                             return;
 
-                                        for(let { name, value } of I.attributes)
+                                        for(const { name, value } of I.attributes)
                                             if(['src', 'ok'].missing(name))
                                                 i.setAttribute(name, value);
                                         I.replaceWith(i);
@@ -1431,19 +1435,19 @@ plugin({
                                     .then(r => r.text())
                                     .then(html => (new DOMParser).parseFromString(html, 'text/html'))
                                     .then(DOM => {
-                                        let description = (null
-                                            ?? JSON.parse($('script[id*="data"i][type$="json"i]', DOM)?.textContent ?? "{}").props?.pageProps?.meta?.description
+                                        const description = (null
+                                            ?? JSON.parse($('script[id*="data"i][type$="json"i]', DOM)?.textContent ?? '{}').props?.pageProps?.meta?.description
                                             ?? $('meta[name="description"i]', DOM)?.content
                                         );
 
                                         // Load an actual game description
-                                        let gameDesc = $('[data-twitch-provided-description]');
+                                        const gameDesc = $('[data-twitch-provided-description]');
 
                                         if(defined(gameDesc) && good) {
-                                            $('[data-test-selector="chat-card-title"]').innerHTML += ' &mdash; Nintendo&reg;';
+                                            $('[data-test-selector="chat-card-title"]').innerHTML += " &mdash; Nintendo&reg;";
 
-                                            console.log('Nintendo:', description, description?.length);
-                                            console.log('Twitch:', gameDesc.innerText, gameDesc.innerText?.length);
+                                            console.log("Nintendo:", description, description?.length);
+                                            console.log("Twitch:", gameDesc.innerText, gameDesc.innerText?.length);
                                             console.log([description, gameDesc.innerText].sort((a, b) => b?.length - a?.length));
 
                                             gameDesc.innerHTML = [description, gameDesc.innerText].sort((a, b) => b?.length - a?.length).shift().replace(/([\.!\?])\s*(?:\.{3}|…)\s*$/, '$1');
@@ -1451,9 +1455,9 @@ plugin({
                                         }
                                     });
 
-                                let f = furnish;
+                                const f = furnish;
 
-                                let purchase =
+                                const purchase =
                                     f(`.tt-store-purchase--container.is-nintendo[@matureContent="${ rating.toUpperCase() }"][name="${ name }"][@goodMatch=${ good }]`).with(
                                         // Price
                                         f('.tt-store-purchase--price').with(price),
@@ -1475,9 +1479,9 @@ plugin({
                             })
                             .catch(error => {
                                 $warn(`Unable to connect to Nintendo. Tried to look for "${ game }"`, error);
-                            });
+                            })
                     }
-                }
+                } // :Nintendo
 
                 /*** Get the Epic link (if applicable)
                  *      ______       _
@@ -1494,7 +1498,7 @@ plugin({
                         return fetchURL.fromDisk(`https://raw.githubusercontent.com/Ephellon/game-store-catalog/main/epic/${ (game[0].toLowerCase().replace(/[^a-z]/, '_')) }.json`, { hoursUntilEntryExpires: 168 })
                             .then(r => r.json())
                             .then(data => {
-                                let [best, ...othr] = data.sort((prev, next) =>
+                                const [best, ...othr] = data.sort((prev, next) =>
                                     normalize(prev.name, [EpicRegExp, ''])
                                         .errs(game)
                                     - normalize(next.name, [EpicRegExp, ''])
@@ -1524,7 +1528,8 @@ plugin({
                                         .equals(game)
                                     || normalize(best.name, [EpicRegExp, ''])
                                         .errs(game) < PARTIAL_MATCH_THRESHOLD
-                                ) return ({
+                                )
+                                    return ({
                                     game,
                                     good: (
                                         normalize(best.name, [EpicRegExp, ''])
@@ -1544,10 +1549,10 @@ plugin({
                                     allowCountries: counCode,
                                     country: counCode,
                                     locale: lang,
-                                    category: ["games/edition/base", "games/edition", "games/demo"].join('|'),
+                                    category: ['games/edition/base', 'games/edition', 'games/demo'].join('|'),
                                     count: 10,
                                     sortBy: null,
-                                    sortDir: "DESC",
+                                    sortDir: 'DESC',
                                     keywords: game.replace(/\s+/g, '+'),
                                 });
 
@@ -1555,7 +1560,7 @@ plugin({
                                     return /*await*/ fetchURL.fromDisk(`https://store.epicgames.com/graphql?operationName=primarySearchAutocomplete&variables=${ encodeURIComponent(variables) }`)
                                         .then(r => r.json())
                                         .then(async({ data = {} }) => {
-                                            for(let element of data.Catalog?.searchStore?.elements ?? []) {
+                                            for(const element of data.Catalog?.searchStore?.elements ?? []) {
                                                 const { offerId, sandboxId, title } = element;
 
                                                 if(nullish(offerId))
@@ -1573,11 +1578,11 @@ plugin({
                                                 if(nullish(item))
                                                     continue;
 
-                                                let href = `//store.epicgames.com/en-US/p/${ item.urlSlug }`,
-                                                    name = item.title.normalize('NFKD'),
-                                                    img = item.keyImages.at(0),
-                                                    price = item.price.totalPrice.fmtPrice?.originalPrice ?? (item.price.totalPrice.originalPrice / (10 ** (item.price.totalPrice.currencyInfo?.decimals || -1))),
-                                                    good = game.errs(name, true) < PARTIAL_MATCH_THRESHOLD;
+                                                const href = `//store.epicgames.com/en-US/p/${ item.urlSlug }`
+                                                    , name = item.title.normalize('NFKD')
+                                                    , img = item.keyImages.at(0)
+                                                    , price = item.price.totalPrice.fmtPrice?.originalPrice ?? (item.price.totalPrice.originalPrice / (10 ** (item.price.totalPrice.currencyInfo?.decimals || -1)))
+                                                    , good = game.errs(name, true) < PARTIAL_MATCH_THRESHOLD;
 
                                                 if(good)
                                                     return { game, name, href, img, price, good };
@@ -1605,9 +1610,9 @@ plugin({
 
                             href = parseURL(href).addSearch({ category: 'Game', count: 10, start: 0 }).href;
 
-                            let f = furnish;
+                            const f = furnish;
 
-                            let purchase =
+                            const purchase =
                                 f(`.tt-store-purchase--container.is-epic[name="${ name }"][@goodMatch=${ good }]`).with(
                                     // Price
                                     f('.tt-store-purchase--price').with(price),
@@ -1645,7 +1650,7 @@ plugin({
                                                     // no-gate → No warning
                                                     ?.startsWith('age')
                                                 ?? ''
-                                            )
+                                            );
                                         })
                                         .catch(error => {
                                             $warn(`Unable to fetch Epic pricing information for "${ game }"`, error);
@@ -1659,7 +1664,7 @@ plugin({
                         .catch(error => {
                             $warn(`Unable to connect to Epic. Tried to look for "${ game }"`, error);
                         });
-                }
+                } // :Epic
             }
     },
 
@@ -1672,6 +1677,6 @@ plugin({
     },
 
     setup() {
-        $remark('Adding game overview card...');
+        $remark("Adding game overview card...");
     },
 });

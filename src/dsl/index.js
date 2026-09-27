@@ -20,8 +20,8 @@
 
 globalThis.TTV_DSL ??= {};
 
-if (typeof require === 'function' && typeof module === 'object')
-    for (let name of ['./errors.js', './tokens.js', './tokenizer.js', './ast.js', './parser.js', './runtime.js', './compiler.js'])
+if(typeof require === 'function' && typeof module === 'object')
+    for(const name of ['./errors.js', './tokens.js', './tokenizer.js', './ast.js', './parser.js', './runtime.js', './compiler.js'])
         require(name);
 
 (() => {
@@ -65,7 +65,7 @@ if (typeof require === 'function' && typeof module === 'object')
      */
     DSL.check = (source) => {
         try {
-            let { errors } = DSL.parseTolerant(source);
+            const { errors } = DSL.parseTolerant(source);
 
             return errors.map(error => ({
                 name: error.name,
@@ -73,9 +73,9 @@ if (typeof require === 'function' && typeof module === 'object')
                 loc: error.loc,
                 frame: error.codeFrame(),
             }));
-        } catch (error) {
+        } catch(error) {
             // A lexical fault aborts the scan outright, so it arrives here instead.
-            if (!(error instanceof DSL.errors.DSLError))
+            if(!(error instanceof DSL.errors.DSLError))
                 throw error;
 
             return [{ name: error.name, message: error.message, loc: error.loc, frame: error.codeFrame() }];
@@ -83,5 +83,5 @@ if (typeof require === 'function' && typeof module === 'object')
     };
 })();
 
-if (typeof module === 'object' && module?.exports)
+if(typeof module === 'object' && module?.exports)
     module.exports = globalThis.TTV_DSL;

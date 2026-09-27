@@ -27,12 +27,12 @@ plugin({
             if(nullish(GLOBAL_EVENT_LISTENERS.KEYDOWN_ALT_Z)) {
                 $.on('keydown', GLOBAL_EVENT_LISTENERS.KEYDOWN_ALT_Z = function Start_$_Stop_a_Recording({ key = '', altKey, ctrlKey, metaKey, shiftKey }) {
                     if(!(ctrlKey || metaKey || shiftKey) && altKey && key.equals('z')) {
-                        let video = MASTER_VIDEO;
-                        let system =  GetFileSystem();
+                        const video = MASTER_VIDEO;
+                        const system =  GetFileSystem();
 
                         video.setAttribute('uuid', video.uuid ??= (new UUID).value);
 
-                        let body = `<input hidden controller anchor="${ video.uuid }"
+                        const body = `<input hidden controller anchor="${ video.uuid }"
                             icon="\uD83D\uDD34\uFE0F" title="Recording ${ (STREAMER?.name ?? top.location.pathname.slice(1).split('/').shift()) }..."
                             placeholder="${ DEFAULT_CLIP_NAME }"
                             pattern="${ system.acceptableFilenames.source }"
@@ -76,18 +76,18 @@ plugin({
                                 <p>You <strong>cannot</strong> use the following characters: ${ system.unacceptableFilenameCharacters.filter(c => system.characterNames[c].composable).map(c => `<code title="${ system.characterNames[c] }">${ c }</code>`).join(' ') }</p>
                             </div>`;
 
-                        let EVENT_NAME = GLOBAL_EVENT_LISTENERS.KEYDOWN_ALT_Z.name;
+                        const EVENT_NAME = GLOBAL_EVENT_LISTENERS.KEYDOWN_ALT_Z.name;
                         let SAVE_NAME = DEFAULT_CLIP_NAME;
 
                         if(!video.hasRecording(EVENT_NAME)) {
                             prompt.silent(body).then(value => {
-                                let feed = $(`.tt-prompt[uuid="${ UUID.from(body).value }"i]`);
-                                let temp = video.stopRecording(EVENT_NAME);
+                                const feed = $(`.tt-prompt[uuid="${ UUID.from(body).value }"i]`);
+                                const temp = video.stopRecording(EVENT_NAME);
 
                                 feed?.setAttribute('halt', nullish(value));
 
                                 if(nullish(value)) {
-                                    phantomClick($('.deny', feed));
+                                    phantomClick($('.deny', feed))
                                 } else {
                                     phantomClick($('.okay', feed));
                                     temp.saveRecording(EVENT_NAME, SAVE_NAME = value || SAVE_NAME);
@@ -99,10 +99,10 @@ plugin({
                             SetQuality(VideoClips.quality, 'auto').then(() => {
                                 Recording.proxy(video, { name: EVENT_NAME, as: DEFAULT_CLIP_NAME, mimeType: `video/${ VideoClips.filetype }`, hidden: !Settings.show_stats })
                                     .then(({ target }) => {
-                                        let chunks = target.blobs;
-                                        let feed = $(`.tt-prompt[uuid="${ UUID.from(body).value }"i]`),
-                                            halt = parseBool(feed?.getAttribute('halt')),
-                                            name = (feed?.getAttribute('value') || SAVE_NAME).replace(GetFileSystem().allIllegalFilenameCharacters, '-');
+                                        const chunks = target.blobs;
+                                        const feed = $(`.tt-prompt[uuid="${ UUID.from(body).value }"i]`)
+                                            , halt = parseBool(feed?.getAttribute('halt'))
+                                            , name = (feed?.getAttribute('value') || SAVE_NAME).replace(GetFileSystem().allIllegalFilenameCharacters, '-');
 
                                         return SAVE_NAME = name;
                                     })
@@ -126,7 +126,7 @@ plugin({
                                     });
                             });
                         } else {
-                            let feed = $(`.tt-prompt[uuid="${ UUID.from(body).value }"i]`);
+                            const feed = $(`.tt-prompt[uuid="${ UUID.from(body).value }"i]`);
 
                             phantomClick($('.okay', feed));
                         }
@@ -134,16 +134,16 @@ plugin({
                 });
 
                 // Save current recording(s) before leaving
-                let leaveHandler = STREAMER.onraid = STREAMER.onhost = top.beforeleaving = top.onlocationchange = async({ hosting = false, raiding = false, raided = false, from, to, persisted }) => {
+                const leaveHandler = STREAMER.onraid = STREAMER.onhost = top.beforeleaving = top.onlocationchange = async({ hosting = false, raiding = false, raided = false, from, to, persisted }) => {
                     if(STASH_SAVED)
                         return;
                     STASH_SAVED = true;
 
-                    let next = await GetNextStreamer();
+                    const next = await GetNextStreamer();
 
-                    $log('Saving current recording(s). Reason (keyboard shortcuts leave handler):', { hosting, raiding, raided, leaving: defined(from) }, 'Moving onto:', next);
+                    $log("Saving current recording(s). Reason (keyboard shortcuts leave handler):", { hosting, raiding, raided, leaving: defined(from) }, "Moving onto:", next);
 
-                    for(let [guid, { recording }] of Recording.__RECORDERS__)
+                    for(const [guid, { recording }] of Recording.__RECORDERS__)
                         recording?.stop()?.save();
                 };
 
@@ -170,7 +170,7 @@ plugin({
             if(nullish(GLOBAL_EVENT_LISTENERS.KEYDOWN_R))
                 $.on('keydown', GLOBAL_EVENT_LISTENERS.KEYDOWN_R = function Send_to_Live_Reminders({ key = '', altKey, ctrlKey, metaKey, shiftKey }) {
                     if(!(ctrlKey || metaKey || altKey || shiftKey) && key.equals('r') && $.defined('#tt-stream-preview--iframe') && parseBool($('#tt-stream-preview--iframe').dataset.live)) {
-                        let name = $('#tt-stream-preview--iframe').dataset.name;
+                        const name = $('#tt-stream-preview--iframe').dataset.name;
 
                         Cache.load('LiveReminders', async({ LiveReminders }) => {
                             try {
@@ -180,7 +180,7 @@ plugin({
                                 LiveReminders ??= {};
                             }
 
-                            let justInCase = { ...LiveReminders };
+                            const justInCase = { ...LiveReminders };
 
                             if(defined(LiveReminders[name]))
                                 return confirm
@@ -196,9 +196,10 @@ plugin({
                                             Cache.save({ LiveReminders }, () => Settings.set({ 'LIVE_REMINDERS': Object.keys(LiveReminders) }));
                                         }
                                     });
-                            let search = await new Search(name).then(Search.convertResults);
 
-                            LiveReminders[name] = (search.live? new Date(search?.data?.actualStartTime): search?.data?.lastSeen ?? new Date);
+                            const search = await new Search(name).then(Search.convertResults);
+
+                            LiveReminders[name] = (search.live ? new Date(search?.data?.actualStartTime) : search?.data?.lastSeen ?? new Date);
 
                             Cache.save({ LiveReminders }, () => Settings.set({ 'LIVE_REMINDERS': Object.keys(LiveReminders) }));
 
@@ -217,14 +218,15 @@ plugin({
                 });
 
             // Display the enabled keyboard shortcuts
-            let [help] = $.body.getAllElementsByText('space/k', 'i').filter(element => element.tagName.equals('TBODY'));
+            const [help] = $.body.getAllElementsByText('space/k', 'i').filter(element => element.tagName.equals('TBODY'));
 
-            let f = furnish;
+            const f = furnish;
+
             if(defined(help) && $.nullish('.tt-extra-keyboard-shortcuts', help))
-                for(let shortcut in GLOBAL_EVENT_LISTENERS)
+                for(const shortcut in GLOBAL_EVENT_LISTENERS)
                     if(/^(key(?:up|down)_)/i.test(shortcut)) {
-                        let name = GLOBAL_EVENT_LISTENERS[shortcut].toTitle(),
-                            macro = GetMacro(shortcut.toLowerCase().split('_').slice(1).join('+'));
+                        const name = GLOBAL_EVENT_LISTENERS[shortcut].toTitle()
+                            , macro = GetMacro(shortcut.toLowerCase().split('_').slice(1).join('+'));
 
                         if(!name.length)
                             continue;
@@ -245,22 +247,22 @@ plugin({
 
         __ExtraKeyboardShortcuts__:
         if(parseBool(Settings.extra_keyboard_shortcuts)) {
-            RegisterJob('extra_keyboard_shortcuts');
+            RegisterJob('extra_keyboard_shortcuts')
         }
 
         let DEFAULT_CLIP_NAME = new ClipName(2);
-        let GLOBAL_CLIP_HANDLER = setInterval(() => {
+        const GLOBAL_CLIP_HANDLER = setInterval(() => {
             // The Alt+Z recorder only exists while Extra Keyboard Shortcuts is on (#53)
             if(nullish(GLOBAL_EVENT_LISTENERS.KEYDOWN_ALT_Z))
                 return;
 
-            let EVENT_NAME = GLOBAL_EVENT_LISTENERS.KEYDOWN_ALT_Z.name;
+            const EVENT_NAME = GLOBAL_EVENT_LISTENERS.KEYDOWN_ALT_Z.name;
 
             // Maintains a timer of the clip
             $.all('[tt-clip-timer]')
                 .map(element => {
-                    let video = $(`video[uuid="${ element.dataset.connectedTo }"]`),
-                        recorder = video.getRecording(EVENT_NAME);
+                    const video = $(`video[uuid="${ element.dataset.connectedTo }"]`)
+                        , recorder = video.getRecording(EVENT_NAME);
 
                     element.closest('[icon]').setAttribute('icon', element.innerHTML = toTimeString((+new Date) - recorder?.creationTime, 'clock'));
                 });
@@ -268,7 +270,7 @@ plugin({
             // Gets the clip's dimensions
             $.all('[tt-clip-sizer]')
                 .map(element => {
-                    let video = $(`video[uuid="${ element.dataset.connectedTo }"]`);
+                    const video = $(`video[uuid="${ element.dataset.connectedTo }"]`);
 
                     element.innerHTML = `${ video.videoWidth }&times;${ video.videoHeight }`;
                 });
@@ -276,8 +278,8 @@ plugin({
             // Gets the clip's file type
             $.all('[tt-clip-typer]')
                 .map(element => {
-                    let video = $(`video[uuid="${ element.dataset.connectedTo }"]`),
-                        [type] = (video?.mimeType ?? 'video/x-unknown').split(';');
+                    const video = $(`video[uuid="${ element.dataset.connectedTo }"]`)
+                        , [type] = (video?.mimeType ?? 'video/x-unknown').split(';');
 
                     element.innerHTML =  `<code>${ MIME_Types.find(type) }</code> <code>${ type }</code>`;
                 });
@@ -285,9 +287,9 @@ plugin({
             // Maintains the framerate of the clip
             $.all('[tt-clip-rater]')
                 .map(element => {
-                    let video = $(`video[uuid="${ element.dataset.connectedTo }"]`),
-                        recorder = video.getRecording(EVENT_NAME),
-                        data = recorder?.blobs;
+                    const video = $(`video[uuid="${ element.dataset.connectedTo }"]`)
+                        , recorder = video.getRecording(EVENT_NAME)
+                        , data = recorder?.blobs;
 
                     element.innerHTML = `<code>${ video.videoHeight }p</code> <code>${ ((data?.reduce((total, { size = 0 }) => total += size, 0) / data?.length) | 0).suffix('bps', false, 'data') }</code>`;
                 });
@@ -295,9 +297,9 @@ plugin({
             // Maintains the file size of the clip
             $.all('[tt-clip-watcher]')
                 .map(element => {
-                    let video = $(`video[uuid="${ element.dataset.connectedTo }"]`),
-                        recorder = video.getRecording(EVENT_NAME),
-                        data = recorder?.blobs;
+                    const video = $(`video[uuid="${ element.dataset.connectedTo }"]`)
+                        , recorder = video.getRecording(EVENT_NAME)
+                        , data = recorder?.blobs;
 
                     element.innerHTML = data?.reduce((total, { size = 0 }) => total += size, 0)?.suffix('B', 2);
                 });

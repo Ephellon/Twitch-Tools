@@ -41,19 +41,19 @@ globalThis.TTV_DSL ??= {};
      * @param {*} value
      * @return {String}
      */
-    let show = (value) => {
-        if (typeof value === 'string')
+    const show = (value) => {
+        if(typeof value === 'string')
             return JSON.stringify(value);
 
-        if (typeof value === 'function')
+        if(typeof value === 'function')
             return `[function ${ value.name || 'anonymous' }]`;
 
-        if (value instanceof Error)
+        if(value instanceof Error)
             return `${ value.name }: ${ value.message }`;
 
         try {
-            return JSON.stringify(value, (key, entry) => (undefined === entry? '<undefined>': entry)) ?? String(value);
-        } catch (error) {
+            return JSON.stringify(value, (key, entry) => (void null === entry ? '<undefined>' : entry)) ?? String(value);
+        } catch(error) {
             return String(value);
         }
     };
@@ -64,39 +64,39 @@ globalThis.TTV_DSL ??= {};
      * @param {*} expected
      * @return {Boolean}
      */
-    let deepEqual = (actual, expected) => {
-        if (Object.is(actual, expected))
+    const deepEqual = (actual, expected) => {
+        if(Object.is(actual, expected))
             return true;
 
-        if (null == actual || null == expected)
+        if(null == actual || null == expected)
             return false;
 
-        if (typeof actual !== 'object' || typeof expected !== 'object')
+        if(typeof actual !== 'object' || typeof expected !== 'object')
             return false;
 
-        if (actual instanceof Date || expected instanceof Date)
+        if(actual instanceof Date || expected instanceof Date)
             return (actual instanceof Date && expected instanceof Date && actual.getTime() === expected.getTime());
 
-        if (actual instanceof RegExp || expected instanceof RegExp)
+        if(actual instanceof RegExp || expected instanceof RegExp)
             return (actual instanceof RegExp && expected instanceof RegExp && String(actual) === String(expected));
 
-        if (Array.isArray(actual) || Array.isArray(expected)) {
-            if (!Array.isArray(actual) || !Array.isArray(expected) || actual.length !== expected.length)
+        if(Array.isArray(actual) || Array.isArray(expected)) {
+            if(!Array.isArray(actual) || !Array.isArray(expected) || actual.length !== expected.length)
                 return false;
 
             return actual.every((entry, index) => deepEqual(entry, expected[index]));
         }
 
-        if (actual instanceof Set || expected instanceof Set)
+        if(actual instanceof Set || expected instanceof Set)
             return (actual instanceof Set && expected instanceof Set && deepEqual([...actual], [...expected]));
 
-        if (actual instanceof Map || expected instanceof Map)
+        if(actual instanceof Map || expected instanceof Map)
             return (actual instanceof Map && expected instanceof Map && deepEqual([...actual], [...expected]));
 
-        let keys = Object.keys(actual),
-            others = Object.keys(expected);
+        const keys = Object.keys(actual)
+            , others = Object.keys(expected);
 
-        if (keys.length !== others.length)
+        if(keys.length !== others.length)
             return false;
 
         return keys.every(key => (key in expected) && deepEqual(actual[key], expected[key]));
@@ -109,18 +109,18 @@ globalThis.TTV_DSL ??= {};
      * @param {*} expected
      * @return {Boolean}
      */
-    let matchesShape = (actual, expected) => {
-        if (expected instanceof RegExp)
+    const matchesShape = (actual, expected) => {
+        if(expected instanceof RegExp)
             return expected.test(String(actual));
 
-        if (null === expected || typeof expected !== 'object')
+        if(null === expected || typeof expected !== 'object')
             return Object.is(actual, expected);
 
-        if (null == actual || typeof actual !== 'object')
+        if(null == actual || typeof actual !== 'object')
             return false;
 
-        if (Array.isArray(expected)) {
-            if (!Array.isArray(actual) || actual.length !== expected.length)
+        if(Array.isArray(expected)) {
+            if(!Array.isArray(actual) || actual.length !== expected.length)
                 return false;
 
             return expected.every((entry, index) => matchesShape(actual[index], entry));
@@ -132,31 +132,31 @@ globalThis.TTV_DSL ??= {};
     const assert = {
         /** @param {*} value @param {String} [message] */
         ok(value, message) {
-            if (!value)
+            if(!value)
                 throw new AssertionError(message ?? `Expected a truthy value, got ${ show(value) }`, value, true);
         },
 
         /** Strict (`Object.is`) equality. */
         equal(actual, expected, message) {
-            if (!Object.is(actual, expected))
+            if(!Object.is(actual, expected))
                 throw new AssertionError(message ?? `Expected ${ show(expected) }, got ${ show(actual) }`, actual, expected);
         },
 
         /** Structural equality. */
         deepEqual(actual, expected, message) {
-            if (!deepEqual(actual, expected))
+            if(!deepEqual(actual, expected))
                 throw new AssertionError(message ?? `Expected ${ show(expected) }, got ${ show(actual) }`, actual, expected);
         },
 
         /** Subset matching — see {@link matchesShape}. */
         like(actual, expected, message) {
-            if (!matchesShape(actual, expected))
+            if(!matchesShape(actual, expected))
                 throw new AssertionError(message ?? `Expected a value matching ${ show(expected) }, got ${ show(actual) }`, actual, expected);
         },
 
         /** @param {String} value @param {RegExp} pattern @param {String} [message] */
         match(value, pattern, message) {
-            if (!pattern.test(String(value)))
+            if(!pattern.test(String(value)))
                 throw new AssertionError(message ?? `Expected ${ show(value) } to match ${ pattern }`, value, pattern);
         },
 
@@ -172,20 +172,20 @@ globalThis.TTV_DSL ??= {};
 
             try {
                 body();
-            } catch (error) {
+            } catch(error) {
                 caught = error;
             }
 
-            if (null === caught)
-                throw new AssertionError(message ?? 'Expected the call to throw, but it returned normally', undefined, matcher);
+            if(null === caught)
+                throw new AssertionError(message ?? 'Expected the call to throw, but it returned normally', void null, matcher);
 
-            if (caught instanceof AssertionError)
+            if(caught instanceof AssertionError)
                 throw caught;
 
-            if (typeof matcher === 'function' && !(caught instanceof matcher))
+            if(typeof matcher === 'function' && !(caught instanceof matcher))
                 throw new AssertionError(message ?? `Expected a ${ matcher.name }, got ${ show(caught) }`, caught, matcher);
 
-            if (matcher instanceof RegExp && !matcher.test(caught.message))
+            if(matcher instanceof RegExp && !matcher.test(caught.message))
                 throw new AssertionError(message ?? `Expected the message to match ${ matcher }, got ${ show(caught.message) }`, caught, matcher);
 
             return caught;
@@ -201,8 +201,8 @@ globalThis.TTV_DSL ??= {};
      * @param {String} name
      * @param {Function} body - calls `it` for each case
      */
-    let describe = (name, body) => {
-        let previous = current;
+    const describe = (name, body) => {
+        const previous = current;
 
         current = { name, tests: [] };
         suites.push(current);
@@ -218,8 +218,8 @@ globalThis.TTV_DSL ??= {};
      * @param {String} name
      * @param {Function} body - may return a promise
      */
-    let it = (name, body) => {
-        if (null === current)
+    const it = (name, body) => {
+        if(null === current)
             throw new Error(`it(${ JSON.stringify(name) }) was called outside of a describe() block`);
 
         current.tests.push({ name, body, skipped: false });
@@ -230,7 +230,7 @@ globalThis.TTV_DSL ??= {};
      * @param {String} [reason]
      */
     it.skip = (name, reason) => {
-        if (null === current)
+        if(null === current)
             throw new Error(`it.skip(${ JSON.stringify(name) }) was called outside of a describe() block`);
 
         current.tests.push({ name, body: null, skipped: true, reason });
@@ -241,19 +241,19 @@ globalThis.TTV_DSL ??= {};
      * @param {function(String): void} [options.log = console.log]
      * @return {Promise<{ passed: Number, failed: Number, skipped: Number, failures: Array }>}
      */
-    let run = async ({ log = console.log } = {}) => {
-        let passed = 0,
-            failed = 0,
-            skipped = 0,
-            failures = [];
+    const run = async({ log = console.log } = {}) => {
+        let passed = 0
+            , failed = 0
+            , skipped = 0
+            , failures = [];
 
-        for (let suite of suites) {
+        for(const suite of suites) {
             log(`\n  ${ suite.name }`);
 
-            for (let test of suite.tests) {
-                if (test.skipped) {
+            for(const test of suite.tests) {
+                if(test.skipped) {
                     ++skipped;
-                    log(`    - ${ test.name }${ test.reason? ` (${ test.reason })`: '' }`);
+                    log(`    - ${ test.name }${ test.reason ? ` (${ test.reason })` : '' }`);
 
                     continue;
                 }
@@ -263,11 +263,11 @@ globalThis.TTV_DSL ??= {};
 
                     ++passed;
                     log(`    + ${ test.name }`);
-                } catch (error) {
+                } catch(error) {
                     ++failed;
                     failures.push({ suite: suite.name, test: test.name, error });
                     log(`    x ${ test.name }`);
-                    log(`        ${ (error && error.stack)? String(error.stack).split('\n').slice(0, 4).join('\n        '): show(error) }`);
+                    log(`        ${ (error && error.stack) ? String(error.stack).split('\n').slice(0, 4).join('\n        ') : show(error) }`);
                 }
             }
         }
@@ -278,7 +278,7 @@ globalThis.TTV_DSL ??= {};
     };
 
     /** Discards every registered suite. Only useful when re-running in a live page. */
-    let reset = () => {
+    const reset = () => {
         suites = [];
         current = null;
     };
@@ -291,5 +291,5 @@ globalThis.TTV_DSL ??= {};
     globalThis.assert = assert;
 })();
 
-if (typeof module === 'object' && module?.exports)
+if(typeof module === 'object' && module?.exports)
     module.exports = globalThis.TTV_DSL;

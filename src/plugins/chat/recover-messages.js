@@ -20,15 +20,15 @@ plugin({
     handler: async(context) => {
         new context.StopWatch('recover_messages');
 
-        restoring: for(let [uuid, line] of Chat.messages) {
+        restoring: for(const [uuid, line] of Chat.messages) {
             if(RESTORED_MESSAGES.has(uuid))
                 continue restoring;
             if($.defined(`main [data-test-selector*="chat"i][data-test-selector*="message"i][data-test-selector*="container"i] [data-uuid="${ uuid }"i]`))
                 continue restoring;
 
-            let { author, handle, message, emotes, badges, style } = line;
-            let element = await line.element,
-                deleted = await line.deleted;
+            const { author, handle, message, emotes, badges, style } = line;
+            const element = await line.element
+                , deleted = await line.deleted;
 
             if(defined(element.dataset.plagiarism) || defined(element.dataset.repetitive) || parseBool(element.dataset.restored))
                 continue restoring;
@@ -38,7 +38,7 @@ plugin({
             if(!deleted || !message?.length || author.equals(context.USERNAME))
                 continue restoring;
 
-            let f = furnish;
+            const f = furnish;
             let container = $(`[data-a-target^="chat"i] [data-a-target*="deleted"i]`)?.closest(`[data-a-user]`);
 
             if(parseBool(container?.dataset?.resurrected))
@@ -81,8 +81,8 @@ plugin({
                 $('[role] ~ *:is([role="log"i], [class~="chat-room"i], [data-test-selector*="chat"i][data-test-selector*="message"i][data-test-selector*="container"i]) [role]')?.append(container);
             }
 
-            let body = $(`[data-test-selector$="message-placeholder"i]`, container),
-                user = $(`[data-a-user="${ author }"i]`, container)?.dataset?.aUser;
+            const body = $(`[data-test-selector$="message-placeholder"i]`, container)
+                , user = $(`[data-a-user="${ author }"i]`, container)?.dataset?.aUser;
 
             if(nullish(body) || nullish(user))
                 continue restoring;
@@ -95,9 +95,9 @@ plugin({
 
             // Fragmented...
             if(emotes.length > 0) {
-                let inter = [], final = [];
+                const inter = [], final = [];
 
-                for(let word of message.split(' ').filter(s => s.length))
+                for(const word of message.split(' ').filter(s => s.length))
                     inter.push(
                         emotes.contains(word)
                         // Create an emote button...
@@ -115,9 +115,10 @@ plugin({
                     );
 
                 let fragments = [];
-                for(let word of inter)
+
+                for(const word of inter)
                     if(typeof word == 'string') {
-                        fragments.push(word);
+                        fragments.push(word)
                     } else {
                         if(fragments.length)
                             final.push(f('.text-fragment[@aTarget=chat-message-text]').with(fragments.join(' ')));
@@ -131,31 +132,31 @@ plugin({
 
                 body.innerHTML = final.map(e => e.outerHTML).join(' ');
             } else {
-                body.innerText = message;
+                body.innerText = message
             }
 
             container.dataset.uuid = uuid;
             container.dataset.resurrected = true;
 
-            let target = $('[data-a-target*="deleted"i]', container);
+            const target = $('[data-a-target*="deleted"i]', container);
 
             if(defined(target))
                 target.dataset.aTarget = 'chat-restored-message-placeholder';
 
             $notice(`Restored message "${ author }: ${ message }"`, { line, container });
-        }
+        } // :restoring
 
         context.StopWatch.stop('recover_messages');
     },
 
     setup() {
         setInterval(() => {
-            let actual = Timers.recover_messages,
-                desired = Math.max(0
+            const actual = Timers.recover_messages
+                , desired = Math.max(0
                     , actual
                     , (500 + (parseInt($('[data-a-target$="viewers-count"i], [class*="stream-info-card"i] [data-test-selector$="description"i]')?.textContent?.replace(/\D+/g, '')) | 0))
-                ).floorToNearest(100).clamp(1e3, 10e3),
-                [min, max] = [desired, actual].sort((a, b) => a - b);
+                ).floorToNearest(100).clamp(1e3, 10e3)
+                , [min, max] = [desired, actual].sort((a, b) => a - b);
 
             // The timer has deviated by more than 15%
             if((min / max) < .85) {

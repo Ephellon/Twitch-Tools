@@ -14,7 +14,7 @@ plugin({
 
         // Play sound on new message
         NOTIFICATION_EVENTS.onphrase ??= Chat.onmessage = line => {
-            when(line => (defined(line.element)? line: false), 1000, line).then(element => {
+            when(line => (defined(line.element) ? line : false), 1000, line).then(element => {
                 if(element.hasAttribute('tt-light') && !NOTIFICATION_SOUND?.playing)
                     NOTIFICATION_SOUND?.play();
             });

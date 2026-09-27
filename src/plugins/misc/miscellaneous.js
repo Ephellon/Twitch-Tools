@@ -18,28 +18,28 @@ plugin({
                 .map(Color.HEXtoColor)
                 // Primary → Closest to theme; Secondary → Furthest from theme
                 .sort((C1, C2) => {
-                    let background = (THEME.equals('dark')? Color.black: Color.white);
+                    const background = (THEME.equals('dark') ? Color.black : Color.white);
 
                     return Color.contrast(background, [C1.R, C1.G, C1.B]) - Color.contrast(background, [C2.R, C2.G, C2.B]);
                 })
                 .map(color => color.HEX);
 
-            THEME__CHANNEL_DARK = (THEME.equals('dark')? PRIMARY: SECONDARY);
-            THEME__CHANNEL_LIGHT = (THEME.unlike('dark')? PRIMARY: SECONDARY);
+            THEME__CHANNEL_DARK = (THEME.equals('dark') ? PRIMARY : SECONDARY);
+            THEME__CHANNEL_LIGHT = (THEME.unlike('dark') ? PRIMARY : SECONDARY);
 
             PRIMARY = Color.HEXtoColor(PRIMARY);
             SECONDARY = Color.HEXtoColor(SECONDARY);
 
-            let contrastOf = (C1, C2) => Color.contrast(...[C1, C2].map(({ R, G, B }) => [R, G, B])),
+            const contrastOf = (C1, C2) => Color.contrast(...[C1, C2].map(({ R, G, B }) => [R, G, B]))
 
-                black = { R: 0, G: 0, B: 0 },
-                white = { R: 255, G: 255, B: 255 },
+                , black = { R: 0, G: 0, B: 0 }
+                , white = { R: 255, G: 255, B: 255 }
 
-                theme = (THEME.equals('dark')? black: white),
-                antitheme = (THEME.unlike('dark')? black: white);
+                , theme = (THEME.equals('dark') ? black : white)
+                , antitheme = (THEME.unlike('dark') ? black : white);
 
             THEME__BASE_CONTRAST = contrastOf(PRIMARY, SECONDARY);
-            THEME__PREFERRED_CONTRAST = `${ THEME__BASE_CONTRAST.toString() } prefer ${ (contrastOf(PRIMARY, theme) > contrastOf(SECONDARY, theme)? THEME: ANTITHEME) }`;
+            THEME__PREFERRED_CONTRAST = `${ THEME__BASE_CONTRAST.toString() } prefer ${ (contrastOf(PRIMARY, theme) > contrastOf(SECONDARY, theme) ? THEME : ANTITHEME) }`;
 
             // Better styling. Will match the user's theme choice as best as possible
             AddCustomCSSBlock('Better-Themed Styling', `
@@ -96,15 +96,15 @@ plugin({
                      */
                 }
             `);
-        }
+        } // :Miscellaneous
 
         __GET_UPDATE_INFO__: {
             // Getting the version information
-            let installedFromWebstore = parseURL(Runtime.getURL('profile.png')).host.equals("fcfodihfdbiiogppbnhabkigcdhkhdjd");
+            const installedFromWebstore = parseURL(Runtime.getURL('profile.png')).host.equals('fcfodihfdbiiogppbnhabkigcdhkhdjd');
 
             wait(3_600_000, installedFromWebstore).then(async installedFromWebstore => {
                 let FETCHED_DATA = { wasFetched: false };
-                let properties = {
+                const properties = {
                     origin: {
                         github: !installedFromWebstore,
                         chrome: installedFromWebstore,
@@ -125,12 +125,12 @@ plugin({
                     // The data has expired →
                     __FetchingUpdates__:
                     if((FETCHED_DATA.wasFetched === false) && (versionRetrivalDate + 3_600_000) < +new Date) {
-                        let githubURL = 'https://api.github.com/repos/ephellon/twitch-tools/releases/latest';
+                        const githubURL = 'https://api.github.com/repos/ephellon/twitch-tools/releases/latest';
 
                         fetchURL(githubURL)
                             .then(response => {
                                 if(FETCHED_DATA.wasFetched)
-                                    throw 'Data was already fetched';
+                                    throw "Data was already fetched";
 
                                 return response.json();
                             })
@@ -147,8 +147,8 @@ plugin({
                                 });
                             })
                             .finally(() => {
-                                let githubUpdateAvailable = compareVersions(`${ properties.version.installed } < ${ properties.version.github }`),
-                                    chromeUpdateAvailable = false;
+                                const githubUpdateAvailable = compareVersions(`${ properties.version.installed } < ${ properties.version.github }`)
+                                    , chromeUpdateAvailable = false;
 
                                 FETCHED_DATA = { ...FETCHED_DATA, ...properties };
                                 Settings.set({ githubUpdateAvailable });
@@ -185,10 +185,10 @@ plugin({
                     else {
                         properties.version.github = githubVersion ?? properties.version.github;
                         properties.version.chrome = chromeVersion ?? properties.version.chrome;
-                    }
+                    } // :__FetchingUpdates__
                 });
             });
-        }
+        } // :__GET_UPDATE_INFO__
 
         // End of Initialize
     },

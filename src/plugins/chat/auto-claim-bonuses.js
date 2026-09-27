@@ -13,13 +13,13 @@ plugin({
     handler: (context) => {
         new context.StopWatch('auto_claim_bonuses');
 
-        let ChannelPoints = (null
+        const ChannelPoints = (null
                 ?? $('[class*="bonus"i]')?.closest('button')
                 ?? $('[data-test-selector*="points"i][data-test-selector*="summary"i] button[class*="success"i]')
                 ?? $('[data-test-selector*="points"i][data-test-selector*="summary"i] button:is([class*="destruct"i], [class*="error"i])')
                 ?? $('[class*="points"i] button [class*="bonus"i]')?.closest('button')
-            ),
-            Enabled = (Settings.auto_claim_bonuses && parseBool($('#tt-auto-claim-bonuses')?.getAttribute('tt-auto-claim-enabled') ?? $('[data-a-page-loaded-name="PopoutChatPage"i]')));
+            )
+            , Enabled = (Settings.auto_claim_bonuses && parseBool($('#tt-auto-claim-bonuses')?.getAttribute('tt-auto-claim-enabled') ?? $('[data-a-page-loaded-name="PopoutChatPage"i]')));
 
         if(Enabled && defined(ChannelPoints)) {
             ChannelPoints.click();
@@ -33,15 +33,15 @@ plugin({
 
         // Draw the toggle-button...
         try {
-            let BonusChannelPointsSVG = Glyphs.modify('bonuschannelpoints', {
+            const BonusChannelPointsSVG = Glyphs.modify('bonuschannelpoints', {
                 id: 'tt-auto-claim-indicator',
                 height: '2rem',
                 width: '2rem',
                 style: `vertical-align: middle; margin-left: 0.5rem; background-color: #00ad96; fill: #000; border: 0; border-radius: .25rem;`
             });
 
-            let parent = $('div:not(#tt-auto-claim-bonuses) > [data-test-selector*="points"i][data-test-selector*="summary"i] [role="tooltip"i]'),
-                tooltip = $('#tt-auto-claim-bonuses [role="tooltip"i]');
+            const parent = $('div:not(#tt-auto-claim-bonuses) > [data-test-selector*="points"i][data-test-selector*="summary"i] [role="tooltip"i]')
+                , tooltip = $('#tt-auto-claim-bonuses [role="tooltip"i]');
 
             if(tooltip && parent)
                 tooltip.innerText = parent.innerText;
@@ -50,13 +50,13 @@ plugin({
             let button = $('#tt-auto-claim-bonuses');
 
             if(nullish(button)) {
-                let parent    = $('[data-test-selector*="points"i][data-test-selector*="summary"i]'),
-                    heading   = $.all('.top-nav__menu > div').pop(),
-                    container = furnish('div');
+                const parent    = $('[data-test-selector*="points"i][data-test-selector*="summary"i]')
+                    , heading   = $.all('.top-nav__menu > div').pop()
+                    , container = furnish('div');
 
                 if(nullish(parent) || nullish(heading)) {
                     // wait(5000).then(Chat__Initialize);
-                    return context.StopWatch.stop('auto_claim_bonuses');
+                    return context.StopWatch.stop('auto_claim_bonuses')
                 }
 
                 container.innerHTML = parent.outerHTML;
@@ -68,13 +68,13 @@ plugin({
 
                 $('#tt-auto-claim-bonuses [data-test-selector*="points"i][data-test-selector*="summary"i] > div:last-child:not(:first-child)')?.remove();
 
-                let textContainer = $('[data-test-selector*="balance"i] *:not(:empty)', container);
+                const textContainer = $('[data-test-selector*="balance"i] *:not(:empty)', container);
 
                 if(defined(textContainer)) {
-                    let { parentElement } = textContainer;
+                    const { parentElement } = textContainer;
                     parentElement.removeAttribute('data-test-selector');
                 } else {
-                    return context.StopWatch.stop('auto_claim_bonuses');
+                    return context.StopWatch.stop('auto_claim_bonuses')
                 }
 
                 button = {
@@ -87,7 +87,7 @@ plugin({
                 };
 
                 // button.tooltip.id = new UUID().toString();
-                button.text.innerHTML = '+' + BonusChannelPointsSVG;
+                button.text.innerHTML = "+" + BonusChannelPointsSVG;
                 button.container.setAttribute('tt-auto-claim-enabled', true);
 
                 button.icon ??= $('svg, img', container);
@@ -100,17 +100,17 @@ plugin({
                 button.icon.modStyle(`height: 2rem; width: 2rem; margin-top: .25rem; margin-left: .25rem;`);
 
                 when.defined(container => $('[data-test-selector*="balance"i][data-test-selector*="string"i]', container), 30, container).then(text => text.remove());
-                when.defined(container => ($.all('svg, img', container).length > 2? container: null), 30, container).then(container => {
-                    let oldIcon = $('svg, img', container);
-                    let newIcon = $.last('svg, img, .tw-img, .tw-svg', container);
+                when.defined(container => ($.all('svg, img', container).length > 2 ? container : null), 30, container).then(container => {
+                    const oldIcon = $('svg, img', container);
+                    const newIcon = $.last('svg, img, .tw-img, .tw-svg', container);
 
                     newIcon.closest('*:not(:first-of-type):not(:first-child)')?.remove();
 
                     oldIcon.replaceWith(newIcon);
                 });
             } else {
-                let container = button,
-                    textContainer = $('[data-test-selector*="balance"i] *:not(:empty)', container);
+                const container = button
+                    , textContainer = $('[data-test-selector*="balance"i] *:not(:empty)', container);
 
                 button = {
                     container,
@@ -123,15 +123,15 @@ plugin({
             }
 
             button.container.onclick ??= event => {
-                let enabled = button.container.getAttribute('tt-auto-claim-enabled').unlike('true');
+                const enabled = button.container.getAttribute('tt-auto-claim-enabled').unlike('true');
 
                 button.container.setAttribute('tt-auto-claim-enabled', enabled);
-                button.text.innerHTML = ['','+'][+enabled] + BonusChannelPointsSVG;
+                button.text.innerHTML = ['', '+'][+enabled] + BonusChannelPointsSVG;
                 button.tooltip.innerHTML = Glyphs.modify('channelpoints', { style: `height: 1.5rem; width: 1.5rem; vertical-align: bottom` }) + ` ${ ((120 + (200 * +enabled)) * context.CHANNEL_POINTS_MULTIPLIER) | 0 } / h`;
             };
 
             top.onintegritychange = okay =>
-                $('#tt-auto-claim-indicator')?.modStyle(`background-color:${ ['#ff4f4d','#00ad96'][+okay] }`);
+                $('#tt-auto-claim-indicator')?.modStyle(`background-color:${ ['#ff4f4d', '#00ad96'][+okay] }`);
 
             top.onintegritychange = okay =>
                 button.tooltip.innerHTML = Glyphs.modify('channelpoints', { style: `height: 1.5rem; width: 1.5rem; vertical-align: bottom` }) + ` ${ ((120 + (200 * +okay)) * context.CHANNEL_POINTS_MULTIPLIER) | 0 } / h`;
@@ -155,8 +155,8 @@ plugin({
             button.tooltip?.classList?.add('img-container');
 
             // Clean up leftovers from Twitch animations
-            let junk = $(`#tt-auto-claim-bonuses ${ '> :last-child'.repeat(3) }`);
-            junk && (junk.innerHTML = '');
+            const junk = $(`#tt-auto-claim-bonuses ${ '> :last-child'.repeat(3) }`);
+            junk && (junk.innerHTML = "");
 
             // Set the Channel Point icon's color & positioning
             $('svg:not([id])', button.container)

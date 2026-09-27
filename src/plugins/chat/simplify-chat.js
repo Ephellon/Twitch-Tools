@@ -22,7 +22,7 @@ plugin({
             AddCustomCSSBlock('Simplify Chat Monotone Usernames', `[data-a-target="chat-message-username"i] { color: var(--color-text-base) !important }`);
 
         if(parseBool(Settings.simplify_chat_font) || parseBool(Settings.simplify_page_font)) {
-            let src = Runtime.getURL('/font');
+            const src = Runtime.getURL('/font');
 
             AddCustomCSSBlock('Simplify Page Font', `body { font-family: ${ Settings.simplify_page_font }, Sans-Serif !important }`);
             AddCustomCSSBlock('Simplify Chat Font', `[data-a-target*="chat"i][data-a-target*="message"i] { font-family: ${ Settings.simplify_chat_font }, Sans-Serif !important }`);
@@ -74,10 +74,10 @@ plugin({
             AddCustomCSSBlock('Simplify Chat', `.tt-visible-message-even { background-color: #8882 }`);
 
         Chat.get().map(Chat.defer.onmessage = async line => {
-            let allNodes = node => (node.childNodes.length? [...node.childNodes].map(allNodes): [node]).flat();
+            const allNodes = node => (node.childNodes.length ? [...node.childNodes].map(allNodes) : [node]).flat();
 
-            let element = await line.element;
-            let keep = !(element.hasAttribute('data-plagiarism') || element.hasAttribute('data-repetitive') || element.hasAttribute('tt-hidden-message'));
+            const element = await line.element;
+            const keep = !(element.hasAttribute('data-plagiarism') || element.hasAttribute('data-repetitive') || element.hasAttribute('tt-hidden-message'));
 
             if(keep) {
                 element.classList.add(`tt-visible-message-${ ['even', 'odd'][SimplifyChatIndexToggle ^= 1] }`);

@@ -13,13 +13,13 @@ plugin({
     timer: -1000,
 
     init() {
-        WATCH_TIME_INTERVAL = undefined;
-        WATCH_TIME_TOOLTIP = undefined;
+        WATCH_TIME_INTERVAL = void null;
+        WATCH_TIME_TOOLTIP = void null;
         THIS_POLL = STREAMER.poll;
         THAT_POLL = 1;
-        GET_TOP_100_INTERVAL = undefined;
+        GET_TOP_100_INTERVAL = void null;
         TOP_100_GAME = STREAMER.game;
-        IN_TOP_100 = undefined;
+        IN_TOP_100 = void null;
         ALL_WATCHTIME_COUNTS = {};
         ALL_WATCHTIME_VALUES = {};
     },
@@ -27,15 +27,15 @@ plugin({
     handler: async() => {
         let placement;
 
-        if((placement = Settings.watch_time_placement ??= "null").equals("null"))
+        if((placement = Settings.watch_time_placement ??= 'null').equals('null'))
             return;
 
-        let parent, container,
-            extra = () => {};
+        let parent, container
+            , extra = () => {};
 
-        let classes = element => [...element.classList].map(label => '.' + label).join('');
+        const classes = element => [...element.classList].map(label => '.' + label).join('');
 
-        let live_time = $('.live-time');
+        const live_time = $('.live-time');
 
         if(nullish(live_time))
             return RestartJob('watch_time_placement', 'missing:live_time');
@@ -59,20 +59,20 @@ plugin({
                         live_time.tooltipAnimation = setInterval(() => {
                             live_time.tooltip ??= new Tooltip(live_time, '');
 
-                            let percentage = (STREAMER.time / (STREAMER.data?.dailyBroadcastTime ?? 16_200_000)).clamp(0, 1),
-                                timeLeft = (STREAMER.data?.dailyBroadcastTime ?? 16_200_000) - STREAMER.time;
+                            const percentage = (STREAMER.time / (STREAMER.data?.dailyBroadcastTime ?? 16_200_000)).clamp(0, 1)
+                                , timeLeft = (STREAMER.data?.dailyBroadcastTime ?? 16_200_000) - STREAMER.time;
 
-                            live_time.tooltip.innerHTML = (timeLeft < 0? '+': '') + toTimeString(Math.abs(timeLeft), 'clock');
+                            live_time.tooltip.innerHTML = (timeLeft < 0 ? "+" : "") + toTimeString(Math.abs(timeLeft), 'clock');
                             live_time.tooltip.modStyle(`background:linear-gradient(90deg, hsla(${ (120 * percentage) | 0 }, 100%, 50%, 0.5) ${ (100 * percentage).toFixed(2) }%, #0000 0), var(--color-background-tooltip)`);
                         }, 2_5_0);
                 };
             } break;
 
-            default: return;
+            default: { return }
         }
 
-        let f = furnish;
-        let watch_time = f(`${ container.tagName }${ classes(container) }`,
+        const f = furnish;
+        const watch_time = f(`${ container.tagName }${ classes(container) }`,
             { style: `color: var(--user-contrast-color)`, contrast: THEME__PREFERRED_CONTRAST },
             f(`${ live_time.tagName }#tt-watch-time${ classes(live_time).replace(/\blive-time\b/gi, 'watch-time') }`, { time: 0 })
         );
@@ -85,6 +85,7 @@ plugin({
 
         Cache.load([CURRENT_WATCHTIME_NAME, `Watching`], _ => {
             let { Watching } = _;
+
             if(!(Watching instanceof Array))
                 Watching = [];
 
@@ -96,8 +97,8 @@ plugin({
             _[CURRENT_WATCHTIME_NAME] >>= 0;
 
             WATCH_TIME_INTERVAL = setInterval(() => {
-                let watch_time = $('#tt-watch-time'),
-                    time = GET_WATCH_TIME();
+                const watch_time = $('#tt-watch-time')
+                    , time = GET_WATCH_TIME();
 
                 if(nullish(watch_time) || !time) {
                     clearInterval(WATCH_TIME_INTERVAL);
@@ -118,11 +119,12 @@ plugin({
                                 break fixer;
 
                             let count = ALL_WATCHTIME_COUNTS[key] >>= 0;
-                            let value = ALL_WATCHTIME_VALUES[key] >>= 0;
+                            const value = ALL_WATCHTIME_VALUES[key] >>= 0;
 
                             if(value != val) {
                                 ALL_WATCHTIME_COUNTS[key] = 0;
                                 ALL_WATCHTIME_VALUES[key] = val;
+
                                 continue;
                             }
 
@@ -149,21 +151,21 @@ plugin({
         });
 
         function getTop100(callback = $ => $) {
-            let { filename } = parseURL(STREAMER.game.href);
+            const { filename } = parseURL(STREAMER.game.href);
 
             if(!filename?.length)
                 return;
 
             fetchURL.idempotent(`https://gql.twitch.tv/gql`, {
-                method: "POST",
+                method: 'POST',
                 headers: { "client-id": Search.anonID },
                 body: JSON.stringify([{
-            		operationName: "DirectoryPage_Game",
+            		operationName: 'DirectoryPage_Game',
             		variables: {
             			imageWidth: 50,
             			slug: filename,
             			options: {
-            				sort: "VIEWER_COUNT",
+            				sort: 'VIEWER_COUNT',
             				freeformTags: null,
             				tags: [],
             				broadcasterLanguages: [],
@@ -187,18 +189,20 @@ plugin({
 
                 if(json.errors)
                     throw json.errors.join('; ');
-                let edges = json
+
+                const edges = json
                     ?.data      // [...{ game:object }]
                     ?.game      // { displayName:string, id:string<int>, name:string, streams:object }
                     ?.streams   // { edges:array<object>, pageInfo:object<{ hasNextPage:boolean }> }
                     ?.edges     // [...{ broadcaster:object, freeFormTags:object|array, game:object, id:string<int~GameID>, previewImageURL:object<{ *:string<URL> }>, title:string, type:string, viewersCount:number<int> }]
                 ?? [];
 
-                let { game, poll, sole } = STREAMER;
+                const { game, poll, sole } = STREAMER;
 
                 let polls = [{ sole, poll }], spot = 1, place = null;
-                for(let edge of edges) {
-                    let { broadcaster, freeFormTags, game, id, previewImageURL, title, type, viewersCount } = edge.node;
+
+                for(const edge of edges) {
+                    const { broadcaster, freeFormTags, game, id, previewImageURL, title, type, viewersCount } = edge.node;
 
                     if(sole == broadcaster.id)
                         place = spot;
@@ -206,7 +210,7 @@ plugin({
                     polls.push({ sole: broadcaster.id, poll: viewersCount, spot: spot++ });
                 }
 
-                let container = $('[data-a-target*="viewer"i][data-a-target*="count"i]').parentElement;
+                const container = $('[data-a-target*="viewer"i][data-a-target*="count"i]').parentElement;
 
                 if(IN_TOP_100 = defined(place))
                     new Tooltip(container, `Top 100! #${ place } for <ins>${ game }</ins>`)
@@ -226,8 +230,8 @@ plugin({
         GET_TOP_100_INTERVAL = setInterval(() => {
             THIS_POLL = STREAMER.poll;
 
-            let updt = () => THAT_POLL = THIS_POLL;
-            let DIFF = Math.abs(THIS_POLL - THAT_POLL) / THAT_POLL;
+            const updt = () => THAT_POLL = THIS_POLL;
+            const DIFF = Math.abs(THIS_POLL - THAT_POLL) / THAT_POLL;
 
             // The game has changed
             if(TOP_100_GAME.unlike(STREAMER.game))
@@ -255,7 +259,7 @@ plugin({
 
         $('#tt-watch-time')?.parentElement?.remove();
 
-        let live_time = $('.live-time');
+        const live_time = $('.live-time');
 
         live_time?.removeAttribute('style');
         live_time?.tooltip?.remove?.();

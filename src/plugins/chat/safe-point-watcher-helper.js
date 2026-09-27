@@ -17,40 +17,40 @@ plugin({
     init() {
         pointWatcherCounter = 0;
         hasPointsEnabled = false;
-        ALL_CHANNEL_POINT_REWARDS = undefined;
+        ALL_CHANNEL_POINT_REWARDS = void null;
     },
 
     handler: async(context) => {
-        if(top.__readyState__ == "unloading")
+        if(top.__readyState__ == 'unloading')
             return;
 
         Cache.load(['ChannelPoints'], ({ ChannelPoints }) => {
-            let [amount, fiat, face, notEarned, pointsToEarnNext] = ((ChannelPoints ??= {})[context.STREAMER.name] ?? 0).toString().split('|'),
-                balance = $.last('[data-test-selector*="balance-string"i]'),
-                allRewards = ALL_CHANNEL_POINT_REWARDS;
+            let [amount, fiat, face, notEarned, pointsToEarnNext] = ((ChannelPoints ??= {})[context.STREAMER.name] ?? 0).toString().split('|')
+                , balance = $.last('[data-test-selector*="balance-string"i]')
+                , allRewards = ALL_CHANNEL_POINT_REWARDS;
 
             hasPointsEnabled ||= defined(balance);
 
-            amount = (context.STREAMER.coin = balance?.innerText ?? (hasPointsEnabled? amount: '&#128683;'));
+            amount = (context.STREAMER.coin = balance?.innerText ?? (hasPointsEnabled ? amount : '&#128683;'));
             fiat = (context.STREAMER.fiat ??= fiat ?? 0);
             face = (context.STREAMER.face ??= face ?? `${ context.STREAMER.sole }`);
             notEarned = (
-                (allRewards?.length)?
-                    allRewards.filter(amount => parseCoin(amount?.innerText) > context.STREAMER.coin).length:
-                (notEarned > -Infinity)?
-                    notEarned:
-                -1
+                (allRewards?.length)
+                    ? allRewards.filter(amount => parseCoin(amount?.innerText) > context.STREAMER.coin).length
+                : (notEarned > -Infinity)
+                    ? notEarned
+                : -1
             );
             pointsToEarnNext = (
-                (allRewards?.length)?
-                    allRewards
-                        .map(amount => (parseCoin(amount?.innerText) > context.STREAMER.coin? parseCoin(amount?.innerText) - context.STREAMER.coin: 0))
-                        .sort((x, y) => (x > y? -1: +1))
+                (allRewards?.length)
+                    ? allRewards
+                        .map(amount => (parseCoin(amount?.innerText) > context.STREAMER.coin ? parseCoin(amount?.innerText) - context.STREAMER.coin : 0))
+                        .sort((x, y) => (x > y ? -1 : +1))
                         .filter(x => x > 0)
-                        .pop():
-                (notEarned > -Infinity)?
-                    pointsToEarnNext:
-                0
+                        .pop()
+                : (notEarned > -Infinity)
+                    ? pointsToEarnNext
+                : 0
             );
 
             face = face?.replace(/^(?:https?:.*?)?([\d]+\/[\w\-\.\/]+)$/i, '$1');
@@ -74,7 +74,7 @@ plugin({
         when.defined(() => $.last('[data-test-selector*="balance-string"i]')?.closest('button')).then(async balanceButton => {
             RegisterJob('point_watcher_helper');
 
-            let jump = (context.STREAMER.jump?.[context.STREAMER.name?.toLowerCase?.()]?.stream?.points);
+            const jump = (context.STREAMER.jump?.[context.STREAMER.name?.toLowerCase?.()]?.stream?.points);
 
             // $notice('[secondary] How many channel points does the user have?', jump?.balance | 0);
             if(defined(jump?.balance))

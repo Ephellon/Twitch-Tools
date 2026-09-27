@@ -13,21 +13,21 @@ plugin({
     timer: 5000,
 
     init() {
-        RECOVER_PAGE_FROM_LAG = undefined;
-        RECOVER_PAGE_FROM_LAG__EXACT = undefined;
+        RECOVER_PAGE_FROM_LAG = void null;
+        RECOVER_PAGE_FROM_LAG__EXACT = void null;
         RECOVER_PAGE_FROM_LAG__WARNINGS = 0;
     },
 
     handler: async({ StopWatch }) => {
         new StopWatch('recover_pages');
 
-        let error = $('main :is([data-a-target*="error"i][data-a-target*="message"i], [data-test-selector*="content"i][data-test-selector*="overlay"i])');
+        const error = $('main :is([data-a-target*="error"i][data-a-target*="message"i], [data-test-selector*="content"i][data-test-selector*="overlay"i])');
 
         if(nullish(error))
             return StopWatch.stop('recover_pages');
 
-        let message = error.textContent,
-            next = await GetNextStreamer(STREAMER.name);
+        const message = error.textContent
+            , next = await GetNextStreamer(STREAMER.name);
 
         $error(message);
 
@@ -47,8 +47,8 @@ plugin({
         RECOVER_PAGE_FROM_LAG__EXACT = +(new Date);
 
         RECOVER_PAGE_FROM_LAG = setInterval(() => {
-            let now = +(new Date),
-                span = (now - RECOVER_PAGE_FROM_LAG__EXACT);
+            const now = +(new Date)
+                , span = (now - RECOVER_PAGE_FROM_LAG__EXACT);
 
             // The time has drifted by more than 25%
             if(span > (Timers.recover_pages * 1.25))

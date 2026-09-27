@@ -59,18 +59,18 @@ let Clips__Initialize = async(START_OVER = false) => {
         }
 
         time() {
-            let stop = this.stop = new Date;
-            let span = this.span = Math.abs(this.start - stop);
-            let { max, name } = this;
+            const stop = this.stop = new Date;
+            const span = this.span = Math.abs(this.start - stop);
+            const { max, name } = this;
 
             if(span > max)
-                $warn(`"${ name.replace(/(^|_)(\w)/g, ($0, $1, $2, $$, $_) => ['',' '][+!!$1] + $2.toUpperCase()).replace(/_+/g, '- ') }" took ${ (span / 1000).suffix('s', 2).replace(/\.0+/, '') } to complete (max time allowed is ${ (max / 1000).suffix('s', 2).replace(/\.0+/, '') }). Offense time: ${ new Date }. Offending site: ${ location.pathname }`)
+                $warn(`"${ name.replace(/(^|_)(\w)/g, ($0, $1, $2, $$, $_) => ['', ' '][+!!$1] + $2.toUpperCase()).replace(/_+/g, '- ') }" took ${ (span / 1000).suffix('s', 2).replace(/\.0+/, '') } to complete (max time allowed is ${ (max / 1000).suffix('s', 2).replace(/\.0+/, '') }). Offense time: ${ new Date }. Offending site: ${ location.pathname }`)
                     ?.toNativeStack?.();
         }
     }
 
     // What plugins (src/plugins/clips/) get from this scope; see docs/PLUGINS.md
-    let PLUGIN_CONTEXT = { StopWatch };
+    const PLUGIN_CONTEXT = { StopWatch };
 
     // Video Clips → src/plugins/clips/save-ttv-clips.js
     await TTV.run('clips.save_ttv_clips', PLUGIN_CONTEXT);
@@ -79,22 +79,22 @@ let Clips__Initialize = async(START_OVER = false) => {
 // End of Clips__Initialize
 
 let Clips__Initialize_Safe_Mode = async(START_OVER = false) => {
-    let PLUGIN_CONTEXT = {};
+    const PLUGIN_CONTEXT = {};
 
 };
 // End of Clips__Initialize_Safe_Mode
 
-let Clips__PAGE_CHECKER,
-    Clips__WAIT_FOR_PAGE,
-    Clips__SETTING_RELOADER;
+let Clips__PAGE_CHECKER
+    , Clips__WAIT_FOR_PAGE
+    , Clips__SETTING_RELOADER;
 
 Clips__PAGE_CHECKER = setInterval(Clips__WAIT_FOR_PAGE = async() => {
     // The user might not be bannable on `clips.twitch.tv`...
     // Only executes if the user is banned
-    let banned = STREAMER?.veto || !!$.all('[class*="banned"i]').length;
+    const banned = STREAMER?.veto || !!$.all('[class*="banned"i]').length;
 
     if([banned].contains(true)) {
-        $warn('[NON_FATAL] Clip container unavailable. Reason:', { banned });
+        $warn("[NON_FATAL] Clip container unavailable. Reason:", { banned });
 
         await Settings.get();
 
@@ -103,7 +103,7 @@ Clips__PAGE_CHECKER = setInterval(Clips__WAIT_FOR_PAGE = async() => {
     }
 
     // Only executes if the user is NOT banned
-    let ready = (true /* Assume OK if this loads in the first place... */
+    const ready = (true /* Assume OK if this loads in the first place... */
         // The main controller is ready
         // && parseBool(top.MAIN_CONTROLLER_READY)
 
@@ -125,15 +125,15 @@ Clips__PAGE_CHECKER = setInterval(Clips__WAIT_FOR_PAGE = async() => {
         if(IS_A_FRAMED_CONTAINER) {
             // Observe [top] location changes
             LocationObserver: {
-                let { body } = document,
-                    observer = new MutationObserver(mutations => {
+                let { body } = document
+                    , observer = new MutationObserver(mutations => {
                         mutations.map(mutation => {
                             if(PATHNAME !== location.pathname) {
-                                let OLD_HREF = PATHNAME;
+                                const OLD_HREF = PATHNAME;
 
                                 PATHNAME = location.pathname;
 
-                                for(let [name, func] of (top?.__ONLOCATIONCHANGE__ ?? []))
+                                for(const [name, func] of (top?.__ONLOCATIONCHANGE__ ?? []))
                                     func(new CustomEvent('locationchange', { from: OLD_HREF, to: PATHNAME }));
                             }
                         });
@@ -145,17 +145,17 @@ Clips__PAGE_CHECKER = setInterval(Clips__WAIT_FOR_PAGE = async() => {
 
         // Set the SVGs' section IDs
         SectionLabeling: {
-            let conversions = {},
-                Glyphs = window.Glyphs;
+            const conversions = {}
+                , Glyphs = window.Glyphs;
 
-            for(let container of $.all('figure')) {
-                let svg = $('svg', container);
+            for(const container of $.all('figure')) {
+                const svg = $('svg', container);
 
                 if(nullish(svg))
                     continue;
 
                 comparing:
-                for(let glyph in Glyphs)
+                for(const glyph in Glyphs)
                     if(Glyphs.__exclusionList__.contains(glyph))
                         continue comparing;
                     else
@@ -169,7 +169,7 @@ Clips__PAGE_CHECKER = setInterval(Clips__WAIT_FOR_PAGE = async() => {
                                 analysisTime = parseInt(analysisTime);
                                 misMatchPercentage = parseFloat(misMatchPercentage);
 
-                                let matchPercentage = 100 - misMatchPercentage;
+                                const matchPercentage = 100 - misMatchPercentage;
 
                                 if(matchPercentage < 80 || container.getAttribute('tt-svg-label')?.length)
                                     return;

@@ -13,9 +13,9 @@ plugin({
     timer: -5_000,
 
     init() {
-        TTV_DROPS_FRAME = undefined;
-        TTV_DROPS_CHECKER = undefined;
-        TTV_DROPS_REFRESHER = undefined;
+        TTV_DROPS_FRAME = void null;
+        TTV_DROPS_CHECKER = void null;
+        TTV_DROPS_REFRESHER = void null;
         TTV_DROPS_CLAIMED = new Set;
     },
 
@@ -27,7 +27,7 @@ plugin({
         (TTV_DROPS_CHECKER = (btn_str, svg_str) => {
             when(() => $.defined(btn_str, TTV_DROPS_FRAME.contentDocument)).then(() => {
                 let claimed = 0;
-                let dia_str = '[role*="dialog"i] [class*="combo"i] ~ * button';
+                const dia_str = '[role*="dialog"i] [class*="combo"i] ~ * button';
 
                 $.all(btn_str, TTV_DROPS_FRAME.contentDocument).map(btn => {
                     if($.nullish(svg_str, btn))
@@ -42,7 +42,7 @@ plugin({
                     // when.sated(() => $.all(dia_str, TTV_DROPS_FRAME.contentDocument)).then(dialogs => dialogs.map(dia => dia.click(), top.focus()));
                 });
 
-                let error = $('.tw-alert-banner', TTV_DROPS_FRAME.contentDocument)?.innerText ?? '';
+                const error = $('.tw-alert-banner', TTV_DROPS_FRAME.contentDocument)?.innerText ?? '';
 
                 if(claimed > 0) {
                     claimed = [claimed, 'drop'.pluralSuffix(claimed)].join(' ');
@@ -70,6 +70,6 @@ plugin({
     },
 
     setup() {
-        $remark('Creating Drop claimer...');
+        $remark("Creating Drop claimer...");
     },
 });

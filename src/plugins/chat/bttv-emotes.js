@@ -26,13 +26,14 @@ plugin({
 
                     displayName ||= name;
 
-                    for(let emote of emotes)
+                    for(const emote of emotes)
                         BTTV_OWNERS.set(emote, { name, displayName, providerId, userId });
                 });
         });
         BTTV_LOADER = setInterval(() => {
-            let emotes = {};
-            let emotesUUID = UUID.from([...context.BTTV_EMOTES.keys()].sort().join(',')).value;
+            const emotes = {};
+            const emotesUUID = UUID.from([...context.BTTV_EMOTES.keys()].sort().join(',')).value;
+
             if(context.BTTV_EMOTES.uuid != emotesUUID) {
                 context.BTTV_EMOTES.uuid = emotesUUID;
 
@@ -41,8 +42,9 @@ plugin({
                 Cache.large.save({ BTTV_EMOTES: emotes });
             }
 
-            let owners = {};
-            let ownersUUID = UUID.from([...BTTV_OWNERS.keys()].sort().join(',')).value;
+            const owners = {};
+            const ownersUUID = UUID.from([...BTTV_OWNERS.keys()].sort().join(',')).value;
+
             if(BTTV_OWNERS.uuid != ownersUUID) {
                 BTTV_OWNERS.uuid = ownersUUID;
 
@@ -56,15 +58,15 @@ plugin({
         NON_EMOTE_PHRASES = new Set;
         QUEUED_EMOTES = new Set;
         CONVERT_TO_BTTV_EMOTE = (emote, makeTooltip = true) => {
-                let { name, src } = emote,
-                    existing = $(`img.bttv[alt="${ name }"i]`);
+                let { name, src } = emote
+                    , existing = $(`img.bttv[alt="${ name }"i]`);
 
                 if(defined(existing))
                     return existing.closest?.('div.tt-emote-bttv');
 
-                let f = furnish;
+                const f = furnish;
 
-                let emoteContainer =
+                const emoteContainer =
                 f(`#bttv_emote__${ UUID.from(name).toStamp() }.tt-emote-bttv.tt-pd-x-05.tt-relative`).with(
                     f('.emote-button').with(
                         f('.tt-inline-flex').with(
@@ -74,14 +76,14 @@ plugin({
                                     name,
 
                                     onclick: event => {
-                                        let name = event.currentTarget.getAttribute('name'),
-                                            chat = $('[data-a-target="chat-input"i]');
+                                        const name = event.currentTarget.getAttribute('name')
+                                            , chat = $('[data-a-target="chat-input"i]');
 
                                         // chat.innerHTML = (chat.value += `${ name } `);
                                     },
 
                                     ondragstart: event => {
-                                        let { currentTarget } = event;
+                                        const { currentTarget } = event;
 
                                         event.dataTransfer.setData('text/plain', currentTarget.getAttribute('name').trim() + ' ');
                                         event.dataTransfer.dropEffect = 'move';
@@ -133,12 +135,12 @@ plugin({
                     await fetchURL.fromDisk(`//api.betterttv.net/3/cached/users/twitch/${ provider }`, { hoursUntilEntryExpires: 744 })
                         .then(response => response.json())
                         .then(json => {
-                            let { channelEmotes, sharedEmotes } = json;
+                            const { channelEmotes, sharedEmotes } = json;
 
                             if(nullish(channelEmotes ?? sharedEmotes))
                                 return;
 
-                            let emotes = [...channelEmotes, ...sharedEmotes];
+                            const emotes = [...channelEmotes, ...sharedEmotes];
 
                             for(let { emote, code, user, id, imageType, userId = null } of emotes) {
                                 code ??= emote?.code;
@@ -154,7 +156,7 @@ plugin({
                         .catch($warn);
                 // Load emotes with a certain name
                 else if(keyword?.length)
-                    for(let maxNumOfEmotes = BTTV_MAX_EMOTES, offset = 0, allLoaded = false, MAX_REPEAT = 15; !allLoaded && keyword.trim().normalize('NFKD').length && (ignoreCap || context.BTTV_EMOTES.size < maxNumOfEmotes) && MAX_REPEAT > 0 && !NON_EMOTE_PHRASES.has(keyword); (--MAX_REPEAT > 0? null: NON_EMOTE_PHRASES.add(keyword)))
+                    for(let maxNumOfEmotes = BTTV_MAX_EMOTES, offset = 0, allLoaded = false, MAX_REPEAT = 15; !allLoaded && keyword.trim().normalize('NFKD').length && (ignoreCap || context.BTTV_EMOTES.size < maxNumOfEmotes) && MAX_REPEAT > 0 && !NON_EMOTE_PHRASES.has(keyword); (--MAX_REPEAT > 0 ? null : NON_EMOTE_PHRASES.add(keyword)))
                         await fetchURL.fromDisk(`//api.betterttv.net/3/emotes/shared/search?query=${ keyword }&offset=${ offset }&limit=100`, { hoursUntilEntryExpires: 744 })
                             .then(response => response.json())
                             .then(emotes => {
@@ -186,8 +188,8 @@ plugin({
                         await fetchURL.fromDisk(`//api.betterttv.net/3/${ Settings.bttv_emotes_location ?? 'emotes/shared/trending' }?offset=${ offset }&limit=100`, { hoursUntilEntryExpires: 744 })
                             .then(response => response.json())
                             .then(emotes => {
-                                for(let { emote } of emotes) {
-                                    let { code, user, id } = emote;
+                                for(const { emote } of emotes) {
+                                    const { code, user, id } = emote;
 
                                     if(context.BTTV_EMOTES.has(code))
                                         continue;
@@ -204,37 +206,37 @@ plugin({
         context.REFURBISH_BTTV_EMOTE_TOOLTIPS = fragment => {
                 $.all('[data-bttv-emote]', fragment)
                     .forEach(emote => {
-                        let { bttvEmote } = emote.dataset,
-                            tooltip = new Tooltip(emote, bttvEmote);
+                        const { bttvEmote } = emote.dataset
+                            , tooltip = new Tooltip(emote, bttvEmote);
 
                         emote.addEventListener('mouseup', async event => {
-                            let { currentTarget, isTrusted = false } = event,
-                                { bttvEmote, bttvOwner, bttvOwnerId } = currentTarget.dataset,
-                                { top } = getOffset(currentTarget),
-                                ownedEmotes = [];
+                            let { currentTarget, isTrusted = false } = event
+                                , { bttvEmote, bttvOwner, bttvOwnerId } = currentTarget.dataset
+                                , { top } = getOffset(currentTarget)
+                                , ownedEmotes = [];
 
-                            for(let [emote, meta] of BTTV_OWNERS)
+                            for(const [emote, meta] of BTTV_OWNERS)
                                 if(meta.providerId == bttvOwnerId)
                                     ownedEmotes.push({ ...meta, emote });
 
                             top -= 150;
 
-                            let redoSearch = !isTrusted? -1: setTimeout(() => currentTarget.dispatchEvent(new MouseEvent('mouseup', { bubbles: false, cancelable: false, view: window })), 5000);
-                            let resultCard = new Card.deferred({ top });
+                            const redoSearch = !isTrusted ? -1 : setTimeout(() => currentTarget.dispatchEvent(new MouseEvent('mouseup', { bubbles: false, cancelable: false, view: window })), 5000);
+                            const resultCard = new Card.deferred({ top });
 
                             // Raw Search...
                                 // FIX-ME: New Search logic does not complete?
                             new Search(bttvOwner)
                                 .then(Search.convertResults)
                                 .then(({ ok = false, live = false }) => {
-                                    let count = ownedEmotes.length,
-                                        owner = BTTV_OWNERS.get(bttvEmote).userId,
-                                        f = furnish;
+                                    const count = ownedEmotes.length
+                                        , owner = BTTV_OWNERS.get(bttvEmote).userId
+                                        , f = furnish;
 
                                     if(!ok)
                                         throw `Search failed to complete for "${ bttvOwner }"`;
 
-                                    let list = ownedEmotes.slice(0, 8).map(({ emote, displayName, name, providerId }) =>
+                                    const list = ownedEmotes.slice(0, 8).map(({ emote, displayName, name, providerId }) =>
                                         f('.chat-line__message--emote-button[@testSelector=emote-button]').with(
                                             f('span[@aTarget=emote-name]').with(
                                                 f('.class.chat-image__container.tt-align-center.tt-inline-block').with(
@@ -292,15 +294,15 @@ plugin({
         if(defined(BTTVEmoteSection))
             return context.StopWatch.stop('bttv_emotes');
 
-        let parent = $('[data-test-selector^="chat-room-component"i] .emote-picker__scroll-container > *');
+        const parent = $('[data-test-selector^="chat-room-component"i] .emote-picker__scroll-container > *');
 
         if(nullish(parent))
             return context.StopWatch.stop('bttv_emotes');
 
         // Put all BTTV emotes into the emote-picker list
-        let BTTVEmotes = [];
+        const BTTVEmotes = [];
 
-        for(let [name, src] of context.BTTV_EMOTES)
+        for(const [name, src] of context.BTTV_EMOTES)
             BTTVEmotes.push({ name, src });
 
         BTTVEmoteSection =
@@ -358,20 +360,20 @@ plugin({
                 BTTV_MAX_EMOTES = parseInt(Settings.bttv_emotes_maximum);
 
                 // Load extra emotes
-                for(let keyword of (Settings.bttv_emotes_extras ?? "").split(',').filter(string => string.length > 1))
+                for(const keyword of (Settings.bttv_emotes_extras ?? '').split(',').filter(string => string.length > 1))
                     // FIX-ME: Adding BTTV emotes might cause loading issues?
                     LOAD_BTTV_EMOTES(keyword);
             })
             .then(() => {
-                let container = $('#tt-bttv-emotes-container');
+                const container = $('#tt-bttv-emotes-container');
 
                 if(nullish(container))
                     return;
 
                 // Put all BTTV emotes into the emote-picker list
-                let BTTVEmotes = [];
+                const BTTVEmotes = [];
 
-                for(let [name, src] of context.BTTV_EMOTES)
+                for(const [name, src] of context.BTTV_EMOTES)
                     BTTVEmotes.push({ name, src });
 
                 container.append(...BTTVEmotes.shuffle().slice(0, 102).map(CONVERT_TO_BTTV_EMOTE));
@@ -388,7 +390,7 @@ plugin({
                     Queue.bttv_emotes.push(line.uuid);
                     Queue.bttv_emotes = Queue.bttv_emotes.slice(-60);
 
-                    for(let word of line.message.split(/\s+/)) {
+                    for(const word of line.message.split(/\s+/)) {
                         // This will recognise "emote" text, i.e. camel-cased text "emoteName" or all-caps "EMOTENAME"
                         if(parseBool(Settings.auto_load_bttv_emotes))
                             if(!NON_EMOTE_PHRASES.has(word) && !QUEUED_EMOTES.has(word) && !context.BTTV_EMOTES.has(word) && word.length >= 3 && /[a-z\d][A-Z]|^[A-Z]+$/.test(word))
@@ -396,21 +398,21 @@ plugin({
 
                         // This will search for all emotes in the "library"
                         if(context.BTTV_EMOTES.has(word)) {
-                            let regexp = RegExp(`${ word.replace(/(\W)/g, '\\$1').replace(/^\w/, '\\b$&').replace(/\w$/, '$&\\b') }`, 'g'),
-                                alt = word,
-                                src = context.BTTV_EMOTES.get(alt),
-                                owner = BTTV_OWNERS.get(alt),
-                                own = owner?.displayName ?? 'Anonymous',
-                                pid = owner?.providerId,
-                                style = `visibility:hidden!important`;
+                            const regexp = RegExp(`${ word.replace(/(\W)/g, '\\$1').replace(/^\w/, '\\b$&').replace(/\w$/, '$&\\b') }`, 'g')
+                                , alt = word
+                                , src = context.BTTV_EMOTES.get(alt)
+                                , owner = BTTV_OWNERS.get(alt)
+                                , own = owner?.displayName ?? 'Anonymous'
+                                , pid = owner?.providerId
+                                , style = `visibility:hidden!important`;
 
-                            let element = await line.element,
-                                uuid = UUID.from(alt).value;
+                            const element = await line.element
+                                , uuid = UUID.from(alt).value;
 
                             element.innerHTML = element.innerHTML.replace(regexp, uuid);
 
-                            for(let child of $.all('*', element))
-                                for(let { name, value } of child.attributes)
+                            for(const child of $.all('*', element))
+                                for(const { name, value } of child.attributes)
                                     if(value == uuid)
                                         child.setAttribute(name, word);
 
@@ -421,15 +423,15 @@ plugin({
 
                 setInterval(() => {
                     $.all(`param.tt-convert-to-img`).map(child => {
-                        let f = furnish;
-                        let fragment = child.closest('[data-a-target$="message"i]'),
-                            converted = (fragment.getAttribute('tt-converted-emotes') ?? '').split(' '),
-                            tte = (fragment.getAttribute('data-tt-emote') ?? '');
+                        const f = furnish;
+                        const fragment = child.closest('[data-a-target$="message"i]')
+                            , converted = (fragment.getAttribute('tt-converted-emotes') ?? '').split(' ')
+                            , tte = (fragment.getAttribute('data-tt-emote') ?? '');
 
-                        let alt = child.getAttribute('alt'),
-                            src = child.getAttribute('src'),
-                            own = child.getAttribute('own'),
-                            pid = child.getAttribute('pid');
+                        const alt = child.getAttribute('alt')
+                            , src = child.getAttribute('src')
+                            , own = child.getAttribute('own')
+                            , pid = child.getAttribute('pid');
 
                         converted.push(alt);
 
@@ -461,10 +463,10 @@ plugin({
 
         context.EmoteSearch.onquery = async query => {
             await LOAD_BTTV_EMOTES(query, null, true).then(() => {
-                let results = [...context.BTTV_EMOTES]
+                const results = [...context.BTTV_EMOTES]
                     .filter(([key, value]) => {
-                        let pattern = RegExp(query.replace(/(\W)/g, '\\$1'), 'i').test(key),
-                            distance = context.EmoteSearch.getTextDistance(query, key);
+                        const pattern = RegExp(query.replace(/(\W)/g, '\\$1'), 'i').test(key)
+                            , distance = context.EmoteSearch.getTextDistance(query, key);
 
                         return pattern || (distance < query.length / 2);
                     })

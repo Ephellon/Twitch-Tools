@@ -11,15 +11,15 @@ plugin({
     async install({ StopWatch }) {
         // First in Line wait time
         FIRST_IN_LINE_WAIT_TIME = parseInt(
-            parseBool(Settings.first_in_line)?
-                Settings.first_in_line_time_minutes:
-            parseBool(Settings.first_in_line_plus)?
-                Settings.first_in_line_plus_time_minutes:
-            parseBool(Settings.first_in_line_all)?
-                Settings.first_in_line_all_time_minutes:
-            parseBool(Settings.first_in_line_now)?
-                0:
-            0
+            parseBool(Settings.first_in_line)
+                ? Settings.first_in_line_time_minutes
+            : parseBool(Settings.first_in_line_plus)
+                ? Settings.first_in_line_plus_time_minutes
+            : parseBool(Settings.first_in_line_all)
+                ? Settings.first_in_line_all_time_minutes
+            : parseBool(Settings.first_in_line_now)
+                ? 0
+            : 0
         ) | 0;
 
         let ALREADY_RESTORING_DEAD_CHANNEL = false;
@@ -33,11 +33,15 @@ plugin({
             else if(nullish(search))
                 url = parseURL(url).addSearch(location.search);
             else
-                url = parseURL(url).addSearch((_ => { for(let k in _) if(_[k] === "") delete _[k]; return _ })(search));
+                url = parseURL(url).addSearch((_ => {
+ for(const k in _)
+                    if(_[k] === '')
+                    delete _[k]; return _;
+})(search));
 
-            let { href, pathname } = url,
-                name = pathname.slice(1),
-                channel = await(null
+            let { href, pathname } = url
+                , name = pathname.slice(1)
+                , channel = await (null
                     ?? ALL_CHANNELS.find(channel => channel.name.equals(name))
                     ?? new Search(name).then(Search.convertResults)
                 );
@@ -53,7 +57,7 @@ plugin({
 
             FIRST_IN_LINE_HREF = href;
             GetNextStreamer.cachedStreamer = channel;
-            name = (channel.name?.equals(name)? channel.name: name);
+            name = (channel.name?.equals(name) ? channel.name : name);
 
             if(!ALL_FIRST_IN_LINE_JOBS.filter(href => href?.length).length)
                 FIRST_IN_LINE_DUE_DATE = NEW_DUE_DATE();
@@ -63,7 +67,7 @@ plugin({
             FIRST_IN_LINE_WARNING_JOB = setInterval(async() => {
                 let timeRemaining = GET_TIME_REMAINING();
 
-                timeRemaining = timeRemaining < 0? 0: timeRemaining;
+                timeRemaining = timeRemaining < 0 ? 0 : timeRemaining;
 
                 // @TODO: Figure out a single pause controller for First in Line...
                 if(!UP_NEXT_ALLOW_THIS_TAB)
@@ -78,9 +82,9 @@ plugin({
 
                 STARTED_TIMERS.WARNING = true;
 
-                $log('Heading to stream in', toTimeString(timeRemaining), FIRST_IN_LINE_HREF, new Date);
+                $log("Heading to stream in", toTimeString(timeRemaining), FIRST_IN_LINE_HREF, new Date);
 
-                let url = parseURL(FIRST_IN_LINE_HREF);
+                const url = parseURL(FIRST_IN_LINE_HREF);
 
                 if(nullish(url.pathname))
                     return /* Unknown job */;
@@ -91,39 +95,39 @@ plugin({
                     name = url.pathname.slice(1);
 
                 confirm
-                    .timed(`<div hidden controller title="${ (Settings.stream_preview? `Up next: ${ name }`: 'Coming up next...') }" okay="Go now" deny="Skip ${ name }"></div>${ (Settings.stream_preview? '': `Up next: <a href="${ url.href }">${ name }</a>`) }`, timeRemaining)
+                    .timed(`<div hidden controller title="${ (Settings.stream_preview ? `Up next: ${ name }` : "Coming up next...") }" okay="Go now" deny="Skip ${ name }"></div>${ (Settings.stream_preview ? "" : `Up next: <a href="${ url.href }">${ name }</a>`) }`, timeRemaining)
                     .then(action => {
                         if(nullish(action))
                             return /* The event timed out... */;
 
                         // Find the job by channel: FIRST_IN_LINE_HREF carries the page's search string, so
                         // `indexOf` could miss and `splice(-1)` would drop the last job instead (#52)
-                        let current = parseURL(FIRST_IN_LINE_HREF).pathname,
-                            thisJob = ALL_FIRST_IN_LINE_JOBS.findIndex(job => parseURL(job).pathname?.equals(current)),
-                            [removed = FIRST_IN_LINE_HREF] = (thisJob < 0? []: ALL_FIRST_IN_LINE_JOBS.splice(thisJob, 1)),
-                            name = parseURL(removed).pathname.slice(1),
-                            [next] = ALL_FIRST_IN_LINE_JOBS;
+                        const current = parseURL(FIRST_IN_LINE_HREF).pathname
+                            , thisJob = ALL_FIRST_IN_LINE_JOBS.findIndex(job => parseURL(job).pathname?.equals(current))
+                            , [removed = FIRST_IN_LINE_HREF] = (thisJob < 0 ? [] : ALL_FIRST_IN_LINE_JOBS.splice(thisJob, 1))
+                            , name = parseURL(removed).pathname.slice(1)
+                            , [next] = ALL_FIRST_IN_LINE_JOBS;
 
                         $notice(`${ ['Skipping', 'Heading to'][+action] } Up Next channel (confirmation):`, removed);
 
                         // Stop this channel's countdown before anything else, so it can't fire after a Skip (#52)
                         [FIRST_IN_LINE_JOB, FIRST_IN_LINE_WARNING_JOB, FIRST_IN_LINE_WARNING_TEXT_UPDATE].forEach(clearInterval);
-                        FIRST_IN_LINE_HREF = undefined;
+                        FIRST_IN_LINE_HREF = void null;
                         FIRST_IN_LINE_DUE_DATE = NEW_DUE_DATE(FIRST_IN_LINE_TIMER);
 
                         if(defined(next))
-                            REDO_FIRST_IN_LINE_QUEUE(next, { redo: (parseURL(removed).searchParameters?.redo ?? "") });
+                            REDO_FIRST_IN_LINE_QUEUE(next, { redo: (parseURL(removed).searchParameters?.redo ?? '') });
 
                         Cache.save({ ALL_FIRST_IN_LINE_JOBS, FIRST_IN_LINE_DUE_DATE }, () => {
                             if(action) {
                                 // The user clicked "OK" (the channel just taken off the queue, not whatever is next)
-                                goto(parseURL(removed).addSearch({ tool: 'first-in-line--ok' }).href);
+                                goto(parseURL(removed).addSearch({ tool: 'first-in-line--ok' }).href)
                             } else {
                                 // The user clicked "Skip": it's already off the queue; drop its row
-                                $log('Canceled First in Line event', removed);
+                                $log("Canceled First in Line event", removed);
 
-                                let balloonChild = $(`[id^="tt-balloon-job"i][href$="/${ name }"i]`),
-                                    animationID = (balloonChild?.getAttribute('animationID')) || -1;
+                                const balloonChild = $(`[id^="tt-balloon-job"i][href$="/${ name }"i]`)
+                                    , animationID = (balloonChild?.getAttribute('animationID')) || -1;
 
                                 clearInterval(animationID);
                                 balloonChild?.remove();
@@ -141,11 +145,11 @@ plugin({
             FIRST_IN_LINE_JOB = setInterval(() => {
                 // If the channel disappears (or goes offline), kill the job for it
                 // @FIXME: Reanimating First in Line jobs may cause reloading issues?
-                let index = ALL_CHANNELS.findIndex(channel => RegExp(parseURL(channel.href).pathname + '\\b', 'i').test(FIRST_IN_LINE_HREF)),
-                    channel = ALL_CHANNELS[index],
-                    timeRemaining = GET_TIME_REMAINING();
+                let index = ALL_CHANNELS.findIndex(channel => RegExp(parseURL(channel.href).pathname + '\\b', 'i').test(FIRST_IN_LINE_HREF))
+                    , channel = ALL_CHANNELS[index]
+                    , timeRemaining = GET_TIME_REMAINING();
 
-                timeRemaining = timeRemaining < 0? 0: timeRemaining;
+                timeRemaining = timeRemaining < 0 ? 0 : timeRemaining;
 
                 // The timer is paused
                 if(!UP_NEXT_ALLOW_THIS_TAB)
@@ -157,24 +161,24 @@ plugin({
                     if(nullish(FIRST_IN_LINE_HREF))
                         return;
 
-                    $log('Restoring dead channel (interval)...', FIRST_IN_LINE_HREF);
+                    $log("Restoring dead channel (interval)...", FIRST_IN_LINE_HREF);
 
-                    let { href, pathname } = parseURL(FIRST_IN_LINE_HREF),
-                        channelID = UUID.from(pathname).value;
+                    const { href, pathname } = parseURL(FIRST_IN_LINE_HREF)
+                        , channelID = UUID.from(pathname).value;
 
                     if(nullish(pathname))
                         return;
                     ALREADY_RESTORING_DEAD_CHANNEL = true;
 
-                    let name = pathname.slice(1);
+                    const name = pathname.slice(1);
 
                     new Search(name)
                         .then(Search.convertResults)
                         .then(streamer => {
-                            let restored = ({
+                            const restored = ({
                                 from: 'SEARCH',
                                 href,
-                                icon: (typeof streamer.icon == 'string'? Object.assign(new String(streamer.icon), parseURL(streamer.icon)): null),
+                                icon: (typeof streamer.icon == 'string' ? Object.assign(new String(streamer.icon), parseURL(streamer.icon)) : null),
                                 live: parseBool(streamer.live),
                                 name: streamer.name,
                             });
@@ -202,7 +206,7 @@ plugin({
                 /* After above is `false` */
 
                 Cache.save({ FIRST_IN_LINE_DUE_DATE: FIRST_IN_LINE_DUE_DATE = NEW_DUE_DATE(), ALL_FIRST_IN_LINE_JOBS: ALL_FIRST_IN_LINE_JOBS = ALL_FIRST_IN_LINE_JOBS.filter(url => parseURL(url).pathname.toLowerCase() != parseURL(FIRST_IN_LINE_HREF).pathname.toLowerCase()) }, (href = parseURL(channel?.href ?? FIRST_IN_LINE_HREF).addSearch({ ...(parseURL(FIRST_IN_LINE_HREF).searchParameters ?? {}) }).href) => {
-                    $log('Heading to stream now [Job Interval]', href);
+                    $log("Heading to stream now [Job Interval]", href);
 
                     [FIRST_IN_LINE_JOB, FIRST_IN_LINE_WARNING_JOB, FIRST_IN_LINE_WARNING_TEXT_UPDATE].forEach(clearInterval);
 
@@ -227,31 +231,31 @@ plugin({
             if(!UP_NEXT_ALLOW_THIS_TAB)
                 return 3_600_000;
 
-            let now = (+new Date),
-                due = FIRST_IN_LINE_DUE_DATE;
+            const now = (+new Date)
+                , due = FIRST_IN_LINE_DUE_DATE;
 
             return (due - now);
         };
 
         FIRST_IN_LINE_SAFETY_CATCH =
         setInterval(() => {
-            let job = $('[up-next--body] [name][time]');
+            const job = $('[up-next--body] [name][time]');
 
             if(nullish(job))
                 return;
 
-            let timeRemaining = parseInt(job.getAttribute('time'));
+            const timeRemaining = parseInt(job.getAttribute('time'));
 
             // If the normal Up Next switch hasn't happened a minute after it was due, ask instead
             if(timeRemaining <= 60_000 && $.nullish('.tt-confirm'))
                 wait(60_000).then(() => {
-                    let name = GetNextStreamer.cachedStreamer?.name;
+                    const name = GetNextStreamer.cachedStreamer?.name;
 
                     // Another prompt is up, or there's nowhere to go
                     if($.defined('.tt-confirm') || nullish(name))
                         return;
 
-                    $warn(`Mitigation for Up Next: Loose interval @ ${ location } / ${ new Date }`)
+                    $warn(`Mitigation for Up Next: Loose interval @ ${ location } / ${ new Date }`);
                         // .toNativeStack();
 
                     confirm
@@ -265,11 +269,11 @@ plugin({
                             if(action) {
                                 // The user clicked "OK"
 
-                                goto(parseURL(`./${ name }`).addSearch({ tool: `up-next--ok` }).href);
+                                goto(parseURL(`./${ name }`).addSearch({ tool: `up-next--ok` }).href)
                             } else {
                                 // The user clicked "Cancel"
-                                let balloonChild = $(`[id^="tt-balloon-job"i][href$="/${ name }"i]`),
-                                    animationID = (balloonChild?.getAttribute('animationID')) || -1;
+                                const balloonChild = $(`[id^="tt-balloon-job"i][href$="/${ name }"i]`)
+                                    , animationID = (balloonChild?.getAttribute('animationID')) || -1;
 
                                 clearInterval(animationID);
                                 balloonChild?.remove();
@@ -282,15 +286,15 @@ plugin({
             clearInterval(FIRST_IN_LINE_SAFETY_CATCH);
         }, 1000);
 
-        let FIRST_IN_LINE_BALLOON__INSURANCE =
+        const FIRST_IN_LINE_BALLOON__INSURANCE =
         setInterval(() => {
             if(NORMAL_MODE && nullish(FIRST_IN_LINE_BALLOON)) {
-                FIRST_IN_LINE_BALLOON = new Balloon({ title: 'Up Next', icon: (UP_NEXT_ALLOW_THIS_TAB? 'calendar': 'error') });
+                FIRST_IN_LINE_BALLOON = new Balloon({ title: "Up Next", icon: (UP_NEXT_ALLOW_THIS_TAB ? 'calendar' : 'error') });
 
-                let imgSize = '70px';
+                const imgSize = '70px';
 
                 // Pin: Go to this person when the stream(s) end
-                let pinned_button = FIRST_IN_LINE_BALLOON?.addButton({
+                const pinned_button = FIRST_IN_LINE_BALLOON?.addButton({
                     attributes: {
                         id: 'pinned-streamer',
                         contrast: THEME__PREFERRED_CONTRAST,
@@ -298,12 +302,12 @@ plugin({
 
                     icon: 'pinned',
                     onclick: async event => {
-                        let { currentTarget } = event,
-                            parent = currentTarget.closest('[id^="tt-balloon-container"i]');
+                        let { currentTarget } = event
+                            , parent = currentTarget.closest('[id^="tt-balloon-container"i]');
 
-                        let f = furnish;
-                        let body = $('#tt-reminder-listing'),
-                            search = $('#tt-pinned-search');
+                        const f = furnish;
+                        let body = $('#tt-reminder-listing')
+                            , search = $('#tt-pinned-search');
 
                         if(defined(body))
                             return body?.remove();
@@ -313,10 +317,10 @@ plugin({
                         search = f(`input#tt-pinned-search.input.autocomplete[autocomplete=false][spellcheck=false][placeholder="Search for a streamer, game or description here... Esc to exit"]`, {
                             style: 'margin-top:1px',
                             onkeyup: delay(async event => {
-                                let { target, code, altKey, ctrlKey, metaKey, shiftKey } = event,
-                                    value = (target?.value ?? target?.textContent ?? target?.innerText ?? "").trim();
+                                let { target, code, altKey, ctrlKey, metaKey, shiftKey } = event
+                                    , value = (target?.value ?? target?.textContent ?? target?.innerText ?? '').trim();
 
-                                let terms = value.split(/\s+/).map(term => ['name', 'game', 'desc'].map(type => `[${ type }*="${ term }"i]`).join(','));
+                                const terms = value.split(/\s+/).map(term => ['name', 'game', 'desc'].map(type => `[${ type }*="${ term }"i]`).join(','));
 
                                 if(value.length)
                                     AddCustomCSSBlock(target.id, `#${ target.id }-form ~ :not(${ terms.join(',') }) { display: none }`);
@@ -331,8 +335,8 @@ plugin({
                                 .with(search)
                         );
 
-                        let SearchableNames = new Set(ALL_CHANNELS.map(c => c.name));
-                        let WantedNames = new Set(STREAMERS.map(c => c.name));
+                        const SearchableNames = new Set(ALL_CHANNELS.map(c => c.name));
+                        const WantedNames = new Set(STREAMERS.map(c => c.name));
 
                         Cache.load('LiveReminders', async({ LiveReminders }) => {
                             try {
@@ -342,7 +346,7 @@ plugin({
                                 LiveReminders ??= {};
                             }
 
-                            for(let { name } in LiveReminders) {
+                            for(const { name } in LiveReminders) {
                                 SearchableNames.add(name);
                                 WantedNames.add(name);
                             }
@@ -356,11 +360,11 @@ plugin({
                         parent.insertBefore(body, $('[up-next--body] > :nth-child(2)'));
 
                         listing:
-                        for(let name of SearchableNames) {
+                        for(const name of SearchableNames) {
                             if(nullish(name))
                                 continue listing;
 
-                            let channel = (null
+                            const channel = (null
                                 ?? ALL_CHANNELS.find(c => c.name.equals(name))
                                 ?? await new Search(name).then(Search.convertResults)
                             );
@@ -368,18 +372,18 @@ plugin({
                             if(nullish(channel))
                                 continue listing;
 
-                            let _name = name.toLowerCase();
-                            let { icon, live } = channel;
-                            let pinned = parseBool(GetNextStreamer.pinnedStreamer?.equals(name));
-                            let wanted = WantedNames.has(name);
-                            let current = name.equals(STREAMER.name);
+                            const _name = name.toLowerCase();
+                            const { icon, live } = channel;
+                            const pinned = parseBool(GetNextStreamer.pinnedStreamer?.equals(name));
+                            const wanted = WantedNames.has(name);
+                            const current = name.equals(STREAMER.name);
 
-                            let desc = (STREAMER.jump?.[_name]?.title ?? '');
-                            let game = (STREAMER.jump?.[_name]?.stream?.game?.name ?? '');
+                            const desc = (STREAMER.jump?.[_name]?.title ?? '');
+                            const game = (STREAMER.jump?.[_name]?.stream?.game?.name ?? '');
 
                             autocomplete(search, { [name]: [name, game, desc].filter(s => s.length).join(' - ') });
 
-                            let container = f(`.tt-pinnable`, { name, game, desc, live, style: `animation:fade-in 1s 1; background:var(--color-background-${ pinned? 'chat': 'base' })` },
+                            const container = f(`.tt-pinnable`, { name, game, desc, live, style: `animation:fade-in 1s 1; background:var(--color-background-${ pinned ? 'chat' : 'base' })` },
                                 f('.simplebar-scroll-content',
                                     {
                                         style: 'overflow: hidden;',
@@ -408,12 +412,12 @@ plugin({
                                                             onmouseup(event) {
                                                                 event.preventDefault(true);
 
-                                                                let { currentTarget } = event;
+                                                                const { currentTarget } = event;
                                                                 let pinned = parseBool(currentTarget.dataset.pinned);
                                                                 let oldValue, newValue;
 
                                                                 unpin: if(defined(GetNextStreamer.pinnedStreamer)) {
-                                                                    let pidged = $(`.tt-pinnable [data-name="${ GetNextStreamer.pinnedStreamer }"i]`);
+                                                                    const pidged = $(`.tt-pinnable [data-name="${ GetNextStreamer.pinnedStreamer }"i]`);
 
                                                                     if(nullish(pidged))
                                                                         break unpin;
@@ -465,7 +469,7 @@ plugin({
                                                                     f('span.tt-c-text-alt').with(
                                                                         f('p.tt-balloon-message').with(
                                                                             f.span(
-                                                                                f(`strong`, { innerHTML: `${ name } &bull; ${pinned? "Pinned. Click to unpin": "Click to pin \uD83D\uDCCC"}`, style: (pinned? 'color:var(--color-amazon)': '') })
+                                                                                f(`strong`, { innerHTML: `${ name } &bull; ${ pinned ? "Pinned. Click to unpin" : "Click to pin \uD83D\uDCCC" }`, style: (pinned ? 'color:var(--color-amazon)' : '') })
                                                                             )
                                                                         )
                                                                     )
@@ -478,9 +482,9 @@ plugin({
                                                                 ),
                                                                 // Footer (persistent)
                                                                 f('.tt-footer').with(
-                                                                    f(`span.tt-${ (live? 'live': 'offline') }`, {
-                                                                        style: `min-width:3.5em; background-color:var(--color-background-${ (current? 'accent': wanted? live? 'live': 'alt-2': 'brand') })`
-                                                                    }, (current? 'viewing': wanted? live? 'live': 'offline': 'suggested').toUpperCase())
+                                                                    f(`span.tt-${ (live ? 'live' : 'offline') }`, {
+                                                                        style: `min-width:3.5em; background-color:var(--color-background-${ (current ? 'accent' : wanted ? live ? 'live' : 'alt-2' : 'brand') })`
+                                                                    }, (current ? 'viewing' : wanted ? live ? 'live' : 'offline' : 'suggested').toUpperCase())
                                                                 )
                                                             )
                                                         )
@@ -496,7 +500,7 @@ plugin({
                                 search.insertAdjacentElement('afterend', container);
                             else
                                 body.append(container);
-                        }
+                        } // :listing
                     },
                 });
 
@@ -515,7 +519,7 @@ plugin({
                     );
 
                 // Up Next Boost Button
-                let first_in_line_boost_button = FIRST_IN_LINE_BALLOON?.addButton({
+                const first_in_line_boost_button = FIRST_IN_LINE_BALLOON?.addButton({
                     attributes: {
                         id: 'up-next-boost',
                         contrast: THEME__PREFERRED_CONTRAST,
@@ -523,47 +527,47 @@ plugin({
 
                     icon: 'latest',
                     onclick: event => {
-                        let { currentTarget } = event,
-                            speeding = parseBool(currentTarget.getAttribute('speeding'));
+                        let { currentTarget } = event
+                            , speeding = parseBool(currentTarget.getAttribute('speeding'));
 
                         speeding = (FIRST_IN_LINE_BOOST = !speeding);
                         speeding = (FIRST_IN_LINE_BOOST &&= ALL_FIRST_IN_LINE_JOBS?.length > 0);
 
                         currentTarget.querySelector('svg[fill]')?.setAttribute('fill', 'currentcolor');
-                        currentTarget.querySelector('svg[fill]')?.modStyle(`opacity:${ 2**-!speeding }; fill:currentcolor`);
+                        currentTarget.querySelector('svg[fill]')?.modStyle(`opacity:${ 2 ** -!speeding }; fill:currentcolor`);
                         currentTarget.setAttribute('speeding', speeding);
 
                         if(defined(currentTarget.tooltip))
-                            currentTarget.tooltip.innerHTML = `${ ['Start','Stop'][+speeding] } rushing the queue`;
+                            currentTarget.tooltip.innerHTML = `${ ['Start', 'Stop'][+speeding] } rushing the queue`;
 
-                        let up_next_button = $('[up-next--container] button');
+                        const up_next_button = $('[up-next--container] button');
 
                         up_next_button?.setAttribute('allowed', parseBool(UP_NEXT_ALLOW_THIS_TAB));
                         up_next_button?.setAttribute('speeding', parseBool(speeding));
 
-                        let oneMin = 60_000,
-                            fiveMin = 5.5 * oneMin,
-                            tenMin = 10 * oneMin;
+                        const oneMin = 60_000
+                            , fiveMin = 5.5 * oneMin
+                            , tenMin = 10 * oneMin;
 
                         FIRST_IN_LINE_DUE_DATE = NEW_DUE_DATE(
                             FIRST_IN_LINE_TIMER = (
                                 // If the streamer hasn't been on for longer than 10mins, wait until then
-                                STREAMER.time < tenMin?
-                                    (
+                                STREAMER.time < tenMin
+                                    ? (
                                         // Boost is enabled
-                                        FIRST_IN_LINE_BOOST?
-                                            fiveMin + (tenMin - STREAMER.time):
+                                        FIRST_IN_LINE_BOOST
+                                            ? fiveMin + (tenMin - STREAMER.time)
                                         // Boost is disabled
-                                        FIRST_IN_LINE_WAIT_TIME * oneMin
-                                    ):
+                                        : FIRST_IN_LINE_WAIT_TIME * oneMin
+                                    )
                                 // Streamer has been live longer than 10mins
-                                (
+                                : (
                                     // Boost is enabled
-                                    FIRST_IN_LINE_BOOST?
+                                    FIRST_IN_LINE_BOOST
                                         // Boost is enabled
-                                        Math.min(GET_TIME_REMAINING(), fiveMin):
+                                        ? Math.min(GET_TIME_REMAINING(), fiveMin)
                                     // Boost is disabled
-                                    FIRST_IN_LINE_WAIT_TIME * oneMin
+                                    : FIRST_IN_LINE_WAIT_TIME * oneMin
                                 )
                             )
                         );
@@ -577,7 +581,7 @@ plugin({
                 });
 
                 // Pause Button
-                let first_in_line_pause_button = FIRST_IN_LINE_BALLOON?.addButton({
+                const first_in_line_pause_button = FIRST_IN_LINE_BALLOON?.addButton({
                     attributes: {
                         id: 'up-next-control',
                         contrast: THEME__PREFERRED_CONTRAST,
@@ -585,25 +589,25 @@ plugin({
 
                     icon: 'pause',
                     onclick: event => {
-                        let { currentTarget } = event,
-                            paused = parseBool(currentTarget.getAttribute('paused')?.equals('true'));
+                        let { currentTarget } = event
+                            , paused = parseBool(currentTarget.getAttribute('paused')?.equals('true'));
 
                         paused = !paused;
 
-                        currentTarget.innerHTML = Glyphs[['pause','play'][+paused]];
+                        currentTarget.innerHTML = Glyphs[['pause', 'play'][+paused]];
                         currentTarget.setAttribute('paused', FIRST_IN_LINE_PAUSED = paused);
                         currentTarget.setAttribute('paused-at', FIRST_IN_LINE_PAUSED_AT = +new Date);
 
                         // Who paused: a viewer's click is trusted; Auto-Focus clicks the button from script (#56)
-                        currentTarget.setAttribute('paused-by', paused? ['auto', 'user'][+event.isTrusted]: '');
+                        currentTarget.setAttribute('paused-by', paused ? ['auto', 'user'][+event.isTrusted] : '');
 
                         if(defined(currentTarget.tooltip))
-                            currentTarget.tooltip.innerHTML = `${ ['Pause','Resume'][+paused] } the queue`;
+                            currentTarget.tooltip.innerHTML = `${ ['Pause', 'Resume'][+paused] } the queue`;
                     },
                 });
 
                 // Live Reminders: Lists the live reminders onclick
-                let live_reminders_catalog_button = FIRST_IN_LINE_BALLOON?.addButton({
+                const live_reminders_catalog_button = FIRST_IN_LINE_BALLOON?.addButton({
                     attributes: {
                         id: 'live-reminders-catalog',
                         contrast: THEME__PREFERRED_CONTRAST,
@@ -612,8 +616,8 @@ plugin({
                     icon: 'notify',
                     left: true,
                     onclick: async event => {
-                        let { currentTarget } = event,
-                            parent = currentTarget.closest('[id^="tt-balloon-container"i]');
+                        let { currentTarget } = event
+                            , parent = currentTarget.closest('[id^="tt-balloon-container"i]');
 
                         Cache.load(['LiveReminders', 'ChannelPoints', 'DVRChannels'], async({ LiveReminders = null, ChannelPoints = {}, DVRChannels = null }) => {
                             try {
@@ -630,26 +634,26 @@ plugin({
                                 DVRChannels ??= {};
                             }
 
-                            let Hash = {
+                            const Hash = {
                                 live_reminders: UUID.from(JSON.stringify(LiveReminders)).value,
                                 dvr_channels: UUID.from(JSON.stringify(DVRChannels)).value,
                             };
 
-                            let f = furnish;
-                            let body = $('#tt-reminder-listing'),
-                                head = $('[up-next--header]'),
-                                search = $('#tt-reminder-search');
+                            const f = furnish;
+                            let body = $('#tt-reminder-listing')
+                                , head = $('[up-next--header]')
+                                , search = $('#tt-reminder-search');
 
                             if(defined(body)) {
                                 live_reminders_catalog_button.innerHTML = Glyphs.modify('notify', { height: '20px', width: '20px' });
-                                live_reminders_catalog_button.tooltip.innerHTML = 'View Live Reminders';
-                                head.innerHTML = 'Up Next';
+                                live_reminders_catalog_button.tooltip.innerHTML = "View Live Reminders";
+                                head.innerHTML = "Up Next";
 
                                 return body?.remove();
                             } else {
                                 live_reminders_catalog_button.innerHTML = Glyphs.modify('calendar', { height: '20px', width: '20px' });
-                                live_reminders_catalog_button.tooltip.innerHTML = 'View Up Next';
-                                head.innerHTML = 'Live Reminders';
+                                live_reminders_catalog_button.tooltip.innerHTML = "View Up Next";
+                                head.innerHTML = "Live Reminders";
                             }
 
                             body = f(`#tt-reminder-listing`);
@@ -658,10 +662,10 @@ plugin({
                                 search = f(`input#tt-reminder-search.input.autocomplete[autocomplete=false][spellcheck=false][placeholder="Search for a streamer, game or description here... Esc to exit"]`, {
                                     style: 'margin-top:1px',
                                     onkeyup: delay(async event => {
-                                        let { target, code, altKey, ctrlKey, metaKey, shiftKey } = event,
-                                            value = (target?.value ?? target?.textContent ?? target?.innerText ?? "").trim();
+                                        let { target, code, altKey, ctrlKey, metaKey, shiftKey } = event
+                                            , value = (target?.value ?? target?.textContent ?? target?.innerText ?? '').trim();
 
-                                        let terms = value.split(/\s+/).map(term => ['name', 'game', 'desc'].map(type => `[${ type }*="${ term }"i]`).join(','));
+                                        const terms = value.split(/\s+/).map(term => ['name', 'game', 'desc'].map(type => `[${ type }*="${ term }"i]`).join(','));
 
                                         if(value.length)
                                             AddCustomCSSBlock(target.id, `#${ target.id }-form ~ :not(${ terms.join(',') }) { display: none }`);
@@ -684,16 +688,16 @@ plugin({
                             parent.insertBefore(body, $('[up-next--body] > :nth-child(2)'));
 
                             // List all reminders, in order of their last live time
-                            let { abs, random, round } = Math;
+                            const { abs, random, round } = Math;
                             let reminders = [];
-                            let now = new Date,
-                                today = now.toLocaleDateString(top.LANGUAGE, { dateStyle: 'short' }),
-                                yesterday = new Date(+now - 86_400_000).toLocaleDateString(top.LANGUAGE, { dateStyle: 'short' });
+                            const now = new Date
+                                , today = now.toLocaleDateString(top.LANGUAGE, { dateStyle: 'short' })
+                                , yesterday = new Date(+now - 86_400_000).toLocaleDateString(top.LANGUAGE, { dateStyle: 'short' });
 
                             sorting:
-                            for(let reminderName in LiveReminders)
+                            for(const reminderName in LiveReminders)
                                 reminders.push({ name: reminderName, time: new Date(LiveReminders[reminderName]) });
-                            reminders = reminders.sort((a, b) => (abs(+now - +a.time) < abs(+now - +b.time))? -1: +1);
+                            reminders = reminders.sort((a, b) => (abs(+now - +a.time) < abs(+now - +b.time)) ? -1 : +1);
 
                             if(!reminders.length)
                                 return await alert.timed(`There are no Live Reminders to display<p tt-x>${ (new UUID) }</p>`, 7000);
@@ -703,13 +707,14 @@ plugin({
                                 if($.nullish(`#tt-reminder-listing`))
                                     break listing;
 
-                                let { length } = reminders;
-                                let { name, time } = reminders[index];
-                                let channel = await new Search(name).then(Search.convertResults),
-                                    ok = parseBool(channel?.ok);
+                                const { length } = reminders;
+                                const { name, time } = reminders[index];
+                                let channel = await new Search(name).then(Search.convertResults)
+                                    , ok = parseBool(channel?.ok);
 
                                 // Search did not complete...
                                 let num = 3;
+
                                 while(!ok && num-- > 0 && $.defined(`#tt-reminder-listing`)) {
 
                                     Search.void(name);
@@ -728,15 +733,16 @@ plugin({
                                         continue listing;
                                 }
 
-                                let [amount, fiat, face, notEarned, pointsToEarnNext] = (ChannelPoints[name] ?? 0).toString().split('|'),
-                                    sole = face?.split('/')?.map(parseFloat)?.shift();
+                                const [amount, fiat, face, notEarned, pointsToEarnNext] = (ChannelPoints[name] ?? 0).toString().split('|')
+                                    , sole = face?.split('/')?.map(parseFloat)?.shift();
 
                                 // Correct for changed usernames
-                                if(!ok) try {
-                                    let definitiveID = await new Search(name, 'sniffer', 'getID');
+                                if(!ok)
+                                    try {
+                                    const definitiveID = await new Search(name, 'sniffer', 'getID');
 
                                     if(nullish(definitiveID)) {
-                                        let real = await new Search(sole, 'sniffer', 'getName');
+                                        const real = await new Search(sole, 'sniffer', 'getName');
 
                                         $warn(`Updating details about (#${ sole }) "${ name }" → "${ real }"`);
 
@@ -763,6 +769,7 @@ plugin({
 
                                         // @performance
                                         PrepareForGarbageCollection(LiveReminders);
+
                                         continue listing;
                                     }
                                 } catch(error) {
@@ -772,56 +779,56 @@ plugin({
                                 }
 
                                 // Legacy reminders... | v4.26 → v4.27
-                                let legacy = +now < +time;
+                                const legacy = +now < +time;
 
                                 if(nullish(channel))
                                     continue listing;
 
-                                let real = new Date(channel.data?.actualStartTime || 0);
+                                const real = new Date(channel.data?.actualStartTime || 0);
 
-                                let day = time.toLocaleDateString(top.LANGUAGE, { dateStyle: 'short' }),
-                                    hour = time.toLocaleTimeString(top.LANGUAGE, { timeStyle: 'short' }),
-                                    recent = (abs(+now - +time) / 3_600_000 < 24),
-                                    live = (+real > +time) || await Search.getUserStatus(name),
-                                    [since] = toTimeString((live && time < now? now - time: abs(now - time)), '~hour hour|~minute minute|~second second').split('|').filter(parseFloat),
-                                    [tense_A, tense_B] = [['',' ago'],['in ','']][+legacy];
+                                const day = time.toLocaleDateString(top.LANGUAGE, { dateStyle: 'short' })
+                                    , hour = time.toLocaleTimeString(top.LANGUAGE, { timeStyle: 'short' })
+                                    , recent = (abs(+now - +time) / 3_600_000 < 24)
+                                    , live = (+real > +time) || await Search.getUserStatus(name)
+                                    , [since] = toTimeString((live && time < now ? now - time : abs(now - time)), '~hour hour|~minute minute|~second second').split('|').filter(parseFloat)
+                                    , [tense_A, tense_B] = [['', ' ago'], ['in ', '']][+legacy];
 
-                                let _name = name.toLowerCase();
-                                let { href = `./${ _name }`, icon = Runtime.getURL('profile.png'), desc = (STREAMER.jump?.[_name]?.title ?? '') } = channel;
-                                let coinStyle = new CSSObject({ verticalAlign: 'bottom', height: '20px', width: '20px' }),
-                                    coinText =
+                                const _name = name.toLowerCase();
+                                const { href = `./${ _name }`, icon = Runtime.getURL('profile.png'), desc = (STREAMER.jump?.[_name]?.title ?? '') } = channel;
+                                const coinStyle = new CSSObject({ verticalAlign: 'bottom', height: '20px', width: '20px' })
+                                    , coinText =
                                         furnish('span.tt-live-reminder-point-amount[bottom-only]', {
                                             'rainbow-border': notEarned == 0,
                                             innerHTML: amount.replace('.0', '').toLocaleString(LANGUAGE),
-                                        }).outerHTML,
-                                    coinIcon = (
-                                        face?.contains('/')?
-                                            furnish('span.tt-live-reminder-point-face', {
+                                        }).outerHTML
+                                    , coinIcon = (
+                                        face?.contains('/')
+                                            ? furnish('span.tt-live-reminder-point-face', {
                                                 innerHTML: furnish('img', { src: `https://static-cdn.jtvnw.net/channel-points-icons/${ face }`, style: coinStyle.toString() }).outerHTML,
-                                            }):
-                                        furnish('span.tt-live-reminder-point-face', {
+                                            })
+                                        : furnish('span.tt-live-reminder-point-face', {
                                             innerHTML: Glyphs.modify('channelpoints', { style: `vertical-align:bottom; ${ coinStyle.toString() }` }),
                                         })
                                     ).outerHTML;
 
-                                let game = (STREAMER.jump?.[_name]?.stream?.game?.name ?? ''),
-                                    primaryColor = Color.destruct(STREAMER.jump?.[_name]?.primaryColorHex || '9147ff'),
-                                    primaryColorDarker = `hsl(${ primaryColor.H }deg,${ primaryColor.S }%,${ (primaryColor.L * .9).clamp(0, 75) }%)`,
-                                    primaryColorLighter = `hsl(${ primaryColor.H }deg,${ primaryColor.S }%,${ (primaryColor.L * 1.1).clamp(25, 100) }%)`;
+                                const game = (STREAMER.jump?.[_name]?.stream?.game?.name ?? '')
+                                    , primaryColor = Color.destruct(STREAMER.jump?.[_name]?.primaryColorHex || '9147ff')
+                                    , primaryColorDarker = `hsl(${ primaryColor.H }deg,${ primaryColor.S }%,${ (primaryColor.L * .9).clamp(0, 75) }%)`
+                                    , primaryColorLighter = `hsl(${ primaryColor.H }deg,${ primaryColor.S }%,${ (primaryColor.L * 1.1).clamp(25, 100) }%)`;
 
-                                let liveFontColor = (THEME.equals('dark')? Color.white: Color.black);
-                                let [liveBGColor] = [primaryColor.HEX, primaryColorDarker, primaryColorLighter].map(Color.destruct).sort((a, b) => Color.contrast(liveFontColor, [b.R, b.G, b.B]) - Color.contrast(liveFontColor, [a.R, a.G, a.B]));
+                                const liveFontColor = (THEME.equals('dark') ? Color.white : Color.black);
+                                const [liveBGColor] = [primaryColor.HEX, primaryColorDarker, primaryColorLighter].map(Color.destruct).sort((a, b) => Color.contrast(liveFontColor, [b.R, b.G, b.B]) - Color.contrast(liveFontColor, [a.R, a.G, a.B]));
 
-                                let status = `<span class="tt-${ (live? 'live': 'offline') }" style="min-width:3.5em;${ (!live? '': `background-color:${ liveBGColor.HEX }`) }">${ (live? 'LIVE': recent? tense_A + since.pluralSuffix(parseFloat(since)) + tense_B: [day, hour].join(' ')) }</span>`;
+                                const status = `<span class="tt-${ (live ? 'live' : 'offline') }" style="min-width:3.5em;${ (!live ? '' : `background-color:${ liveBGColor.HEX }`) }">${ (live ? 'LIVE' : recent ? tense_A + since.pluralSuffix(parseFloat(since)) + tense_B : [day, hour].join(' ')) }</span>`;
 
-                                let DVR_ON = parseBool(DVRChannels[_name]);
+                                const DVR_ON = parseBool(DVRChannels[_name]);
 
                                 if((game || desc)?.length)
                                     autocomplete(search, { [name]: [name, game, desc].filter(s => s.length).join(' - ') });
 
-                                let imgSize = '70px';
+                                const imgSize = '70px';
 
-                                let container = f(`.tt-reminder`, { name, game, desc, live, style: `animation:fade-in 1s 1; background:var(--color-background-base)` },
+                                const container = f(`.tt-reminder`, { name, game, desc, live, style: `animation:fade-in 1s 1; background:var(--color-background-base)` },
                                     f('.simplebar-scroll-content',
                                         {
                                             style: 'overflow: hidden;',
@@ -846,7 +853,7 @@ plugin({
                                                             f('.persistent-notification__area.tt-flex.tt-flex-nowrap.tt-pd-b-1.tt-pd-l-1.tt-pd-r-3.tt-pd-t-1').with(
                                                                 // Avatar
                                                                 f.div(
-                                                                    f('.tt-border-radius-rounded.tt-card-img.tt-card-img--size-4.tt-flex-shrink-0.tt-overflow-hidden', { style: (!live? '': `border:3px solid ${ primaryColor.HEX }`) },
+                                                                    f('.tt-border-radius-rounded.tt-card-img.tt-card-img--size-4.tt-flex-shrink-0.tt-overflow-hidden', { style: (!live ? '' : `border:3px solid ${ primaryColor.HEX }`) },
                                                                         f('.tt-aspect.tt-aspect--align-top').with(
                                                                             f('img.tt-balloon-avatar.tt-image', { src: icon, style: `min-width:${ imgSize }` })
                                                                         )
@@ -857,11 +864,11 @@ plugin({
                                                                     f('.persistent-notification__body.tt-overflow-hidden[@testSelector=persistent-notification__body]').with(
                                                                         f('span.tt-c-text-alt').with(
                                                                             f('p.tt-balloon-message').with(
-                                                                                !live?
-                                                                                    f.strong(name):
-                                                                                f.span(
+                                                                                !live
+                                                                                    ? f.strong(name)
+                                                                                : f.span(
                                                                                     f(`strong`, { innerHTML: [name, game].filter(s => s.length).join(' &mdash; ') }),
-                                                                                    f(`span.tt-time-elapsed[start=${ (+real > +time? real: time).toJSON() }]`).with(hour),
+                                                                                    f(`span.tt-time-elapsed[start=${ (+real > +time ? real : time).toJSON() }]`).with(hour),
                                                                                     f(`p.tt-hide-text-overflow[style=text-indent:.25em]`).setTooltip(desc, { from: 'top' }).with(desc)
                                                                                 )
                                                                             )
@@ -885,8 +892,8 @@ plugin({
                                                                         name,
 
                                                                         onmouseup: event => {
-                                                                            let { currentTarget } = event,
-                                                                                name = currentTarget.getAttribute('name');
+                                                                            let { currentTarget } = event
+                                                                                , name = currentTarget.getAttribute('name');
 
                                                                             Cache.load('LiveReminders', async({ LiveReminders }) => {
                                                                                 try {
@@ -896,7 +903,7 @@ plugin({
                                                                                     LiveReminders ??= {};
                                                                                 }
 
-                                                                                let justInCase = { ...LiveReminders[name] };
+                                                                                const justInCase = { ...LiveReminders[name] };
 
                                                                                 $(`.tt-reminder[name="${ name }"i]`)?.remove();
                                                                                 delete LiveReminders[name];
@@ -930,8 +937,8 @@ plugin({
                                                                         name,
 
                                                                         onmouseup: event => {
-                                                                            let { currentTarget } = event,
-                                                                                name = currentTarget.getAttribute('name');
+                                                                            let { currentTarget } = event
+                                                                                , name = currentTarget.getAttribute('name');
 
                                                                             MiniPlayer = name;
                                                                         },
@@ -948,16 +955,16 @@ plugin({
                                                             )
                                                         ),
                                                         (
-                                                            parseBool(Settings.video_clips__dvr)?
-                                                                f('.persistent-notification__popout.tt-absolute.tt-pd-l-1', { style: `top:5rem; right:0` },
+                                                            parseBool(Settings.video_clips__dvr)
+                                                                ? f('.persistent-notification__popout.tt-absolute.tt-pd-l-1', { style: `top:5rem; right:0` },
                                                                     f('.tt-align-items-start.tt-flex.tt-flex-nowrap').with(
                                                                         f('button.tt-align-items-center.tt-align-middle.tt-border-bottom-left-radius-small.tt-border-bottom-right-radius-small.tt-border-top-left-radius-small.tt-border-top-right-radius-small.tt-button-icon.tt-button-icon--small.tt-core-button.tt-core-button--small.tt-inline-flex.tt-interactive.tt-justify-content-center.tt-overflow-hidden.tt-relative[@testSelector=persistent-notification__popout]',
                                                                             {
                                                                                 name,
 
                                                                                 onmouseup: event => {
-                                                                                    let { currentTarget } = event,
-                                                                                        name = currentTarget.getAttribute('name');
+                                                                                    let { currentTarget } = event
+                                                                                        , name = currentTarget.getAttribute('name');
 
                                                                                     Cache.load('DVRChannels', async({ DVRChannels }) => {
                                                                                         try {
@@ -967,10 +974,10 @@ plugin({
                                                                                             DVRChannels ??= {};
                                                                                         }
 
-                                                                                        let s = string => string.replace(/$/, "'").replace(/(?<!s)'$/, "'s"),
-                                                                                            DVR_ID = name.toLowerCase(),
-                                                                                            enabled = !parseBool(DVRChannels[DVR_ID]?.length),
-                                                                                            [title, subtitle, icon] = [
+                                                                                        let s = string => string.replace(/$/, "'").replace(/(?<!s)'$/, "'s")
+                                                                                            , DVR_ID = name.toLowerCase()
+                                                                                            , enabled = !parseBool(DVRChannels[DVR_ID]?.length)
+                                                                                            , [title, subtitle, icon] = [
                                                                                                 ['Turn DVR on', `${ s(name) } live streams will be recorded`, 'host'],
                                                                                                 ['Turn DVR off', `${ s(name) } live streams will no longer be recorded`, 'clip']
                                                                                             ][+!!enabled];
@@ -981,6 +988,7 @@ plugin({
 
                                                                                         // Add the DVR...
                                                                                         let message;
+
                                                                                         if(enabled) {
                                                                                             message = `${ s(name) } streams will be recorded.`;
 
@@ -1002,11 +1010,11 @@ plugin({
                                                                                 f('div',
                                                                                     {
                                                                                         style: 'height:1.6rem; width:1.6rem',
-                                                                                        innerHTML: Glyphs.modify(['host','clip'][+DVR_ON], { style: `fill:${ ['currentcolor','#f59b00'][+DVR_ON] }` }),
+                                                                                        innerHTML: Glyphs.modify(['host', 'clip'][+DVR_ON], { style: `fill:${ ['currentcolor', '#f59b00'][+DVR_ON] }` }),
                                                                                     }
                                                                                 )
                                                                             )
-                                                                        ).setTooltip(`${ ['Start', 'Stop'][+DVR_ON] } recording ${ name }'${ /s$/.test(name)? '': 's' } streams`, { from: 'top' })
+                                                                        ).setTooltip(`${ ['Start', 'Stop'][+DVR_ON] } recording ${ name }'${ /s$/.test(name) ? '' : 's' } streams`, { from: 'top' })
                                                                     )
                                                                 )
                                                             // DVR is NOT enabled, so don't show anything here...
@@ -1019,8 +1027,8 @@ plugin({
                                     )
                                 );
 
-                                let lastOnline = $.all('.tt-reminder[live="true"i]', body).pop(),
-                                    [firstOffline] = $.all('.tt-reminder[live="false"i]', body);
+                                const lastOnline = $.all('.tt-reminder[live="true"i]', body).pop()
+                                    , [firstOffline] = $.all('.tt-reminder[live="false"i]', body);
 
                                 if(defined(firstOffline) && live)
                                     firstOffline.insertAdjacentElement('beforebegin', container);
@@ -1039,7 +1047,7 @@ plugin({
                                     // https://stackoverflow.com/q/72803095/4211612
                                 // Move the channels around to prioritize live ones... Does NOT need to be exact
                                 if(live) {
-                                    let data = LiveReminders[name];
+                                    const data = LiveReminders[name];
 
                                     delete LiveReminders[name];
 
@@ -1048,7 +1056,7 @@ plugin({
 
                                 // Loading reminders (progress bar)...
                                 $('[up-next--body] > *')?.modStyle(`border-bottom:2px solid #0000; transition:border .5s; border-image:linear-gradient(90deg, var(--user-complement-color) ${ (100 * (index / length)).toFixed(0) }%, #0000 0) 1;`);
-                            }
+                            } // :listing
 
                             wait(500)
                                 .then(() => $('[up-next--body] > *').modStyle('border-bottom:2px solid #0000; transition:border .5s; border-image:linear-gradient(90deg, #0000, #0000) 1;'));
@@ -1067,14 +1075,14 @@ plugin({
 
                 live_reminders_catalog_button.tooltip ??= new Tooltip(live_reminders_catalog_button, 'View Live Reminders');
 
-                LIVE_REMINDERS__LISTING_INTERVAL ??=
-                setInterval(() => {
-                    for(let span of $.all('.tt-time-elapsed'))
+                LIVE_REMINDERS__LISTING_INTERVAL
+                ??= setInterval(() => {
+                    for(const span of $.all('.tt-time-elapsed'))
                         span.innerHTML = toTimeString(+new Date - +new Date(span.getAttribute('start')), '<&days=:>!hour:!minute:!second');
                 }, 1000);
 
                 // Help Button
-                let first_in_line_help_button = FIRST_IN_LINE_BALLOON?.addButton({
+                const first_in_line_help_button = FIRST_IN_LINE_BALLOON?.addButton({
                     attributes: {
                         id: 'up-next-help',
                         contrast: THEME__PREFERRED_CONTRAST,
@@ -1082,32 +1090,32 @@ plugin({
 
                     icon: 'help',
                     left: true,
-                }),
-                    [accent, contrast] = (Settings.accent_color ?? 'blue/12').split('/'),
-                    [colorName] = accent.split('-').reverse();
+                })
+                    , [accent, contrast] = (Settings.accent_color ?? 'blue/12').split('/')
+                    , [colorName] = accent.split('-').reverse();
 
                 first_in_line_help_button.tooltip ??= new Tooltip(first_in_line_help_button, 'Drop a channel here to queue it');
 
                 // Update the color name...
                 setInterval(() => {
-                    let thematicColor = Color.getName(THEME.equals('dark')? THEME__CHANNEL_DARK: THEME__CHANNEL_LIGHT);
-                    let textShadow = (['black', 'white'].contains(thematicColor)? `text-shadow:0 0 2px ${ THEME.equals('dark')? 'black': 'white' }`: '');
+                    let thematicColor = Color.getName(THEME.equals('dark') ? THEME__CHANNEL_DARK : THEME__CHANNEL_LIGHT);
+                    const textShadow = (['black', 'white'].contains(thematicColor) ? `text-shadow:0 0 2px ${ THEME.equals('dark') ? 'black' : 'white' }` : '');
 
                     // Swap to correct :P
                     thematicColor = ({ black: 'white', white: 'black' }[thematicColor]) ?? thematicColor;
 
                     first_in_line_help_button.tooltip.innerHTML = (
-                        UP_NEXT_ALLOW_THIS_TAB?
-                            `Drop a channel in the <span style="color:var(--user-accent-color); ${ textShadow }">${ colorName }</span> area to queue it`:
-                        `Up Next is disabled for this tab`
-                    ).replace(/\bcolored\b/g, () => thematicColor);
+                        UP_NEXT_ALLOW_THIS_TAB
+                            ? `Drop a channel in the <span style="color:var(--user-accent-color); ${ textShadow }">${ colorName }</span> area to queue it`
+                        : `Up Next is disabled for this tab`
+                    ).replace(/\bcolored\b/g, ($0, $$, $_) => thematicColor);
                 }, 1000);
 
                 // Load cache
                 Cache.load(['ALL_FIRST_IN_LINE_JOBS', 'FIRST_IN_LINE_DUE_DATE', 'FIRST_IN_LINE_BOOST'], cache => {
-                    let oneMin = 60_000,
-                        fiveMin = 5.5 * oneMin,
-                        tenMin = 10 * oneMin;
+                    const oneMin = 60_000
+                        , fiveMin = 5.5 * oneMin
+                        , tenMin = 10 * oneMin;
 
                     [FIRST_IN_LINE_HREF] = ALL_FIRST_IN_LINE_JOBS = (cache.ALL_FIRST_IN_LINE_JOBS ?? []);
                     FIRST_IN_LINE_BOOST = parseBool(cache.FIRST_IN_LINE_BOOST) && parseBool(ALL_FIRST_IN_LINE_JOBS?.length);
@@ -1117,21 +1125,21 @@ plugin({
                             NEW_DUE_DATE(
                                 FIRST_IN_LINE_TIMER = (
                                     // If the streamer hasn't been on for longer than 10mins, wait until then
-                                    STREAMER.time < tenMin?
-                                        (
+                                    STREAMER.time < tenMin
+                                        ? (
                                             // Boost is enabled
-                                            FIRST_IN_LINE_BOOST?
-                                                fiveMin + (tenMin - STREAMER.time):
+                                            FIRST_IN_LINE_BOOST
+                                                ? fiveMin + (tenMin - STREAMER.time)
                                             // Boost is disabled
-                                            FIRST_IN_LINE_WAIT_TIME * oneMin
-                                        ):
+                                            : FIRST_IN_LINE_WAIT_TIME * oneMin
+                                        )
                                     // Streamer has been live longer than 10mins
-                                    (
+                                    : (
                                         // Boost is enabled
-                                        FIRST_IN_LINE_BOOST?
-                                            Math.min(GET_TIME_REMAINING(), fiveMin):
+                                        FIRST_IN_LINE_BOOST
+                                            ? Math.min(GET_TIME_REMAINING(), fiveMin)
                                         // Boost is disabled
-                                        FIRST_IN_LINE_WAIT_TIME * oneMin
+                                        : FIRST_IN_LINE_WAIT_TIME * oneMin
                                     )
                                 )
                             )
@@ -1147,16 +1155,16 @@ plugin({
 
                         $remark(`Up Next Boost is enabled → Waiting ${ toTimeString(GET_TIME_REMAINING() | 0) } before leaving for "${ parseURL(FIRST_IN_LINE_HREF).pathname?.slice(1) }"`);
                     } else {
-                        $remark(`Up Next Boost is disabled`);
+                        $remark(`Up Next Boost is disabled`)
                     }
 
                     // Up Next Boost
                     first_in_line_boost_button.setAttribute('speeding', FIRST_IN_LINE_BOOST);
                     first_in_line_boost_button.querySelector('svg[fill]')?.setAttribute('fill', '');
-                    first_in_line_boost_button.querySelector('svg[fill]')?.modStyle(`opacity:${ 2**-!FIRST_IN_LINE_BOOST }; fill:currentcolor`);
-                    first_in_line_boost_button.tooltip ??= new Tooltip(first_in_line_boost_button, `${ ['Start','Stop'][FIRST_IN_LINE_BOOST | 0] } rushing the queue`);
+                    first_in_line_boost_button.querySelector('svg[fill]')?.modStyle(`opacity:${ 2 ** -!FIRST_IN_LINE_BOOST }; fill:currentcolor`);
+                    first_in_line_boost_button.tooltip ??= new Tooltip(first_in_line_boost_button, `${ ['Start', 'Stop'][FIRST_IN_LINE_BOOST | 0] } rushing the queue`);
 
-                    let up_next_button = $('[up-next--container] button');
+                    const up_next_button = $('[up-next--container] button');
 
                     up_next_button?.setAttribute('allowed', parseBool(UP_NEXT_ALLOW_THIS_TAB));
                     up_next_button?.setAttribute('speeding', parseBool(FIRST_IN_LINE_BOOST));
@@ -1172,7 +1180,7 @@ plugin({
                 FIRST_IN_LINE_BALLOON.body.ondragover ??= event => {
                     event.preventDefault();
 
-                    event.dataTransfer.dropEffect = (UP_NEXT_ALLOW_THIS_TAB? 'move': 'none');
+                    event.dataTransfer.dropEffect = (UP_NEXT_ALLOW_THIS_TAB ? 'move' : 'none');
                 };
 
                 FIRST_IN_LINE_BALLOON.body.ondrop ??= async event => {
@@ -1182,13 +1190,13 @@ plugin({
                         return;
 
                     // Try to see if it's a link...
-                    let text = event.dataTransfer.getData('text');
+                    const text = event.dataTransfer.getData('text');
 
                     if(!parseURL.pattern.test(text))
                         return;
 
-                    let { href, hostname, pathname, domainPath } = parseURL(text),
-                        name = pathname.slice(1).split('/').shift();
+                    const { href, hostname, pathname, domainPath } = parseURL(text)
+                        , name = pathname.slice(1).split('/').shift();
 
                     // No idea what the user just dropped
                     if(!hostname?.length || !pathname?.length)
@@ -1197,17 +1205,17 @@ plugin({
                     if(!/^tv\.twitch/i.test(domainPath.join('.')) || RESERVED_TWITCH_PATHNAMES.test(pathname))
                         return $warn(`Unable to add link to Up Next "${ href }"`);
 
-                    let streamer = await(null
+                    const streamer = await (null
                         ?? ALL_CHANNELS.find(channel => parseURL(channel.href).pathname.equals('/' + name))
                         ?? (null
                             ?? new Search(name).then(Search.convertResults)
                             ?? Promise.reject(`Unable to perform search for "${ name }"`)
                         )
                             .then(search => {
-                                let found = ({
+                                const found = ({
                                     from: 'SEARCH',
                                     href,
-                                    icon: (typeof search.icon == 'string'? Object.assign(new String(search.icon), parseURL(search.icon)): null),
+                                    icon: (typeof search.icon == 'string' ? Object.assign(new String(search.icon), parseURL(search.icon)) : null),
                                     live: parseBool(search.live),
                                     name: search.name,
                                 });
@@ -1219,19 +1227,19 @@ plugin({
                             .catch($warn)
                     );
 
-                    $log('Adding to Up Next [ondrop]:', { href, streamer });
+                    $log("Adding to Up Next [ondrop]:", { href, streamer });
 
                     if(nullish(streamer?.icon)) {
-                        let name = (streamer?.name ?? parseURL(href).pathname?.slice(1));
+                        const name = (streamer?.name ?? parseURL(href).pathname?.slice(1));
 
                         if(defined(name))
                             new Search(name)
                                 .then(Search.convertResults)
                                 .then(streamer => {
-                                    let restored = ({
+                                    const restored = ({
                                         from: 'SEARCH',
                                         href,
-                                        icon: (typeof streamer.icon == 'string'? Object.assign(new String(streamer.icon), parseURL(streamer.icon)): null),
+                                        icon: (typeof streamer.icon == 'string' ? Object.assign(new String(streamer.icon), parseURL(streamer.icon)) : null),
                                         live: parseBool(streamer.live),
                                         name,
                                     });
@@ -1253,8 +1261,8 @@ plugin({
                 };
 
                 FIRST_IN_LINE_BALLOON.icon.onmouseenter ??= event => {
-                    let { container, tooltip, title } = FIRST_IN_LINE_BALLOON,
-                        offset = getOffset(container);
+                    let { container, tooltip, title } = FIRST_IN_LINE_BALLOON
+                        , offset = getOffset(container);
 
                     $('div#root > *').append(
                         furnish('.tt-tooltip-layer.tooltip-layer', { style: `transform: translate(${ offset.left }px, ${ offset.top }px); width: 30px; height: 30px; z-index: 9999;` },
@@ -1283,26 +1291,26 @@ plugin({
                     onUpdate: ({ oldIndex, newIndex }) => {
                         // $log('Old array', [...ALL_FIRST_IN_LINE_JOBS]);
 
-                        let [moved] = ALL_FIRST_IN_LINE_JOBS.splice(--oldIndex, 1);
+                        const [moved] = ALL_FIRST_IN_LINE_JOBS.splice(--oldIndex, 1);
                         ALL_FIRST_IN_LINE_JOBS.splice(--newIndex, 0, moved);
                         ALL_FIRST_IN_LINE_JOBS = ALL_FIRST_IN_LINE_JOBS.filter(defined);
 
                         // $log('New array', [...ALL_FIRST_IN_LINE_JOBS]);
                         // $log('Moved', { oldIndex, newIndex, moved });
 
-                        let channel = ALL_CHANNELS.find(channel => RegExp(parseURL(channel.href).pathname + '\\b', 'i').test(moved));
+                        const channel = ALL_CHANNELS.find(channel => RegExp(parseURL(channel.href).pathname + '\\b', 'i').test(moved));
 
                         if(nullish(channel))
-                            return $warn('No channel found:', { oldIndex, newIndex, desiredChannel: channel, givenChannel: moved });
+                            return $warn("No channel found:", { oldIndex, newIndex, desiredChannel: channel, givenChannel: moved });
 
                         // This controls the new due date `NEW_DUE_DATE(time)` when the user drags a channel to the first position
                             // To create a new due date, `NEW_DUE_DATE(time)` → `NEW_DUE_DATE()`
                         if([oldIndex, newIndex].contains(0)) {
                             // `..._TIMER = ` will continue the queue (as if nothing changed) when a channel is removed
-                            let first = ALL_CHANNELS.find(channel => RegExp(parseURL(channel.href).pathname + '\\b', 'i').test(FIRST_IN_LINE_HREF = ALL_FIRST_IN_LINE_JOBS[0]));
-                            let time = /* FIRST_IN_LINE_TIMER = */ parseInt($(`[name="${ first?.name ?? '' }"i]`)?.getAttribute('time'));
+                            const first = ALL_CHANNELS.find(channel => RegExp(parseURL(channel.href).pathname + '\\b', 'i').test(FIRST_IN_LINE_HREF = ALL_FIRST_IN_LINE_JOBS[0]));
+                            const time = /* FIRST_IN_LINE_TIMER = */ parseInt($(`[name="${ first?.name ?? '' }"i]`)?.getAttribute('time'));
 
-                            $log('New First in Line event:', { ...first, time });
+                            $log("New First in Line event:", { ...first, time });
 
                             FIRST_IN_LINE_DUE_DATE = NEW_DUE_DATE(time);
                         }
@@ -1323,9 +1331,9 @@ plugin({
                         // FIRST_IN_LINE_BALLOON.container.modStyle(`opacity:${ (UP_NEXT_ALLOW_THIS_TAB? 1: 0.75) }!important`);
 
                         for(let index = 0, fails = 0; UP_NEXT_ALLOW_THIS_TAB && index < ALL_FIRST_IN_LINE_JOBS?.length; index++) {
-                            let href = ALL_FIRST_IN_LINE_JOBS[index],
-                                name = parseURL(href).pathname.slice(1),
-                                channel = await(null
+                            let href = ALL_FIRST_IN_LINE_JOBS[index]
+                                , name = parseURL(href).pathname.slice(1)
+                                , channel = await (null
                                     ?? ALL_CHANNELS.find(channel => channel.name.equals(name))
                                     ?? new Search(name).then(Search.convertResults)
                                 );
@@ -1333,25 +1341,25 @@ plugin({
                             if(nullish(href) || nullish(channel))
                                 continue;
 
-                            let { live } = channel;
+                            const { live } = channel;
                             name = channel.name;
 
                             if($.defined(`[live][time][name="${ name }"i]`))
                                 continue;
 
-                            let [balloon] = FIRST_IN_LINE_BALLOON?.add({
+                            const [balloon] = FIRST_IN_LINE_BALLOON?.add({
                                 href,
                                 src: channel.icon,
-                                message: `${ name } <span style="display:${ live? 'none': 'inline-block' }">is not live</span>`,
+                                message: `${ name } <span style="display:${ live ? "none" : "inline-block" }">is not live</span>`,
                                 subheader: `Coming up next`,
                                 onremove: event => {
-                                    let index = ALL_FIRST_IN_LINE_JOBS.findIndex(href => event.href == href),
-                                        [removed] = (index < 0? []: ALL_FIRST_IN_LINE_JOBS.splice(index, 1)),
-                                        purl = parseURL(removed),
-                                        name = purl.pathname?.slice(1),
-                                        redo = (purl.searchParameters?.redo ?? "");
+                                    const index = ALL_FIRST_IN_LINE_JOBS.findIndex(href => event.href == href)
+                                        , [removed] = (index < 0 ? [] : ALL_FIRST_IN_LINE_JOBS.splice(index, 1))
+                                        , purl = parseURL(removed)
+                                        , name = purl.pathname?.slice(1)
+                                        , redo = (purl.searchParameters?.redo ?? '');
 
-                                    $notice(`Removed from Up Next via Sorting Handler (${ nth(index + 1, 'ordinal-position') }):`, removed, 'Was it canceled?', event.canceled);
+                                    $notice(`Removed from Up Next via Sorting Handler (${ nth(index + 1, 'ordinal-position') }):`, removed, "Was it canceled?", event.canceled);
 
                                     if(event.canceled)
                                         DO_NOT_AUTO_ADD.push(removed);
@@ -1359,16 +1367,16 @@ plugin({
                                         ALL_FIRST_IN_LINE_JOBS.push(removed);
                                     // Balloon.onremove
                                     if(ALL_FIRST_IN_LINE_JOBS.length)
-                                        REDO_FIRST_IN_LINE_QUEUE(ALL_FIRST_IN_LINE_JOBS[0], { redo: (parseURL(ALL_FIRST_IN_LINE_JOBS[0]).searchParameters?.redo ?? "") });
+                                        REDO_FIRST_IN_LINE_QUEUE(ALL_FIRST_IN_LINE_JOBS[0], { redo: (parseURL(ALL_FIRST_IN_LINE_JOBS[0]).searchParameters?.redo ?? '') });
 
                                     if(index > 0) {
-                                        Cache.save({ ALL_FIRST_IN_LINE_JOBS, FIRST_IN_LINE_DUE_DATE }, () => event.callback(event.element));
+                                        Cache.save({ ALL_FIRST_IN_LINE_JOBS, FIRST_IN_LINE_DUE_DATE }, () => event.callback(event.element))
                                     } else {
-                                        $log('Destroying current job [Job Listings]...', { FIRST_IN_LINE_HREF, FIRST_IN_LINE_DUE_DATE, FIRST_IN_LINE_WAIT_TIME });
+                                        $log("Destroying current job [Job Listings]...", { FIRST_IN_LINE_HREF, FIRST_IN_LINE_DUE_DATE, FIRST_IN_LINE_WAIT_TIME });
 
                                         [FIRST_IN_LINE_JOB, FIRST_IN_LINE_WARNING_JOB, FIRST_IN_LINE_WARNING_TEXT_UPDATE].forEach(clearInterval);
 
-                                        FIRST_IN_LINE_HREF = undefined;
+                                        FIRST_IN_LINE_HREF = void null;
                                         FIRST_IN_LINE_DUE_DATE = NEW_DUE_DATE();
 
                                         Cache.save({ ALL_FIRST_IN_LINE_JOBS, FIRST_IN_LINE_DUE_DATE }, () => { REDO_FIRST_IN_LINE_QUEUE(ALL_FIRST_IN_LINE_JOBS[0]); event.callback(event.element) });
@@ -1379,13 +1387,13 @@ plugin({
                                     name,
                                     live,
                                     index,
-                                    time: (index < 1? GET_TIME_REMAINING(): FIRST_IN_LINE_WAIT_TIME * 60_000),
+                                    time: (index < 1 ? GET_TIME_REMAINING() : FIRST_IN_LINE_WAIT_TIME * 60_000),
 
-                                    style: `opacity: ${ 2**-!live }!important`,
+                                    style: `opacity: ${ 2 ** -!live }!important`,
                                 },
 
                                 animate: container => {
-                                    let subheader = $('.tt-balloon-subheader', container);
+                                    const subheader = $('.tt-balloon-subheader', container);
 
                                     if(!UP_NEXT_ALLOW_THIS_TAB)
                                         return -1;
@@ -1396,10 +1404,10 @@ plugin({
                                     return setInterval(async() => {
                                         new StopWatch('up_next_balloon__subheader_timer_animation');
 
-                                        let controller = getDOMPath(container);
+                                        const controller = getDOMPath(container);
                                         let timeRemaining = GET_TIME_REMAINING();
 
-                                        timeRemaining = timeRemaining < 0? 0: timeRemaining;
+                                        timeRemaining = timeRemaining < 0 ? 0 : timeRemaining;
 
                                         /* First in Line is paused */
                                         if(FIRST_IN_LINE_PAUSED) {
@@ -1413,21 +1421,21 @@ plugin({
                                             return FIRST_IN_LINE_PAUSED_AT = +new Date;
                                         }
 
-                                        let name = container.getAttribute('name'),
-                                            channel = await(null
+                                        let name = container.getAttribute('name')
+                                            , channel = await (null
                                                 ?? ALL_CHANNELS.find(channel => name.equals(channel.name))
                                                 ?? new Search(name).then(Search.convertResults)
-                                            ),
-                                            { live } = channel;
+                                            )
+                                            , { live } = channel;
                                             name = channel.name;
 
-                                        let time = timeRemaining,
-                                            intervalID = parseInt(container.getAttribute('animationID')),
-                                            index = $.all('[id][guid][uuid]', container.parentElement).indexOf(container),
-                                            anchor = $.all('a[connected-to]', container.parentElement)[index];
+                                        const time = timeRemaining
+                                            , intervalID = parseInt(container.getAttribute('animationID'))
+                                            , index = $.all('[id][guid][uuid]', container.parentElement).indexOf(container)
+                                            , anchor = $.all('a[connected-to]', container.parentElement)[index];
 
                                         if(anchor.hasAttribute('new-href')) {
-                                            let href = anchor.getAttribute('new-href');
+                                            const href = anchor.getAttribute('new-href');
 
                                             anchor.removeAttribute('new-href');
                                             ALL_FIRST_IN_LINE_JOBS.splice(index, 1, anchor.href = href);
@@ -1441,18 +1449,18 @@ plugin({
                                         if(time < 60_000 && nullish(FIRST_IN_LINE_HREF)) {
                                             FIRST_IN_LINE_DUE_DATE = NEW_DUE_DATE(time);
 
-                                            $warn('Creating job to avoid [Job Listing] mitigation event', channel);
+                                            $warn("Creating job to avoid [Job Listing] mitigation event", channel);
 
                                             return StopWatch.stop('up_next_balloon__subheader_timer_animation', 1000), REDO_FIRST_IN_LINE_QUEUE(FIRST_IN_LINE_HREF = channel.href);
                                         }
 
                                         if(time < 1000)
                                             wait(5000, [container, intervalID]).then(([container, intervalID]) => {
-                                                $log('Mitigation event for [Job Listings]', { ALL_FIRST_IN_LINE_JOBS, FIRST_IN_LINE_DUE_DATE, FIRST_IN_LINE_HREF }, new Date);
+                                                $log("Mitigation event for [Job Listings]", { ALL_FIRST_IN_LINE_JOBS, FIRST_IN_LINE_DUE_DATE, FIRST_IN_LINE_HREF }, new Date);
                                                 // Mitigate 0 time bug?
 
                                                 Cache.save({ ALL_FIRST_IN_LINE_JOBS: ALL_FIRST_IN_LINE_JOBS.filter(href => parseURL(href).pathname.unlike(parseURL(FIRST_IN_LINE_HREF).pathname)), FIRST_IN_LINE_DUE_DATE: FIRST_IN_LINE_DUE_DATE = NEW_DUE_DATE() }, () => {
-                                                    $warn(`Timer overdue [animation:first-in-line-balloon--initializer] » ${ FIRST_IN_LINE_HREF }`)
+                                                    $warn(`Timer overdue [animation:first-in-line-balloon--initializer] » ${ FIRST_IN_LINE_HREF }`);
                                                         // .toNativeStack();
 
                                                     goto(FIRST_IN_LINE_HREF);
@@ -1461,20 +1469,20 @@ plugin({
                                                 return clearInterval(intervalID);
                                             });
 
-                                        container.setAttribute('time', time - (index > 0? 0: 1000));
+                                        container.setAttribute('time', time - (index > 0 ? 0 : 1000));
 
                                         if(container.getAttribute('index') != index)
                                             container.setAttribute('index', index);
 
-                                        let theme = { light: 'w', dark: 'b' }[THEME];
+                                        const theme = { light: 'w', dark: 'b' }[THEME];
 
                                         $('a', container)
-                                            .modStyle(`background-color: var(--color-opac-${ theme }-${ index > 15? 1: 15 - index })`);
+                                            .modStyle(`background-color: var(--color-opac-${ theme }-${ index > 15 ? 1 : 15 - index })`);
 
                                         if(container.getAttribute('live') != (live + '')) {
                                             $('.tt-balloon-message', container).innerHTML =
-                                                `${ name } <span style="display:${ live? 'none': 'inline-block' }">is not live</span>`;
-                                            container.modStyle(`opacity: ${ 2**-!live }!important`);
+                                                `${ name } <span style="display:${ live ? "none" : "inline-block" }">is not live</span>`;
+                                            container.modStyle(`opacity: ${ 2 ** -!live }!important`);
                                             container.setAttribute('live', live);
                                         }
 

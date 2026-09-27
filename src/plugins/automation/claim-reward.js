@@ -16,11 +16,11 @@ plugin({
             length: parseInt(Settings.video_clips__length ?? 60) * 1000,
         };
 
-        let DISPLAY_WALLET_BUTTONS,
-            REWARDS_ON_COOLDOWN = new Map,
-            CLAIMING_REWARD = false,
-            TEXT_BOX_ALREADY_FOCUSED,
-            USER_INVOKED_PAUSE = true;
+        let DISPLAY_WALLET_BUTTONS
+            , REWARDS_ON_COOLDOWN = new Map
+            , CLAIMING_REWARD = false
+            , TEXT_BOX_ALREADY_FOCUSED
+            , USER_INVOKED_PAUSE = true;
 
         async function RECORD_PURCHASE({ updateRecords = true, fromUser = true, override = null, element, message, subject, mentions, AutoClaimRewards }) {
             element = await element;
@@ -40,12 +40,13 @@ plugin({
                     // The message is from the user (for embedded messages)
                     || $('[class*="message"i] [class*="username"i] [data-a-user]', element)?.dataset?.aUser?.equals(USERNAME)
                 )
-            )) return false;
+            ))
+                return false;
 
             // Pause Up Next during recording...
             if(UP_NEXT_ALLOW_THIS_TAB) {
-                let button = $('#up-next-control'),
-                    paused = parseBool(button?.getAttribute('paused'));
+                const button = $('#up-next-control')
+                    , paused = parseBool(button?.getAttribute('paused'));
 
                 if(!paused) {
                     USER_INVOKED_PAUSE = false;
@@ -53,13 +54,13 @@ plugin({
                 }
             }
 
-            let rewardID = override?.rewardID ?? element.dataset?.shopItemId ?? element.closest('[data-tt-reward-id]')?.dataset?.ttRewardId ?? element.dataset.uuid;
-            let [item] = override?.shop ?? await STREAMER.shop.filter(({ id, title }) => id.equals(rewardID) || (title?.length && message?.mutilate()?.contains(title.mutilate())));
+            const rewardID = override?.rewardID ?? element.dataset?.shopItemId ?? element.closest('[data-tt-reward-id]')?.dataset?.ttRewardId ?? element.dataset.uuid;
+            const [item] = override?.shop ?? await STREAMER.shop.filter(({ id, title }) => id.equals(rewardID) || (title?.length && message?.mutilate()?.contains(title.mutilate())));
 
             if(nullish(item))
                 return false;
 
-            let { title, cost, id } = item;
+            const { title, cost, id } = item;
 
             // The user successfully purchased the item...
             if(updateRecords) {
@@ -70,14 +71,14 @@ plugin({
             }
 
             // Begin recording...
-            let video = $.all('video').pop();
-            let time = parseInt(Settings.video_clips__trophy_length) * 1000;
-            let name = [STREAMER.name, `${ title } (${ (new Date).toLocaleDateString(top.LANGUAGE, { dateStyle: 'short' }).replace(GetFileSystem().allIllegalFilenameCharacters, '-') })`].join(' - ');
+            const video = $.all('video').pop();
+            const time = parseInt(Settings.video_clips__trophy_length) * 1000;
+            const name = [STREAMER.name, `${ title } (${ (new Date).toLocaleDateString(top.LANGUAGE, { dateStyle: 'short' }).replace(GetFileSystem().allIllegalFilenameCharacters, '-') })`].join(' - ');
 
             video.dataset.trophyId = title;
 
             SetQuality(VideoClips.quality, 'auto').then(() => {
-                let recording = Recording.proxy(video, { name, as: name, maxTime: time, mimeType: `video/${ VideoClips.filetype }`, hidden: !Settings.show_stats });
+                const recording = Recording.proxy(video, { name, as: name, maxTime: time, mimeType: `video/${ VideoClips.filetype }`, hidden: !Settings.show_stats });
 
                 // CANNOT be chained with the above; removes `this` context (can no longer be aborted)
                 recording
@@ -112,8 +113,8 @@ plugin({
                         if(USER_INVOKED_PAUSE)
                             return;
 
-                        let button = $('#up-next-control'),
-                            paused = parseBool(button?.getAttribute('paused'));
+                        const button = $('#up-next-control')
+                            , paused = parseBool(button?.getAttribute('paused'));
 
                         if(!paused)
                             return;
@@ -126,10 +127,10 @@ plugin({
         };
 
         // Waits for `condition` to return an element; resolves `null` after `timeout` ms
-        let WaitForElement = (condition, timeout = 10_000, ms = 100) => {
-            let deadline = +new Date + timeout;
+        const WaitForElement = (condition, timeout = 10_000, ms = 100) => {
+            const deadline = +new Date + timeout;
 
-            return when.defined(() => condition() ?? (+new Date > deadline? when.null: null), ms);
+            return when.defined(() => condition() ?? (+new Date > deadline ? when.null : null), ms);
         };
 
         Handlers.claim_reward = () => {
@@ -140,9 +141,9 @@ plugin({
                 AutoClaimRewards ??= {};
                 AutoClaimAnswers ??= {};
 
-                for(let sole in AutoClaimRewards)
+                for(const sole in AutoClaimRewards)
                     if(sole == STREAMER.sole)
-                        for(let rewardID of AutoClaimRewards[sole])
+                        for(const rewardID of AutoClaimRewards[sole])
                             await STREAMER.shop
                                 .filter(({ available, enabled, hidden, paused, premium }) => available && enabled && !(hidden || paused || (premium && !STREAMER.paid)))
                                 .filter(({ id }) => id.equals(rewardID))
@@ -159,7 +160,7 @@ plugin({
 
                                     await when.defined(() => $('[data-test-selector*="chat"i] [data-test-selector*="points"i][data-test-selector*="summary"i] button'))
                                         .then(async rewardsMenuButton => {
-                                            let { coin, fiat } = STREAMER;
+                                            const { coin, fiat } = STREAMER;
 
                                             $notice(`Can "${ title }" be bought yet? ${ ['No', 'Yes'][+(coin >= cost)] }`);
 
@@ -180,7 +181,7 @@ plugin({
 
                                             if(needsInput) {
                                                 prompt
-                                                    .silent(`<input id=tt_saved_input_for_redemption hidden controller title="You have saved text for this redemption..." />${ title }<br><br><strong>${ parseBool(Settings.video_clips__trophy)? 'This redemption will be recorded</strong>': '' }`, AutoClaimAnswers[sole]?.[id] ?? '')
+                                                    .silent(`<input id=tt_saved_input_for_redemption hidden controller title="You have saved text for this redemption..." />${ title }<br><br><strong>${ parseBool(Settings.video_clips__trophy) ? "This redemption will be recorded</strong>" : "" }`, AutoClaimAnswers[sole]?.[id] ?? "")
                                                     .then(() => {
                                                         $('[data-a-target="chat-input"i]')?.modStyle(`background:!delete`);
                                                     });
@@ -214,7 +215,7 @@ plugin({
                                             // Purchase and remove
                                             await WaitForElement(() => $('.rewards-list')?.getElementByText(title, 'i')?.closest('.reward-list-item')?.querySelector('button'))
                                                 .then(async rewardButton => {
-                                                    let { coin, fiat } = STREAMER;
+                                                    const { coin, fiat } = STREAMER;
 
                                                     $notice(`Can "${ title }" be bought yet? ${ ['No', 'Yes'][+(coin >= cost)] }`);
 
@@ -236,7 +237,7 @@ plugin({
                                                                 return REWARDS_ON_COOLDOWN.set(id, +(new Date) + 60_000);
                                                             }
 
-                                                            let cooldown = parseTime(purchaseButton.previousElementSibling?.getElementByText(parseTime.pattern)?.textContent);
+                                                            const cooldown = parseTime(purchaseButton.previousElementSibling?.getElementByText(parseTime.pattern)?.textContent);
 
                                                             if(cooldown > 0) {
                                                                 $log(`Unable to purchase "${ title }" right now. Waiting ${ toTimeString(cooldown) }`);
@@ -259,7 +260,7 @@ plugin({
                                                                 purchaseButton.click();
                                                             } else {
                                                                 // Purchase the item
-                                                                purchaseButton.click();
+                                                                purchaseButton.click()
                                                             }
 
                                                             wait(10_000).then(() => {
@@ -286,30 +287,30 @@ plugin({
         __ClaimReward__:
         // On by Default (ObD; v5.16)
         if(nullish(Settings.claim_reward) || parseBool(Settings.claim_reward)) {
-            $remark('Adding reward claimer...');
+            $remark("Adding reward claimer...");
 
             RegisterJob('claim_reward');
 
             // Correct "undefined" key for auto-answers...
             Cache.load(['AutoClaimRewards', 'AutoClaimAnswers'], ({ AutoClaimRewards, AutoClaimAnswers }) => {
-                let streamers = STREAMER.jump;
+                const streamers = STREAMER.jump;
 
                 AutoClaimRewards ??= {};
                 AutoClaimAnswers ??= {};
 
-                for(let streamer in streamers) {
-                    let { id } = streamers[streamer];
+                for(const streamer in streamers) {
+                    const { id } = streamers[streamer];
 
                     if((id in AutoClaimRewards) && (id in AutoClaimAnswers)) {
-                        let rewards = AutoClaimRewards[id];
-                        let answers = AutoClaimAnswers[id];
+                        const rewards = AutoClaimRewards[id];
+                        const answers = AutoClaimAnswers[id];
 
-                        if(undefined in answers) {
-                            answers[rewards[0]] = answers[undefined]; // Assume the first entry is the correct one :P
+                        if(void null in answers) {
+                            answers[rewards[0]] = answers[void null]; // Assume the first entry is the correct one :P
 
-                            $notice(`Correcting auto-answer entry ${ streamer }@${ rewards[0] } → "${ answers[undefined] }"`);
+                            $notice(`Correcting auto-answer entry ${ streamer }@${ rewards[0] } → "${ answers[void null] }"`);
 
-                            delete answers[undefined];
+                            delete answers[void null];
                         }
                     }
                 }
@@ -321,15 +322,15 @@ plugin({
             });
 
             DISPLAY_WALLET_BUTTONS = setInterval(() => {
-                let container = $('[data-test-selector*="required"i][data-test-selector*="points"i]:not(:empty), button[disabled] [data-test-selector*="required"i][data-test-selector*="points"i]:empty, [data-test-selector*="chat"i] svg[type*="warn"i]')
-                        ?.closest?.('button, [class*="error"i]'),
-                    handler = $('#tt-auto-claim-reward-handler, #tt-purchase-and-record-handler');
+                const container = $('[data-test-selector*="required"i][data-test-selector*="points"i]:not(:empty), button[disabled] [data-test-selector*="required"i][data-test-selector*="points"i]:empty, [data-test-selector*="chat"i] svg[type*="warn"i]')
+                        ?.closest?.('button, [class*="error"i]')
+                    , handler = $('#tt-auto-claim-reward-handler, #tt-purchase-and-record-handler');
 
-                let f = furnish;
+                const f = furnish;
 
                 // Rainbow border, Cooldown timer, Unlock all, Modify many, and Buy + Record buttons //
                 Unlock_All_Emotes: {
-                    let emoteCheckout = $('[class*="unlock"i][class*="emote"i][class*="checkout"i]');
+                    const emoteCheckout = $('[class*="unlock"i][class*="emote"i][class*="checkout"i]');
 
                     if(defined(emoteCheckout))
                         when.sated(() => $.all('[data-test-selector^="emote"i]', emoteCheckout))
@@ -339,11 +340,11 @@ plugin({
                                 if($.defined('#tt-unlock-all-emotes') || available < 2)
                                     return;
 
-                                let item = await STREAMER.shop.find(({ title, id }) => $('#channel-points-reward-center-header')?.textContent?.equals(title) || id.toUpperCase().contains('CHOSEN_SUB_EMOTE_UNLOCK')),
-                                    cost = item?.cost | 0,
-                                    face = (STREAMER.face? furnish.img({ src: STREAMER.face }).outerHTML: Glyphs.modify('channelpoints', { height: 16, width: 16, fill: STREAMER.tint })),
-                                    coin = (STREAMER?.coin) | 0,
-                                    amount = (coin / cost).floor().clamp(0, available);
+                                const item = await STREAMER.shop.find(({ title, id }) => $('#channel-points-reward-center-header')?.textContent?.equals(title) || id.toUpperCase().contains('CHOSEN_SUB_EMOTE_UNLOCK'))
+                                    , cost = item?.cost | 0
+                                    , face = (STREAMER.face ? furnish.img({ src: STREAMER.face }).outerHTML : Glyphs.modify('channelpoints', { height: 16, width: 16, fill: STREAMER.tint }))
+                                    , coin = (STREAMER?.coin) | 0
+                                    , amount = (coin / cost).floor().clamp(0, available);
 
                                 if(amount < 1)
                                     return;
@@ -387,15 +388,15 @@ plugin({
                                         buyOut(amount);
                                     },
 
-                                    innerHTML: `Unlock ${ amount >= available? `all (${ available })`: amount } ${ 'emote'.pluralSuffix(amount) }${ (cost > 0? ` for ${ (cost * amount).suffix('',1).replace('.0','') }`: '') }`
+                                    innerHTML: `Unlock ${ amount >= available ? `all (${ available })` : amount } ${ 'emote'.pluralSuffix(amount) }${ (cost > 0 ? ` for ${ (cost * amount).suffix('', 1).replace('.0', '') }` : "") }`
                                 }));
                             });
-                }
+                } // :Unlock_All_Emotes
 
                 Modify_All_Emotes: {
-                    let emoteCheckout = $('[class*="modify"i][class*="emote"i][class*="checkout"i]'),
-                        modifiers = 'BW HF SG SQ TK'.split(' '),
-                        modified = new Map;
+                    const emoteCheckout = $('[class*="modify"i][class*="emote"i][class*="checkout"i]')
+                        , modifiers = 'BW HF SG SQ TK'.split(' ')
+                        , modified = new Map;
 
                     if(defined(emoteCheckout))
                         when.sated(() => $.all('[data-test-selector^="emote"i]', emoteCheckout))
@@ -405,11 +406,11 @@ plugin({
                                 if($.defined('#tt-modify-all-emotes') || available < 2)
                                     return;
 
-                                let item = await STREAMER.shop.find(({ title, id }) => $('#channel-points-reward-center-header')?.textContent?.equals(title) || id.toUpperCase().contains('MODIFY_SUB_EMOTE')),
-                                    cost = item?.cost | 0,
-                                    face = (STREAMER.face? furnish.img({ src: STREAMER.face }).outerHTML: Glyphs.modify('channelpoints', { height: 16, width: 16, fill: STREAMER.tint })),
-                                    coin = (STREAMER?.coin) | 0,
-                                    amount = (coin / cost).floor().clamp(0, available);
+                                const item = await STREAMER.shop.find(({ title, id }) => $('#channel-points-reward-center-header')?.textContent?.equals(title) || id.toUpperCase().contains('MODIFY_SUB_EMOTE'))
+                                    , cost = item?.cost | 0
+                                    , face = (STREAMER.face ? furnish.img({ src: STREAMER.face }).outerHTML : Glyphs.modify('channelpoints', { height: 16, width: 16, fill: STREAMER.tint }))
+                                    , coin = (STREAMER?.coin) | 0
+                                    , amount = (coin / cost).floor().clamp(0, available);
 
                                 if(!amount)
                                     return;
@@ -424,7 +425,7 @@ plugin({
 
                                         // Auto-buy rewards
                                         function buyOut(count = 1) {
-                                            let rewardsBackButton = $('[class*="reward-center"i] [class*="pop"i][class*="head"i] button');
+                                            const rewardsBackButton = $('[class*="reward-center"i] [class*="pop"i][class*="head"i] button');
 
                                             count *= +$.defined('[class*="reward-center"i]');
                                             available |= 0;
@@ -440,12 +441,12 @@ plugin({
                                                                 modifier.click();
 
                                                                 when.defined(() => $('button [class*="selected"i] img')).then(img => {
-                                                                    let name = $('[data-test-selector*="preview"i], [class*="modify"i][class*="emote"i][class*="checkout"i] [data-a-target*="animation"i] ~ *')?.textContent;
+                                                                    const name = $('[data-test-selector*="preview"i], [class*="modify"i][class*="emote"i][class*="checkout"i] [data-a-target*="animation"i] ~ *')?.textContent;
 
                                                                     if(nullish(name))
                                                                         return /* There should always be a name */;
 
-                                                                    let [em, md] = name.split('_', 2);
+                                                                    const [em, md] = name.split('_', 2);
 
                                                                     if(!modified.has(em))
                                                                         modified.set(em, [md]);
@@ -487,13 +488,13 @@ plugin({
                                         buyOut(amount);
                                     },
 
-                                    innerHTML: `Modify ${ amount >= available? available: amount } ${ 'emote'.pluralSuffix(amount) }${ (cost > 0? ` for ${ (cost * amount).suffix('',1).replace('.0','') }`: '') }`
+                                    innerHTML: `Modify ${ amount >= available ? available : amount } ${ 'emote'.pluralSuffix(amount) }${ (cost > 0 ? ` for ${ (cost * amount).suffix('', 1).replace('.0', '') }` : "") }`
                                 }));
                             });
-                }
+                } // :Modify_All_Emotes
 
                 Wallet_Display: {
-                    let rewards = $.all('.rewards-list .reward-list-item:not([tt-wallet])');
+                    const rewards = $.all('.rewards-list .reward-list-item:not([tt-wallet])');
 
                     if(rewards.length < 1)
                         break Wallet_Display;
@@ -501,21 +502,21 @@ plugin({
                     Cache.load('AutoClaimRewards', async({ AutoClaimRewards }) => {
                         AutoClaimRewards ??= {};
 
-                        for(let reward of rewards) {
-                            let $image = $('img', reward)?.src,
-                                $cost = parseCoin($('[data-test-selector="cost"i]', reward)?.textContent),
-                                $title = ($('button ~ * [title]', reward)?.textContent || '').trim();
+                        for(const reward of rewards) {
+                            const $image = $('img', reward)?.src
+                                , $cost = parseCoin($('[data-test-selector="cost"i]', reward)?.textContent)
+                                , $title = ($('button ~ * [title]', reward)?.textContent || '').trim();
 
-                            let [item] = await STREAMER.shop.filter(({ type = 'UNKNOWN', id = '', title = '', cost = 0, image = '' }) =>
+                            const [item] = await STREAMER.shop.filter(({ type = 'UNKNOWN', id = '', title = '', cost = 0, image = '' }) =>
                                 (false
-                                    || (type.equals("unknown") && id.equals(UUID.from([$image, $title.mutilate(), $cost].join('|$|'), true).value))
+                                    || (type.equals('unknown') && id.equals(UUID.from([$image, $title.mutilate(), $cost].join('|$|'), true).value))
                                     || (title.equals($title) && ((cost == $cost) || image.url.equals($image.url)))
                                 )
                             );
 
                             // Variable animataion speed depending on "completion" percentage
-                            let child = $('[data-test-selector="cost"i]', reward);
-                            let wanted = (AutoClaimRewards[STREAMER.sole] ??= []).contains(item?.id);
+                            const child = $('[data-test-selector="cost"i]', reward);
+                            const wanted = (AutoClaimRewards[STREAMER.sole] ??= []).contains(item?.id);
 
                             // Rainbow border
                             child.modStyle(`animation-duration:${ (1 / (STREAMER.coin / $cost)).clamp(1, 30).toFixed(2) }s`);
@@ -537,26 +538,26 @@ plugin({
                 }
 
                 if(defined(handler))
-                    return void($('button', handler).disabled = top.TWITCH_INTEGRITY_FAIL);
+                    return void ($('button', handler).disabled = top.TWITCH_INTEGRITY_FAIL);
 
                 Buy_and_Record: if(nullish(container) && parseBool(Settings.video_clips__trophy)) {
-                    let purchaseButton = $('[data-test-selector*="required"i][data-test-selector*="points"i]:empty')?.closest?.('button');
-                    let cooldown = parseTime(purchaseButton?.previousElementSibling?.getElementByText(parseTime.pattern)?.textContent) | 0;
+                    const purchaseButton = $('[data-test-selector*="required"i][data-test-selector*="points"i]:empty')?.closest?.('button');
+                    const cooldown = parseTime(purchaseButton?.previousElementSibling?.getElementByText(parseTime.pattern)?.textContent) | 0;
 
                     if(nullish(purchaseButton) || cooldown > 0)
                         break Buy_and_Record;
 
-                    let [head, body] = purchaseButton.closest('[class*="reward"i][class*="content"i], [class*="chat"i][class*="input"i]:not([class*="error"i])').children,
-                        $body = $('[class*="tray"i][class*="body"i]', head),
-                        $title = (($('#channel-points-reward-center-header', head)?.textContent ?? $body?.previousElementSibling?.textContent) || '').trim(),
-                        $prompt = (($('.reward-center-body p', body)?.textContent ?? $body?.textContent) || '').trim(),
-                        $image = ($('[class*="reward-icon"i] img', body) ?? $('[class*="reward-icon"i] img', head))?.src,
-                        [$cost = 0] = (($('[data-test-selector="RewardText"i]', body)?.parentElement ?? $('[class*="reward"i][class*="header"i]', head))?.innerText?.split(/\s/)?.map(parseCoin)?.filter(n => n > 0) ?? []);
+                    const [head, body] = purchaseButton.closest('[class*="reward"i][class*="content"i], [class*="chat"i][class*="input"i]:not([class*="error"i])').children
+                        , $body = $('[class*="tray"i][class*="body"i]', head)
+                        , $title = (($('#channel-points-reward-center-header', head)?.textContent ?? $body?.previousElementSibling?.textContent) || '').trim()
+                        , $prompt = (($('.reward-center-body p', body)?.textContent ?? $body?.textContent) || '').trim()
+                        , $image = ($('[class*="reward-icon"i] img', body) ?? $('[class*="reward-icon"i] img', head))?.src
+                        , [$cost = 0] = (($('[data-test-selector="RewardText"i]', body)?.parentElement ?? $('[class*="reward"i][class*="header"i]', head))?.innerText?.split(/\s/)?.map(parseCoin)?.filter(n => n > 0) ?? []);
 
-                    let [item] = STREAMER.shop.filter(({ type = 'UNKNOWN', id = '', title = '', cost = 0, image = '' }) =>
+                    const [item] = STREAMER.shop.filter(({ type = 'UNKNOWN', id = '', title = '', cost = 0, image = '' }) =>
                         (false
-                            || (type.equals("unknown") && id.equals(UUID.from([$image, $title.mutilate(), $cost].join('|$|'), true).value))
-                            || (type.unlike("custom") && cost == $cost && id.equals([STREAMER.sole, type].join(':')))
+                            || (type.equals('unknown') && id.equals(UUID.from([$image, $title.mutilate(), $cost].join('|$|'), true).value))
+                            || (type.unlike('custom') && cost == $cost && id.equals([STREAMER.sole, type].join(':')))
                             || (title.equals($title) && (cost == $cost || image?.url?.equals($image?.url)))
                         )
                     );
@@ -574,8 +575,8 @@ plugin({
                                         style: `padding:1rem;text-align:center;min-width:fit-content;width:${ getOffset(purchaseButton).width.ceil() }px!important`,
 
                                         async onmouseup({ currentTarget }) {
-                                            let rewardID = currentTarget.closest('[data-shop-item-id]')?.dataset?.shopItemId ?? currentTarget.closest('[data-tt-reward-id]')?.dataset?.ttRewardId;
-                                            let [item] = await STREAMER.shop.filter(({ id }) => id.equals(rewardID));
+                                            const rewardID = currentTarget.closest('[data-shop-item-id]')?.dataset?.shopItemId ?? currentTarget.closest('[data-tt-reward-id]')?.dataset?.ttRewardId;
+                                            const [item] = await STREAMER.shop.filter(({ id }) => id.equals(rewardID));
 
                                             if(nullish(item))
                                                 return;
@@ -604,7 +605,7 @@ plugin({
                             )
                         )
                     );
-                }
+                } // :Buy_and_Record
 
                 if(nullish(container))
                     return;
@@ -613,17 +614,17 @@ plugin({
                 Cache.load('AutoClaimRewards', async({ AutoClaimRewards }) => {
                     AutoClaimRewards ??= {};
 
-                    let [head, body] = container.closest('[class*="reward"i][class*="content"i], [class*="chat"i][class*="input"i]:not([class*="error"i])').children,
-                        $body = $('[class*="tray"i][class*="body"i]', head),
-                        $title = (($('#channel-points-reward-center-header', head)?.textContent ?? $body?.previousElementSibling?.textContent) || '').trim(),
-                        $prompt = (($('.reward-center-body p', body)?.textContent ?? $body?.textContent) || '').trim(),
-                        $image = ($('[class*="reward-icon"i] img', body) ?? $('[class*="reward-icon"i] img', head))?.src,
-                        [$cost = 0] = (($('[disabled]', body) ?? $('[class*="reward"i][class*="header"i]', head))?.innerText?.split(/\s/)?.map(parseCoin)?.filter(n => n > 0) ?? []);
+                    const [head, body] = container.closest('[class*="reward"i][class*="content"i], [class*="chat"i][class*="input"i]:not([class*="error"i])').children
+                        , $body = $('[class*="tray"i][class*="body"i]', head)
+                        , $title = (($('#channel-points-reward-center-header', head)?.textContent ?? $body?.previousElementSibling?.textContent) || '').trim()
+                        , $prompt = (($('.reward-center-body p', body)?.textContent ?? $body?.textContent) || '').trim()
+                        , $image = ($('[class*="reward-icon"i] img', body) ?? $('[class*="reward-icon"i] img', head))?.src
+                        , [$cost = 0] = (($('[disabled]', body) ?? $('[class*="reward"i][class*="header"i]', head))?.innerText?.split(/\s/)?.map(parseCoin)?.filter(n => n > 0) ?? []);
 
-                    let [item] = await STREAMER.shop.filter(({ type = 'UNKNOWN', id = '', title = '', cost = 0, image = '' }) =>
+                    const [item] = await STREAMER.shop.filter(({ type = 'UNKNOWN', id = '', title = '', cost = 0, image = '' }) =>
                         (false
-                            || (type.equals("unknown") && id.equals(UUID.from([$image, $title.mutilate(), $cost].join('|$|'), true).value))
-                            || (type.unlike("custom") && cost == $cost && id.equals([STREAMER.sole, type].join(':')))
+                            || (type.equals('unknown') && id.equals(UUID.from([$image, $title.mutilate(), $cost].join('|$|'), true).value))
+                            || (type.unlike('custom') && cost == $cost && id.equals([STREAMER.sole, type].join(':')))
                             || (title.equals($title) && (cost == $cost || image?.url?.equals($image?.url)))
                         )
                     );
@@ -631,13 +632,13 @@ plugin({
                     if(nullish(item))
                         return;
 
-                    let itemIDs = (AutoClaimRewards[STREAMER.sole] ??= []),
-                        rewardID = item.id;
+                    const itemIDs = (AutoClaimRewards[STREAMER.sole] ??= [])
+                        , rewardID = item.id;
 
-                    let textContent = (
-                        itemIDs.contains(rewardID)?
-                            `Do not buy`:
-                        `Buy when available${ '*'.repeat(+item.needsInput) }`
+                    const textContent = (
+                        itemIDs.contains(rewardID)
+                            ? `Do not buy`
+                        : `Buy when available${ '*'.repeat(+item.needsInput) }`
                     );
 
                     $('[id$="header"i], [class*="header"i]', head)?.modStyle(`animation-duration:${ (1 / (STREAMER.coin / $cost)).clamp(1, 30).toFixed(2) }s`);
@@ -651,8 +652,8 @@ plugin({
                                         style: `padding:1rem;text-align:center;min-width:fit-content;width:${ getOffset(container).width.ceil() }px!important`,
 
                                         async onmouseup({ currentTarget }) {
-                                            let rewardID = currentTarget.closest('[data-shop-item-id]')?.dataset?.shopItemId ?? currentTarget.closest('[data-tt-reward-id]')?.dataset?.ttRewardId;
-                                            let [item] = await STREAMER.shop.filter(({ id }) => id.equals(rewardID));
+                                            const rewardID = currentTarget.closest('[data-shop-item-id]')?.dataset?.shopItemId ?? currentTarget.closest('[data-tt-reward-id]')?.dataset?.ttRewardId;
+                                            const [item] = await STREAMER.shop.filter(({ id }) => id.equals(rewardID));
 
                                             if(nullish(item))
                                                 return;
@@ -663,14 +664,14 @@ plugin({
 
                                                 let itemIDs = (AutoClaimRewards[STREAMER.sole] ??= []);
                                                 let answers = (AutoClaimAnswers[STREAMER.sole] ??= {});
-                                                let index = itemIDs.indexOf(rewardID);
+                                                const index = itemIDs.indexOf(rewardID);
 
-                                                if(!!~index) {
+                                                if(~index) {
                                                     delete answers[rewardID];
                                                     itemIDs.splice(index, 1);
                                                 } else {
                                                     if(item.needsInput) {
-                                                        answers[rewardID] = await prompt.silent(`<input hidden controller title='Input required to redeem "${ item.title.replace(/'/g, "&apos;") }"' />${ item.prompt || `Please provide input...` }`);
+                                                        answers[rewardID] = await prompt.silent(`<input hidden controller title='Input required to redeem "${ item.title.replace(/'/g, '&apos;') }"' />${ item.prompt || `Please provide input...` }`);
 
                                                         if(answers[rewardID] === null)
                                                             return /* The user pressed "Cancel" */;
@@ -691,12 +692,12 @@ plugin({
                                                     AutoClaimAnswers[STREAMER.sole] = answers;
                                                 }
 
-                                                let [node] = [...currentTarget.childNodes].filter(node => node.nodeName.equals('#text'));
+                                                const [node] = [...currentTarget.childNodes].filter(node => node.nodeName.equals('#text'));
 
                                                 node.textContent = (
-                                                    !~index?
-                                                        `Do not buy`:
-                                                    `Buy when available${ '*'.repeat(+item.needsInput) }`
+                                                    !~index
+                                                        ? `Do not buy`
+                                                    : `Buy when available${ '*'.repeat(+item.needsInput) }`
                                                 );
 
                                                 currentTarget.closest('[class*="reward"i][class*="content"i]')?.querySelector('[id$="header"i]')?.setAttribute('rainbow-text', !~index);
@@ -725,7 +726,7 @@ plugin({
 
                 $('.reward-center-body img')?.closest(':not(img,:only-child)')?.setAttribute('tt-rewards-calc', 'after');
             }, 300);
-        }
+        } // :__ClaimReward__
 
         __RecordForeignRewards__:
         if(parseBool(Settings.record_foreign_rewards)) {
@@ -736,20 +737,20 @@ plugin({
                 element = await element;
                 subject ||= element.dataset.type;
 
-                let rewardID = element.dataset?.shopItemId ?? element.closest('[data-tt-reward-id]')?.dataset?.ttRewardId ?? element.dataset.uuid;
-                let [item] = await STREAMER.shop.filter(({ id }) => id.equals(rewardID));
+                const rewardID = element.dataset?.shopItemId ?? element.closest('[data-tt-reward-id]')?.dataset?.ttRewardId ?? element.dataset.uuid;
+                const [item] = await STREAMER.shop.filter(({ id }) => id.equals(rewardID));
 
                 if(nullish(item))
                     return;
 
-                let { id, title } = item;
-                let { sole } = STREAMER;
+                const { id, title } = item;
+                const { sole } = STREAMER;
 
                 Cache.load(['AutoClaimRewards'], async({ AutoClaimRewards }) => {
                     AutoClaimRewards ??= {};
 
-                    let itemIDs = (AutoClaimRewards[sole] ??= []);
-                    let index = itemIDs.indexOf(rewardID);
+                    const itemIDs = (AutoClaimRewards[sole] ??= []);
+                    const index = itemIDs.indexOf(rewardID);
 
                     if(!~index)
                         return /* reward not asked for... */;
@@ -759,7 +760,7 @@ plugin({
                     // @performance
                     PrepareForGarbageCollection(AutoClaimRewards);
                 });
-            };
+            }
         }
     },
 });

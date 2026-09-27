@@ -16,7 +16,7 @@ function scoreTagActivity(...tags) {
     }
 
     scoring:
-    for(let tag of tags)
+    for(const tag of tags)
         switch(tag) {
             case 'ACTION':      case '4D1EAA36-F750-4862-B7E9-D0A13970D535': // Action
             case 'ADVENTURE':   case '80427D95-BB46-42D3-BF4D-408E9BDCA49A': // Adventure
@@ -26,10 +26,13 @@ function scoreTagActivity(...tags) {
             case 'SHOOT':       case 'E607B115-8FA1-49C1-ACDF-F6927BE4CA1B': // Shoot
             case 'SHOOTER':     case '523FE736-FA95-44C7-B22F-13008CA2172C': // Shooter
             case 'SPORTS':      case '0D4233AF-7AC6-49DA-937D-E0F42B7DB187': // Sports
-            case 'WRESTLING':   case '7199189A-0569-4854-908E-08E6C3667379': // Wrestling
+            case 'WRESTLING':   case '7199189A-0569-4854-908E-08E6C3667379': { // Wrestling
             {
                 score += 20;
-            } continue scoring;
+            }
+
+ continue scoring;
+            }
 
             case '4X':          case '7304B834-D065-47D5-9865-C19CD17D2639': // 4X
             case 'BMX':         case 'E62CB1D5-A47D-4690-A373-FE4C0856F78B': // BMX
@@ -50,10 +53,13 @@ function scoreTagActivity(...tags) {
             case 'RHYTHM':      case 'C8BB9D08-8202-42F8-B028-C59AC1AAFE76': // Rhythm
             case 'ROGUELIKE':   case 'CAD488FB-C95C-4BE1-B197-5B851D3A12FA': // Roguelike
             case 'VR':          case 'CA470745-C1DF-4C11-9474-9AB79DFC1863': // VR
-            case 'VTUBER':      case '52D7E4CC-633D-46F5-818C-BB59102D9549': // Vtuber
+            case 'VTUBER':      case '52D7E4CC-633D-46F5-818C-BB59102D9549': { // Vtuber
             {
                 score += 15;
-            } continue scoring;
+            }
+
+ continue scoring;
+            }
 
             case '100%':            case 'E659959D-392F-44C5-83A5-FB959CDBACCC': // 100%
             case '12':              case 'A31DAEB5-EDC2-4B29-AFA1-84C96612836D': // 12
@@ -74,10 +80,13 @@ function scoreTagActivity(...tags) {
             case 'MYSTERY':         case '6540ED8D-3282-44DF-A592-887B37881846': // Mystery
             case 'RPG':             case '9D38085E-EE62-4203-877B-81797052A18B': // RPG
             case 'RTS':             case '3E30C47A-26C0-4DD3-9C3A-9CD6AD35589C': // RTS
-            case 'SURVIVAL':        case 'AE7D0652-8B2E-476B-8B51-A076550B234F': // Survival
+            case 'SURVIVAL':        case 'AE7D0652-8B2E-476B-8B51-A076550B234F': { // Survival
             {
                 score += 10;
-            } continue scoring;
+            }
+
+ continue scoring;
+            }
 
             case 'ANIMALS':         case '3DC8F084-D886-4264-B20F-8BD5F90562B5': // Animals
             case 'ANIMATION':       case 'E3A6B378-232B-4EC2-9A82-86B72851E09A': // Animation
@@ -94,14 +103,21 @@ function scoreTagActivity(...tags) {
             case 'PUZZLE':          case '7616F6EA-7E3D-4501-A87C-C160D2BC1849': // Puzzle
             case 'SIMULATION':      case '22E434B6-CA88-46E8-91EF-C18EE1CB8A67': // Simulation
             case 'STEALTH':         case '0472BAB0-E068-49B3-9BB8-789FDFE3C66A': // Stealth
-            case 'UNBOXING':        case 'CD9ED640-426D-4A08-B8E0-417A61197264': // Unboxing
+            case 'UNBOXING':        case 'CD9ED640-426D-4A08-B8E0-417A61197264': { // Unboxing
             {
                 score += 5;
-            } continue scoring;
+            }
+
+ continue scoring;
+            }
 
             default: {
-                ++score;
-            } continue scoring;
+                {
+                    ++score;
+                }
+
+ continue scoring;
+            }
         };
 
     return score;

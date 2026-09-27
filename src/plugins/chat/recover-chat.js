@@ -13,8 +13,8 @@ plugin({
     handler: (context) => {
         new context.StopWatch('recover_chat');
 
-        let [chat] = $.all('[role] ~ *:is([role="log"i], [class~="chat-room"i], [data-a-target*="chat"i], [data-test-selector*="chat"i]), [role="tt-log"i], [data-test-selector="banned-user-message"i], [data-test-selector^="video-chat"i]'),
-            error = $('[class*="chat"i][class*="content"] .core-error');
+        const [chat] = $.all('[role] ~ *:is([role="log"i], [class~="chat-room"i], [data-a-target*="chat"i], [data-test-selector*="chat"i]), [role="tt-log"i], [data-test-selector="banned-user-message"i], [data-test-selector^="video-chat"i]')
+            , error = $('[class*="chat"i][class*="content"] .core-error');
 
         if(defined(error) || nullish(chat)) {
             $('[data-a-target*="welcome"i]')?.append(furnish('p', { style: 'text-decoration:underline var(--color-error)' }, `There was an error loading chat: ${ error?.textContent ?? 'no response' }`));
@@ -26,13 +26,13 @@ plugin({
 
         // Add an iframe...
         // An array is never nullish, so the path fallback never ran; fall back when there's no name instead
-        let [,name] = (context.STREAMER?.name? [, context.STREAMER.name]: location.pathname.split(/\W/, 2)),
-            input = $('.chat-input'),
-            iframe = furnish(`iframe#tt-popup-container.stream-chat.tt-c-text-base.tt-flex.tt-flex-column.tt-flex-grow-1.tt-flex-nowrap.tt-full-height.tt-relative`, {
+        let [,name] = (context.STREAMER?.name ? [, context.STREAMER.name] : location.pathname.split(/\W/, 2))
+            , input = $('.chat-input')
+            , iframe = furnish(`iframe#tt-popup-container.stream-chat.tt-c-text-base.tt-flex.tt-flex-column.tt-flex-grow-1.tt-flex-nowrap.tt-full-height.tt-relative`, {
                 src: `./popout/${ name }/chat`,
-                role: "tt-log",
-            }),
-            container = $('.chat-shell', top.document);
+                role: 'tt-log',
+            })
+            , container = $('.chat-shell', top.document);
 
         container?.parentElement?.replaceChild(iframe, container);
 

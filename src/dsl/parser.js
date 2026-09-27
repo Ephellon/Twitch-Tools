@@ -25,7 +25,7 @@
 
 globalThis.TTV_DSL ??= {};
 
-if (typeof require === 'function' && typeof module === 'object') {
+if(typeof require === 'function' && typeof module === 'object') {
     require('./errors.js');
     require('./tokens.js');
     require('./tokenizer.js');
@@ -81,17 +81,17 @@ if (typeof require === 'function' && typeof module === 'object') {
     const COLON_MESSAGE = 'Unexpected ":"; expected an emote like ":kappa:", a duration like "15:00", or a `when` case label like `"help":`';
 
     /** @param {Object} node @return {Boolean} true for a template that still needs evaluating */
-    let isInterpolated = (node) => (NodeType.TemplateLiteral === node?.type && node.expressions.length > 0);
+    const isInterpolated = (node) => (NodeType.TemplateLiteral === node?.type && node.expressions.length > 0);
 
     /** @param {Object} node @return {Boolean} true for the `when <test>` continuation form */
-    let isWhenChain = (node) => (NodeType.WhenStatement === node?.type && null === node.operator);
+    const isWhenChain = (node) => (NodeType.WhenStatement === node?.type && null === node.operator);
 
     /** Spans two locations into one.
      * @param {Object} from
      * @param {Object} to
      * @return {Object}
      */
-    let span = (from, to) => ({
+    const span = (from, to) => ({
         line: from.line,
         column: from.column,
         start: from.start,
@@ -131,16 +131,16 @@ if (typeof require === 'function' && typeof module === 'object') {
 
         /** @param {Number} [ahead = 0] @return {Object} */
         #peek(ahead = 0) {
-            let index = this.#index + ahead;
+            const index = this.#index + ahead;
 
-            return this.#tokens[index < this.#tokens.length? index: this.#tokens.length - 1];
+            return this.#tokens[index < this.#tokens.length ? index : this.#tokens.length - 1];
         }
 
         /** @return {Object} */
         #next() {
-            let token = this.#peek();
+            const token = this.#peek();
 
-            if (this.#index < this.#tokens.length - 1)
+            if(this.#index < this.#tokens.length - 1)
                 ++this.#index;
 
             return token;
@@ -156,7 +156,7 @@ if (typeof require === 'function' && typeof module === 'object') {
          * @return {?Object}
          */
         #accept(type) {
-            return (this.#at(type)? this.#next(): null);
+            return (this.#at(type) ? this.#next() : null);
         }
 
         /** Consumes the current token or fails.
@@ -165,7 +165,7 @@ if (typeof require === 'function' && typeof module === 'object') {
          * @return {Object}
          */
         #expect(type, what) {
-            if (this.#at(type))
+            if(this.#at(type))
                 return this.#next();
 
             return this.#fail(`Expected ${ what ?? type }, found ${ this.#describe(this.#peek()) }`);
@@ -173,22 +173,27 @@ if (typeof require === 'function' && typeof module === 'object') {
 
         /** @param {Object} token @return {String} */
         #describe(token) {
-            switch (token.type) {
-                case TokenType.EOF:
+            switch(token.type) {
+                case TokenType.EOF: {
                     return 'end of input';
+                }
 
-                case TokenType.NEWLINE:
+                case TokenType.NEWLINE: {
                     return 'end of line';
+                }
 
-                case TokenType.INDENT:
+                case TokenType.INDENT: {
                     return 'an indented block';
+                }
 
-                case TokenType.DEDENT:
+                case TokenType.DEDENT: {
                     return 'the end of a block';
+                }
 
-                default:
+                default: {
                     return JSON.stringify(token.lexeme);
-            }
+                }
+            } // switch token.type
         }
 
         /** Raises the tailored diagnostic for a poisoned reserved word. */
@@ -203,48 +208,48 @@ if (typeof require === 'function' && typeof module === 'object') {
 
         /** Skips insignificant tokens. */
         #skipNewlines() {
-            while (SKIPPABLE.has(this.#peek().type))
+            while(SKIPPABLE.has(this.#peek().type))
                 this.#next();
         }
 
         /** Skips item separators — newlines *and* commas. Used only inside a list context. */
         #skipSeparators() {
-            while (SEPARATORS.has(this.#peek().type))
+            while(SEPARATORS.has(this.#peek().type))
                 this.#next();
         }
 
         /** Panic-mode recovery: discard the rest of the broken line, and the block it
          * opened, so the next statement starts clean. */
         #synchronize() {
-            while (!this.#at(TokenType.NEWLINE, TokenType.EOF, TokenType.DEDENT))
+            while(!this.#at(TokenType.NEWLINE, TokenType.EOF, TokenType.DEDENT))
                 this.#next();
 
             this.#accept(TokenType.NEWLINE);
 
-            if (!this.#at(TokenType.INDENT))
+            if(!this.#at(TokenType.INDENT))
                 return;
 
             let depth = 0;
 
             do {
-                let type = this.#next().type;
+                const type = this.#next().type;
 
-                if (TokenType.INDENT === type)
+                if(TokenType.INDENT === type)
                     ++depth;
-                else if (TokenType.DEDENT === type)
+                else if(TokenType.DEDENT === type)
                     --depth;
-                else if (TokenType.EOF === type)
+                else if(TokenType.EOF === type)
                     return;
-            } while (depth > 0);
+            } while(depth > 0);
         }
 
         // -- program and blocks ------------------------------------------------
 
         /** @return {Object} a `Program` node */
         parseProgram() {
-            let start = this.#peek().loc,
-                body = this.#parseStatements(TokenType.EOF),
-                end = this.#peek().loc;
+            const start = this.#peek().loc
+                , body = this.#parseStatements(TokenType.EOF)
+                , end = this.#peek().loc;
 
             return AST.program(body, span(start, end));
         }
@@ -254,46 +259,46 @@ if (typeof require === 'function' && typeof module === 'object') {
          * @return {Array<Object>}
          */
         #parseStatements(terminator) {
-            let body = [];
+            const body = [];
 
-            while (true) {
+            while(true) {
                 this.#skipNewlines();
 
-                if (this.#at(terminator, TokenType.EOF))
+                if(this.#at(terminator, TokenType.EOF))
                     break;
 
                 // Only a fault can produce a stray INDENT here; a well-formed block was
                 // already consumed by whichever statement opened it.
-                if (this.#at(TokenType.INDENT)) {
+                if(this.#at(TokenType.INDENT)) {
                     this.#record(new DSLParseError('Unexpected indentation', this.#peek().loc, this.#source));
                     this.#synchronize();
 
                     continue;
                 }
 
-                let before = this.#index;
+                const before = this.#index;
 
                 try {
-                    let statement = this.#parseStatement();
+                    const statement = this.#parseStatement();
 
                     // The chain form of `when` is written as a *sibling* of the `if` (or
                     // `when`) it continues, because that is how it reads on the page. It is
                     // folded into that sibling's `alternate` here rather than being parsed
                     // as part of it, so the off-side rule stays uniform: every branch of a
                     // chain sits at the same indentation.
-                    if (isWhenChain(statement) && this.#foldAlternate(body, statement))
+                    if(isWhenChain(statement) && this.#foldAlternate(body, statement))
                         continue;
 
                     body.push(statement);
-                } catch (error) {
-                    if (!(error instanceof DSLParseError))
+                } catch(error) {
+                    if(!(error instanceof DSLParseError))
                         throw error;
 
                     this.#record(error);
                     this.#synchronize();
 
                     // A parser that fails without consuming anything would spin forever.
-                    if (this.#index === before)
+                    if(this.#index === before)
                         this.#next();
                 }
             }
@@ -308,9 +313,9 @@ if (typeof require === 'function' && typeof module === 'object') {
          * @return {Boolean} true when it was folded away; false leaves the caller to report
          */
         #foldAlternate(body, statement) {
-            let previous = body[body.length - 1];
+            const previous = body[body.length - 1];
 
-            if (!previous || (NodeType.IfStatement !== previous.type && NodeType.WhenStatement !== previous.type)) {
+            if(!previous || (NodeType.IfStatement !== previous.type && NodeType.WhenStatement !== previous.type)) {
                 this.#record(new DSLParseError('`when <test>` continues the `if` or `when` before it, but there is none here; either add one or use `if`', statement.loc, this.#source));
 
                 return false;
@@ -318,7 +323,7 @@ if (typeof require === 'function' && typeof module === 'object') {
 
             let target = previous;
 
-            while (target.alternate)
+            while(target.alternate)
                 target = target.alternate;
 
             target.alternate = statement;
@@ -337,12 +342,12 @@ if (typeof require === 'function' && typeof module === 'object') {
         #parseBlock() {
             this.#expect(TokenType.NEWLINE, 'end of line');
 
-            if (!this.#at(TokenType.INDENT))
+            if(!this.#at(TokenType.INDENT))
                 return null;
 
-            let open = this.#next().loc,
-                body = this.#parseStatements(TokenType.DEDENT),
-                close = this.#peek().loc;
+            const open = this.#next().loc
+                , body = this.#parseStatements(TokenType.DEDENT)
+                , close = this.#peek().loc;
 
             this.#accept(TokenType.DEDENT);
 
@@ -353,22 +358,22 @@ if (typeof require === 'function' && typeof module === 'object') {
 
         /** @return {Object} */
         #parseStatement() {
-            let token = this.#peek(),
-                parse = this.#statementParsers[token.type];
+            const token = this.#peek()
+                , parse = this.#statementParsers[token.type];
 
-            if (parse)
+            if(parse)
                 return parse.call(this, token);
 
             // Caught before anything else: `else`/`switch`/`calc` in statement position are
             // exactly the mistakes a reader arriving from another language makes, and the
             // generic "expected a statement" tells them nothing.
-            if (TokenType.RESERVED === token.type)
+            if(TokenType.RESERVED === token.type)
                 return this.#failReserved(token);
 
             // An all-caps bare word in statement position is a verb call. The decision is
             // made here, by position, rather than in the lexer — so the host can register
             // new verbs without touching the language.
-            if (TokenType.IDENT === token.type && token.isUpper)
+            if(TokenType.IDENT === token.type && token.isUpper)
                 return this.#parseVerbStatement(token);
 
             return this.#parseExpressionStatement(token);
@@ -382,13 +387,13 @@ if (typeof require === 'function' && typeof module === 'object') {
          * accepting one would turn every misspelled verb into a silent no-op.
          */
         #parseExpressionStatement(token) {
-            let before = this.#index,
-                expression = null;
+            let before = this.#index
+                , expression = null;
 
             try {
                 expression = this.#parseExpression();
-            } catch (error) {
-                if (!(error instanceof DSLParseError))
+            } catch(error) {
+                if(!(error instanceof DSLParseError))
                     throw error;
 
                 this.#index = before;
@@ -396,7 +401,7 @@ if (typeof require === 'function' && typeof module === 'object') {
                 throw error;
             }
 
-            if (NodeType.AssignmentExpression !== expression.type) {
+            if(NodeType.AssignmentExpression !== expression.type) {
                 this.#index = before;
 
                 return this.#fail(`Expected a statement, found ${ this.#describe(token) }`);
@@ -411,13 +416,13 @@ if (typeof require === 'function' && typeof module === 'object') {
         #parseAwaitStatement(token) {
             this.#next();
 
-            let subject = this.#parseExpression(),
-                filter = null;
+            let subject = this.#parseExpression()
+                , filter = null;
 
-            if (this.#accept(TokenType.WITH))
+            if(this.#accept(TokenType.WITH))
                 filter = this.#parseExpression();
 
-            let body = this.#parseBlock();
+            const body = this.#parseBlock();
 
             return AST.awaitStatement(subject, filter, body, span(token.loc, (body ?? filter ?? subject).loc));
         }
@@ -426,19 +431,19 @@ if (typeof require === 'function' && typeof module === 'object') {
         #parseUsingStatement(token) {
             this.#next();
 
-            let subjects = [],
-                permissions = [];
+            const subjects = []
+                , permissions = [];
 
             // Several subjects may sit on one line — `using <viewer> <everyone> <all>` —
             // with juxtaposition meaning "any of these". Grants may be interleaved with
             // them freely; they are read directly here rather than through
             // `#parseExpression`, which is what keeps a `+permission` from being a valid
             // operand anywhere else in the language.
-            while (!this.#at(TokenType.NEWLINE, TokenType.EOF, TokenType.DEDENT)) {
-                if (this.#accept(TokenType.COMMA))
+            while(!this.#at(TokenType.NEWLINE, TokenType.EOF, TokenType.DEDENT)) {
+                if(this.#accept(TokenType.COMMA))
                     continue;
 
-                if (this.#at(TokenType.PERMISSION)) {
+                if(this.#at(TokenType.PERMISSION)) {
                     permissions.push(this.#next().value);
 
                     continue;
@@ -447,10 +452,10 @@ if (typeof require === 'function' && typeof module === 'object') {
                 subjects.push(this.#parseExpression());
             }
 
-            if (!subjects.length)
+            if(!subjects.length)
                 this.#fail('`using` needs at least one subject', token);
 
-            let body = this.#parseBlock();
+            const body = this.#parseBlock();
 
             return AST.usingStatement(subjects, body, span(token.loc, (body ?? subjects[subjects.length - 1]).loc), permissions);
         }
@@ -464,15 +469,15 @@ if (typeof require === 'function' && typeof module === 'object') {
         #parseWhenStatement(token) {
             this.#next();
 
-            let discriminant = this.#parseWhenHead(),
-                dangling = this.#dangling;
+            const discriminant = this.#parseWhenHead()
+                , dangling = this.#dangling;
 
             this.#dangling = null;
 
-            if (!dangling) {
-                let body = this.#parseBlock();
+            if(!dangling) {
+                const body = this.#parseBlock();
 
-                if (null === body)
+                if(null === body)
                     this.#record(new DSLParseError('`when` has no indented body', token.loc, this.#source));
 
                 return AST.whenChain(discriminant, body, span(token.loc, (body ?? discriminant).loc));
@@ -481,20 +486,20 @@ if (typeof require === 'function' && typeof module === 'object') {
             this.#expect(TokenType.NEWLINE, 'end of line after `when ... is`');
             this.#expect(TokenType.INDENT, 'an indented list of `when` cases');
 
-            let cases = [];
+            const cases = [];
 
             this.#skipNewlines();
 
-            while (!this.#at(TokenType.DEDENT, TokenType.EOF)) {
+            while(!this.#at(TokenType.DEDENT, TokenType.EOF)) {
                 cases.push(this.#parseWhenCase());
                 this.#skipNewlines();
             }
 
-            let close = this.#peek().loc;
+            const close = this.#peek().loc;
 
             this.#accept(TokenType.DEDENT);
 
-            if (!cases.length)
+            if(!cases.length)
                 this.#fail('`when ... is` needs at least one case', { loc: span(token.loc, close) });
 
             return AST.whenStatement(discriminant, dangling.lexeme, cases, span(token.loc, close));
@@ -515,9 +520,9 @@ if (typeof require === 'function' && typeof module === 'object') {
         /** `<value>:` + block. A `*` label is the default for free: comparing anything
          * against the wildcard already means "is present". */
         #parseWhenCase() {
-            let test = this.#parseExpression(),
-                colon = this.#expect(TokenType.COLON, '`:` after a `when` case label'),
-                body = this.#parseBlock();
+            const test = this.#parseExpression()
+                , colon = this.#expect(TokenType.COLON, '`:` after a `when` case label')
+                , body = this.#parseBlock();
 
             return AST.whenCase(test, body, span(test.loc, (body ?? colon).loc));
         }
@@ -529,10 +534,10 @@ if (typeof require === 'function' && typeof module === 'object') {
         #parseWithStatement(token) {
             this.#next();
 
-            let filter = this.#parseExpression(),
-                body = this.#parseBlock();
+            const filter = this.#parseExpression()
+                , body = this.#parseBlock();
 
-            if (null === body)
+            if(null === body)
                 this.#record(new DSLParseError('`with` has no indented body', token.loc, this.#source));
 
             return AST.withStatement(filter, body, span(token.loc, (body ?? filter).loc));
@@ -542,10 +547,10 @@ if (typeof require === 'function' && typeof module === 'object') {
         #parseIfStatement(token) {
             this.#next();
 
-            let test = this.#parseExpression(),
-                body = this.#parseBlock();
+            const test = this.#parseExpression()
+                , body = this.#parseBlock();
 
-            if (null === body)
+            if(null === body)
                 this.#record(new DSLParseError('`if` has no indented body', token.loc, this.#source));
 
             return AST.ifStatement(test, body, span(token.loc, (body ?? test).loc));
@@ -555,7 +560,7 @@ if (typeof require === 'function' && typeof module === 'object') {
         #parseGotoStatement(token) {
             this.#next();
 
-            let target = this.#parseExpression();
+            const target = this.#parseExpression();
 
             this.#expect(TokenType.NEWLINE, 'end of line');
 
@@ -568,7 +573,7 @@ if (typeof require === 'function' && typeof module === 'object') {
 
             let argument = null;
 
-            if (!this.#at(TokenType.NEWLINE, TokenType.EOF, TokenType.DEDENT))
+            if(!this.#at(TokenType.NEWLINE, TokenType.EOF, TokenType.DEDENT))
                 argument = this.#parseExpression();
 
             this.#expect(TokenType.NEWLINE, 'end of line');
@@ -596,11 +601,11 @@ if (typeof require === 'function' && typeof module === 'object') {
         #parseExpression(minimum = LOWEST_PRECEDENCE) {
             let left = this.#parseUnary();
 
-            while (true) {
-                let token = this.#peek(),
-                    operator = OPERATORS[token.type];
+            while(true) {
+                const token = this.#peek()
+                    , operator = OPERATORS[token.type];
 
-                if (!operator || operator.precedence < minimum)
+                if(!operator || operator.precedence < minimum)
                     break;
 
                 this.#next();
@@ -608,7 +613,7 @@ if (typeof require === 'function' && typeof module === 'object') {
                 // `when .command is` — a comparison with nothing after it is the switch
                 // head. Legal only where `#danglingAllowed` says so; everywhere else the
                 // right operand is parsed and the missing one reported as usual.
-                if (this.#danglingAllowed && this.#at(TokenType.NEWLINE) && (TokenType.IS === token.type || TokenType.IN === token.type)) {
+                if(this.#danglingAllowed && this.#at(TokenType.NEWLINE) && (TokenType.IS === token.type || TokenType.IN === token.type)) {
                     this.#dangling = token;
 
                     break;
@@ -617,21 +622,21 @@ if (typeof require === 'function' && typeof module === 'object') {
                 // A left-associative operator forbids its own precedence on the right, so
                 // `a or b or c` groups as `(a or b) or c`. A non-associative one does the
                 // same, and then rejects a repeat outright.
-                let next = (Associativity.RIGHT === operator.associativity? operator.precedence: operator.precedence + 1),
-                    right = this.#parseExpression(next);
+                const next = (Associativity.RIGHT === operator.associativity ? operator.precedence : operator.precedence + 1)
+                    , right = this.#parseExpression(next);
 
-                if (TokenType.IS === token.type)
+                if(TokenType.IS === token.type)
                     this.#rejectInterpolatedComparison(left, right, token);
 
-                let build = BINARY_BUILDERS[token.type],
-                    loc = span(left.loc, right.loc);
+                const build = BINARY_BUILDERS[token.type]
+                    , loc = span(left.loc, right.loc);
 
-                left = (build? build(left, right, loc, token): AST.binaryExpression(operator.lexeme, left, right, loc));
+                left = (build ? build(left, right, loc, token) : AST.binaryExpression(operator.lexeme, left, right, loc));
 
-                if (Associativity.NONE === operator.associativity) {
-                    let ahead = OPERATORS[this.#peek().type];
+                if(Associativity.NONE === operator.associativity) {
+                    const ahead = OPERATORS[this.#peek().type];
 
-                    if (ahead && ahead.precedence === operator.precedence)
+                    if(ahead && ahead.precedence === operator.precedence)
                         this.#fail(`\`${ operator.lexeme }\` is not associative; parenthesize to say which comparison comes first`);
                 }
             }
@@ -641,12 +646,12 @@ if (typeof require === 'function' && typeof module === 'object') {
             // expression — there is nothing for precedence climbing to climb. Gating on the
             // outermost level is what makes it loosest for free, and is why `(5:00 -> a)`
             // works while `1st <| .links -> a` binds the piped result rather than `.links`.
-            if (LOWEST_PRECEDENCE === minimum && this.#at(TokenType.ARROW_LOCAL, TokenType.ARROW_PARENT))
+            if(LOWEST_PRECEDENCE === minimum && this.#at(TokenType.ARROW_LOCAL, TokenType.ARROW_PARENT))
                 return this.#parseAssignmentTail(left);
 
             // A `-` sitting after a complete expression can only have been meant as
             // subtraction. Saying so beats "expected end of line".
-            if (LOWEST_PRECEDENCE === minimum && this.#at(TokenType.MINUS))
+            if(LOWEST_PRECEDENCE === minimum && this.#at(TokenType.MINUS))
                 this.#fail('arithmetic is not implemented; `calc( ... )` is reserved for a future version and will require the `eval:calc` permission');
 
             return left;
@@ -654,29 +659,29 @@ if (typeof require === 'function' && typeof module === 'object') {
 
         /** `<value> -> name` / `<value> => name`. */
         #parseAssignmentTail(value) {
-            let arrow = this.#next(),
-                scope = (TokenType.ARROW_PARENT === arrow.type? 'parent': 'local'),
-                target = this.#peek();
+            const arrow = this.#next()
+                , scope = (TokenType.ARROW_PARENT === arrow.type ? 'parent' : 'local')
+                , target = this.#peek();
 
-            if (TokenType.IDENT !== target.type)
+            if(TokenType.IDENT !== target.type)
                 this.#fail(`Expected a variable name after \`${ arrow.lexeme }\`, found ${ this.#describe(target) }`);
 
             this.#next();
 
-            let name = target.value;
+            const name = target.value;
 
             // Enforced here, at the binding site, and nowhere else. The lexer cannot tell
             // `USERNAME` from `mod_msg`, and a reference site must not try: a name with an
             // interior underscore resolves variable-then-constant, one without resolves
             // constant-only. Checking only where a name is *created* is also what makes the
             // subject aliases safe — they are only ever read, so they can never trip this.
-            if (THIS_ALIASES.has(name))
+            if(THIS_ALIASES.has(name))
                 this.#fail(`\`${ name }\` always means the current subject and cannot be bound`, target);
 
-            if (!VARIABLE_PATTERN.test(name))
+            if(!VARIABLE_PATTERN.test(name))
                 this.#fail('A variable name must contain an interior underscore, e.g. `mod_msg`; `x`, `_x` and `x_` are not variable names', target);
 
-            if (this.#at(TokenType.ARROW_LOCAL, TokenType.ARROW_PARENT))
+            if(this.#at(TokenType.ARROW_LOCAL, TokenType.ARROW_PARENT))
                 this.#fail('Chained assignment is not allowed; bind one name per expression');
 
             return AST.assignmentExpression(name, scope, value, span(value.loc, target.loc));
@@ -690,19 +695,19 @@ if (typeof require === 'function' && typeof module === 'object') {
          * would make the comparison depend on `stringify`'s rendering rules rather than on
          * anything the script said. */
         #rejectInterpolatedComparison(left, right, token) {
-            if (isInterpolated(left) || isInterpolated(right))
+            if(isInterpolated(left) || isInterpolated(right))
                 this.#fail('`is` does not accept a template with `${ ... }` in it; compare against a string, or bind the template to a name first', token);
         }
 
         /** `not <expr>` / `-<expr>` / `=<expr>` */
         #parseUnary() {
-            let token = this.#peek();
+            const token = this.#peek();
 
-            if (this.#at(TokenType.NOT, TokenType.MINUS, TokenType.EXACT)) {
+            if(this.#at(TokenType.NOT, TokenType.MINUS, TokenType.EXACT)) {
                 this.#next();
 
-                let argument = this.#parseUnary(),
-                    operator = (TokenType.NOT === token.type? 'not': TokenType.EXACT === token.type? '=': '-');
+                const argument = this.#parseUnary()
+                    , operator = (TokenType.NOT === token.type ? 'not' : TokenType.EXACT === token.type ? '=' : '-');
 
                 return AST.unaryExpression(operator, argument, span(token.loc, argument.loc));
             }
@@ -712,74 +717,88 @@ if (typeof require === 'function' && typeof module === 'object') {
 
         /** @return {Object} */
         #parsePrimary() {
-            let token = this.#peek();
+            const token = this.#peek();
 
-            switch (token.type) {
+            switch(token.type) {
                 case TokenType.NUMBER:
-                case TokenType.STRING:
+                case TokenType.STRING: {
                     this.#next();
 
                     return AST.literal(token.value, token.lexeme, token.loc);
+                }
 
                 case TokenType.TRUE:
-                case TokenType.FALSE:
+                case TokenType.FALSE: {
                     this.#next();
 
                     return AST.literal(TokenType.TRUE === token.type, token.lexeme, token.loc);
+                }
 
-                case TokenType.DURATION:
+                case TokenType.DURATION: {
                     this.#next();
 
                     return AST.duration(token.value, token.loc);
+                }
 
-                case TokenType.ORDINAL:
+                case TokenType.ORDINAL: {
                     this.#next();
 
                     return AST.ordinalIndex(token.value, token.loc);
+                }
 
-                case TokenType.WILDCARD:
+                case TokenType.WILDCARD: {
                     this.#next();
 
                     return AST.wildcard(token.loc);
+                }
 
-                case TokenType.TEMPLATE:
+                case TokenType.TEMPLATE: {
                     this.#next();
 
                     return this.#buildTemplate(token);
+                }
 
-                case TokenType.ANY:
+                case TokenType.ANY: {
                     return this.#parseAnyFrom();
+                }
 
-                case TokenType.LPAREN:
+                case TokenType.LPAREN: {
                     return this.#parseGroup();
+                }
 
-                case TokenType.JS_PATH:
+                case TokenType.JS_PATH: {
                     return this.#parseJSInvoke();
+                }
 
-                case TokenType.IDENT:
+                case TokenType.IDENT: {
                     this.#next();
 
                     // `_` and its long-winded spellings are the subject itself — the same
                     // thing `.prop` reads a property from, minus the read.
-                    if (THIS_ALIASES.has(token.value))
+                    if(THIS_ALIASES.has(token.value))
                         return AST.thisExpression(token.loc);
 
                     return AST.identifier(token.value, !!token.isUpper, token.loc);
+                }
 
-                case TokenType.RESERVED:
+                case TokenType.RESERVED: {
                     return this.#failReserved(token);
+                }
 
-                case TokenType.PERMISSION:
+                case TokenType.PERMISSION: {
                     return this.#fail('A `+permission` may only appear in a `using` header', token);
+                }
 
-                case TokenType.COLON:
+                case TokenType.COLON: {
                     return this.#fail(COLON_MESSAGE, token);
+                }
 
-                default:
+                default: {
                     break;
-            }
+                }
+            } // switch token.type
 
-            if (token.type in SELECTOR_KINDS)
+            if(token.type in SELECTOR_KINDS)
                 return this.#parseSelector();
 
             return this.#fail(`Expected an expression, found ${ this.#describe(token) }`);
@@ -792,36 +811,36 @@ if (typeof require === 'function' && typeof module === 'object') {
          * segment list to the runtime, which walks a host-supplied binding table. A script
          * naming a path the host never registered fails loudly, exactly as `DISCORD` does. */
         #parseJSInvoke() {
-            let token = this.#next();
+            const token = this.#next();
 
             this.#expect(TokenType.LPAREN, '`(` after a `$:` host call');
 
-            let args = [];
+            const args = [];
 
             this.#skipSeparators();
 
-            while (!this.#at(TokenType.RPAREN, TokenType.EOF)) {
+            while(!this.#at(TokenType.RPAREN, TokenType.EOF)) {
                 args.push(this.#parseExpression());
                 this.#skipSeparators();
             }
 
-            let close = this.#expect(TokenType.RPAREN, '`)` closing the `$:` argument list').loc;
+            const close = this.#expect(TokenType.RPAREN, '`)` closing the `$:` argument list').loc;
 
             return AST.jsInvokeExpression(token.value, args, span(token.loc, close));
         }
 
         /** Any sigil. `/channel` glued directly to `#prop` collapses into one node. */
         #parseSelector() {
-            let token = this.#next(),
-                kind = SELECTOR_KINDS[token.type];
+            const token = this.#next()
+                , kind = SELECTOR_KINDS[token.type];
 
-            if (TokenType.SELECTOR_REALM === token.type)
+            if(TokenType.SELECTOR_REALM === token.type)
                 return AST.selector(kind, token.value.path, { realm: token.value.realm, path: token.value.path }, token.loc);
 
             // `/ginger_enby#name` — two tokens, but only because they were written without
             // a space. Adjacency in the source is what makes them one selector.
-            if (TokenType.SELECTOR_CHANNEL === token.type && this.#at(TokenType.SELECTOR_PROP) && this.#peek().loc.start === token.loc.end) {
-                let property = this.#next();
+            if(TokenType.SELECTOR_CHANNEL === token.type && this.#at(TokenType.SELECTOR_PROP) && this.#peek().loc.start === token.loc.end) {
+                const property = this.#next();
 
                 return AST.selector('prop', property.value, { channel: token.value }, span(token.loc, property.loc));
             }
@@ -831,16 +850,16 @@ if (typeof require === 'function' && typeof module === 'object') {
 
         /** `any from ( <item> \n <item> ... )` or `any from ( <range> )` */
         #parseAnyFrom() {
-            let start = this.#expect(TokenType.ANY, '`any`').loc;
+            const start = this.#expect(TokenType.ANY, '`any`').loc;
 
             this.#expect(TokenType.FROM, '`from` after `any`');
             this.#expect(TokenType.LPAREN, '`(` after `any from`');
 
-            let items = [];
+            const items = [];
 
             this.#skipSeparators();
 
-            while (!this.#at(TokenType.RPAREN, TokenType.EOF)) {
+            while(!this.#at(TokenType.RPAREN, TokenType.EOF)) {
                 items.push(this.#parseExpression());
 
                 // Items are separated by line; a comma is an *optional* extra separator, so
@@ -850,9 +869,9 @@ if (typeof require === 'function' && typeof module === 'object') {
                 this.#skipSeparators();
             }
 
-            let close = this.#expect(TokenType.RPAREN, '`)` closing `any from`').loc;
+            const close = this.#expect(TokenType.RPAREN, '`)` closing `any from`').loc;
 
-            if (!items.length)
+            if(!items.length)
                 this.#fail('`any from` needs at least one item', { loc: span(start, close) });
 
             return AST.anyFromExpression(items, span(start, close));
@@ -860,13 +879,13 @@ if (typeof require === 'function' && typeof module === 'object') {
 
         /** A parenthesized expression. May span lines. */
         #parseGroup() {
-            let open = this.#expect(TokenType.LPAREN, '`(`').loc;
+            const open = this.#expect(TokenType.LPAREN, '`(`').loc;
 
             this.#skipSeparators();
 
             // Re-entering at the outermost level is what makes `(5:00 -> wait_time)` bind:
             // the assignment tail pass is gated on that level, and a group is a fresh one.
-            let inner = this.#parseExpression();
+            const inner = this.#parseExpression();
 
             this.#skipSeparators();
             this.#expect(TokenType.RPAREN, '`)`');
@@ -885,10 +904,10 @@ if (typeof require === 'function' && typeof module === 'object') {
          * @return {Object}
          */
         #buildTemplate(token) {
-            let { quasis, expressions } = token.value,
-                parsed = expressions.map(({ source, offset }) => {
-                    let tokens = new Tokenizer(source, { fragment: true, origin: { offset, source: this.#source } }).tokenize(),
-                        parser = new Parser(tokens, this.#source);
+            const { quasis, expressions } = token.value
+                , parsed = expressions.map(({ source, offset }) => {
+                    const tokens = new Tokenizer(source, { fragment: true, origin: { offset, source: this.#source } }).tokenize()
+                        , parser = new Parser(tokens, this.#source);
 
                     return parser.parseInterpolation();
                 });
@@ -902,11 +921,11 @@ if (typeof require === 'function' && typeof module === 'object') {
         parseInterpolation() {
             this.#skipNewlines();
 
-            let expression = this.#parseExpression();
+            const expression = this.#parseExpression();
 
             this.#skipNewlines();
 
-            if (!this.#at(TokenType.EOF))
+            if(!this.#at(TokenType.EOF))
                 this.#fail(`Unexpected ${ this.#describe(this.#peek()) } after the interpolated expression`);
 
             return expression;
@@ -917,10 +936,10 @@ if (typeof require === 'function' && typeof module === 'object') {
      * @param {String} source
      * @return {{ program: Object, errors: Array<DSLParseError> }}
      */
-    let parseTolerant = (source) => {
-        let text = String(source),
-            tokens = new Tokenizer(text).tokenize(),
-            parser = new Parser(tokens, text);
+    const parseTolerant = (source) => {
+        const text = String(source)
+            , tokens = new Tokenizer(text).tokenize()
+            , parser = new Parser(tokens, text);
 
         return { program: parser.parseProgram(), errors: parser.errors };
     };
@@ -930,10 +949,10 @@ if (typeof require === 'function' && typeof module === 'object') {
      * @return {Object} a `Program` node
      * @throws {DSLSyntaxError|DSLParseError} the first fault found
      */
-    let parse = (source) => {
-        let { program, errors } = parseTolerant(source);
+    const parse = (source) => {
+        const { program, errors } = parseTolerant(source);
 
-        if (errors.length)
+        if(errors.length)
             throw errors[0];
 
         return program;
@@ -943,5 +962,5 @@ if (typeof require === 'function' && typeof module === 'object') {
     globalThis.TTV_DSL.parse = parse;
 })();
 
-if (typeof module === 'object' && module?.exports)
+if(typeof module === 'object' && module?.exports)
     module.exports = globalThis.TTV_DSL;
