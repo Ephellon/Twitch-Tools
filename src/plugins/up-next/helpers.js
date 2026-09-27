@@ -240,12 +240,17 @@ plugin({
 
             let timeRemaining = parseInt(job.getAttribute('time'));
 
-            if(timeRemaining <= 60_000 && nullish('.tt-confirm'))
+            // If the normal Up Next switch hasn't happened a minute after it was due, ask instead
+            if(timeRemaining <= 60_000 && $.nullish('.tt-confirm'))
                 wait(60_000).then(() => {
+                    let name = GetNextStreamer.cachedStreamer?.name;
+
+                    // Another prompt is up, or there's nowhere to go
+                    if($.defined('.tt-confirm') || nullish(name))
+                        return;
+
                     $warn(`Mitigation for Up Next: Loose interval @ ${ location } / ${ new Date }`)
                         // .toNativeStack();
-
-                    let { name } = GetNextStreamer.cachedStreamer;
 
                     confirm
                         .timed(`Coming up next: <a href='./${ name }'>${ name }</a>`, timeRemaining)
