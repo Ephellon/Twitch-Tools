@@ -21,7 +21,7 @@
 globalThis.TTV_DSL ??= {};
 
 if (typeof require === 'function' && typeof module === 'object')
-    for (let name of ['./errors.js', './tokens.js', './tokenizer.js', './ast.js', './parser.js', './runtime.js', './compiler.js'])
+    for (let name of ['./errors.js', './tokens.js', './tokenizer.js', './ast.js', './parser.js', './runtime.js', './compiler.js', './fake-page.js'])
         require(name);
 
 (() => {
@@ -57,6 +57,33 @@ if (typeof require === 'function' && typeof module === 'object')
         // -- diagnostics ------------------------------------------------------
         errors: DSL.errors,
     });
+
+    /** Lists what a script will ask for, without running it — what a host shows the viewer
+     * before a script starts.
+     * @param {String} source
+     * @return {{ blocks: Array<Object>, calls: Array<Object> }} `blocks` is every `using`
+     *   that grants something or describes itself — `{ permissions, description, line }` —
+     *   and `calls` is every `&` host call — `{ path, line }` — in source order.
+     * @throws {DSLError} when the script does not parse
+     */
+    DSL.grants = (source) => {
+        let program = DSL.parse(source),
+            blocks = [],
+            calls = [];
+
+        DSL.walk(program, {
+            [DSL.NodeType.UsingStatement](node) {
+                if (node.permissions.length || null !== node.description)
+                    blocks.push({ permissions: node.permissions.slice(), description: node.description, line: node.loc?.line ?? null });
+            },
+
+            [DSL.NodeType.JSInvokeExpression](node) {
+                calls.push({ path: node.path.join('.'), line: node.loc?.line ?? null });
+            },
+        });
+
+        return { blocks, calls };
+    };
 
     /** Parses without running, purely to collect diagnostics — what the settings-page
      * editor wants in order to underline mistakes as they are typed.

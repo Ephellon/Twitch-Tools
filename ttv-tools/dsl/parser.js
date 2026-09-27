@@ -60,6 +60,7 @@ if (typeof require === 'function' && typeof module === 'object') {
         [TokenType.RANGE_EXCLUSIVE]: (left, right, loc) => AST.rangeExpression(left, right, false, loc),
         [TokenType.RANGE_INCLUSIVE]: (left, right, loc) => AST.rangeExpression(left, right, true, loc),
         [TokenType.PERCENT]: (left, right, loc, token) => AST.percentExpression(left, token.value, right, loc),
+        [TokenType.FORMAT]: (left, right, loc) => AST.formatExpression(left, right, loc),
     };
 
     /** The diagnostic each poisoned reserved word produces. They exist for no other reason.
@@ -71,7 +72,6 @@ if (typeof require === 'function' && typeof module === 'object') {
         switch: '`switch` is not a keyword in TTV DSL; write `when <expression> is` and indent the cases',
         case: '`case` is not a keyword in TTV DSL; a `when` case is written `<value>:` and indented',
         default: '`default` is not a keyword in TTV DSL; put an `else` after the `when` cases',
-        calc: 'arithmetic is not implemented; `calc( ... )` is reserved for a future version and will require the `eval:calc` permission',
     };
 
     /** Actions whose grants must carry a `-- "description"`: they change the page or run
@@ -426,7 +426,9 @@ if (typeof require === 'function' && typeof module === 'object') {
                 throw error;
             }
 
-            if (NodeType.AssignmentExpression !== expression.type) {
+            // A host call may stand alone too: `&Html.setText("#title", "hi")` is done for
+            // what it does, exactly as a verb is.
+            if (NodeType.AssignmentExpression !== expression.type && NodeType.JSInvokeExpression !== expression.type) {
                 this.#index = before;
 
                 return this.#fail(`Expected a statement, found ${ this.#describe(token) }`);
@@ -450,6 +452,25 @@ if (typeof require === 'function' && typeof module === 'object') {
             let body = this.#parseBlock();
 
             return AST.awaitStatement(subject, filter, body, span(token.loc, (body ?? filter ?? subject).loc));
+        }
+
+        /** `after <duration> [with <filter>]` + block — fires once. The duration is any
+         * expression, read when the statement is reached, so `after wait_time` works. */
+        #parseAfterStatement(token) {
+            this.#next();
+
+            let subject = this.#parseExpression(),
+                filter = null;
+
+            if (this.#accept(TokenType.WITH))
+                filter = this.#parseExpression();
+
+            let body = this.#parseBlock();
+
+            if (null === body)
+                this.#record(new DSLParseError('`after` has no indented body', token.loc, this.#source));
+
+            return AST.afterStatement(subject, filter, body, span(token.loc, (body ?? filter ?? subject).loc));
         }
 
         /** `using [<subject> ...] [+permission ...] [+scope[:mode]] [-- "description"]` */
@@ -698,6 +719,7 @@ if (typeof require === 'function' && typeof module === 'object') {
         /** Keyword -> handler. Declared as a field so `this` stays bound through dispatch. */
         #statementParsers = {
             [TokenType.AWAIT]: this.#parseAwaitStatement,
+            [TokenType.AFTER]: this.#parseAfterStatement,
             [TokenType.USING]: this.#parseUsingStatement,
             [TokenType.IF]: this.#parseIfStatement,
             [TokenType.GOTO]: this.#parseGotoStatement,
@@ -789,9 +811,9 @@ if (typeof require === 'function' && typeof module === 'object') {
                 this.#parsePrimary();
 
             // A `-` sitting after a complete expression can only have been meant as
-            // subtraction. Saying so beats "expected end of line".
+            // subtraction. Saying where arithmetic lives beats "expected end of line".
             if (LOWEST_PRECEDENCE === minimum && this.#at(TokenType.MINUS))
-                this.#fail('arithmetic is not implemented; `calc( ... )` is reserved for a future version and will require the `eval:calc` permission');
+                this.#fail('arithmetic only works inside `calc( ... )`, e.g. `calc(a - b)`; it needs the `eval:calc` permission');
 
             return left;
         }
@@ -919,6 +941,9 @@ if (typeof require === 'function' && typeof module === 'object') {
                 case TokenType.JS_PATH:
                     return this.#parseJSInvoke();
 
+                case TokenType.CALC:
+                    return this.#parseCalc();
+
                 case TokenType.IDENT:
                     this.#next();
 
@@ -985,6 +1010,124 @@ if (typeof require === 'function' && typeof module === 'object') {
             return AST.jsInvokeExpression(token.value, args, span(token.loc, close));
         }
 
+        /** `calc( <arithmetic> )`.
+         *
+         * Inside the parentheses the tokenizer has already turned `+ - * / % **` into
+         * `ARITH` tokens, and this is a small grammar of its own with JavaScript's
+         * precedence: `**` (right-associative), then `* / %`, then `+ -`, with unary `-`/`+`.
+         * As in JavaScript, a unary operator may not be the base of `**` — `-2 ** 2` is an
+         * error; write `(-2) ** 2` or `-(2 ** 2)`. Operands are ordinary DSL values:
+         * numbers, durations, variables, `.prop`, `#prop`, host calls. */
+        #parseCalc() {
+            let start = this.#next().loc;
+
+            if (!this.#at(TokenType.LPAREN))
+                this.#fail('`calc` needs its arithmetic in parentheses, e.g. `calc(.raid_size * 2)`');
+
+            this.#next();
+            this.#skipSeparators();
+
+            let expression = this.#parseSum();
+
+            this.#skipSeparators();
+
+            let close = this.#expect(TokenType.RPAREN, '`)` closing `calc(`, or an arithmetic operator').loc;
+
+            return AST.calcExpression(expression, span(start, close));
+        }
+
+        /** @param {...String} operators @return {?Object} the ARITH token, consumed */
+        #acceptArith(...operators) {
+            this.#skipSeparators();
+
+            return ((this.#at(TokenType.ARITH) && operators.includes(this.#peek().value))? this.#next(): null);
+        }
+
+        #parseSum() {
+            let left = this.#parseProduct(),
+                operator;
+
+            while ((operator = this.#acceptArith('+', '-'))) {
+                let right = this.#parseProduct();
+
+                left = AST.arithmeticExpression(operator.value, left, right, span(left.loc, right.loc));
+            }
+
+            return left;
+        }
+
+        #parseProduct() {
+            let left = this.#parseArithUnary(),
+                operator;
+
+            while ((operator = this.#acceptArith('*', '/', '%'))) {
+                let right = this.#parseArithUnary();
+
+                left = AST.arithmeticExpression(operator.value, left, right, span(left.loc, right.loc));
+            }
+
+            return left;
+        }
+
+        #parseArithUnary() {
+            let operator = this.#acceptArith('-', '+');
+
+            if (!operator)
+                return this.#parsePower();
+
+            let argument = this.#parseArithSigned();
+
+            if (this.#at(TokenType.ARITH) && '**' === this.#peek().value)
+                this.#fail('A unary `-` or `+` cannot be the base of `**`; parenthesize: `(-2) ** 2` or `-(2 ** 2)`');
+
+            return AST.arithmeticExpression(operator.value, null, argument, span(operator.loc, argument.loc));
+        }
+
+        /** The operand of a unary sign: more signs, then a bare operand — never `**`, which
+         * is what leaves a following `**` visible to the check above. */
+        #parseArithSigned() {
+            let operator = this.#acceptArith('-', '+');
+
+            if (!operator)
+                return this.#parseArithOperand();
+
+            let argument = this.#parseArithSigned();
+
+            return AST.arithmeticExpression(operator.value, null, argument, span(operator.loc, argument.loc));
+        }
+
+        #parsePower() {
+            let base = this.#parseArithOperand();
+
+            if (!this.#acceptArith('**'))
+                return base;
+
+            // Right-associative: `2 ** 3 ** 2` is `2 ** 9`. The exponent may carry a sign.
+            let exponent = this.#parseArithUnary();
+
+            return AST.arithmeticExpression('**', base, exponent, span(base.loc, exponent.loc));
+        }
+
+        #parseArithOperand() {
+            this.#skipSeparators();
+
+            if (this.#at(TokenType.LPAREN)) {
+                this.#next();
+
+                let inner = this.#parseSum();
+
+                this.#skipSeparators();
+                this.#expect(TokenType.RPAREN, '`)`');
+
+                return inner;
+            }
+
+            if (this.#at(TokenType.ARITH))
+                this.#fail(`Expected a number before \`${ this.#peek().value }\``);
+
+            return this.#parseMembers(this.#parsePrimary());
+        }
+
         /** Any sigil. `/channel` glued directly to `#prop` collapses into one node. */
         #parseSelector() {
             let token = this.#next(),
@@ -1008,11 +1151,19 @@ if (typeof require === 'function' && typeof module === 'object') {
             return AST.selector(kind, token.value, {}, token.loc);
         }
 
-        /** `any from ( <item> \n <item> ... )` or `any from ( <range> )` */
+        /** `any from ( <item> \n <item> ... )`, `any from ( <range> )`, or `any from <value>` —
+         * the last picks from a list bound earlier: `any from replies`. */
         #parseAnyFrom() {
             let start = (this.#accept(TokenType.WILDCARD) ?? this.#expect(TokenType.ANY, '`any`')).loc;
 
             this.#expect(TokenType.FROM, '`from` after `any`');
+
+            if (!this.#at(TokenType.LPAREN)) {
+                let source = this.#parseUnary();
+
+                return AST.anyFromExpression([source], span(start, source.loc));
+            }
+
             this.#expect(TokenType.LPAREN, '`(` after `any from`');
 
             let items = [];
@@ -1045,14 +1196,27 @@ if (typeof require === 'function' && typeof module === 'object') {
 
             // Re-entering at the outermost level is what makes `(5:00 -> wait_time)` bind:
             // the assignment tail pass is gated on that level, and a group is a fresh one.
-            let inner = this.#parseExpression();
+            let items = [this.#parseExpression()];
 
             this.#skipSeparators();
+
+            // Two or more items, separated the way `any from` separates them — by line or
+            // by optional comma — make a list: `(\`hi\`, \`hey\`) => greetings`.
+            while (!this.#at(TokenType.RPAREN, TokenType.EOF)) {
+                items.push(this.#parseExpression());
+                this.#skipSeparators();
+            }
+
             this.#expect(TokenType.RPAREN, '`)`');
 
-            // The group is transparent; only its span widens, so `(a) is b` and `a is b`
-            // produce identical trees.
-            return Object.assign({}, inner, { loc: span(open, this.#peek(-1).loc) });
+            let loc = span(open, this.#peek(-1).loc);
+
+            if (items.length > 1)
+                return AST.listExpression(items, loc);
+
+            // A one-item group is transparent; only its span widens, so `(a) is b` and
+            // `a is b` produce identical trees.
+            return Object.assign({}, items[0], { loc });
         }
 
         /** Turns a `TEMPLATE` token into a node, recursively parsing each interpolation.

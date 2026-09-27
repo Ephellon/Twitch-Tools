@@ -55,6 +55,15 @@ globalThis.TTV_DSL ??= {};
         FALSE: 'FALSE',
         /** `when` — both the switch head and the `if`-chain continuation. */
         WHEN: 'WHEN',
+        /** `calc` — opens an arithmetic group: `calc( .raid_size * 2 + 1 )`. */
+        CALC: 'CALC',
+        /** `+ - * / % **` — an arithmetic operator. Only ever emitted **inside** the
+         * parentheses of a `calc( ... )`; everywhere else those characters keep their
+         * ordinary meanings. `value` is the operator. */
+        ARITH: 'ARITH',
+        /** `after <duration>` — a one-shot timer. `await <duration>` repeats; `after` fires
+         * once. */
+        AFTER: 'AFTER',
         /** `else` — the unconditional last branch of an `if`/`when` chain. Takes no test of
          * its own, so `else if` and `else when` are errors rather than shorthands. */
         ELSE: 'ELSE',
@@ -62,8 +71,8 @@ globalThis.TTV_DSL ??= {};
          * (`.raid_size is or above 50` is `>=`); the lexeme says which one. */
         COMPARE: 'COMPARE',
         /** A word reserved purely so that using it produces a *helpful* error instead of a
-         * generic one: `elif`, `elseif`, `switch`, `case`, `default`, `calc`. The parser keys
-         * its diagnostic off the lexeme. */
+         * generic one: `elif`, `elseif`, `switch`, `case`, `default`. The parser keys its
+         * diagnostic off the lexeme. */
         RESERVED: 'RESERVED',
 
         // -- literals ---------------------------------------------------------
@@ -120,6 +129,8 @@ globalThis.TTV_DSL ??= {};
         /** `%`, `%n%s`, `%d%s` … — the regex-replacement operator. `value` is the array of
          * class letters, empty for a bare `%`. */
         PERCENT: 'PERCENT',
+        /** `~` — the format operator: `wait_time ~ "hh?:mm:ss"`. */
+        FORMAT: 'FORMAT',
         /** `,` — an *optional* item separator. Never required, never meaningful between
          * statements. */
         COMMA: 'COMMA',
@@ -167,6 +178,7 @@ globalThis.TTV_DSL ??= {};
         true: TokenType.TRUE,
         false: TokenType.FALSE,
         when: TokenType.WHEN,
+        after: TokenType.AFTER,
         else: TokenType.ELSE,
 
         // `is above 50` / `is or above 50`. The inclusive form reuses `or` rather than
@@ -184,7 +196,7 @@ globalThis.TTV_DSL ??= {};
         switch: TokenType.RESERVED,
         case: TokenType.RESERVED,
         default: TokenType.RESERVED,
-        calc: TokenType.RESERVED,
+        calc: TokenType.CALC,
     });
 
     /** Every reserved word as a `Set`, for membership tests. */
@@ -220,6 +232,7 @@ globalThis.TTV_DSL ??= {};
         { lexeme: '-', type: TokenType.MINUS },
         { lexeme: '=', type: TokenType.EXACT },
         { lexeme: ',', type: TokenType.COMMA },
+        { lexeme: '~', type: TokenType.FORMAT },
         // `|` is spelled differently from `where` and means exactly `where`. Mapping it to
         // the same token type — rather than giving it its own — is what guarantees the two
         // spellings can never drift apart in precedence, associativity or AST shape.
@@ -253,7 +266,7 @@ globalThis.TTV_DSL ??= {};
      * | 1 | `or`          | left  | logical disjunction                |
      * | 2 | `and`         | left  | logical conjunction                |
      * | 3 | `is` / `in`   | none  | equality / membership              |
-     * | 4 | `%…`          | left  | regex replacement / list join      |
+     * | 4 | `%…` / `~`    | left  | replacement, list join / format    |
      * | 5 | `<|`          | left  | pipe                               |
      * | 6 | `where` (`|`) | left  | filter                             |
      * | 7 | `..` / `...`  | none  | exclusive / inclusive range        |
@@ -287,6 +300,7 @@ globalThis.TTV_DSL ??= {};
         [TokenType.IS]: { precedence: 3, associativity: Associativity.NONE, lexeme: 'is' },
         [TokenType.IN]: { precedence: 3, associativity: Associativity.NONE, lexeme: 'in' },
         [TokenType.PERCENT]: { precedence: 4, associativity: Associativity.LEFT, lexeme: '%' },
+        [TokenType.FORMAT]: { precedence: 4, associativity: Associativity.LEFT, lexeme: '~' },
         [TokenType.PIPE]: { precedence: 5, associativity: Associativity.LEFT, lexeme: '<|' },
         [TokenType.WHERE]: { precedence: 6, associativity: Associativity.LEFT, lexeme: 'where' },
         [TokenType.RANGE_EXCLUSIVE]: { precedence: 7, associativity: Associativity.NONE, lexeme: '..' },
@@ -307,6 +321,7 @@ globalThis.TTV_DSL ??= {};
         TokenType.IF,
         TokenType.GOTO,
         TokenType.WHEN,
+        TokenType.AFTER,
         TokenType.ELSE,
         TokenType.WITH,
     ]));

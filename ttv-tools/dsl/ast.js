@@ -36,6 +36,8 @@ globalThis.TTV_DSL ??= {};
         AwaitStatement: 'AwaitStatement',
         /** `using <subject> [<subject> ...]` + optional body. */
         UsingStatement: 'UsingStatement',
+        /** `after <duration> [with (<filter>)]` + body — a one-shot timer. */
+        AfterStatement: 'AfterStatement',
         /** `if <test>` + optional body, plus an optional `alternate` — the `when` that
          * follows it as a sibling. */
         IfStatement: 'IfStatement',
@@ -92,6 +94,15 @@ globalThis.TTV_DSL ??= {};
         /** `.raider.name` — a property read off whatever the expression before it produced.
          * Only formed when the `.name` is glued to what precedes it. */
         MemberExpression: 'MemberExpression',
+        /** `<value> ~ <pattern>` — renders a value (a duration, for now) through a pattern. */
+        FormatExpression: 'FormatExpression',
+        /** `calc( ... )` — `expression` is an `ArithmeticExpression` tree. */
+        CalcExpression: 'CalcExpression',
+        /** `a + b`, `-a` inside `calc( ... )`. `left` is null for a unary operator. */
+        ArithmeticExpression: 'ArithmeticExpression',
+        /** `( a, b, c )` — a group holding two or more items is a list. One item is just a
+         * grouped expression, as before. */
+        ListExpression: 'ListExpression',
 
         /** Any sigil: `#`, `#prop`, `/name`, `REALM/id`, `<badge>`, `@user`, `:emote:`, `.prop`. */
         Selector: 'Selector',
@@ -131,6 +142,7 @@ globalThis.TTV_DSL ??= {};
         [NodeType.Block]: ['body'],
 
         [NodeType.AwaitStatement]: ['subject', 'filter', 'body'],
+        [NodeType.AfterStatement]: ['subject', 'filter', 'body'],
         // `permissions` is a list of plain strings, not of nodes, so it stays off this table.
         [NodeType.UsingStatement]: ['subjects', 'body'],
         [NodeType.IfStatement]: ['test', 'body', 'alternate'],
@@ -152,6 +164,10 @@ globalThis.TTV_DSL ??= {};
         [NodeType.JSInvokeExpression]: ['arguments'],
         [NodeType.PercentExpression]: ['subject', 'replacement'],
         [NodeType.MemberExpression]: ['object'],
+        [NodeType.FormatExpression]: ['subject', 'pattern'],
+        [NodeType.ListExpression]: ['items'],
+        [NodeType.CalcExpression]: ['expression'],
+        [NodeType.ArithmeticExpression]: ['left', 'right'],
 
         [NodeType.TemplateLiteral]: ['expressions'],
 
@@ -194,6 +210,14 @@ globalThis.TTV_DSL ??= {};
          * @param {Object} loc
          */
         awaitStatement: (subject, filter, body, loc) => node(NodeType.AwaitStatement, { subject, filter, body }, loc),
+
+        /**
+         * @param {Object} subject - evaluates to a duration
+         * @param {?Object} filter
+         * @param {?Object} body
+         * @param {Object} loc
+         */
+        afterStatement: (subject, filter, body, loc) => node(NodeType.AfterStatement, { subject, filter, body }, loc),
 
         /**
          * @param {Array<Object>} subjects
@@ -396,6 +420,33 @@ globalThis.TTV_DSL ??= {};
          * @param {Object} loc
          */
         memberExpression: (object, property, loc) => node(NodeType.MemberExpression, { object, property }, loc),
+
+        /**
+         * @param {Object} subject
+         * @param {Object} pattern
+         * @param {Object} loc
+         */
+        formatExpression: (subject, pattern, loc) => node(NodeType.FormatExpression, { subject, pattern }, loc),
+
+        /**
+         * @param {Array<Object>} items - two or more
+         * @param {Object} loc
+         */
+        listExpression: (items, loc) => node(NodeType.ListExpression, { items }, loc),
+
+        /**
+         * @param {Object} expression
+         * @param {Object} loc
+         */
+        calcExpression: (expression, loc) => node(NodeType.CalcExpression, { expression }, loc),
+
+        /**
+         * @param {String} operator - `+ - * / % **`
+         * @param {?Object} left - null for unary `-` / `+`
+         * @param {Object} right
+         * @param {Object} loc
+         */
+        arithmeticExpression: (operator, left, right, loc) => node(NodeType.ArithmeticExpression, { operator, left, right }, loc),
     };
 
     /**

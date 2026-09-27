@@ -769,6 +769,154 @@
         });
     });
 
+    describe('v2 / `after`', () => {
+        it('fires once, not on repeat', async () => {
+            let { runtime, clock } = harness();
+
+            await run('after 5:00\n    POST `once`\n', runtime, {});
+            await clock.advance(30 * 60000);
+
+            assert.deepEqual(sent(runtime), ['once']);
+            assert.equal(clock.pending, 0);
+        });
+
+        it('schedules one per arrival inside a handler: "a minute after each raid"', async () => {
+            let { runtime, clock } = harness(),
+                source = 'await (.raider is SOMETHING)\n    .raider -> raid_name\n    after 1:00\n        POST `still here, ${ raid_name }?`\n';
+
+            await run(source, runtime, {});
+            await runtime.dispatch({ raider: 'a' });
+            await clock.advance(30000);
+            await runtime.dispatch({ raider: 'b' });
+            await clock.advance(60000);
+
+            assert.deepEqual(runtime.sink.map(entry => `${ entry.at } ${ entry.text }`), ['60000 still here, b?', '90000 still here, b?']);
+        });
+
+        it('takes any duration value, including a variable', async () => {
+            let { runtime, clock } = harness();
+
+            await run('(1:30 -> wait_time)\nafter wait_time\n    POST `waited`\n', runtime, {});
+            await clock.advance(89000);
+            assert.deepEqual(sent(runtime), []);
+            await clock.advance(1000);
+            assert.deepEqual(sent(runtime), ['waited']);
+        });
+
+        it('refuses something that is not a duration', async () => {
+            await rejects(run('after "soon"\n    POST `x`\n', harness().runtime, {}), /`after` needs a duration/);
+        });
+    });
+
+    describe('v2 / the `~` format operator', () => {
+        let { format } = globalThis.TTV_DSL.runtime;
+
+        it('renders durations through a clock pattern', () => {
+            assert.equal(format(300000, 'hh?:mm:ss'), '05:00');
+            assert.equal(format(3900000, 'hh?:mm:ss'), '01:05:00');
+            assert.equal(format(3900000, 'h:mm:ss'), '1:05:00');
+            assert.equal(format(65000, 'm:ss'), '1:05');
+        });
+
+        it('lets the largest unit absorb the overflow', () => {
+            assert.equal(format(90 * 60000, 'mm:ss'), '90:00');
+            assert.equal(format(90 * 60000, 'h:mm'), '1:30');
+        });
+
+        it('treats everything else as literal text, quoted text always, and rounds seconds down', () => {
+            assert.equal(format(61999, "m' min 's' sec'"), '1 min 1 sec');
+            assert.equal(format(61999, 'm:ss!'), '1:01!');
+            assert.equal(format(-65000, 'm:ss'), '-1:05');
+        });
+
+        it('renders a non-number as empty', () => {
+            assert.equal(format(NaN, 'mm:ss'), '');
+        });
+
+        it('works in a template, the way it will be written', async () => {
+            let { runtime, clock } = harness();
+
+            await run('await (5:00 -> wait_time)\n    POST `waited ${ wait_time ~ "hh?:mm:ss" }`\n', runtime, {});
+            await clock.advance(300000);
+
+            assert.deepEqual(sent(runtime), ['waited 05:00']);
+        });
+    });
+
+    describe('v2 / `calc( ... )`', () => {
+        let calc = async (body, event = {}) => {
+            let { runtime, failures } = harness();
+
+            await run(`using +eval:calc -- "maths"\n    await *\n        POST \`\${ ${ body } }\`\n`, runtime, {});
+            await runtime.dispatch(event);
+
+            return { texts: sent(runtime), failures };
+        };
+
+        it('does JavaScript arithmetic on DSL values', async () => {
+            assert.deepEqual((await calc('calc(.raid_size * 2 + 1)', { raid_size: 21 })).texts, ['43']);
+            assert.deepEqual((await calc('calc(2 ** 3 ** 2)')).texts, ['512']);
+            assert.deepEqual((await calc('calc(7 % 3 - -1)')).texts, ['2']);
+        });
+
+        it('reads durations and numeric strings as numbers', async () => {
+            assert.deepEqual((await calc('calc(5:00 / 1000)')).texts, ['300']);
+            assert.deepEqual((await calc('calc(.n + 1)', { n: '41' })).texts, ['42']);
+        });
+
+        it('follows JavaScript on the edges: Infinity and NaN', async () => {
+            assert.deepEqual((await calc('calc(1 / 0)')).texts, ['Infinity']);
+            assert.deepEqual((await calc('calc(.missing + 1)')).texts, ['NaN']);
+        });
+
+        it('needs `eval:calc`', async () => {
+            let { runtime, failures } = harness();
+
+            await run('await *\n    POST `${ calc(1 + 1) }`\n', runtime, {});
+            await runtime.dispatch({});
+
+            assert.deepEqual(sent(runtime), []);
+            assert.ok(failures.some(entry => /not granted .\+eval:calc/.test(entry)), failures.join('\n'));
+        });
+
+        it('composes with `~`', async () => {
+            assert.deepEqual((await calc('calc(.mins * 60000) ~ "h:mm"', { mins: 95 })).texts, ['1:35']);
+        });
+    });
+
+    describe('v2 / lists', () => {
+        it('reads a group of two or more items as a list', async () => {
+            assert.deepEqual(await fire('await *\n    POST (`a`, `b`\n        `c`) % "+"\n', [{ x: 1 }]), ['a+b+c']);
+        });
+
+        it('keeps a one-item group transparent', () => {
+            let { NodeType } = globalThis.TTV_DSL.ast;
+
+            assert.like(parse('await (.a is "x")\n').body[0].subject, { type: NodeType.BinaryExpression });
+        });
+
+        it('binds a list once and picks from it in two places', async () => {
+            let source = [
+                '(`hi`, `hey`, `yo`) -> greet_list',
+                'await (.hello is SOMETHING)',
+                '    POST any from greet_list',
+                'await (.bye is SOMETHING)',
+                '    POST `${ * from greet_list } and bye`',
+                '',
+            ].join('\n');
+
+            let texts = await fire(source, [{ hello: 1 }, { bye: 1 }]);
+
+            assert.equal(texts.length, 2);
+            assert.ok(['hi', 'hey', 'yo'].includes(texts[0]), texts[0]);
+            assert.match(texts[1], /^(hi|hey|yo) and bye$/);
+        });
+
+        it('flattens ranges into the list', async () => {
+            assert.deepEqual(await fire('await *\n    POST (1 ... 3, 9) % ","\n', [{ x: 1 }]), ['1,2,3,9']);
+        });
+    });
+
     describe('v2 / `using [badge]` is a gate, not a subject', () => {
         it('keeps the message as the subject inside the gate', async () => {
             let source = 'await (.command is SOMETHING)\n    using [moderator]\n        POST `${ .command } from ${ .sender } (${ _.sender })`\n';

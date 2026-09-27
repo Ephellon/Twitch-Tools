@@ -141,6 +141,18 @@ if (typeof require === 'function' && typeof module === 'object') {
         }
     };
 
+    /** `calc( ... )` operators, keyed as the compiler looks them up. */
+    const ARITHMETIC = Object.freeze({
+        '+': (left, right) => left + right,
+        '-': (left, right) => left - right,
+        '*': (left, right) => left * right,
+        '/': (left, right) => left / right,
+        '%': (left, right) => left % right,
+        '**': (left, right) => left ** right,
+        'unary -': (value) => -value,
+        'unary +': (value) => +value,
+    });
+
     /** The four numeric comparisons, keyed by the operator the parser recorded. */
     const COMPARISONS = Object.freeze({
         'above': (left, right) => (left > right),
@@ -597,6 +609,54 @@ if (typeof require === 'function' && typeof module === 'object') {
             };
         },
 
+        /** `after <duration>` — waits once, then runs the body once.
+         *
+         * Unlike `await`, every arrival schedules its own timer: `after 1:00` inside a raid
+         * handler means "a minute after *each* raid". That cannot pile up — each one fires
+         * and is done. The body shares the enclosing `await`'s installation, so an `await`
+         * nested in it still installs once. */
+        [NodeType.AfterStatement](node, scope) {
+            let { runtime } = scope,
+                nested = inner(scope),
+                delay = compileNode(node.subject, scope),
+                filter = compileNode(node.filter, nested),
+                body = compileNode(node.body, nested);
+
+            return async (context) => {
+                let raw = await delay(context),
+                    milliseconds = toNumber(raw, runtime);
+
+                if (!Number.isFinite(milliseconds) || milliseconds < 0)
+                    throw new DSLRuntimeError(`\`after\` needs a duration, like \`after 5:00\`; got ${ JSON.stringify(stringify(raw)) }`, node.loc);
+
+                let parent = context.hold,
+                    route = `${ context.route }/after`;
+
+                let wait = async () => {
+                    if (!await runtime.sleep(milliseconds, context.signal))
+                        return;
+
+                    runtime.beginTurn();
+                    runtime.step(node.loc);
+
+                    let tick = { at: runtime.now(), kind: 'tick' };
+
+                    if (parent && !(await parent.admits(tick)))
+                        return;
+
+                    let child = context.child(tick, { channel: context.channel, route });
+
+                    if (filter && !truthy(await filter(child)))
+                        return;
+
+                    if (body)
+                        await body(child);
+                };
+
+                wait().catch(guard(runtime, context, node.loc));
+            };
+        },
+
         /** `using` binds each subject in turn and runs the body under it. Several subjects
          * on one line mean "any of these", so the body runs once per subject that resolves.
          * With no subject at all — `using +read:datetime`, `using +scope:local` — the body
@@ -958,6 +1018,63 @@ if (typeof require === 'function' && typeof module === 'object') {
                     return undefined;
 
                 return value[property];
+            };
+        },
+
+        /** `<value> ~ <pattern>` — renders the value through a pattern (§5.14). */
+        [NodeType.FormatExpression](node, scope) {
+            let { runtime } = scope,
+                subject = compileNode(node.subject, scope),
+                pattern = compileNode(node.pattern, scope);
+
+            return async (context) => runtime.format(toNumber(await subject(context), runtime), stringify(await pattern(context)), node.loc);
+        },
+
+        /** `calc( ... )`. Needs `eval:calc`, checked each time it is evaluated, like any
+         * other capability. Operands are read as numbers the way `above`/`below` read them;
+         * the operators are JavaScript's, so `1 / 0` is `Infinity` and anything with an
+         * unreadable operand is `NaN`. */
+        [NodeType.CalcExpression](node, scope) {
+            let { runtime } = scope,
+                expression = compileNode(node.expression, scope);
+
+            return async (context) => {
+                runtime.requirePermission('eval:calc', context, node.loc);
+
+                return expression(context);
+            };
+        },
+
+        [NodeType.ArithmeticExpression](node, scope) {
+            let { runtime } = scope,
+                left = compileNode(node.left, scope),
+                right = compileNode(node.right, scope),
+                apply = ARITHMETIC[(left? '': 'unary ') + node.operator];
+
+            if (!left)
+                return async (context) => apply(toNumber(await right(context), runtime));
+
+            return async (context) => apply(toNumber(await left(context), runtime), toNumber(await right(context), runtime));
+        },
+
+        /** `( a, b, c )` — a list. A range item contributes its members, exactly as it does
+         * in `any from`, so `(1 .. 3, 9)` is `[1, 2, 3, 9]`. */
+        [NodeType.ListExpression](node, scope) {
+            let items = compileAll(node.items, scope);
+
+            return async (context) => {
+                let list = [];
+
+                for (let resolve of items) {
+                    let value = await resolve(context);
+
+                    if (Array.isArray(value))
+                        list.push(...value);
+                    else
+                        list.push(value);
+                }
+
+                return list;
             };
         },
 

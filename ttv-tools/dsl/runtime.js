@@ -222,6 +222,86 @@ if (typeof require === 'function' && typeof module === 'object')
         return String(value).trim().replace(new RegExp(source, 'g'), replacement);
     };
 
+    /** One piece of a `~` pattern: a `'quoted'` literal, or a unit with an optional `?`. */
+    const FORMAT_PIECE = /'([^']*)'|(hh|h|mm|m|ss|s)(\?)?/g;
+
+    /** Milliseconds per `~` unit letter. */
+    const FORMAT_SCALE = Object.freeze({ h: MS_PER_HOUR, m: MS_PER_MINUTE, s: MS_PER_SECOND });
+
+    /** `<duration> ~ <pattern>` — e.g. `300000 ~ "hh?:mm:ss"` → `"05:00"`.
+     *
+     * - `hh` / `mm` / `ss` pad to two digits; `h` / `m` / `s` do not.
+     * - The **largest** unit present absorbs the overflow: `"mm:ss"` on 90 minutes is
+     *   `"90:00"`, not `"30:00"`.
+     * - A unit followed by `?` is dropped when it is zero **and** every unit before it was
+     *   dropped too — together with the literal text straight after it. So `"hh?:mm:ss"`
+     *   reads `"05:00"` for five minutes and `"01:05:00"` for an hour more.
+     * - Everything else in the pattern is literal, and `'quoted'` text always is — so a
+     *   pattern can say `m' min'` without the `m` in "min" being read as minutes. Seconds
+     *   round down.
+     * - A value that is not a number (and so not a duration) renders as empty, like any
+     *   other missing value in an interpolation.
+     * @param {Number} value - milliseconds
+     * @param {String} pattern
+     * @return {String}
+     */
+    let format = (value, pattern) => {
+        if (!Number.isFinite(value))
+            return '';
+
+        let sign = (value < 0? '-': ''),
+            remaining = Math.floor(Math.abs(value) / MS_PER_SECOND) * MS_PER_SECOND,
+            pieces = [],
+            last = 0;
+
+        // Split the pattern into literal text and unit tokens, in order.
+        for (let match of pattern.matchAll(FORMAT_PIECE)) {
+            if (match.index > last)
+                pieces.push({ text: pattern.slice(last, match.index) });
+
+            if (undefined !== match[1])
+                pieces.push({ text: match[1] });
+            else
+                pieces.push({ unit: match[2], optional: !!match[3] });
+
+            last = match.index + match[0].length;
+        }
+
+        if (last < pattern.length)
+            pieces.push({ text: pattern.slice(last) });
+
+        let output = '',
+            leading = true,
+            skipText = false;
+
+        for (let piece of pieces) {
+            if (undefined !== piece.text) {
+                if (!skipText)
+                    output += piece.text;
+
+                skipText = false;
+
+                continue;
+            }
+
+            let scale = FORMAT_SCALE[piece.unit[0]],
+                amount = Math.floor(remaining / scale);
+
+            remaining -= amount * scale;
+
+            if (piece.optional && leading && 0 === amount) {
+                skipText = true;
+
+                continue;
+            }
+
+            leading = false;
+            output += (2 === piece.unit.length? String(amount).padStart(2, '0'): String(amount));
+        }
+
+        return sign + output;
+    };
+
     /** A deterministic generator (mulberry32). Seeded, so a test that asserts which reply
      * `any from` picked stays stable across runs.
      * @param {Number} [seed = 1]
@@ -642,6 +722,7 @@ if (typeof require === 'function' && typeof module === 'object')
 
             parseDuration,
             percent,
+            format,
 
             /** Asserts that the block in scope was granted `name`.
              *
@@ -860,6 +941,7 @@ if (typeof require === 'function' && typeof module === 'object')
         createSeededRandom,
         parseDuration,
         percent,
+        format,
         isChannelLike,
         flush,
         DEFAULT_LIMITS,

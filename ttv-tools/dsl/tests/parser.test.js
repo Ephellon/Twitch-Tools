@@ -458,12 +458,29 @@
             assert.throws(() => parse('await *\n    default\n        POST `a`\n'), /put an `else` after/i);
         });
 
-        it('points `calc` at the reservation note', () => {
-            assert.throws(() => parse('await *\n    POST calc(1)\n'), /arithmetic is not implemented/i);
+        it('parses `calc( ... )` with JavaScript precedence', () => {
+            assert.like(expression('calc(1 + 2 * 3 ** 2 ** 2)'), {
+                type: NodeType.CalcExpression,
+                expression: {
+                    operator: '+',
+                    right: { operator: '*', right: { operator: '**', right: { operator: '**' } } },
+                },
+            });
         });
 
-        it('points a binary `-` at the same note', () => {
-            assert.throws(() => parse('await *\n    POST 1 - 2\n'), /arithmetic is not implemented/i);
+        it('keeps `+ * / %` literal only inside `calc( ... )`', () => {
+            // Outside, `*` is still the wildcard and `/name` still a channel.
+            assert.like(expression('calc(.size * 2) is *'), { operator: 'is', right: { type: NodeType.Wildcard } });
+            assert.like(expression('calc((1 + 2) / #viewers % 7)'), { expression: { operator: '%', left: { operator: '/' } } });
+        });
+
+        it('refuses a unary sign as the base of `**`, as JavaScript does', () => {
+            assert.throws(() => expression('calc(-2 ** 2)'), /cannot be the base of `\*\*`/);
+            assert.like(expression('calc((-2) ** 2)'), { expression: { operator: '**' } });
+        });
+
+        it('points a binary `-` outside `calc` at `calc`', () => {
+            assert.throws(() => parse('await *\n    POST 1 - 2\n'), /only works inside `calc\( \.\.\. \)`/);
         });
     });
 

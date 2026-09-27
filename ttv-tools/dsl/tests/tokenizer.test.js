@@ -428,6 +428,17 @@
             assert.throws(() => tokenize('POST $:Date.now()\n'), /written "&Date\.now\(\)"/);
         });
 
+        it('decodes both Unicode escape spellings, in strings and templates', () => {
+            assert.equal(first('"caf\\u00e9"\n').value, 'café');
+            assert.equal(first('\'\\u{1F49C}\'\n').value, '💜');
+            assert.deepEqual(first('`love \\u{1F49C}`\n').value.quasis, ['love 💜']);
+        });
+
+        it('refuses a malformed Unicode escape', () => {
+            for (let source of ['"\\u12"\n', '"\\u{}"\n', '"\\u{110000}"\n', '"\\uzzzz"\n'])
+                assert.throws(() => tokenize(source), /Malformed Unicode escape/);
+        });
+
         it('reads single quotes exactly as double quotes', () => {
             assert.equal(first('\'a b\'\n').type, TokenType.STRING);
             assert.equal(first('\'a b\'\n').value, 'a b');

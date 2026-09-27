@@ -151,6 +151,13 @@ if (typeof require === 'function' && typeof module === 'object') {
         #tokens = [];
         #indents = [0];
         #brackets = 0;
+
+        /** Set by a `calc` keyword; the next `(` opens arithmetic mode. */
+        #calcPending = false;
+
+        /** The bracket depth each open `calc( ... )` started at, innermost last. While this
+         * is non-empty, `+ - * / %` are arithmetic operators. */
+        #calcDepths = [];
         #lineHasToken = false;
         #originOffset = 0;
         #fragment = false;
@@ -425,6 +432,10 @@ if (typeof require === 'function' && typeof module === 'object') {
                 return;
             }
 
+            // `calc` arms arithmetic mode for the `(` straight after it, and only that.
+            if (this.#calcPending && '(' !== character)
+                this.#calcPending = false;
+
             // `//` must be tested BEFORE `/channel`, otherwise every comment scans as a
             // channel selector named after its first word.
             if ('/' === character && '/' === this.#source[start + 1]) {
@@ -437,6 +448,12 @@ if (typeof require === 'function' && typeof module === 'object') {
             // the line head, where it had to be, so that indentation is still measured.
             if ('/' === character && '*' === this.#source[start + 1])
                 return this.#skipBlockComment();
+
+            // Inside `calc( ... )`, the arithmetic characters are operators — and are
+            // claimed here, before `+` can become a permission, `*` the wildcard, `%` a class
+            // run, `/` a channel or `-` a badge marker.
+            if (this.#calcDepths.length && '+-*/%'.includes(character))
+                return this.#scanArithmetic();
 
             if ('`' === character)
                 return this.#scanTemplate();
@@ -760,6 +777,9 @@ if (typeof require === 'function' && typeof module === 'object') {
             if (undefined !== keyword) {
                 this.#emit(keyword, start, this.#index);
 
+                if (TokenType.CALC === keyword)
+                    this.#calcPending = true;
+
                 return;
             }
 
@@ -781,6 +801,15 @@ if (typeof require === 'function' && typeof module === 'object') {
             this.#emit(TokenType.IDENT, start, this.#index, word, { isUpper });
         }
 
+        /** `+ - * / % **` inside `calc( ... )`. */
+        #scanArithmetic() {
+            let start = this.#index,
+                operator = ('**' === this.#source.slice(start, start + 2)? '**': this.#source[start]);
+
+            this.#index += operator.length;
+            this.#emit(TokenType.ARITH, start, this.#index, operator);
+        }
+
         /** Any remaining fixed lexeme, matched longest-first out of {@link PUNCTUATORS}. */
         #scanPunctuator() {
             let start = this.#index,
@@ -792,10 +821,20 @@ if (typeof require === 'function' && typeof module === 'object') {
 
                 this.#index += lexeme.length;
 
-                if (TokenType.LPAREN === type)
+                if (TokenType.LPAREN === type) {
                     ++this.#brackets;
-                else if (TokenType.RPAREN === type && --this.#brackets < 0)
-                    this.#fail('Unmatched ")"', start, this.#index);
+
+                    if (this.#calcPending) {
+                        this.#calcPending = false;
+                        this.#calcDepths.push(this.#brackets);
+                    }
+                } else if (TokenType.RPAREN === type) {
+                    if (this.#calcDepths[this.#calcDepths.length - 1] === this.#brackets)
+                        this.#calcDepths.pop();
+
+                    if (--this.#brackets < 0)
+                        this.#fail('Unmatched ")"', start, this.#index);
+                }
 
                 this.#emit(type, start, this.#index);
 
@@ -1016,7 +1055,28 @@ if (typeof require === 'function' && typeof module === 'object') {
 
             this.#index += 2;
 
+            // `é` / `\u{1F49C}` — JavaScript's two Unicode spellings.
+            if ('u' === character)
+                return this.#readUnicodeEscape(start);
+
             return (ESCAPES[character] ?? character);
+        }
+
+        /** The rest of a `\u` escape, the cursor just past the `u`.
+         * @param {Number} start - where the backslash was, for the error span
+         * @return {String}
+         */
+        #readUnicodeEscape(start) {
+            let braced = /^\{([0-9A-Fa-f]{1,6})\}/.exec(this.#source.slice(this.#index)),
+                plain = /^[0-9A-Fa-f]{4}/.exec(this.#source.slice(this.#index)),
+                hex = (braced? braced[1]: plain?.[0]);
+
+            if (!hex || parseInt(hex, 16) > 0x10FFFF)
+                this.#fail('Malformed Unicode escape; write "\\u00e9" (four hex digits) or "\\u{1F49C}"', start, this.#index + 1);
+
+            this.#index += (braced? braced[0]: plain[0]).length;
+
+            return String.fromCodePoint(parseInt(hex, 16));
         }
     }
 

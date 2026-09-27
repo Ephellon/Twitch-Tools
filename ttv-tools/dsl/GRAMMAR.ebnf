@@ -30,6 +30,7 @@ statement      = await_stmt
                | using_stmt
                | if_stmt
                | when_stmt          (* v2 *)
+               | after_stmt         (* v2.1 *)
                | else_stmt          (* v2.1 *)
                | with_stmt          (* v2 *)
                | goto_stmt
@@ -97,6 +98,10 @@ when_chain     = "when" , expression , NEWLINE , block ;
    and it may be followed. `else when` is an error. *)
 else_stmt      = "else" , [ "if" , expression ] , NEWLINE , block ;
 
+(* (v2.1) A one-shot timer. The subject is any expression evaluating to a
+   duration, read when the statement is reached. *)
+after_stmt     = "after" , expression , [ "with" , expression ] , NEWLINE , block ;
+
 (* (v2) The block form. Branches on the RESULT, not on the syntax: a boolean
    runs the block once under the current subject, anything else iterates. *)
 with_stmt      = "with" , expression , NEWLINE , block ;
@@ -111,7 +116,7 @@ verb_stmt      = UPPER_IDENT , [ expression ] , NEWLINE ;
 (* (v2) Deliberately narrow. A bare expression on a line is still an error;
    only an assignment may stand alone, because only an assignment does
    anything. *)
-expr_stmt      = assign_expr , NEWLINE ;
+expr_stmt      = ( assign_expr | js_invoke ) , NEWLINE ;   (* v2.1: a host call may stand alone *)
 
 
 (* -- expressions --------------------------------------------------------- *)
@@ -157,7 +162,7 @@ cmp_op         = "is" , [ [ "or" ] , ( "above" | "below" ) ]
 (* (v2) `%` sits between the comparisons and the pipe: looser than `<|` so
    `1st <| .links % ','` joins what the pipe selected, tighter than `is` so a
    comparison sees the replaced text. *)
-pct_expr       = pipe_expr , { PCT_RUN , pipe_expr } ;
+pct_expr       = pipe_expr , { ( PCT_RUN | "~" ) , pipe_expr } ;   (* v2.1: "~" formats *)
 
 (* `<|` (also spelled `of`) is LOOSER than `where`, so pipe sits above where in
    the cascade:
@@ -190,6 +195,7 @@ primary        = literal
                | selector
                | any_from
                | js_invoke          (* v2 *)
+               | calc               (* v2.1 *)
                | this_expr          (* v2 *)
                | identifier
                | group ;
@@ -198,7 +204,22 @@ primary        = literal
    NEWLINEs and commas inside it are insignificant, unlike the NEWLINEs in
    any_from. Re-entering `expression` here is what makes
    `await (5:00 -> wait_time)` bind a name. *)
-group          = "(" , { NEWLINE | "," } , expression , { NEWLINE | "," } , ")" ;
+(* (v2.1) Two or more items make a list; one item is a plain grouped value. *)
+group          = "(" , { NEWLINE | "," } ,
+                   expression , { { NEWLINE | "," } , expression } ,
+                   { NEWLINE | "," } , ")" ;
+
+(* (v2.1) Inside calc( ), the lexer emits ARITH for + - * / % ** - so these
+   productions see operators, not the wildcard, a permission or a channel.
+   JavaScript precedence; a unary sign may not be the base of "**". *)
+calc           = "calc" , "(" , sum , ")" ;
+sum            = product , { ( "+" | "-" ) , product } ;
+product        = signed , { ( "*" | "/" | "%" ) , signed } ;
+signed         = ( "+" | "-" ) , signed_base , (* not followed by "**" *)
+               | power ;
+signed_base    = ( "+" | "-" ) , signed_base | calc_operand ;
+power          = calc_operand , [ "**" , signed ] ;
+calc_operand   = "(" , sum , ")" | member_expr ;
 
 (* (v2) A host-registered binding, reached by dotted path. The path is a single
    token; resolution is a property walk over a table the host supplied, never
@@ -222,12 +243,15 @@ this_expr      = "_" | "__this__" | "__self__" | "__me__" ;
    (v2) A comma is an ADDITIONAL separator, never a required one. Leading,
    trailing and repeated commas collapse to nothing; two items on one line are
    still two items, comma or no comma. *)
-(* (v2.1) `* from` is the same construct: `*` is ANYTHING. *)
-any_from       = ( "any" | "*" ) , "from" , "(" ,
-                   { NEWLINE | "," } ,
-                   expression , { { NEWLINE | "," } , expression } ,
-                   { NEWLINE | "," } ,
-                 ")" ;
+(* (v2.1) `* from` is the same construct: `*` is ANYTHING. Anything other than
+   a "(" after `from` is a single value - usually a list bound earlier. *)
+any_from       = ( "any" | "*" ) , "from" ,
+                 ( "(" ,
+                     { NEWLINE | "," } ,
+                     expression , { { NEWLINE | "," } , expression } ,
+                     { NEWLINE | "," } ,
+                   ")"
+                 | unary_expr ) ;
 
 
 (* -- literals ------------------------------------------------------------ *)
@@ -385,9 +409,9 @@ context_sel    = "." , IDENT ;
   KEYWORD     = await | with | using | if | goto | any | from
               | where | of | is | in | and | or | not | true | false
               | when                                                 (* v2 *)
-              | else | above | below                               (* v2.1 *)
+              | else | above | below | after | calc                (* v2.1 *)
 
-  RESERVED    = elif | elseif | switch | case | default | calc
+  RESERVED    = elif | elseif | switch | case | default
                 (* (v2) reserved for ONE purpose: to produce a diagnostic that
                    names `when` / `else` (or, for `calc`, the arithmetic
                    reservation) instead of a generic "expected a statement" *)

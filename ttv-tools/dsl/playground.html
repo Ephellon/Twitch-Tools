@@ -1,0 +1,773 @@
+<!DOCTYPE html>
+<!--
+    /dsl/playground.html - Write a `.ttv` script, fire fake events at it, watch what it posts.
+
+    Open straight from disk; no server, no build. Everything runs in this page on a fake
+    clock, a fake Twitch realm and a fake page (`fake-page.js`), so nothing here can reach
+    a real channel.
+-->
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>TTV DSL Playground</title>
+
+    <style>
+        :root {
+            --bg: #f6f5f8;
+            --panel: #ffffff;
+            --ink: #1d1a24;
+            --muted: #6b6578;
+            --line: #dedae6;
+            --accent: #7c3aed;
+            --accent-ink: #ffffff;
+            --error: #c0263a;
+            --warn: #a15c00;
+            --ok: #1f7a4a;
+
+            --t-keyword: #7c3aed;
+            --t-string: #0f7b57;
+            --t-number: #b3530a;
+            --t-selector: #0b63b8;
+            --t-operator: #c02677;
+            --t-permission: #8a6d00;
+            --t-comment: #8a8499;
+            --t-verb: #1d1a24;
+            --t-atomic: #c02677;
+        }
+
+        @media (prefers-color-scheme: dark) {
+            :root {
+                --bg: #141219;
+                --panel: #1c1a23;
+                --ink: #ebe8f2;
+                --muted: #9b95a8;
+                --line: #2e2a38;
+                --accent: #a78bfa;
+                --accent-ink: #141219;
+                --error: #ff6b81;
+                --warn: #f0b35a;
+                --ok: #5fd39a;
+
+                --t-keyword: #c4a5ff;
+                --t-string: #6fdcaa;
+                --t-number: #ffae6b;
+                --t-selector: #6cb6ff;
+                --t-operator: #ff7ab8;
+                --t-permission: #e6c85c;
+                --t-comment: #7d778b;
+                --t-verb: #ffffff;
+                --t-atomic: #ff7ab8;
+            }
+        }
+
+        * { box-sizing: border-box; }
+
+        body {
+            margin: 0;
+            background: var(--bg);
+            color: var(--ink);
+            font: 14px/1.45 system-ui, -apple-system, "Segoe UI", sans-serif;
+        }
+
+        header {
+            display: flex;
+            align-items: baseline;
+            gap: 12px;
+            padding: 14px 16px 6px;
+        }
+
+        header h1 { margin: 0; font-size: 18px; }
+        header span { color: var(--muted); font-size: 13px; }
+
+        main {
+            display: grid;
+            grid-template-columns: minmax(0, 3fr) minmax(0, 2fr);
+            gap: 12px;
+            padding: 8px 16px 16px;
+        }
+
+        @media (max-width: 900px) {
+            main { grid-template-columns: minmax(0, 1fr); }
+        }
+
+        section {
+            background: var(--panel);
+            border: 1px solid var(--line);
+            border-radius: 8px;
+            padding: 10px 12px;
+            min-width: 0;
+        }
+
+        section + section { margin-top: 12px; }
+
+        h2 {
+            margin: 0 0 8px;
+            font-size: 12px;
+            letter-spacing: .06em;
+            text-transform: uppercase;
+            color: var(--muted);
+        }
+
+        .row { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+        .row + .row { margin-top: 8px; }
+
+        button, select, input[type=text] {
+            font: inherit;
+            color: var(--ink);
+            background: var(--bg);
+            border: 1px solid var(--line);
+            border-radius: 6px;
+            padding: 4px 10px;
+        }
+
+        button { cursor: pointer; }
+        button:hover { border-color: var(--accent); }
+        button.primary { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); }
+
+        label { color: var(--muted); font-size: 13px; }
+
+        /* -- the editor: a transparent textarea over a highlighted <pre> ------------ */
+
+        .editor {
+            position: relative;
+            height: 460px;
+            border: 1px solid var(--line);
+            border-radius: 6px;
+            background: var(--bg);
+            overflow: hidden;
+        }
+
+        .editor pre, .editor textarea {
+            position: absolute;
+            inset: 0;
+            margin: 0;
+            padding: 10px 12px;
+            font: 13px/1.5 ui-monospace, "Cascadia Code", Consolas, monospace;
+            tab-size: 4;
+            white-space: pre;
+            overflow: auto;
+            border: 0;
+        }
+
+        .editor pre { pointer-events: none; color: var(--ink); }
+
+        .editor textarea {
+            resize: none;
+            background: transparent;
+            color: transparent;
+            caret-color: var(--ink);
+            outline: none;
+        }
+
+        .t-keyword { color: var(--t-keyword); font-weight: 600; }
+        .t-string { color: var(--t-string); }
+        .t-number { color: var(--t-number); }
+        .t-selector { color: var(--t-selector); }
+        .t-operator { color: var(--t-operator); }
+        .t-permission { color: var(--t-permission); }
+        .t-comment { color: var(--t-comment); font-style: italic; }
+        .t-verb { color: var(--t-verb); font-weight: 700; }
+        .t-atomic { color: var(--t-atomic); font-weight: 600; }
+        .t-caps { font-weight: 700; }
+        .t-interp { color: var(--t-keyword); font-weight: 700; }
+        .t-error { text-decoration: wavy underline var(--error); }
+
+        textarea.plain {
+            width: 100%;
+            min-height: 96px;
+            font: 12px/1.45 ui-monospace, "Cascadia Code", Consolas, monospace;
+            color: var(--ink);
+            background: var(--bg);
+            border: 1px solid var(--line);
+            border-radius: 6px;
+            padding: 6px 8px;
+            resize: vertical;
+        }
+
+        ul.log {
+            list-style: none;
+            margin: 0;
+            padding: 0;
+            max-height: 260px;
+            overflow: auto;
+            font: 12px/1.45 ui-monospace, "Cascadia Code", Consolas, monospace;
+        }
+
+        ul.log li { padding: 3px 0; border-bottom: 1px dashed var(--line); overflow-wrap: anywhere; }
+        ul.log li:last-child { border-bottom: 0; }
+        ul.log .at { color: var(--muted); }
+        ul.log .verb { color: var(--accent); font-weight: 700; }
+        ul.log .error { color: var(--error); white-space: pre-wrap; }
+        ul.log .warn { color: var(--warn); }
+        ul.log .info { color: var(--muted); }
+
+        .status { font-size: 13px; }
+        .status.ok { color: var(--ok); }
+        .status.bad { color: var(--error); }
+
+        .grants li { font: 12px/1.5 ui-monospace, Consolas, monospace; }
+        .grants .desc { color: var(--muted); font-family: system-ui, sans-serif; }
+
+        .page-preview {
+            max-height: 160px;
+            overflow: auto;
+            font: 12px/1.45 ui-monospace, Consolas, monospace;
+            white-space: pre-wrap;
+            overflow-wrap: anywhere;
+            color: var(--muted);
+        }
+    </style>
+
+    <script src="errors.js"></script>
+    <script src="tokens.js"></script>
+    <script src="tokenizer.js"></script>
+    <script src="ast.js"></script>
+    <script src="parser.js"></script>
+    <script src="runtime.js"></script>
+    <script src="compiler.js"></script>
+    <script src="fake-page.js"></script>
+    <script src="index.js"></script>
+</head>
+<body>
+    <header>
+        <h1>TTV DSL Playground</h1>
+        <span id="version"></span>
+    </header>
+
+    <main>
+        <div>
+            <section>
+                <h2>Script</h2>
+
+                <div class="row">
+                    <select id="example"></select>
+                    <button class="primary" id="run">Run ▸</button>
+                    <button id="stop">Stop</button>
+                    <span class="status" id="status"></span>
+                </div>
+
+                <div class="row">
+                    <div class="editor" style="width: 100%">
+                        <pre id="highlight" aria-hidden="true"></pre>
+                        <textarea id="source" spellcheck="false" autocomplete="off" autocapitalize="off"></textarea>
+                    </div>
+                </div>
+            </section>
+
+            <section>
+                <h2>Problems</h2>
+                <ul class="log" id="problems"></ul>
+            </section>
+
+            <section>
+                <h2>What this script asks for</h2>
+                <ul class="log grants" id="grants"></ul>
+            </section>
+        </div>
+
+        <div>
+            <section>
+                <h2>Time</h2>
+
+                <div class="row">
+                    <button data-advance="10000">+10s</button>
+                    <button data-advance="60000">+1m</button>
+                    <button data-advance="300000">+5m</button>
+                    <button data-advance="1800000">+30m</button>
+                    <span class="status" id="clock">t = 0:00</span>
+                </div>
+            </section>
+
+            <section>
+                <h2>Channel</h2>
+
+                <div class="row">
+                    <label><input type="checkbox" id="live" checked> live</label>
+                    <label>name <input type="text" id="channel-name" value="ginger_enby" size="12"></label>
+                </div>
+            </section>
+
+            <section>
+                <h2>Send an event</h2>
+
+                <div class="row">
+                    <button data-preset="message">chat message</button>
+                    <button data-preset="command">!command</button>
+                    <button data-preset="mod">!command (mod)</button>
+                    <button data-preset="raid">raid</button>
+                </div>
+
+                <div class="row">
+                    <textarea class="plain" id="event" spellcheck="false"></textarea>
+                </div>
+
+                <div class="row">
+                    <button class="primary" id="dispatch">Dispatch</button>
+                    <span class="status" id="event-status"></span>
+                </div>
+            </section>
+
+            <section>
+                <h2>Chat output</h2>
+                <ul class="log" id="output"></ul>
+            </section>
+
+            <section>
+                <h2>Fake page <span style="text-transform: none">(for <code>&amp;Html.*</code>)</span></h2>
+                <textarea class="plain" id="page" spellcheck="false"></textarea>
+                <div class="row"><label>after the script ran:</label></div>
+                <div class="page-preview" id="page-preview"></div>
+            </section>
+        </div>
+    </main>
+
+    <script>
+        (() => {
+            const DSL = globalThis.TTV_DSL;
+            const { TokenType } = DSL;
+            const { createFakeClock, createSeededRandom, createTwitchRealm } = DSL.runtime;
+            const { createFakePage } = DSL.fakePage;
+
+            const $ = (id) => document.getElementById(id);
+
+            // -- examples --------------------------------------------------------------
+
+            const EXAMPLES = {
+                'Raid shoutouts': [
+                    '/* Shout out raiders, and let mods re-shout the last one with a bare !so. */',
+                    '',
+                    'await (.raider is SOMETHING)',
+                    '    .raider_title % \' \' -> raid_title',
+                    '    .raider -> last_raider',
+                    '',
+                    '    POST * from (',
+                    '        `RAID!! go follow @${ last_raider } — they were doing ${ raid_title } 💜`',
+                    '        `${ .raid_size } gremlins incoming from @${ last_raider }`',
+                    '    )',
+                    '',
+                    '    if .raid_size is or above 50',
+                    '        POST `welcome in, all ${ .raid_size } of you!`',
+                    '',
+                    'await (.command is SOMETHING)',
+                    '    using [moderator]',
+                    '        when .command is',
+                    '            "so":',
+                    '                if .argument is SOMETHING',
+                    '                    POST `go follow @${ .argument } 💜`',
+                    '                else if last_raider is SOMETHING',
+                    '                    POST `go follow @${ last_raider }, they raided us earlier 💜`',
+                    '                else',
+                    '                    POST `nobody has raided yet`',
+                    '',
+                    '        else',
+                    '            POST `never heard of !${ .command }`',
+                    '',
+                ].join('\n'),
+
+                'Timers, `after` and `~`': [
+                    '// A repeating nag, a one-shot reminder, and a formatted duration.',
+                    '',
+                    'await (15:00 -> nag_every)',
+                    '    POST `hydrate! (every ${ nag_every ~ "hh?:mm:ss" })`',
+                    '',
+                    'after 1:00',
+                    '    POST `one minute in — say hi to chat`',
+                    '',
+                ].join('\n'),
+
+                'While live, with a list': [
+                    '(`hi`, `hey`, `hello there`) -> greet_list',
+                    '',
+                    'await * with (#live is true)',
+                    '    await (.message is SOMETHING)',
+                    '        if "hello" in .message',
+                    '            REPLY `${ any from greet_list }, ${ .sender }!`',
+                    '',
+                ].join('\n'),
+
+                'Arithmetic and the page': [
+                    'using +eval:calc +read:html.* -- "doubles the raid size; reads the title"',
+                    '    await (.raider is SOMETHING)',
+                    '        POST `that is ${ calc(.raid_size * 2) } half-gremlins`',
+                    '        POST `current title: ${ &Html.text("h1") }`',
+                    '',
+                    'using +write:html.text -- "shows the last raider on the page"',
+                    '    await (.raider is SOMETHING)',
+                    '        &Html.setText("#last-raid", .raider)',
+                    '',
+                ].join('\n'),
+            };
+
+            const PRESETS = {
+                message: { message: 'hello chat', sender: 'zip', badges: [] },
+                command: { message: '!so shadyhen', command: 'so', argument: 'shadyhen', sender: 'zip', badges: [] },
+                mod: { message: '!so', command: 'so', argument: '', sender: 'ginger_enby', badges: ['moderator'] },
+                raid: { raider: 'shadyhen', raid_size: 212, raider_title: '  Souls-likes\n\n   ALL NIGHT  ' },
+            };
+
+            const PAGE = '<main>\n  <h1>Just chatting</h1>\n  <p id="last-raid">nobody yet</p>\n</main>';
+
+            // -- highlighting ----------------------------------------------------------
+
+            const CLASS_BY_TYPE = {
+                [TokenType.STRING]: 't-string',
+                [TokenType.NUMBER]: 't-number',
+                [TokenType.DURATION]: 't-number',
+                [TokenType.ORDINAL]: 't-number',
+                [TokenType.PERMISSION]: 't-permission',
+                [TokenType.DESCRIBE]: 't-permission',
+                [TokenType.JS_PATH]: 't-selector',
+                [TokenType.PERCENT]: 't-operator',
+                [TokenType.FORMAT]: 't-operator',
+                [TokenType.ARITH]: 't-operator',
+                [TokenType.PIPE]: 't-operator',
+                [TokenType.WHERE]: 't-keyword',
+                [TokenType.ARROW_LOCAL]: 't-operator',
+                [TokenType.ARROW_PARENT]: 't-operator',
+                [TokenType.EXACT]: 't-operator',
+                [TokenType.RANGE_EXCLUSIVE]: 't-operator',
+                [TokenType.RANGE_INCLUSIVE]: 't-operator',
+            };
+
+            const KEYWORD_TYPES = new Set(Object.values(DSL.tokens.KEYWORDS));
+
+            /** Values that simply *are* something: literals and presence tests. */
+            const ATOMIC_TYPES = new Set([TokenType.TRUE, TokenType.FALSE, TokenType.ANY, TokenType.WILDCARD]);
+            const ATOMIC_WORDS = new Set([...Object.keys(DSL.tokens.PRESENCE_WORDS), ...DSL.tokens.THIS_ALIASES]);
+
+            /** Upper-case words the playground's host actually defines: its verbs and constants.
+             * An unknown one keeps the default colour, which is itself a hint. */
+            const KNOWN_CAPS = new Set([...Object.keys(DSL.createRuntime().verbs), 'USERNAME']);
+
+            /** `é` / `\u{1F49C}` inside string text. */
+            const UNICODE_ESCAPE = /\\u\{[0-9A-Fa-f]{1,6}\}|\\u[0-9A-Fa-f]{4}/g;
+
+            let escape = (text) => text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+
+            /** Colours the gaps between tokens: only comments and whitespace live there. */
+            let gap = (text) => escape(text).replace(/(\/\/[^\n]*|\/\*[\s\S]*?\*\/)/g, '<span class="t-comment">$1</span>');
+
+            /** String text, with its Unicode escapes picked out. */
+            let stringText = (raw) => {
+                let html = '',
+                    at = 0;
+
+                for (let match of raw.matchAll(UNICODE_ESCAPE)) {
+                    html += escape(raw.slice(at, match.index)) + `<span class="t-number">${ escape(match[0]) }</span>`;
+                    at = match.index + match[0].length;
+                }
+
+                return `<span class="t-string">${ html + escape(raw.slice(at)) }</span>`;
+            };
+
+            /** A template: its text as a string, each `${ ... }` highlighted as code. The token
+             * records where every interpolation's source starts, so the raw text can be cut
+             * back apart without re-scanning it. */
+            let template = (source, token) => {
+                let { start, end } = token.loc,
+                    html = '',
+                    at = start;
+
+                for (let { source: inner, offset } of token.value.expressions) {
+                    let open = offset - 2,
+                        close = offset + inner.length;
+
+                    html += stringText(source.slice(at, open));
+                    html += `<span class="t-interp">\${</span>${ highlightCode(inner, { fragment: true }) }<span class="t-interp">}</span>`;
+                    at = close + 1;
+                }
+
+                return html + stringText(source.slice(at, end));
+            };
+
+            let classFor = (token) => {
+                if (ATOMIC_TYPES.has(token.type))
+                    return 't-atomic';
+
+                if (KEYWORD_TYPES.has(token.type))
+                    return 't-keyword';
+
+                if (TokenType.IDENT === token.type) {
+                    if (ATOMIC_WORDS.has(token.value))
+                        return 't-atomic';
+
+                    if (token.isUpper && KNOWN_CAPS.has(token.value))
+                        return 't-number';
+
+                    return (token.isUpper? 't-caps': '');
+                }
+
+                if (token.type.startsWith('SELECTOR_'))
+                    return 't-selector';
+
+                return (CLASS_BY_TYPE[token.type] ?? '');
+            };
+
+            /** Highlights code: a whole script, or (with `fragment`) the inside of a `${ }`. */
+            let highlightCode = (source, options) => {
+                let tokens = [],
+                    failure = null;
+
+                try {
+                    tokens = DSL.tokenize(source, options);
+                } catch (error) {
+                    failure = error;
+
+                    // Highlight what scanned cleanly, up to the fault.
+                    try {
+                        tokens = DSL.tokenize(source.slice(0, error.loc?.start ?? 0), options);
+                    } catch {
+                        tokens = [];
+                    }
+                }
+
+                let html = '',
+                    at = 0,
+                    limit = (failure? (failure.loc?.start ?? 0): source.length);
+
+                for (let token of tokens) {
+                    let { start, end } = token.loc;
+
+                    if (end <= start || start < at || end > limit)
+                        continue;
+
+                    html += gap(source.slice(at, start));
+
+                    if (TokenType.TEMPLATE === token.type)
+                        html += template(source, token);
+                    else if (TokenType.STRING === token.type)
+                        html += stringText(source.slice(start, end));
+                    else {
+                        let name = classFor(token),
+                            text = escape(source.slice(start, end));
+
+                        html += (name? `<span class="${ name }">${ text }</span>`: text);
+                    }
+
+                    at = end;
+                }
+
+                html += gap(source.slice(at, limit));
+
+                if (failure)
+                    html += `<span class="t-error">${ escape(source.slice(limit)) }</span>`;
+
+                return html;
+            };
+
+            // A trailing newline needs a character after it or the <pre> collapses it.
+            let highlight = (source) => highlightCode(source) + '\n ';
+
+            // -- state -----------------------------------------------------------------
+
+            let session = null;
+
+            let formatTime = (ms) => DSL.runtime.format(ms, 'h?:mm:ss');
+
+            let log = (list, html, kind) => {
+                let item = document.createElement('li');
+
+                item.innerHTML = html;
+
+                if (kind)
+                    item.className = kind;
+
+                list.appendChild(item);
+                list.scrollTop = list.scrollHeight;
+            };
+
+            let flushOutput = () => {
+                if (!session)
+                    return;
+
+                let { runtime } = session;
+
+                for (; session.shown < runtime.sink.length; ++session.shown) {
+                    let entry = runtime.sink[session.shown],
+                        to = (entry.to? ` → @${ escape(String(entry.to)) }`: '');
+
+                    log($('output'), `<span class="at">[${ formatTime(entry.at) }]</span> <span class="verb">${ entry.verb }</span>${ to } ${ escape(entry.text) }`);
+                }
+
+                $('clock').textContent = `t = ${ formatTime(session.clock.now()) }`;
+                $('page-preview').textContent = session.page.toHtml();
+            };
+
+            let stop = () => {
+                session?.context?.stop();
+                session = null;
+            };
+
+            let run = async () => {
+                stop();
+
+                $('output').innerHTML = '';
+
+                let clock = createFakeClock(0),
+                    page = createFakePage($('page').value),
+                    name = $('channel-name').value.trim() || 'ginger_enby',
+                    realm = createTwitchRealm({ current: name, channels: { [name]: { live: $('live').checked, badges: [] } } });
+
+                let runtime = DSL.createRuntime({
+                    clock,
+                    wallClock: () => 0,
+                    random: createSeededRandom(Date.now() % 100000),
+                    realms: { TWITCH: realm },
+                    constants: { USERNAME: name },
+                    jsBindings: Object.assign({ Clock: { time: () => new Date().toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' }) } }, page.bindings),
+                    jsPermissions: Object.assign({ 'Clock.time': 'read:datetime' }, page.permissions),
+                    logger: {
+                        log: (entry) => log($('output'), escape(String(entry)), 'info'),
+                        warn: (entry) => log($('output'), escape(String(entry)), 'warn'),
+                        error: (entry) => log($('output'), escape(String(entry)), 'error'),
+                    },
+                });
+
+                session = { runtime, clock, realm, page, context: null, shown: 0 };
+
+                try {
+                    session.context = await DSL.run($('source').value, runtime, { channel: realm.current });
+                    setStatus('status', `running — ${ runtime.listenerCount } handler(s), ${ clock.pending } timer(s)`, true);
+                } catch (error) {
+                    log($('output'), escape(error.codeFrame? error.codeFrame(): String(error)), 'error');
+                    setStatus('status', 'did not start', false);
+                    session = null;
+                }
+
+                flushOutput();
+            };
+
+            let setStatus = (id, text, ok) => {
+                let element = $(id);
+
+                element.textContent = text;
+                element.className = `status ${ ok? 'ok': 'bad' }`;
+            };
+
+            // -- live analysis ---------------------------------------------------------
+
+            let analyse = () => {
+                let source = $('source').value;
+
+                $('highlight').innerHTML = highlight(source);
+
+                let problems = DSL.check(source);
+
+                $('problems').innerHTML = '';
+
+                if (!problems.length)
+                    log($('problems'), 'no problems', 'info');
+
+                for (let problem of problems)
+                    log($('problems'), escape(problem.frame ?? `${ problem.name }: ${ problem.message }`), 'error');
+
+                $('grants').innerHTML = '';
+
+                try {
+                    let { blocks, calls } = DSL.grants(source);
+
+                    for (let block of blocks)
+                        log($('grants'), `line ${ block.line }: ${ block.permissions.map(entry => `+${ escape(entry) }`).join(' ') || '(no grants)' }${ block.description? ` <span class="desc">— ${ escape(block.description) }</span>`: '' }`);
+
+                    for (let call of calls)
+                        log($('grants'), `line ${ call.line }: calls &amp;${ escape(call.path) }`, 'info');
+
+                    if (!blocks.length && !calls.length)
+                        log($('grants'), 'nothing — this script needs no permissions', 'info');
+                } catch {
+                    log($('grants'), 'fix the problems above first', 'info');
+                }
+            };
+
+            // -- wiring ----------------------------------------------------------------
+
+            let source = $('source');
+
+            source.addEventListener('input', analyse);
+            source.addEventListener('scroll', () => {
+                $('highlight').scrollTop = source.scrollTop;
+                $('highlight').scrollLeft = source.scrollLeft;
+            });
+
+            // Tab indents rather than leaving the editor.
+            source.addEventListener('keydown', (event) => {
+                if ('Tab' !== event.key)
+                    return;
+
+                event.preventDefault();
+
+                let { selectionStart: from, selectionEnd: to, value } = source;
+
+                source.value = value.slice(0, from) + '    ' + value.slice(to);
+                source.selectionStart = source.selectionEnd = from + 4;
+                analyse();
+            });
+
+            for (let name of Object.keys(EXAMPLES))
+                $('example').add(new Option(name, name));
+
+            $('example').addEventListener('change', () => {
+                source.value = EXAMPLES[$('example').value];
+                analyse();
+                stop();
+                setStatus('status', 'not running', false);
+            });
+
+            $('run').addEventListener('click', run);
+
+            $('stop').addEventListener('click', () => {
+                stop();
+                setStatus('status', 'stopped', false);
+            });
+
+            for (let button of document.querySelectorAll('[data-advance]'))
+                button.addEventListener('click', async () => {
+                    if (!session)
+                        return setStatus('status', 'run the script first', false);
+
+                    await session.clock.advance(Number(button.dataset.advance));
+                    flushOutput();
+                });
+
+            for (let button of document.querySelectorAll('[data-preset]'))
+                button.addEventListener('click', () => {
+                    $('event').value = JSON.stringify(PRESETS[button.dataset.preset], null, 2);
+                });
+
+            $('live').addEventListener('change', () => {
+                let channel = session?.realm.current;
+
+                if (channel)
+                    channel.live = $('live').checked;
+            });
+
+            $('dispatch').addEventListener('click', async () => {
+                if (!session)
+                    return setStatus('event-status', 'run the script first', false);
+
+                let event;
+
+                try {
+                    event = JSON.parse($('event').value);
+                } catch (error) {
+                    return setStatus('event-status', `not JSON: ${ error.message }`, false);
+                }
+
+                await session.runtime.dispatch(event);
+                setStatus('event-status', `dispatched — ${ session.runtime.listenerCount } handler(s) listening`, true);
+                flushOutput();
+            });
+
+            // -- start -----------------------------------------------------------------
+
+            $('version').textContent = `language v${ DSL.version }`;
+            $('page').value = PAGE;
+            $('event').value = JSON.stringify(PRESETS.raid, null, 2);
+            source.value = EXAMPLES['Raid shoutouts'];
+            setStatus('status', 'not running', false);
+            analyse();
+        })();
+    </script>
+</body>
+</html>

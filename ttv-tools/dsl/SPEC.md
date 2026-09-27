@@ -34,8 +34,12 @@ and fixing what fought back. These behaviours changed, all listed in §14.1a:
   for it (§6.1).
 
 It also adds `else` (§6.7), `is above` / `is below` / `is or above` / `is or below` (§5.4),
-`ANYTHING` / `SOMETHING` / `NOTHING` (§3.7), nested property reads `.a.b.c` (§5.13), and a
-`using` with no subject (§6.3).
+`ANYTHING` / `SOMETHING` / `NOTHING` (§3.7), nested property reads `.a.b.c` (§5.13), a
+`using` with no subject (§6.3), `after` (§6.9), the `~` format operator (§5.14), arithmetic
+in `calc( ... )` (§5.15), lists (§8), and host calls as statements (§6.6).
+
+What the language expects from whatever runs it — realms, events, verbs, host calls and the
+permission prompt — is specified separately, in **`HOST.md`**.
 
 - **Namespace:** `globalThis.TTV_DSL` — *not* `TTV_LANG`, and not `LANGUAGE`, which
   `ext/polyfill.js` already defines.
@@ -164,6 +168,11 @@ there is no way for them to drift apart. Recognized escapes are `\n`, `\r`, `\t`
 `\f`, `\v`, `\0`, and a backslash before any other character yields that character —
 so `\"`, `\'` and `\\` work as expected. A newline inside a string is an error.
 
+Unicode escapes use JavaScript's two spellings *(v2.1)*: `é` (exactly four hex digits)
+and `\u{1F49C}` (one to six, up to `10FFFF`). Anything else after `\u` is an error — in v2 a
+backslash before `u` was simply dropped, so `"é"` read as `u00e9`. The same escapes work
+in templates.
+
 ### 3.2 Template literals
 
 Backtick-delimited, and the normal way to write a message:
@@ -264,8 +273,9 @@ as three tokens: number, wildcard, number.
 This is a deliberate reservation, not an oversight. `*` is by far the most common token in
 real scripts — `await *`, `using *`, `.message is *` — and making it context-dependent would
 mean the lexer had to know whether it sat in operand or operator position. The language gives
-up arithmetic it does not need in exchange for a wildcard that is unambiguous everywhere. A
-future version wanting multiplication should spell it `mul` or `×` rather than reclaiming `*`.
+up general arithmetic in exchange for a wildcard that is unambiguous everywhere.
+Multiplication lives inside `calc( ... )` (§5.15), where `*` is an operator; outside it,
+`*` is always the wildcard.
 
 As an operand, the wildcard means "anything present":
 
@@ -682,6 +692,55 @@ and `__proto__` may never be read.
 **Glued means no space.** `.raider .name` is still two separate subjects, which is what keeps
 `using .a .b` meaning "either of these". Member access binds tighter than every operator.
 
+### 5.14 The format operator, `~` *(v2.1)*
+
+`<value> ~ <pattern>` renders a duration as text:
+
+```
+POST `waited ${ wait_time ~ "hh?:mm:ss" }`      // 05:00, or 01:05:00 past the hour
+```
+
+| In the pattern | Means |
+| :--- | :--- |
+| `hh` `mm` `ss` | hours, minutes, seconds, padded to two digits |
+| `h` `m` `s` | the same, unpadded |
+| a unit then `?` | drop this unit — and the text straight after it — when it is zero and every unit before it was dropped |
+| `'text'` | literal text, always (so `m' min'` is not read as minutes-then-"in") |
+| anything else | literal |
+
+The **largest** unit present absorbs the overflow: `"mm:ss"` on ninety minutes is `90:00`.
+Seconds round down. The value is read as a number the way `above`/`below` read one (§5.4) —
+a duration is its milliseconds — and anything that is not a number renders as empty.
+
+`~` shares `%`'s precedence and is left-associative, so it formats what a pipe selected and
+a comparison sees the formatted text. Durations are the only thing it formats today; the
+pattern language leaves room for dates later.
+
+### 5.15 Arithmetic, `calc( ... )` *(v2.1)*
+
+Arithmetic lives inside `calc( ... )`, and only there:
+
+```
+using +eval:calc -- "scales the shoutout to the raid"
+    await (.raider is SOMETHING)
+        POST `that's ${ calc(.raid_size * 2 + 1) } half-gremlins`
+```
+
+Like CSS's `calc()`, the parentheses change what the characters inside mean: `+ - * / %`
+and `**` are operators there, with **JavaScript's** precedence and semantics — `**` binds
+tightest and is right-associative, then `* / %`, then `+ -`; `1 / 0` is `Infinity`. Outside
+the parentheses, `*` is still the wildcard, `+` a permission, `%` the replacement operator
+and `/` a channel.
+
+- Operands are ordinary values — numbers, durations (as milliseconds), variables, `.prop`,
+  `#prop`, host calls, and nested parentheses — read as numbers the way `above`/`below`
+  read them. Anything unreadable is `NaN`, and `NaN` spreads, as in JavaScript.
+- As in JavaScript, a unary sign cannot be the base of `**`: `-2 ** 2` is an error; write
+  `(-2) ** 2` or `-(2 ** 2)`.
+- Evaluating a `calc` needs the **`eval:calc`** permission, and like every `eval` grant it
+  needs a description.
+- A binary `-` outside `calc` is an error pointing here.
+
 ---
 
 ## 6. Statements
@@ -879,7 +938,7 @@ goto 1st <| .links where ("twitch.tv" in .href)
 
 Navigation is delegated to the realm in scope.
 
-### 6.6 Verb calls
+### 6.6 Verb calls, and host calls as statements
 
 Any all-caps bare word in statement position is a verb call, optionally followed by an
 expression:
@@ -898,6 +957,18 @@ the host can register `WHISPER` without touching the language.
 Both built-in verbs **drop a blank message** rather than sending it: if the text matches
 `/^\s*$/` nothing is sent. `REPLY ""` is therefore a deliberate no-op, and is used in the
 mockup as one.
+
+**Host calls as statements** *(v2.1)*. A line may also be a host call on its own, for a call
+made for what it does rather than what it returns:
+
+```
+using +write:html.text -- "shows the last raider on the page"
+    await (.raider is SOMETHING)
+        &Html.setText("#last-raid", .raider)
+```
+
+That, a verb, and an assignment are the only expressions allowed to stand alone; any other
+bare expression on a line is still an error (§9.2).
 
 ### 6.7 `when` *(v2)*
 
@@ -1074,6 +1145,24 @@ capability you did not give it" as a permissions prompt, not as a bug report. Be
 matching is exact, the error is a reliable signal that a grant is genuinely absent rather
 than merely written at the wrong granularity.
 
+### 6.9 `after` *(v2.1)*
+
+`after <duration>` waits **once**, then runs its body once:
+
+```
+after 1:00
+    POST `one minute in — say hi to chat`
+```
+
+`await 1:00` would repeat; `after` does not. The duration is any value, read when the
+statement is reached — `after wait_time` works — and something that is not a duration is a
+runtime error. `after ... with (<filter>)` checks the filter when the timer fires.
+
+Inside a handler, every arrival schedules its own `after`: `after 1:00` in a raid handler
+means "a minute after *each* raid". That cannot pile up — each timer fires and is done. Its
+body shares the enclosing handler's installation, so an `await` inside an `after` still
+installs once (§6.1), and an enclosing `with (...)` still has to hold when it fires.
+
 ---
 
 ## 7. Blocks and nesting
@@ -1113,6 +1202,22 @@ REPLY `Congration. You'd done it. +${ any from(1 .. 10) }`
 
 An empty `any from ()` is a parse error. The choice is drawn from the runtime's injected
 random source, which is what makes it testable.
+
+### Lists *(v2.1)*
+
+A parenthesized group holding **two or more** items is a list, with items separated exactly
+as in `any from` — by line or by optional comma. One item is still just a grouped value.
+
+```
+(`hi`, `hey`, `hello there`) -> greet_list
+
+await (.message is SOMETHING)
+    REPLY any from greet_list
+```
+
+`any from` and `* from` accept any value after `from`, not only a parenthesized group, so a
+list bound once can be picked from anywhere. Ranges contribute their members to a list just
+as they do to `any from`: `(1 ... 3, 9)` is `1, 2, 3, 9`. `%` joins a list (§5.9).
 
 ---
 
@@ -1534,6 +1639,13 @@ From writing `realistic.ttv` and ranking what fought back:
   means "while live" (§6.1). **Behaviour change.**
 - **An unknown realm broke its whole enclosing body** — Resolved. It now fails only its own
   block (§4).
+- **One-shot timers** — Resolved by `after` (§6.9).
+- **Durations printed as milliseconds** — Resolved by the `~` format operator (§5.14).
+- **No arithmetic** — Resolved by `calc( ... )` (§5.15), gated on `eval:calc`.
+- **No way to share a list between blocks** — Resolved: a multi-item group is a list, and
+  `any from` takes any value (§8).
+- **Host calls could not stand alone** — Resolved: a line may be a host call, for calls made
+  for their effect (§6.6).
 - **Permissions are a fixed list** with `action:resource.part` names and an explicit
   one-level `.*`; unknown grants fail at compile time, and `write`/`eval` grants need a
   `-- "description"` (§6.8). **Behaviour change:** `+a:b:c` and off-list names are errors.
@@ -1542,24 +1654,20 @@ From writing `realistic.ttv` and ranking what fought back:
 
 ### 14.2 Still open
 
-- **`+` and `?` as presence shorthands.** Floated for `SOMETHING` and `NOTHING`. Not adopted
-  yet; see the review notes before choosing.
-
-- **Multiplication.** `*` is permanently the wildcard (§3.7). Arithmetic, if it arrives,
-  needs different spelling — `mul`, `×`, or a `calc( ... )` form. `calc` is now reserved,
-  and produces an error saying so; using it will require the `eval:calc` permission.
-- **Subtraction.** `-` still parses only as a prefix operator. Binary `-` is unclaimed, and
-  a `-` after a complete expression now reports the arithmetic reservation rather than
-  "expected end of line".
-- **No user-defined functions**, and no way to share a list of replies between two blocks.
-  Variables (§9.2) name a *value*, not a procedure.
+- **No user-defined functions.** Variables (§9.2) name a *value* — including a list (§8) —
+  not a procedure.
 - **No loops.** `await` is still the only repetition, and it is driven by time or events.
 - **DISCORD is unimplemented.** `idea.ttv` uses it; the runtime does not register it. A
   script naming it has that one block skipped, with one error reported (§4).
-- **`await` duration semantics are "repeat".** A one-shot delay has no spelling. `once`
-  or `after` is the obvious candidate.
-- **Error recovery granularity.** Recovery is still per line; a fault inside a long
-  `any from` discards the whole construct.
+- **The host.** `HOST.md` specifies it; the extension, being rewritten, does not implement it
+  yet.
+
+Settled, and recorded so they are not reopened by accident:
+
+- **`+` and `?` are reserved** for a later, distinct use. They will not become shorthands for
+  `SOMETHING` / `NOTHING`.
+- **Error recovery stays per line.** A fault inside a long `any from` reports that fault and
+  discards the construct; the author is told exactly what was wrong, and that is the point.
 Not open, but easy to mistake for a bug, so recorded here too: **`where` and `|` bind
 tighter than `is`/`in`**, so a filter whose predicate contains a comparison must be
 parenthesized — `.links | ("twitch.tv" in .href)`. That is the canonical spelling and a
@@ -1567,11 +1675,11 @@ settled rule (§5.2), not a defect awaiting a fix.
 
 ---
 
-## 15. Integration (not in this slice)
+## 15. Integration
 
-This slice is additive and self-contained: it adds `dsl/` and touches nothing else. Wiring it
-into the extension is deliberately left for the next slice, and is recorded here so that work
-starts with no rediscovery cost.
+The host contract — options, realms, events, verbs, host calls, permission prompts — is
+**`HOST.md`**. This section keeps only the extension-specific wiring notes. `fake-page.js`
+and `playground.html` are a working host to compare against.
 
 ### 15.1 `manifest.json`
 
@@ -1582,6 +1690,8 @@ The DSL files must load **in dependency order**, before any script that calls in
 ```json
 "dsl/errors.js", "dsl/tokens.js", "dsl/tokenizer.js", "dsl/ast.js", "dsl/parser.js", "dsl/runtime.js", "dsl/compiler.js", "dsl/index.js"
 ```
+
+(`fake-page.js` is for tests and the playground; the extension does not load it.)
 
 No new permission is required. The compiler emits closures, never source text, so no
 `unsafe-eval` relaxation of `content_security_policy` is needed.
@@ -1602,7 +1712,7 @@ precisely so this step needs no changes to `dsl/`.
 
 ### 15.3 Host wiring
 
-The content script supplies the real implementations:
+See `HOST.md` for the full contract. In outline, the content script supplies:
 
 ```js
 let runtime = TTV_DSL.createRuntime({
@@ -1626,3 +1736,10 @@ Chat messages are delivered with `runtime.dispatch(event)`; every live `await` s
 
 `node dsl/tests/run.js` runs the suite under Node. `dsl/tests/index.html` runs the same suite
 in a browser with plain `<script>` tags. Neither requires a build step or `node_modules`.
+
+### 15.5 Playground
+
+`dsl/playground.html` is an editor with highlighting and live diagnostics, the permission
+report from `TTV_DSL.grants`, a fake clock, a fake channel, an event composer and a fake page
+for `&Html.*`. Browsers refuse `<script src>` over `file://` in some configurations; any
+static server works, e.g. `python -m http.server --directory ttv-tools/dsl`.
