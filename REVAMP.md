@@ -21,6 +21,7 @@ Living plan for the multi-week revamp. One phase at a time; each phase ends in s
 ### 0. Baseline & tooling
 - `.editorconfig`, ESLint (flat config, browser + webextensions globals) and Prettier **config only** — no mass reformat until Phase 4 moves the code anyway.
 - GitHub Action: run `dsl/tests/run.js`, lint, and build `ttv-tools.zip` as a release asset (then drop the zip from git).
+- esbuild script: `src/` → `dist/chrome/` + `dist/firefox/` (manifest per target); vendored `ext/` copied as-is.
 - Tag the current state (`pre-revamp`) as a rollback point.
 
 ### 1. Inventory (Offser-heavy)
@@ -77,10 +78,9 @@ Living plan for the multi-week revamp. One phase at a time; each phase ends in s
 
 All Offser output is treated as a draft — verified against the code before it lands.
 
-## Open questions
-
-See the chat thread; answers get recorded here as decisions.
-
 ## Decisions
 
-_(none yet)_
+- **Plugins:** both — built-in features become plugins (Phases 3–4), user plugins via TTV DSL (Phase 7).
+- **Build step:** allowed — esbuild bundles `src/` into the loadable extension folder; plugins use real `import`s. Output stays load-unpacked friendly.
+- **Browsers:** Chrome + Firefox — build emits a Chrome MV3 manifest and a Firefox variant (`browser_specific_settings`, background `scripts` fallback); `chrome.*` calls go through one compat shim.
+- **Formatting:** Prettier configured to match the existing hand style (4 spaces, `if(`, trailing-`?`/`:` ternaries where Prettier allows), applied per file as it moves; ESLint for correctness.
