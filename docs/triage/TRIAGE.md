@@ -91,7 +91,7 @@ About 40 candidates flag Twitch DOM that "may be null", brittle selectors, or `i
 | #31 Recover Frames too aggressive | **Fixed.** Recovery attempts are now 10s apart (were 3s), and the page reloads after 30s of stalling (was 15s). Background tabs were already skipped |
 | #57 memory | **Partly addressed** by the `PrepareForGarbageCollection` leak fix; the rest is Up Next (Phase 4) |
 | #27 CPU | **Partly addressed** by the leak fix and by removing the proxy probes; the settings-page CPU use is Phase 5 |
-| #18, #40, #43 reload loops | Need a reload policy decision (below) |
+| #18, #40, #43 reload loops | **Addressed** (owner chose defer + cap). A hidden tab now waits until it's visible before `ReloadPage` reloads it. The background skips tabs that are still loading, and respawns a tab (by ID or URL) at most once per 2 min. A skipped respawn leaves the tab open instead of closing it without a replacement |
 | #44–#46, #49, #52, #54–#56 | Up Next, Phase 4 |
 | #50, #34 Stay Live | Phase 4 (shares `GetNextStreamer` with Up Next) |
 | #35, #48 Buy when available | Phase 4 (Claim Reward); needs live Twitch testing |

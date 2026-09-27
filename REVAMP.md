@@ -36,9 +36,9 @@ Living plan for the multi-week revamp. One phase at a time; each phase ends in s
   - `simplify_chat_reverse_emotes` has a control but is never read by name.
   - `tools.js` ~L13811–14154 holds banner-only stubs for features that now live in `chat.js`.
 
-### 2. Bug triage & fixes 🚧
+### 2. Bug triage & fixes ✅
 - Offser candidates + ESLint verified; ~45 fixes landed. Record: [`docs/triage/TRIAGE.md`](docs/triage/TRIAGE.md).
-- GitHub issues triaged (see TRIAGE.md); #53 and #31 fixed. Open: reload policy (#18/#40/#43).
+- GitHub issues triaged; #53, #31 fixed; reload policy (#18/#40/#43) is defer-when-hidden + 2-min respawn cap. Up Next and live-DOM issues carried into Phase 4.
 - Seeded by Phase 0:
   - ESLint: `no-dupe-keys` (tools.js 11574 `user2`, time-zone table), `no-unsafe-optional-chaining` (tools.js 11282, 11897), `getter-return` (tools.js 4447), `no-unassigned-vars` (`FIRST_IN_LINE_WARNING_TEXT_UPDATE`), `no-fallthrough` (core.js 704, tools.js 1175), `no-unreachable` ×12, and ~139 `no-undef` (e.g. `tab` in background.js, `streamer`/`video`/`action` in tools.js, `RestartJob`/`TTV_IRC` visibility).
   - core.js 2497: `let browser` shadows the global, so the `browser` namespace is never detected.
@@ -92,6 +92,7 @@ All Offser output is treated as a draft — verified against the code before it 
 
 ## Decisions
 
+- **Reloads:** hidden tabs defer reloads until visible; background respawns are capped at one per tab per 2 min.
 - **Stop/Prevent Hosting:** removed in Phase 4 (Twitch dropped hosting in 2022).
 - **Tooltip `from: 'down'`:** revisit in Phase 6.
 - **Version:** the revamp ships as **v6** (manifest bump happens at release, Phase 8).

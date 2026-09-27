@@ -181,6 +181,9 @@ function ReloadTab(tab, onlineOnly = true, forced = false) {
     if(tab.status == UNLOADED)
         console.warn(`[RELOAD] The tab #${ tab.id } was unloaded`);
 
+    if(!MayRespawn(tab))
+        return console.warn(`[RELOAD] Skipping tab #${ tab.id }: still loading, or reloaded less than ${ RESPAWN_COOLDOWN / 1000 }s ago`);
+
     // Tab is offline, do not reload
     if(onlineOnly && TabIsOffline(tab))
         return;
@@ -218,6 +221,10 @@ function ReloadTab(tab, onlineOnly = true, forced = false) {
 function RemoveTab(tab, duplicateTab = false, forced = true) {
     if(tab.status == UNLOADED)
         console.warn(`[REMOVE] The tab #${ tab.id } was unloaded`);
+
+    // Leave the tab alone rather than close it without a replacement
+    if(duplicateTab && !MayRespawn(tab))
+        return console.warn(`[REMOVE] Skipping tab #${ tab.id }: still loading, or respawned less than ${ RESPAWN_COOLDOWN / 1000 }s ago`);
 
     // Duplicate tab
     duplication: if(duplicateTab) {
@@ -258,6 +265,33 @@ function RemoveTab(tab, duplicateTab = false, forced = true) {
 Object.defineProperties(RemoveTab, {
     duplicatedTabs: { value: new Map },
 });
+
+// Reloads and respawns, by tab ID and by URL. A tab that is still loading, or was handled recently, is
+// left alone so a slow or overloaded machine doesn't spiral into reload loops (#18, #43)
+const RECENT_RESPAWNS = new Map;
+const RESPAWN_COOLDOWN = 120_000;
+
+/**
+ * Records a reload/respawn of the tab, unless one is still pending or happened within the cool-down.
+ * @simply MayRespawn(tab:object<Tab>) → boolean
+ *
+ * @param  {Tab} tab    The tab about to be reloaded or respawned
+ * @return {boolean}    Whether to go ahead
+ */
+function MayRespawn(tab) {
+    let now = +new Date;
+
+    for(let [key, when] of RECENT_RESPAWNS)
+        if(now - when >= RESPAWN_COOLDOWN)
+            RECENT_RESPAWNS.delete(key);
+
+    if(tab.status == 'loading' || RECENT_RESPAWNS.has(tab.id) || RECENT_RESPAWNS.has(tab.url))
+        return false;
+
+    RECENT_RESPAWNS.set(tab.id, now).set(tab.url, now);
+
+    return true;
+}
 
 /**
  * Determines the status of the tab's online connectivity.
