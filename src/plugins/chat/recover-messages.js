@@ -13,10 +13,18 @@ plugin({
     job: 'recover_messages',
     timer: +5000,
 
+    /**
+     * Runs on initialization: initializes the set used to track restored messages.
+     */
     init() {
         RESTORED_MESSAGES = new Set;
     },
 
+    /**
+     * Runs every tick: identifies deleted chat messages and reconstructs them in the chat UI to recover lost content.
+     * @param {Object} context - The plugin context
+     * @returns {Promise<void>}
+     */
     handler: async(context) => {
         new context.StopWatch('recover_messages');
 
@@ -149,6 +157,9 @@ plugin({
         context.StopWatch.stop('recover_messages');
     },
 
+    /**
+     * Sets up the message recovery timer: dynamically adjusts the recovery check frequency based on the current viewer count.
+     */
     setup() {
         setInterval(() => {
             const actual = Timers.recover_messages

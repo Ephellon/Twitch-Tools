@@ -10,6 +10,10 @@ plugin({
     job: 'highlight_mentions_popup',
     timer: -500,
 
+    /**
+     * Runs when triggered: monitors chat for mentions of the user and displays a popup footer to facilitate quick replies.
+     * @param {Object} context - The plugin context
+     */
     handler: (context) => {
         Chat.get().map(Chat.onmessage = async line => {
             if(line.message.missing(context.USERNAME))

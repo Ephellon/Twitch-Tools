@@ -9,6 +9,10 @@ plugin({
     id: 'phrase_audio',
     timer: 1000,
 
+    /**
+     * Plays a notification sound when a message matching a highlighted phrase is detected.
+     * @param {Object} context - The plugin context
+     */
     handler: ({ StopWatch }) => {
         new StopWatch('phrase_audio');
 
@@ -23,6 +27,9 @@ plugin({
         StopWatch.stop('phrase_audio');
     },
 
+    /**
+     * Undoes phrase audio by pausing the notification sound.
+     */
     unhandler: () => {
         NOTIFICATION_SOUND?.pause();
     },

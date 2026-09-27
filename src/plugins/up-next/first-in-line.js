@@ -12,11 +12,21 @@ plugin({
     id: 'first_in_line',
     timer: 1000,
 
+    /**
+     * Init: Initializes arrays and objects for tracking notifications and timers.
+     */
     init() {
         HANDLED_NOTIFICATIONS = [];
         STARTED_TIMERS = {};
     },
 
+    /**
+     * Processes actionable notifications to queue them for automatic navigation.
+     * @param {Object} params - Execution context
+     * @param {StopWatch} params.StopWatch - Timer for performance tracking
+     * @param {Element|*} ActionableNotification - A specific notification to process
+     * @param {string} [preferredPlace] - Where to insert the job in the queue (e.g., 'first' or 'last')
+     */
     handler: async({ StopWatch }, ActionableNotification, preferredPlace) => {
         new StopWatch('first_in_line');
 
@@ -302,6 +312,9 @@ plugin({
         StopWatch.stop('first_in_line');
     },
 
+    /**
+     * Undoes first-in-line: Clears active timers and wipes the navigation queue.
+     */
     unhandler: () => {
         if(defined(FIRST_IN_LINE_JOB))
             [FIRST_IN_LINE_JOB, FIRST_IN_LINE_WARNING_JOB, FIRST_IN_LINE_WARNING_TEXT_UPDATE].forEach(clearInterval);
@@ -322,10 +335,17 @@ plugin({
         });
     },
 
+    /**
+     * Checks if any version of the "First in Line" setting is enabled.
+     * @returns {boolean} Whether the feature should be active
+     */
     enabled() {
         return parseBool(Settings.first_in_line) || parseBool(Settings.first_in_line_plus) || parseBool(Settings.first_in_line_all) || parseBool(Settings.first_in_line_now);
     },
 
+    /**
+     * Sets up the "First in Line" feature: loads cached job data, calculates the next due date based on streamer status, and manages visual rainbow borders for redo entries.
+     */
     async setup() {
         __FirstInLine__: {
             await Cache.load(['ALL_FIRST_IN_LINE_JOBS', 'FIRST_IN_LINE_DUE_DATE', 'FIRST_IN_LINE_BOOST'], cache => {

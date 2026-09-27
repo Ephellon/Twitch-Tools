@@ -12,6 +12,9 @@ plugin({
     id: 'away_mode',
     timer: 1000,
 
+    /**
+     * Resets the internal state variables for the Away Mode (Lurking) feature.
+     */
     init() {
         AwayModeButton = void null;
         AwayModeStatus = false;
@@ -23,6 +26,11 @@ plugin({
         NUMBER_OF_FAILED_QUALITY_FETCHES = 0;
     },
 
+    /**
+     * Runs every tick: Manages the Away Mode button creation, keyboard shortcuts, and automatic volume adjustments.
+     * @param {Object} context - Execution context
+     * @param {StopWatch} context.StopWatch - StopWatch utility for performance tracking
+     */
     handler: async({ StopWatch }) => {
         new StopWatch('away_mode');
 
@@ -85,6 +93,9 @@ plugin({
                     sibling = $('[data-a-target="player-controls"i] [class*="player-controls"i][class*="right-control-group"i] > :last-child');
                     parent = sibling?.parentElement;
                     before = 'first';
+                    /**
+                     * Determines the placement of the Away Mode button and applies necessary DOM modifications for the chosen layout.
+                     */
                     extra = ({ container }) => {
                         // Remove the old tooltip
                         container.querySelector('[role="tooltip"i]')?.remove();
@@ -283,10 +294,16 @@ plugin({
         StopWatch.stop('away_mode');
     },
 
+    /**
+     * Undoes the Away Mode feature by removing the Away Mode button from the DOM.
+     */
     unhandler: () => {
         $('#away-mode')?.remove();
     },
 
+    /**
+     * Initializes the Away Mode feature, sets up volume control listeners, and configures the automated activation schedule.
+     */
     setup() {
         $remark("Adding & Scheduling the Lurking button...");
 

@@ -8,6 +8,10 @@ import { plugin } from '../../lib/plugins.js';
 plugin({
     id: 'chat-safe.soft_unban',
 
+    /**
+     * Installs the soft unban feature to allow banned users to view chat via a proxy iframe.
+     * @param {Object} context - Plugin context
+     */
     async install(context) {
         Handlers.soft_unban = () => {
             if(!context.STREAMER?.veto)

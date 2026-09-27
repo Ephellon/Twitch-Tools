@@ -12,6 +12,9 @@ plugin({
     timer: 5000,
     settings: { auto_accept_mature: false },
 
+    /**
+     * Automatically clicks buttons to bypass mature content, class, or watchparty overlays.
+     */
     handler() {
         $([
             '[data-a-target*="mature"i]:is([data-a-target*="overlay"i], [data-a-target*="accept"i]) button',
@@ -21,6 +24,9 @@ plugin({
         ].filter(s => s.length).join(','))?.click();
     },
 
+    /**
+     * Setup: Sets up listeners to mark home page visits as user-intended when clicking channel links.
+     */
     setup() {
         $.all(`[class*="info"i] [href$="${ STREAMER.name }"i] [class*="title"i], main [href$="${ STREAMER.name }"i]`).map(element => {
             element.closest('div[class]').addEventListener('mousedown', async({ isTrusted, button = -1 }) => {

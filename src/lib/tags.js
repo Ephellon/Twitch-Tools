@@ -5,6 +5,11 @@
 
 // Estimated level of screen activity
     // See https://www.twitch.tv/directory/all/tags
+/**
+ * Calculates an activity score based on a set of provided tags.
+ * @param {...{string}} tags - The tags to evaluate.
+ * @returns {number|undefined} The calculated score, or undefined if decoding fails.
+ */
 function scoreTagActivity(...tags) {
     let score = 0;
 

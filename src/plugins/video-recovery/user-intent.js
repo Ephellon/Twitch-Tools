@@ -8,6 +8,9 @@ import { plugin } from '../../lib/plugins.js';
 plugin({
     id: 'user_intent',
 
+    /**
+     * Sets up listeners on channel links to track and cache the user's intended navigation destination.
+     */
     async install() {
         wait(1000).then(() => {
             $.all('[data-a-target="followed-channel"i], [id*="side"i][id*="nav"i] .side-nav-section[aria-label][tt-svg-label="followed"i] [href^="/"], [data-test-selector*="search-result"i][data-test-selector*="channel"i] a:not([href*="/search?"])').map(a => {

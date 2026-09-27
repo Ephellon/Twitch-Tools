@@ -11,6 +11,11 @@ plugin({
     timer: 2_500,
     settings: { kill_extensions: false },
 
+    /**
+     * Hides all Twitch extension views from the page.
+     * @param {Object} params - Execution context
+     * @param {StopWatch} params.StopWatch - Timer for performance tracking
+     */
     handler({ StopWatch }) {
         new StopWatch('kill_extensions');
 
@@ -21,11 +26,17 @@ plugin({
     },
 
     // Un-hide the same views the handler hid (it used to look for `[class^="extension-view"i]` only)
+    /**
+     * Undoes kill-extensions: Restores visibility to extension views by removing style overrides.
+     */
     unhandler() {
         for(const view of $.all(EXTENSION_VIEWS))
             view.removeAttribute('style');
     },
 
+    /**
+     * Setup: Logs the initialization of the extension killer.
+     */
     setup() {
         $remark("Adding extension killer...");
     },

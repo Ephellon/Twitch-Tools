@@ -8,6 +8,10 @@ import { plugin } from '../../lib/plugins.js';
 plugin({
     id: 'chat.convert_emotes',
 
+    /**
+     * Installs the emote conversion feature by initializing emote tracking maps and defining helper functions for creating captured emote elements.
+     * @param {*} context - The plugin context object
+     */
     async install(context) {
         const OWNED_EMOTES = (top.OWNED_EMOTES ??= new Map)
             , CAPTURED_EMOTES = (top.CAPTURED_EMOTES ??= new Map)
@@ -67,6 +71,11 @@ plugin({
             };
 
         // Convert emote URL to a short url
+        /**
+         * Converts a long Twitch emote CDN URL into a shorter, encoded string format.
+         * @param {string} url - The full Twitch emote URL
+         * @returns {string} The shortened URL string
+         */
         const shrt = url => url.replace(/https:\/\/static-cdn\.jtvnw\.net\/emoticons\/v1\/(\d+)\/([\d\.]+)/i, ($0, $1, $2, $$, $_) => {
             const id = parseInt($1).toString(36)
                 , version = $2;
@@ -157,6 +166,10 @@ plugin({
             if(nullish(chat_emote_button))
                 break __ConvertEmotes__;
 
+            /**
+             * Programmatically opens the emote picker and scans for channel-specific locked and owned emotes to store them.
+             * @returns {Promise<void>}
+             */
             function CollectEmotes() {
                 chat_emote_button.click();
 

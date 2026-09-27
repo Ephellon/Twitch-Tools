@@ -12,6 +12,9 @@ plugin({
     id: 'parse_commands',
     timer: -1000,
 
+    /**
+     * Initializes the command parsing logic to replace placeholders in strings with dynamic user, channel, and stream data.
+     */
     init() {
         parseCommands = function parseCommands(string = '', variables = {}) {
             for(let MAX_ITER = 3 * string.count('$'), regexp = /\$?(\([^\(\)]+?\)|\{[^\{\}]+?\}|\[[^\[\]]+?\])/; regexp.test(string) && --MAX_ITER > 0;)
@@ -129,6 +132,9 @@ plugin({
         };
     },
 
+    /**
+     * Scans the page for command-like text in titles and panels and replaces them with their defined replies.
+     */
     handler: async() => {
         const elements = $.all('[data-a-target="stream-title"i], [data-a-target="about-panel"i] *, [data-a-target^="panel"i] *')
             .map($0 => $0.getElementByText(/([!][\p{Alpha}\.\\\/\?\+\(\)\[\]\{\}\*\|]+)/u))
@@ -247,6 +253,9 @@ plugin({
         }
     },
 
+    /**
+     * Undoes command parsing by resetting the stream title to its original plain text.
+     */
     unhandler: () => {
         const title = $('[data-a-target="stream-title"i]');
 
@@ -254,6 +263,9 @@ plugin({
             title.innerHTML = encodeHTML($('[data-a-target="stream-title"i]').innerText);
     },
 
+    /**
+     * Sets up the command parsing feature, registering the job and adding a listener to the chat input for command suggestions and auto-completion.
+     */
     setup() {
         $remark("Parsing title commands...");
 

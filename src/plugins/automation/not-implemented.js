@@ -8,6 +8,9 @@ import { plugin } from '../../lib/plugins.js';
 plugin({
     id: 'not_implemented',
 
+    /**
+     * Installs the phone number parsing and common phrase translation features, registering their respective handlers and timers.
+     */
     async install() {
         Handlers.phone_number = () => {
             const syntax = /(?<countryCode>\+?\d{1,3})?[\s\.\-\(]?(?<areaCode>\d{3})?[\)\.\-\s]?(?<officeCode>\d{3})[\s\.\-]?(?<lineNumber>\d{1,4})/;

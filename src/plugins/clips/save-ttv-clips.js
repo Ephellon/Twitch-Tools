@@ -10,6 +10,9 @@ plugin({
     job: 'save_ttv_clips',
     timer: -500,
 
+    /**
+     * Extracts clip data and inserts a direct download link into the Twitch clip page or editor.
+     */
     handler: () => {
         const EDITOR_MODE = location.pathname.equals('/create');
         const { src } = $('video');
@@ -72,6 +75,10 @@ plugin({
         parent.insertBefore(container, placeBefore);
     },
 
+    /**
+     * Checks if the clip saving feature is enabled.
+     * @returns {boolean} Whether the feature should be active
+     */
     enabled() {
         return true || parseBool(Settings?.save_ttv_clips);
     },

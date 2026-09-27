@@ -10,6 +10,9 @@ plugin({
     job: 'easy_filter',
     timer: 500,
 
+    /**
+     * Runs every tick: Adds buttons to viewer and emote cards to allow users to quickly filter them from chat.
+     */
     handler: () => {
         const card = $('[data-a-target="viewer-card"i], [data-a-target="emote-card"i]')
             , existing = $('#tt-filter-rule--user, #tt-filter-rule--emote');
@@ -98,6 +101,10 @@ plugin({
         }
     },
 
+    /**
+     * Determines if the easy filter feature should be active based on settings.
+     * @returns {boolean} True if enabled
+     */
     enabled() {
         return parseBool(Settings.filter_messages);
     },

@@ -8,6 +8,9 @@ import { plugin } from '../../lib/plugins.js';
 plugin({
     id: 'private_viewing',
 
+    /**
+     * Periodically adds a custom Picture-in-Picture button to live search result items.
+     */
     async install() {
         setInterval(() => {
             $.all('.search-tray [role="cell"i] [data-a-target="nav-search-item"i]')

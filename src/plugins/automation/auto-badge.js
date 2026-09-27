@@ -9,6 +9,9 @@ plugin({
     id: 'auto_badge',
     timer: -1000,
 
+    /**
+     * Adds broadcaster, moderator, and VIP badges to the Twitch chat autocomplete suggestions.
+     */
     handler: () => {
         $('[data-a-target="chat-input"i]')?.addEventListener('keyup', delay(async event => {
             let { target, code, altKey, ctrlKey, metaKey, shiftKey } = event
@@ -56,6 +59,9 @@ plugin({
         }, 100));
     },
 
+    /**
+     * Undoes auto-badge: Removes the added badges from the autocomplete suggestions.
+     */
     unhandler: () => {
         $.all('[class*="autocomplete"i] button[data-a-target^="@"] img[data-badge]')
             .isolate()
@@ -63,10 +69,17 @@ plugin({
             .map(e => e.remove());
     },
 
+    /**
+     * Checks if the auto-badge feature is enabled in settings.
+     * @returns {boolean} Whether the feature should be active
+     */
     enabled() {
         return nullish(Settings.auto_badge) || parseBool(Settings.auto_badge);
     },
 
+    /**
+     * Setup: Registers the auto-badge job and applies custom CSS for the badges.
+     */
     setup() {
         $remark("Adding username-suggestion badges...");
 

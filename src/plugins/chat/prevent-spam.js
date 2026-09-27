@@ -13,13 +13,27 @@ plugin({
     job: 'prevent_spam',
     timer: -1000,
 
+    /**
+     * Initializes the spam tracking list.
+     */
     init() {
         SPAM = [];
     },
 
+    /**
+     * Runs every tick: Monitors chat messages for plagiarism or repetitive patterns and marks them as spam.
+     * @param {Object} context - The plugin context
+     */
     handler: (context) => {
         new context.StopWatch('prevent_spam');
 
+        /**
+         * Replaces a chat message with a spam notice and adds a descriptive tooltip.
+         * @param {Element} element - The chat message element
+         * @param {string} [type='spam'] - The category of spam
+         * @param {string} message - The original message content
+         * @param {string} [phrase=''] - The specific repetitive phrase found
+         */
         function markAsSpam(element, type = 'spam', message, phrase = '') {
             const spam_placeholder = 'chat-deleted-message-placeholder';
             const span = furnish(`span.chat-line__message--deleted-notice.tt-spam-filter-${ type }[@aTarget=${ spam_placeholder }][@testSelector=${ spam_placeholder }]`).with(`message marked as ${ type }.`);
@@ -37,6 +51,16 @@ plugin({
             new Tooltip(element, message, { direction: 'up', fit: true });
         }
 
+        /**
+         * Checks if a message should be flagged as plagiarism or repetitive based on provided thresholds.
+         * @param {Element} element - The chat message element
+         * @param {string} message - The message text
+         * @param {string} author - The message author
+         * @param {number} lookBack - Number of recent messages to check for plagiarism
+         * @param {number} minLen - Minimum length of a phrase to be considered repetitive
+         * @param {number} minOcc - Minimum occurrences of a phrase to be considered repetitive
+         * @returns {Promise<string>} The original message
+         */
         async function spamChecker(element, message, author, lookBack, minLen, minOcc) {
             if(message.length < 1 || RegExp(`^${ context.USERNAME }$`, 'i').test(author))
                 return message;
@@ -72,6 +96,9 @@ plugin({
         context.StopWatch.stop('prevent_spam');
     },
 
+    /**
+     * Sets up the spam filter event listener.
+     */
     setup() {
         $remark("Adding spam event listener...");
     },

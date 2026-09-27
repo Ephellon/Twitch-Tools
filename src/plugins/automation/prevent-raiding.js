@@ -12,11 +12,19 @@ plugin({
     id: 'prevent_raiding',
     timer: 10_000,
 
+    /**
+     * Resets the internal state variables for the raid prevention feature.
+     */
     init() {
         CONTINUE_RAIDING = false;
         SHADOW_RAID = false;
     },
 
+    /**
+     * Runs every tick: Detects raids and decides whether to abort or continue based on the configured prevention method.
+     * @param {Object} context - Execution context
+     * @param {StopWatch} context.StopWatch - StopWatch utility for performance tracking
+     */
     handler: async({ StopWatch }) => {
         new StopWatch('prevent_raiding');
 
@@ -121,10 +129,17 @@ plugin({
         StopWatch.stop('prevent_raiding');
     },
 
+    /**
+     * Checks if the raid prevention feature is enabled in settings.
+     * @returns {boolean} Whether the feature is enabled
+     */
     enabled() {
         return (Settings.prevent_raiding ?? 'none').unlike('none');
     },
 
+    /**
+     * Initializes raid prevention state from cache and sets up navigation listeners to track raid transitions.
+     */
     setup() {
         Cache.load('LastRaid', ({ LastRaid }) => {
             const { from, to, type } = LastRaid || {};

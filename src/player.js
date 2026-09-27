@@ -34,6 +34,11 @@ let {
     GLOBAL_EVENT_LISTENERS,
 } = window;
 
+/**
+ * Initializes player-related features and loads associated plugins.
+ * @param {boolean} [START_OVER=false] - Whether to restart the initialization process.
+ * @returns {Promise<void>}
+ */
 let Player__Initialize = async(START_OVER = false) => {
     // Time how long jobs take to complete properly
     class StopWatch {
@@ -90,6 +95,11 @@ let Player__Initialize = async(START_OVER = false) => {
 };
 // End of Player__Initialize
 
+/**
+ * Initializes player features in a restricted safe mode.
+ * @param {boolean} [START_OVER=false] - Whether to restart the initialization process.
+ * @returns {Promise<void>}
+ */
 let Player__Initialize_Safe_Mode = async(START_OVER = false) => {
     const PLUGIN_CONTEXT = {};
 

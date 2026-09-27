@@ -13,10 +13,17 @@ plugin({
     job: 'recover_video',
     timer: 5000,
 
+    /**
+     * Initializes the video recovery state.
+     */
     init() {
         RECOVERING_VIDEO = false;
     },
 
+    /**
+     * Runs every tick: Detects player errors and recovers by moving to the next streamer for restricted content or clicking the error button.
+     * @param {Object} context - Contains the StopWatch utility
+     */
     handler: async({ StopWatch }) => {
         new StopWatch('recover_video');
 

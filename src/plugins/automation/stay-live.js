@@ -12,6 +12,9 @@ plugin({
     id: 'stay_live',
     timer: 3000,
 
+    /**
+     * Initializes state and path patterns used to track live channel visits.
+     */
     init() {
         ClearIntent = void null;
         WATCHED_LIVE = void null;       // The channel seen live during this visit
@@ -25,6 +28,12 @@ plugin({
         reserved_twitch_pathnames = RegExp(`/(${ twitch_pathnames.join('|') })`, 'i');
     },
 
+    /**
+     * Automatically navigates to the next live followed channel when the current streamer goes offline.
+     * @param {Object} params - Execution context
+     * @param {StopWatch} params.StopWatch - Timer for performance tracking
+     * @returns {Promise<void>}
+     */
     handler: async({ StopWatch }) => {
         new StopWatch('stay_live');
 
@@ -101,6 +110,9 @@ plugin({
         StopWatch.stop('stay_live');
     },
 
+    /**
+     * Setup: Logs the initialization of the stay-live feature.
+     */
     setup() {
         $remark("Ensuring Twitch stays live...");
     },

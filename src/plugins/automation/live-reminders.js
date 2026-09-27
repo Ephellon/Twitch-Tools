@@ -9,6 +9,11 @@ plugin({
     id: 'live_reminders',
     timer: -2_500,
 
+    /**
+     * Adds the "Remind me" action button to the channel's about section.
+     * @param {Object} params - The plugin context
+     * @param {Object} params.StopWatch - Utility to track and stop the handler execution
+     */
     handler: ({ StopWatch }) => {
         new StopWatch('live_reminders');
 
@@ -63,6 +68,11 @@ plugin({
                                 LiveReminders ??= {};
                             }
 
+                            /**
+                             * Formats a string to be possessive by adding "'s".
+                             * @param {string} string - The text to modify
+                             * @returns {string} The string with possessive punctuation
+                             */
                             let s = string => string.replace(/$/, "'").replace(/(?<!s)'$/, "'s")
                                 , reminderName = STREAMER.name
                                 , realName = (Object.keys(LiveReminders).find(name => name.equals(reminderName)))
@@ -117,11 +127,18 @@ plugin({
         StopWatch.stop('live_reminders');
     },
 
+    /**
+     * Undoes the live reminders feature by removing the action buttons and clearing the check interval.
+     */
     unhandler: () => {
         $.all('[tt-action="live-reminders"i]').map(action => action.remove());
         [LIVE_REMINDERS__LISTING_INTERVAL].map(clearInterval);
     },
 
+    /**
+     * Determines if the live reminders feature is enabled in the settings.
+     * @returns {boolean} True if the feature should be active
+     */
     enabled() {
         return true
             && (false
@@ -130,6 +147,9 @@ plugin({
             );
     },
 
+    /**
+     * Initializes the live reminders system and sets up the background checker.
+     */
     setup() {
         $remark("Adding Live Reminders...");
 
@@ -137,6 +157,9 @@ plugin({
         const REMINDERS_INDEX = -1, REMINDERS_LENGTH = 0, PARSED_REMINDERS = new Map;
 
         // Lists Live Reminders periodically...
+        /**
+         * Periodically checks cached reminders to notify the user when a tracked streamer goes live.
+         */
         const LIVE_REMINDERS__CHECKER = () => {
             Cache.load('LiveReminders', async({ LiveReminders }) => {
                 try {

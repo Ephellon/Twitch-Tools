@@ -10,6 +10,10 @@ plugin({
     job: 'recover_chat',
     timer: 500,
 
+    /**
+     * Attempts to recover the chat by replacing the chat shell with a popout iframe if a loading error is detected.
+     * @param {Object} context - Plugin context
+     */
     handler: (context) => {
         new context.StopWatch('recover_chat');
 

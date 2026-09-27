@@ -9,6 +9,9 @@ plugin({
     id: 'game_overview_card',
     timer: 5_000,
 
+    /**
+     * Plugin hook: Updates or creates a game overview card by fetching and displaying metadata for the current streamer's game.
+     */
     handler: () => {
         const existing = $('#game-overview-card');
 
@@ -39,6 +42,11 @@ plugin({
                     throw TypeError(`No DOM available. Page not loaded`);
 
                 const f = furnish;
+                /**
+                 * Retrieves a specific property from the DOM object.
+                 * @param {string} property - The property to retrieve
+                 * @returns {*} The value of the property
+                 */
                 const get = property => DOM.get(property);
 
                 let [title, description, image] = ['title', 'description', 'image'].map(get)
@@ -197,6 +205,12 @@ plugin({
                 , EditionsRegExp = /\s*(([-~:]\s*)?([\p{L}\s'-]){3,}\s*)(Edition|Season|Episode)s?(\s+[:\-\dIVXLCD]+)?[^$]+/iu;
             // Removes common "editions" → Standard,Digital,Deluxe,Digital Deluxe,Definitive,Anniversary,Complete,Extended,Ultiamte,Collector's,Bronze,Silver,Gold,Platinum,Enhanced,Premium,Complete Season,etc.
 
+            /**
+             * Standardizes a string by removing quotes, non-ASCII characters, and specific edition suffixes.
+             * @param {string} string - The text to normalize
+             * @param {...[*]} conditions - Additional regex and replacement pairs
+             * @returns {string} The normalized string
+             */
             function normalize(string, ...conditions) {
                 conditions = [
                     [LE_QUOTES, '"'],
@@ -221,6 +235,11 @@ plugin({
              *
              */
             Steam: if(parseBool(Settings.store_integration__steam)) {
+                /**
+                 * Retrieves Steam game details from a JSON catalog with a fallback to the Steam store suggestion API.
+                 * @param {string} game - The name of the game to search for
+                 * @returns {Promise<*>} A promise resolving to the game details object or an empty object
+                 */
                 async function fetchSteamGame(game) {
                     return fetchURL.fromDisk(`https://raw.githubusercontent.com/Ephellon/game-store-catalog/main/steam/${ (game[0].toLowerCase().replace(/[^a-z]/, '_')) }.json`, { hoursUntilEntryExpires: 168 })
                         .then(r => r.json())
@@ -459,6 +478,13 @@ plugin({
              *                     |___/
              */
             PlayStation: if(parseBool(Settings.store_integration__playstation)) {
+                /**
+                 * Retrieves PlayStation game details from a JSON catalog with a fallback to the PlayStation store search.
+                 * @param {string} game - The name of the game to search for
+                 * @param {number} [index=1] - The starting index for search results
+                 * @param {number} [pages=1] - The number of pages to search
+                 * @returns {Promise<*>} A promise resolving to the game details object or an empty object
+                 */
                 async function fetchPlayStationGame(game, index = 1, pages = 1) {
                     return fetchURL.fromDisk(`https://raw.githubusercontent.com/Ephellon/game-store-catalog/main/psn/${ (game[0].toLowerCase().replace(/[^a-z]/, '_')) }.json`, { hoursUntilEntryExpires: 168 })
                         .then(r => r.json())
@@ -762,6 +788,11 @@ plugin({
              *
              */
             Xbox: if(parseBool(Settings.store_integration__xbox)) {
+                /**
+                 * Retrieves Xbox game details from a JSON catalog with a fallback to the Microsoft Store API.
+                 * @param {string} game - The name of the game to search for
+                 * @returns {Promise<*>} A promise resolving to the game details object or an empty object
+                 */
                 async function fetchXboxGame(game) {
                     return fetchURL.fromDisk(`https://raw.githubusercontent.com/Ephellon/game-store-catalog/main/xbox/${ (game[0].toLowerCase().replace(/[^a-z]/, '_')) }.json`, { hoursUntilEntryExpires: 168 })
                         .then(r => r.json())
@@ -1131,6 +1162,11 @@ plugin({
              *
              */
             Nintendo: if(parseBool(Settings.store_integration__nintendo)) {
+                /**
+                 * Fetches game information from the Nintendo store catalog, falling back to a live store search if no catalog match is found.
+                 * @param {string} game - The name of the game to search for
+                 * @returns {Promise<Object>} The game details object
+                 */
                 async function fetchNintendoGame(game) {
                     return fetchURL.fromDisk(`https://raw.githubusercontent.com/Ephellon/game-store-catalog/main/nintendo/${ (game[0].toLowerCase().replace(/[^a-z]/, '_')) }.json`, { hoursUntilEntryExpires: 168 })
                         .then(r => r.json())
@@ -1502,6 +1538,11 @@ plugin({
              *            |_|
              */
             Epic: if(parseBool(Settings.store_integration__epic)) {
+                /**
+                 * Fetches game information from the Epic Games store catalog, falling back to the Epic Games API if no catalog match is found.
+                 * @param {string} game - The name of the game to search for
+                 * @returns {Promise<Object>} The game details object
+                 */
                 async function fetchEpicGame(game) {
                     return fetchURL.fromDisk(`https://raw.githubusercontent.com/Ephellon/game-store-catalog/main/epic/${ (game[0].toLowerCase().replace(/[^a-z]/, '_')) }.json`, { hoursUntilEntryExpires: 168 })
                         .then(r => r.json())
@@ -1676,14 +1717,24 @@ plugin({
         }
     },
 
+    /**
+     * Undoes the store integration by removing the game overview card from the DOM.
+     */
     unhandler: () => {
         $('#game-overview-card')?.remove();
     },
 
+    /**
+     * Determines if the game overview card feature is enabled in the settings.
+     * @returns {boolean} Whether the feature should be active
+     */
     enabled() {
         return nullish(Settings.game_overview_card) || parseBool(Settings.game_overview_card);
     },
 
+    /**
+     * Initializes the game overview card feature and logs a status message.
+     */
     setup() {
         $remark("Adding game overview card...");
     },

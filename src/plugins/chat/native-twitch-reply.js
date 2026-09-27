@@ -13,10 +13,17 @@ plugin({
     job: 'native_twitch_reply',
     timer: 1000,
 
+    /**
+     * Initializes the native reply polyfill state.
+     */
     init() {
         NATIVE_REPLY_POLYFILL = void null;
     },
 
+    /**
+     * Implements a polyfill to add native-style reply buttons and input behavior to the chat.
+     * @param {Object} context - The plugin context
+     */
     handler: (context) => {
         new context.StopWatch('native_twitch_reply');
 
@@ -168,6 +175,9 @@ plugin({
         context.StopWatch.stop('native_twitch_reply');
     },
 
+    /**
+     * Initializes the native reply button feature.
+     */
     setup() {
         $remark("Adding native reply buttons...");
     },

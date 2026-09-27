@@ -9,6 +9,9 @@ plugin({
     id: 'claim_prime',
     timer: -5000,
 
+    /**
+     * Automatically renews the Prime subscription for the current streamer based on cached settings and claim limits.
+     */
     handler: () => {
         Cache.load(['PrimeSubscription', 'PrimeSubscriptionReclaims'], ({ PrimeSubscription, PrimeSubscriptionReclaims }) => {
             PrimeSubscription ??= '';
@@ -57,10 +60,17 @@ plugin({
         });
     },
 
+    /**
+     * Checks if the Prime subscription claiming feature is enabled in settings and allowed for the current tab.
+     * @returns {boolean} Whether the feature is enabled
+     */
     enabled() {
         return UP_NEXT_ALLOW_THIS_TAB && parseBool(Settings.claim_prime);
     },
 
+    /**
+     * Initializes the Prime subscription claiming feature and logs a status remark.
+     */
     setup() {
         $remark("Claiming Prime Subscription...");
     },

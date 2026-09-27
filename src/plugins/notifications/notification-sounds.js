@@ -8,6 +8,9 @@ import { plugin } from '../../lib/plugins.js';
 plugin({
     id: 'notification_sounds',
 
+    /**
+     * Sets up the global notification state and creates the audio element for notification sounds.
+     */
     async install() {
         NOTIFIED = { mention: 0, phrase: 0, whisper: 0 };
         NOTIFICATION_EVENTS = {};

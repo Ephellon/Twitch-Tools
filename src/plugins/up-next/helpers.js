@@ -8,6 +8,12 @@ import { plugin } from '../../lib/plugins.js';
 plugin({
     id: 'up_next_helpers',
 
+    /**
+     * Installs the "First in Line" helper: configures wait times based on user settings and defines the `REDO_FIRST_IN_LINE_QUEUE` utility function.
+     * @param {Object} options - Installation options
+     * @param {StopWatch} options.StopWatch - StopWatch utility
+     * @returns {Promise<void>}
+     */
     async install({ StopWatch }) {
         // First in Line wait time
         FIRST_IN_LINE_WAIT_TIME = parseInt(

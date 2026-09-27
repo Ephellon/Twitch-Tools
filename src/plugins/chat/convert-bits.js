@@ -10,6 +10,10 @@ plugin({
     job: 'convert_bits',
     timer: 1000,
 
+    /**
+     * Runs every tick: Converts bit amounts to USD values in the UI for buy menus, counters, cheers, and hype trains.
+     * @param {Object} context - The plugin context
+     */
     handler: (context) => {
         new context.StopWatch('convert_bits');
 
@@ -86,6 +90,9 @@ plugin({
         context.StopWatch.stop('convert_bits');
     },
 
+    /**
+     * Sets up the bit converter feature.
+     */
     setup() {
         $remark("Adding Bit converter...");
     },

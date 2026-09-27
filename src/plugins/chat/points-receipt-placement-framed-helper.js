@@ -10,6 +10,9 @@ plugin({
     job: 'points_receipt_placement_framed_helper',
     timer: 1000,
 
+    /**
+     * Extracts channel point balance and prediction data to send to the parent window.
+     */
     handler: () => {
         let placement;
 
@@ -25,6 +28,10 @@ plugin({
         top.postMessage({ action: 'jump', points_receipt_placement: { balance, coin_face: coin?.src, coin_name: coin?.alt, exact_debt, exact_change } }, location.origin);
     },
 
+    /**
+     * Checks if the points receipt placement feature is enabled.
+     * @returns {boolean} Whether the feature is enabled
+     */
     enabled() {
         return parseBool(Settings.points_receipt_placement);
     },

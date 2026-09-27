@@ -10,6 +10,10 @@ plugin({
     job: 'highlight_mentions',
     timer: -500,
 
+    /**
+     * Highlights chat messages that mention the current user or specific group keywords.
+     * @param {Object} context - Plugin context
+     */
     handler: (context) => {
         Chat.get().map(Chat.onmessage = async line => {
             const usernames = [context.USERNAME];

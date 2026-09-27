@@ -14,12 +14,19 @@ plugin({
     timer: 15_000,
     register: false,          // setup() starts the job itself, when it should
 
+    /**
+     * Initializes channel point tracking variables to their default states.
+     */
     init() {
         pointWatcherCounter = 0;
         hasPointsEnabled = false;
         ALL_CHANNEL_POINT_REWARDS = void null;
     },
 
+    /**
+     * Scrapes channel point balance and reward data from the page and updates the cached streamer point information.
+     * @param {*} context - The plugin context object
+     */
     handler: async(context) => {
         if(top.__readyState__ == 'unloading')
             return;
@@ -62,15 +69,26 @@ plugin({
         });
     },
 
+    /**
+     * Undoes changes by removing all point amount display elements from the DOM.
+     */
     unhandler: () => {
         $.all('.tt-point-amount')
             .forEach(span => span?.remove());
     },
 
+    /**
+     * Checks if the point watcher placement feature is enabled.
+     * @returns {boolean} Whether the feature is enabled
+     */
     enabled() {
         return parseBool(Settings.point_watcher_placement);
     },
 
+    /**
+     * Initializes the point watcher helper by detecting the balance button and fetching available channel point rewards.
+     * @param {Object} context - The plugin context
+     */
     setup(context) {
         when.defined(() => $.last('[data-test-selector*="balance-string"i]')?.closest('button')).then(async balanceButton => {
             RegisterJob('point_watcher_helper');

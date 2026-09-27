@@ -13,6 +13,10 @@ plugin({
     job: 'bttv_emotes',
     timer: 5_000,
 
+    /**
+     * Initializes BetterTTV emote data, loads cached emotes and owners, and sets up a periodic synchronization loop to save emote data.
+     * @param {*} context - The plugin context object
+     */
     init(context) {
         context.BTTV_EMOTES = (top.BTTV_EMOTES ??= new Map);
         BTTV_OWNERS = top.BTTV_OWNERS ??= new Map;
@@ -290,6 +294,10 @@ plugin({
         };
     },
 
+    /**
+     * Adds a BetterTTV emotes section to the Twitch emote picker.
+     * @param {*} context - The plugin context object
+     */
     handler: (context) => {
         new context.StopWatch('bttv_emotes');
 
@@ -348,6 +356,10 @@ plugin({
         context.StopWatch.stop('bttv_emotes');
     },
 
+    /**
+     * Configures BTTV emote loading limits, fetches emotes for the current streamer and custom keywords, and initializes the chat message replacement listener.
+     * @param {*} context - The plugin context object
+     */
     setup(context) {
         $remark("Loading BTTV emotes...");
 

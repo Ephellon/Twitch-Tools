@@ -5,7 +5,17 @@
 
 // Convert an SI number into a number
     // parseCoin(amount:string) → number
+/**
+ * Parses a currency string with shorthand units into a numeric integer.
+ * @param {string} [amount=''] - The currency string to parse
+ * @returns {number} The parsed integer value
+ */
 function parseCoin(amount = '') {
+    /**
+     * Returns a mapping of currency unit symbols to their power-of-1000 index for a given language.
+     * @param {string} lang - The language code
+     * @returns {Object<string, number>} A map of symbols to indices
+     */
     function getUnits(lang) {
         let booklet;
 

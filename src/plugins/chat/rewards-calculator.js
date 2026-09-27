@@ -13,11 +13,19 @@ plugin({
     job: 'rewards_calculator',
     timer: 250,
 
+    /**
+     * Initializes reward calculation variables in the context.
+     * @param {Object} context - The plugin context
+     */
     init(context) {
         context.CHANNEL_POINTS_MULTIPLIER = void null;
         REWARDS_CALCULATOR_TEXT = void null;
     },
 
+    /**
+     * Runs every tick: Calculates and displays the estimated time and streams needed to afford a channel reward.
+     * @param {Object} context - The plugin context
+     */
     handler: (context) => {
         new context.StopWatch('rewards_calculator');
 
@@ -121,12 +129,23 @@ plugin({
 
         timeEstimated = ceil(timeEstimated);
 
+        /**
+         * Fetches localized time estimate strings from a JSON configuration.
+         * @param {string} language - The language code
+         * @returns {Promise<Object>} The translation object for the specified language
+         */
         function estimates(language) {
             return fetchURL(`get:ext/times.json`)
                 .then(response => response.json())
                 .then(json => json[language]);
         }
 
+        /**
+         * Formats a translation string by inserting a number and handling basic pluralization.
+         * @param {string} string - The template string
+         * @param {number} [number] - The value to insert into the template
+         * @returns {string} The formatted string
+         */
         function correct(string, number) {
             number ??= parseInt(string.replace(/[^]*?(\d+)[^]*/, '$1'));
 
@@ -497,6 +516,9 @@ plugin({
         context.StopWatch.stop('rewards_calculator');
     },
 
+    /**
+     * Sets up the rewards calculator feature.
+     */
     setup() {
         $remark("Adding Rewards Calculator...");
     },

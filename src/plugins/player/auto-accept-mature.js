@@ -10,6 +10,9 @@ plugin({
     job: 'auto_accept_mature',
     timer: -1_000,
 
+    /**
+     * Runs every tick: Automatically clicks confirmation buttons for mature content overlays or similar dismissible notices.
+     */
     handler: () => {
         $.all(':is([data-a-target*="overlay"i], [data-a-target*="watchparty"i]) button, .home [data-a-target^="home"i], [data-test-selector*="mute"i][data-test-selector*="dismiss"i]')
             .map(button => button.click());

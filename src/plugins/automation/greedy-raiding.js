@@ -12,10 +12,16 @@ plugin({
     id: 'greedy_raiding',
     timer: 5000,
 
+    /**
+     * Init: Initializes the map used to track greedy raiding frames.
+     */
     init() {
         GREEDY_RAIDING_FRAMES = new Map;
     },
 
+    /**
+     * Creates hidden iframes for all currently live followed channels to maintain connections.
+     */
     handler: () => {
         const online = [STREAMER, ...STREAMERS].filter(isLive).filter(({ name }) => name.unlike(STREAMER.name))
             , container = (null
@@ -57,11 +63,18 @@ plugin({
             $.body.append(container);
     },
 
+    /**
+     * Undoes greedy-raiding: Removes all created raiding iframes.
+     */
     unhandler: () => {
         for(const [name, frame] of GREEDY_RAIDING_FRAMES)
             frame?.remove();
     },
 
+    /**
+     * Checks if greedy raiding is enabled in settings and allowed in the current tab.
+     * @returns {boolean} Whether the feature should be active
+     */
     enabled() {
         return UP_NEXT_ALLOW_THIS_TAB && parseBool(Settings.greedy_raiding);
     },

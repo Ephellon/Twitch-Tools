@@ -12,10 +12,18 @@ plugin({
     id: 'recover_stream',
     timer: 2_500,
 
+    /**
+     * Initializes the stream recovery state by resetting the video player timeout.
+     */
     init() {
         VIDEO_PLAYER_TIMEOUT = -1;
     },
 
+    /**
+     * Runs every tick: Attempts to programmatically resume video playback if the stream is paused unexpectedly.
+     * @param {Object} context - Contains the StopWatch utility
+     * @param {HTMLVideoElement} [video=$('video')] - The video element to recover
+     */
     handler: ({ StopWatch }, video = $('video')) => {
         new StopWatch('recover_stream');
 
@@ -83,6 +91,9 @@ plugin({
         StopWatch.stop('recover_stream');
     },
 
+    /**
+     * Sets up a listener to trigger the stream recovery handler whenever the video is paused.
+     */
     setup() {
         __RecoverStream__: {
             const video = $('video');

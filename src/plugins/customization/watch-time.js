@@ -12,6 +12,9 @@ plugin({
     id: 'watch_time_placement',
     timer: -1000,
 
+    /**
+     * Initializes and resets the watch time tracking state.
+     */
     init() {
         WATCH_TIME_INTERVAL = void null;
         WATCH_TIME_TOOLTIP = void null;
@@ -24,6 +27,9 @@ plugin({
         ALL_WATCHTIME_VALUES = {};
     },
 
+    /**
+     * Runs every tick: Manages the placement and display of the stream watch-time indicator and tracks current viewing progress.
+     */
     handler: async() => {
         let placement;
 
@@ -33,6 +39,11 @@ plugin({
         let parent, container
             , extra = () => {};
 
+        /**
+         * Converts an element's class list into a CSS class selector string.
+         * @param {HTMLElement} element - The element to extract classes from
+         * @returns {string} A string of concatenated class selectors
+         */
         const classes = element => [...element.classList].map(label => '.' + label).join('');
 
         const live_time = $('.live-time');
@@ -52,6 +63,11 @@ plugin({
                 container = live_time.closest(`*:not(${ classes(live_time) })`);
                 parent = container.closest(`*:not(${ classes(container) })`);
 
+                /**
+                 * Configures additional visual styles and animations for the live time indicator, including a progress tooltip.
+                 * @param {Object} params - Configuration parameters
+                 * @param {HTMLElement} params.live_time - The live time element to modify
+                 */
                 extra = ({ live_time }) => {
                     live_time.modStyle('color:var(--color-text-live)');
 
@@ -150,6 +166,10 @@ plugin({
             Cache.save({ Watching });
         });
 
+        /**
+         * Fetches the top 100 streams for the current game and displays the streamer's rank or viewer change in a tooltip.
+         * @param {function} [callback=$ => $] - Function to call after the process completes.
+         */
         function getTop100(callback = $ => $) {
             const { filename } = parseURL(STREAMER.game.href);
 
@@ -230,6 +250,9 @@ plugin({
         GET_TOP_100_INTERVAL = setInterval(() => {
             THIS_POLL = STREAMER.poll;
 
+            /**
+             * Updates the previous viewer count with the current viewer count.
+             */
             const updt = () => THAT_POLL = THIS_POLL;
             const DIFF = Math.abs(THIS_POLL - THAT_POLL) / THAT_POLL;
 
@@ -254,6 +277,9 @@ plugin({
         }, 5_000);
     },
 
+    /**
+     * Undoes watch-time feature changes by clearing intervals, removing UI elements, and cleaning up tooltips.
+     */
     unhandler: () => {
         clearInterval(WATCH_TIME_INTERVAL);
 

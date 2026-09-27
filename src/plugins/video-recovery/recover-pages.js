@@ -12,12 +12,19 @@ plugin({
     id: 'recover_pages',
     timer: 5000,
 
+    /**
+     * Initializes the page recovery state and lag tracking variables.
+     */
     init() {
         RECOVER_PAGE_FROM_LAG = void null;
         RECOVER_PAGE_FROM_LAG__EXACT = void null;
         RECOVER_PAGE_FROM_LAG__WARNINGS = 0;
     },
 
+    /**
+     * Runs every tick: Detects page-level errors and attempts to recover by reloading the page or navigating to the next available streamer.
+     * @param {Object} context - Contains the StopWatch utility
+     */
     handler: async({ StopWatch }) => {
         new StopWatch('recover_pages');
 
@@ -39,10 +46,16 @@ plugin({
         StopWatch.stop('recover_pages');
     },
 
+    /**
+     * Undoes the page recovery setup by clearing the lag-monitoring interval.
+     */
     unhandler: () => {
         clearInterval(RECOVER_PAGE_FROM_LAG);
     },
 
+    /**
+     * Initializes a timer to monitor page timing drift and reloads the page if excessive lag is detected.
+     */
     setup() {
         RECOVER_PAGE_FROM_LAG__EXACT = +(new Date);
 

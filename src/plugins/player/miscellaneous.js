@@ -8,6 +8,9 @@ import { plugin } from '../../lib/plugins.js';
 plugin({
     id: 'player.miscellaneous',
 
+    /**
+     * Sets up miscellaneous player enhancements, including automatic unmuting for embeds and adding navigation links for private viewing.
+     */
     async install() {
         Miscellaneous: {
             __UnmuteEmbed__: {
@@ -23,6 +26,10 @@ plugin({
                 // applies `muted=true` (#49); keep the video muted until the viewer uses the player themselves
                 if(muted) {
                     let viewerTouched = false;
+                    /**
+                     * Forces the video to remain muted until the user manually interacts with the page.
+                     * @param {HTMLVideoElement} video - The video element to silence
+                     */
                     const silence = video => {
                         video.muted = true;
                         video.addEventListener('volumechange', () => viewerTouched || (video.muted = true));

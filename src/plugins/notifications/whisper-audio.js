@@ -9,6 +9,10 @@ plugin({
     id: 'whisper_audio',
     timer: 1000,
 
+    /**
+     * Plays a notification sound for new whispers or changes in the unread whisper count.
+     * @param {Object} context - The plugin context
+     */
     handler: ({ StopWatch }) => {
         new StopWatch('whisper_audio');
 
@@ -35,10 +39,17 @@ plugin({
         StopWatch.stop('whisper_audio');
     },
 
+    /**
+     * Undoes whisper audio by pausing the notification sound.
+     */
     unhandler: () => {
         NOTIFICATION_SOUND?.pause();
     },
 
+    /**
+     * Checks if whisper audio notifications are enabled and permitted in the current tab.
+     * @returns {boolean} Whether the feature is enabled
+     */
     enabled() {
         return UP_NEXT_ALLOW_THIS_TAB && parseBool(Settings.whisper_audio);
     },

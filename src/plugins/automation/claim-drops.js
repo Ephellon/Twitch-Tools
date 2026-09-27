@@ -12,6 +12,9 @@ plugin({
     id: 'claim_drops',
     timer: -5_000,
 
+    /**
+     * Initializes state for the drops claimer, resetting frames and trackers.
+     */
     init() {
         TTV_DROPS_FRAME = void null;
         TTV_DROPS_CHECKER = void null;
@@ -19,6 +22,9 @@ plugin({
         TTV_DROPS_CLAIMED = new Set;
     },
 
+    /**
+     * Sets up the drops claiming process by creating a hidden inventory iframe and scheduling periodic checks to claim available drops.
+     */
     handler: () => {
         TTV_DROPS_FRAME = furnish('iframe#tt-drops-claimer[src="/drops/inventory"]', { style: 'display:none!important' });
 
@@ -60,15 +66,25 @@ plugin({
         }, parseInt(Settings.claim_drops__interval ?? 10) * 60_000);
     },
 
+    /**
+     * Undoes the drops claimer setup by removing the inventory iframe and clearing the refresh interval.
+     */
     unhandler: () => {
         TTV_DROPS_FRAME?.remove();
         clearInterval(TTV_DROPS_REFRESHER);
     },
 
+    /**
+     * Checks if the drops claimer is enabled in settings and permitted for the current tab.
+     * @returns {boolean} True if the feature should be active
+     */
     enabled() {
         return UP_NEXT_ALLOW_THIS_TAB && parseBool(Settings.claim_drops);
     },
 
+    /**
+     * Logs a message indicating the Drop claimer is being created.
+     */
     setup() {
         $remark("Creating Drop claimer...");
     },

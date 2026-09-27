@@ -12,10 +12,18 @@ plugin({
     id: 'stream_preview',
     timer: 500,
 
+    /**
+     * Resets the stream preview state.
+     */
     init() {
         STREAM_PREVIEW = void null;
     },
 
+    /**
+     * Runs every tick: Creates and positions a stream preview player when hovering over a channel or guest tooltip.
+     * @param {Object} params - The handler parameters
+     * @param {Object} params.StopWatch - Utility for measuring execution time
+     */
     handler: async({ StopWatch }) => {
         new StopWatch('stream_preview');
 
@@ -129,6 +137,11 @@ plugin({
                             if(nullish(InitialVolume))
                                 InitialVolume = GetVolume();
 
+                            /**
+                             * Checks if the given element has an active audio track.
+                             * @param {HTMLElement} element - The element to check for audio
+                             * @returns {boolean} True if audio is present
+                             */
                             const hasAudio = element =>
                                 parseBool(null
                                     ?? element?.webkitAudioDecodedByteCount
@@ -148,10 +161,16 @@ plugin({
         StopWatch.stop('stream_preview');
     },
 
+    /**
+     * Undoes the stream preview by removing the preview element from the DOM.
+     */
     unhandler: () => {
         STREAM_PREVIEW = { element: STREAM_PREVIEW?.element?.remove() };
     },
 
+    /**
+     * Initializes stream previews, sets up location change cleanup, and adds keyboard navigation for the preview player.
+     */
     setup() {
         $remark("Adding Stream previews...");
 

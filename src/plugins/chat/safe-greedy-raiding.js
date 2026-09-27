@@ -13,10 +13,16 @@ plugin({
     job: 'greedy_raiding',
     timer: 5000,
 
+    /**
+     * Initializes the raid logging state.
+     */
     init() {
         RAID_LOGGED = false;
     },
 
+    /**
+     * Runs every tick: Detects raid banners and notifies the user if a raid is occurring on another channel.
+     */
     handler: () => {
         const raiding = $.defined('[data-test-selector="raid-banner"i]')
             , atTop = (top == window);
@@ -45,5 +51,8 @@ plugin({
         });
     },
 
+    /**
+     * Undoes the raid detection logic.
+     */
     unhandler: () => {},
 });

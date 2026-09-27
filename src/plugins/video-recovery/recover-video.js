@@ -12,10 +12,17 @@ plugin({
     id: 'recover_video',
     timer: 10_000,
 
+    /**
+     * Initializes the video recovery state.
+     */
     init() {
         RECOVERING_VIDEO = false;
     },
 
+    /**
+     * Runs every tick: Detects video player errors and attempts recovery by navigating to another streamer or clicking the recovery button.
+     * @param {Object} context - Contains the StopWatch utility
+     */
     handler: async({ StopWatch }) => {
         new StopWatch('recover_video');
 

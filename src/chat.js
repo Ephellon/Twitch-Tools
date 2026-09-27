@@ -21,6 +21,11 @@ window.IS_A_FRAMED_CONTAINER = (top != window);
 
 top.Queue ??= { balloons: [], bullets: [], bttv_emotes: [], emotes: [], messages: [], message_popups: [], popups: [] };
 
+/**
+ * Initializes the chat feature, setting up shared data, streamer context, and Twitch badges.
+ * @param {boolean} [START_OVER=false] - Whether to restart the initialization process
+ * @returns {Promise<void>}
+ */
 let Chat__Initialize = async(START_OVER = false) => {
     // Shared between this initializer's features and their plugins (src/plugins/)
     let CHANNEL_POINTS_MULTIPLIER, EmoteSearch, EmoteDragCommand, BTTV_EMOTES, REFURBISH_BTTV_EMOTE_TOOLTIPS, UPDATE_RULES;
@@ -182,6 +187,13 @@ let Chat__Initialize = async(START_OVER = false) => {
 };
 // End of Chat__Initialize
 
+/**
+ * Initializes a restricted set of chat plugins for safe mode operation.
+ * @param {Object} options - Initialization options
+ * @param {boolean} [options.banned=false] - Whether the user is banned
+ * @param {boolean} [options.hidden=false] - Whether the chat is hidden
+ * @returns {Promise<void>}
+ */
 let Chat__Initialize_Safe_Mode = async({ banned = false, hidden = false }) => {
     const here = parseURL(window.location.href);
     const fsData = Object.assign(await Runtime.sendMessage({ action: 'FETCH_SHARED_DATA' }), top);
@@ -936,6 +948,10 @@ Chat__PAGE_CHECKER = setInterval(Chat__WAIT_FOR_PAGE = async() => {
 
         // Handle pinned messages...
         Pinned: {
+            /**
+             * Processes a pinned message, extracts its metadata, and notifies registered event listeners.
+             * @param {Element} header - The pinned message header element
+             */
             const PinnedMessageHandler = header => {
                 const toggle = $('button', header.closest('[class*="pinned"i][class*="chat"i][class*="area"i]'))
                     , collapsed = defined(toggle?.closest('[class*="highlight"i][class*="collapsed"i]'));

@@ -8,6 +8,11 @@ import { plugin } from '../../lib/plugins.js';
 plugin({
     id: 'points_receipt_placement',
 
+    /**
+     * Initializes the points receipt feature, sets up periodic updates for available points, and attempts to determine the channel points multiplier.
+     * @param {Object} context - The plugin context containing `StopWatch`
+     * @returns {Promise<void>}
+     */
     async install({ StopWatch }) {
         let RECEIPT_TOOLTIP;
         let COUNTING_POINTS;
@@ -23,6 +28,10 @@ plugin({
         const TALLY = new Map;
         let CHANNEL_POINTS_MULTIPLIER;
 
+        /**
+         * Calculates and updates the visual display of the points receipt and its associated tooltip.
+         * @returns {void}
+         */
         function UpdateReceiptDisplay() {
             let receipt = EXACT_POINTS_EARNED - (EXACT_POINTS_SPENT + EXACT_POINTS_DEBTED)
                 , glyph = Glyphs.modify('channelpoints', { height: '20px', width: '20px', style: 'vertical-align:bottom' })
@@ -106,6 +115,11 @@ plugin({
                         return StopWatch.stop('points_receipt_placement__ranking');
 
                     // Field tests show that generally (for established streams): ≤1% of followers are actively watching at any given time during a stream
+                    /**
+                     * Raises a number to the ninth power.
+                     * @param {number} n - The number to scale
+                     * @returns {number} The result of n raised to the power of 9
+                     */
                     const scale = n => n ** 9;
                     let { cult, poll, rank } = STREAMER
                         , place = (100 * scale(rank / cult)).clamp(1, 100) | 0
@@ -162,6 +176,11 @@ plugin({
                 if(nullish(live_time))
                     return RestartJob('points_receipt_placement', 'missing:live_time');
 
+                /**
+                 * Converts an element's class list into a joined CSS selector string.
+                 * @param {Element} element - The DOM element to extract classes from
+                 * @returns {string} A string of CSS class selectors
+                 */
                 const classes = element => [...element.classList].map(label => '.' + label).join('');
 
                 const container = live_time.closest(`*:not(${ classes(live_time) })`)
@@ -284,6 +303,11 @@ plugin({
             };
 
             AddRedemptionListener: {
+                /**
+                 * Attaches event listeners to track when channel points are spent on rewards or polls.
+                 * @param {number} [address=15] - Bitmask determining which listeners to add
+                 * @returns {void}
+                 */
                 function addListener(address = 0b1111) {
                     // Points spent on unlocked rewards
                     if(address & 1) {
@@ -339,7 +363,7 @@ plugin({
                 }
 
                 addListener();
-            }
+            } // :__PointsReceiptPlacement__ | :AddRedemptionListener
         } // :__PointsReceiptPlacement__
     },
 });

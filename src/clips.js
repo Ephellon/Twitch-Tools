@@ -34,6 +34,11 @@ let {
     GLOBAL_EVENT_LISTENERS,
 } = window;
 
+/**
+ * Initializes the clips feature and loads related plugins.
+ * @param {boolean} [START_OVER=false] - Whether to restart the initialization process
+ * @returns {Promise<void>}
+ */
 let Clips__Initialize = async(START_OVER = false) => {
     // Time how long jobs take to complete properly
     class StopWatch {
@@ -78,6 +83,11 @@ let Clips__Initialize = async(START_OVER = false) => {
 };
 // End of Clips__Initialize
 
+/**
+ * Initializes the clips feature in safe mode.
+ * @param {boolean} [START_OVER=false] - Whether to restart the initialization process
+ * @returns {Promise<void>}
+ */
 let Clips__Initialize_Safe_Mode = async(START_OVER = false) => {
     const PLUGIN_CONTEXT = {};
 

@@ -8,6 +8,11 @@ import { plugin } from '../../lib/plugins.js';
 plugin({
     id: 'auto_follow',
 
+    /**
+     * Installs the auto-follow feature, initializing watch-time tracking and registering jobs to follow streamers during raids or after a set duration.
+     * @param {Object} options - Plugin options
+     * @param {Object} options.StopWatch - Stopwatch utility for performance tracking
+     */
     async install({ StopWatch }) {
         STARTED_WATCHING = (+new Date);
         CURRENT_WATCHTIME_NAME = `WatchTimes/${ STREAMER.name.toLowerCase() }`;

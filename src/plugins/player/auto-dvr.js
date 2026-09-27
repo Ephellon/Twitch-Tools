@@ -10,6 +10,9 @@ plugin({
     job: 'auto_dvr',
     timer: 500,
 
+    /**
+     * Runs every tick: Automatically records a live stream if requested via URL and downloads the recording once the stream ends.
+     */
     handler: () => {
         const { action = '', channel, autosave, controls, filetype, quality, slug, volume } = parseURL(window.location).searchParameters;
 
@@ -49,6 +52,10 @@ plugin({
             });
     },
 
+    /**
+     * Determines if the auto-DVR feature should be enabled based on settings.
+     * @returns {boolean} Whether the feature is enabled
+     */
     enabled() {
         return true || parseBool(Settings?.auto_dvr);
     },

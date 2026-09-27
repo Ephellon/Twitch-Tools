@@ -8,6 +8,9 @@ import { plugin } from '../../lib/plugins.js';
 plugin({
     id: 'extra_keyboard_shortcuts',
 
+    /**
+     * Install: Sets up developer shortcuts for taking stream screenshots and recording clips.
+     */
     async install() {
         Handlers.extra_keyboard_shortcuts = () => {
             /* Add the shortcuts */

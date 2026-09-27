@@ -12,6 +12,9 @@ plugin({
     id: 'auto_focus',
     timer: -1000,
 
+    /**
+     * Initializes state variables for the auto-focus monitoring system.
+     */
     init() {
         CAPTURE_HISTORY = [];
         CAPTURE_INTERVAL = void null;
@@ -20,6 +23,9 @@ plugin({
         POSITIVE_TREND = void null;
     },
 
+    /**
+     * Runs the auto-focus monitoring loop, capturing and comparing video frames to detect movement and optionally displaying analysis statistics on the UI.
+     */
     handler: () => {
         let detectionThreshold = (parseInt(Settings.auto_focus_detection_threshold) || STREAMER.mark).clamp(5, 75)
             , pollInterval = parseInt(Settings.auto_focus_poll_interval)
@@ -197,6 +203,9 @@ plugin({
         }, POLL_INTERVAL);
     },
 
+    /**
+     * Undoes auto-focus monitoring by clearing the capture interval and removing associated statistics and difference elements from the UI.
+     */
     unhandler: () => {
         if(RestartJob.__reason__.noneOf('default', 'modify', 'reinit'))
             $.all('#tt-auto-focus-differences, #tt-auto-focus-stats')
@@ -205,6 +214,9 @@ plugin({
         clearInterval(CAPTURE_INTERVAL);
     },
 
+    /**
+     * Sets up the auto-focus feature and logs a notification that the stream is being monitored.
+     */
     setup() {
         $warn("[Auto-Focus] is monitoring the stream...");
     },

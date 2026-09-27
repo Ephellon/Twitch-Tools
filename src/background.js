@@ -113,8 +113,25 @@
 
 ;
 
+/**
+ * Queries the DOM for elements matching a selector.
+ * @param {string} selector - The CSS selector to search for
+ * @param {boolean} [multiple=false] - Whether to return all matches as an array or just the first match
+ * @param {Document|Element} [container=document] - The element to search within
+ * @returns {Element|Element[]} The matching element or an array of matching elements
+ */
 const $ = (selector, multiple = false, container = document) => multiple ? [...container.querySelectorAll(selector)] : container.querySelector(selector);
+/**
+ * Checks if a value is null or undefined.
+ * @param {*} value - The value to check
+ * @returns {boolean} True if the value is nullish
+ */
 const nullish = value => (value === void null || value === null);
+/**
+ * Checks if a value is not null or undefined.
+ * @param {*} value - The value to check
+ * @returns {boolean} True if the value is defined
+ */
 const defined = value => !nullish(value);
 
 /** @protected
@@ -447,6 +464,10 @@ Runtime.onInstalled.addListener(({ reason, previousVersion, id }) => {
 const OfflineTabs = new Set();
 
 // https://developer.mozilla.org/en-US/docs/Web/API/Compute_Pressure_API
+/**
+ * Monitors system pressure records and reloads or manages Twitch tabs to reduce resource usage.
+ * @param {Array|null} records - System pressure state records
+ */
 function TabWatcher(records) {
     if(records?.length > 0)
         try {
@@ -543,6 +564,10 @@ Runtime.onMessage.addListener((request, sender, respond) => {
     let reloadAll = false
         , returningData;
 
+    /**
+     * Reloads open Twitch-related tabs.
+     * @param {boolean} [all=false] - Whether to reload all matching tabs
+     */
     function reloadTabs(all = false) {
         if(!all)
             return;
@@ -584,7 +609,18 @@ Runtime.onMessage.addListener((request, sender, respond) => {
                     console.warn(`Claiming Up Next...`, tabs);
 
                     try {
+                        /**
+                         * Extracts the primary identifier from a URL's pathname.
+                         * @param {string} url - The URL to parse
+                         * @returns {string} The first segment of the pathname in lowercase
+                         */
                         const getName = url => new URL(url).pathname.slice(1).split('/').shift().toLowerCase().trim();
+                        /**
+                         * Checks if a URL's hostname contains any of the specified domain strings.
+                         * @param {string} url - The URL to check
+                         * @param {...string} doms - The domain strings to look for
+                         * @returns {boolean} True if any specified domain is found in the host
+                         */
                         const hostHas = (url, ...doms) => {
                             for(const dom of doms)
                                 if(~new URL(url).host.indexOf(dom))
@@ -907,6 +943,10 @@ const MEMORY_TIERS = {
     HIGH:   0.8 * 1024 ** 3,  //  2GB   / 800MB
 };
 
+/**
+ * Audits RAM usage of Twitch tabs and triggers notifications or respawns based on configured memory tiers.
+ * @returns {Promise<void>}
+ */
 async function auditMemory() {
     const tabs = await Container.tabs.query({ url: '*://*.twitch.tv/*', discarded: false });
     const memoryAudit = [];

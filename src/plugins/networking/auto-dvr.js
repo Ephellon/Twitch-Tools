@@ -8,6 +8,12 @@ import { plugin } from '../../lib/plugins.js';
 plugin({
     id: 'video_clips__dvr',
 
+    /**
+     * Installs the Auto-DVR feature, adding recording controls to the channel about section.
+     * @param {Object} context - The plugin context
+     * @param {StopWatch} context.StopWatch - The StopWatch class for timing operations
+     * @returns {Promise<void>}
+     */
     async install({ StopWatch }) {
         let AUTO_DVR__CHECKING;
         let AUTO_DVR__CHECKING_INTERVAL;
@@ -63,6 +69,11 @@ plugin({
                                     DVRChannels ??= {};
                                 }
 
+                                /**
+                                 * Converts a string to its possessive form.
+                                 * @param {string} string - The string to modify
+                                 * @returns {string} The possessive version of the string
+                                 */
                                 let s = string => string.replace(/$/, "'").replace(/(?<!s)'$/, "'s")
                                     , DVR_ID = STREAMER.name.toLowerCase()
                                     , enabled = !parseBool(DVRChannels[DVR_ID]?.length)
@@ -250,6 +261,11 @@ plugin({
         if(parseBool(Settings?.video_clips__dvr)) {
             $remark("Adding DVR functionality...");
 
+            /**
+             * Manages the DVR recording during ad breaks by capturing ad chunks and merging them into the main recording.
+             * @param {Element} adCountdown - The ad countdown element
+             * @returns {void|Promise<void>}
+             */
             function HandleAd(adCountdown) {
                 const [main, mini] = $.all('video');
 

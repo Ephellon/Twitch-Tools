@@ -10,11 +10,19 @@ plugin({
     job: 'emote_searching',
     timer: 250,
 
+    /**
+     * Initializes the emote search and drag command state.
+     * @param {Object} context - The plugin context
+     */
     init(context) {
         context.EmoteSearch = {};
         context.EmoteDragCommand = void null;
     },
 
+    /**
+     * Monitors the emote picker search input and triggers registered query callbacks.
+     * @param {Object} context - The plugin context
+     */
     handler: (context) => {
         context.EmoteSearch.input = $('.emote-picker [type="search"i]');
 
@@ -49,10 +57,18 @@ plugin({
                         });
     },
 
+    /**
+     * Checks if emote conversion or BTTV emote settings are enabled.
+     * @returns {boolean} Whether the feature is enabled
+     */
     enabled() {
         return [Settings.convert_emotes, Settings.bttv_emotes].map(parseBool).contains(true);
     },
 
+    /**
+     * Configures the emote search functionality, including result appending and text distance calculations.
+     * @param {Object} context - The plugin context
+     */
     setup(context) {
         Object.defineProperties(context.EmoteSearch, {
             onquery: {

@@ -140,9 +140,20 @@ let { Glyphs } = top;
 
 // Returns ordinal numbers
     // nth(n:number, s:string?) → string
+/**
+ * Converts a number into a localized ordinal string.
+ * @param {*} n - The number to convert
+ * @param {string} [s=''] - Optional suffix or position type
+ * @returns {string} The localized ordinal representation
+ */
 let nth = (n, s = '') => {
     n += '';
 
+    /**
+     * Provides a localized string suffix for ordinal positions based on the current language.
+     * @param {string} [s=''] - The position type (e.g., 'ordinal-position')
+     * @returns {string} The localized suffix string
+     */
     const c = (s = '') => {
         switch(s.trim()) {
             case 'ordinal-position': {
@@ -312,11 +323,23 @@ let nth = (n, s = '') => {
 
 // Returns a unique list of channels (used with `Array..filter`)
     // uniqueChannels(channel:object<Channel>, index:number, channels:array) → boolean
+/**
+ * Determines if a channel is the first occurrence of its name within a list of channels.
+ * @param {Object} channel - The channel being checked
+ * @param {number} index - The current index in the array
+ * @param {Array} channels - The list of channels to filter against
+ * @returns {boolean} True if the channel is unique at this index
+ */
 let uniqueChannels = (channel, index, channels) =>
     channels.filter(channel => defined(channel?.name)).findIndex(ch => ch.name === channel?.name) == index;
 
 // Returns whether or not a channel is live (used with `Array..filter`)
     // isLive(channel:object<Channel>) → boolean
+/**
+ * Checks if a channel is currently live.
+ * @param {Object} channel - The channel object to check
+ * @returns {boolean} True if the channel is live
+ */
 let isLive = channel => parseBool(channel?.live);
 
 /*** Setup (pre-init) #MARK:globals #MARK:variables
@@ -428,6 +451,9 @@ try {
                         })
                     ));
 
+                /**
+                 * Recursively ensures that the picture-in-picture player remains expanded as long as the exit button is present.
+                 */
                 function keepOpen() {
                     when.defined(() => $('.picture-by-picture-player[class*="collapsed"i]'))
                         .then(player => {
@@ -1185,6 +1211,10 @@ try {
         $warn(error);
 }
 
+/**
+ * Updates the current page pathname and refreshes the lists of searchable and visible channels.
+ * @returns {Promise<void>}
+ */
 async function update() {
     // The location
     window.PATHNAME = PATHNAME = window.location.pathname;
@@ -1462,6 +1492,11 @@ let ALREADY_EXPANDED = false;
 // Shared between features and their plugins (src/plugins/); Initialize() assigns them
 let GLOBAL_EVENT_LISTENERS, EXACT_POINTS_SPENT, LIVE_REMINDERS__LISTING_INTERVAL, STARTED_TIMERS, NOTIFICATION_EVENTS, NOTIFICATION_SOUND, NOTIFIED, AwayModeStatus, InitialVolume, MAINTAIN_VOLUME_CONTROL, STARTED_WATCHING, CURRENT_WATCHTIME_NAME, GET_WATCH_TIME, VideoClips, MASTER_VIDEO;
 
+/**
+ * Initializes extension settings, logging configurations, and global API and event listener objects.
+ * @param {boolean} [START_OVER=false] - Whether to restart the initialization process
+ * @returns {Promise<void>}
+ */
 let Initialize = async(START_OVER = false) => {
     // Modify the logging feature via the settings
     if(!parseBool(Settings.display_in_console))
@@ -1923,6 +1958,11 @@ let Initialize = async(START_OVER = false) => {
                     broadcaster:        [1500, 'owner'],
                 });
 
+                /**
+                 * Finds the user level key that contains the specified level.
+                 * @param {*} level - The level to match against USER_LEVELS
+                 * @returns {*} The matching user level key, or undefined
+                 */
                 const match = level => Object.keys(USER_LEVELS).find(key => USER_LEVELS[key].contains(level));
 
                 // StreamElements
@@ -3076,6 +3116,11 @@ let Initialize = async(START_OVER = false) => {
                                 const children = $.all('.conta > :not(:first-child, :last-child)', dom);
                                 const obj = { games: {} };
 
+                                /**
+                                 * Parses a string into a normalized time, number, date, or empty string.
+                                 * @param {string} [string=''] - The string to parse
+                                 * @returns {string} The parsed value as a string
+                                 */
                                 const parse = (string = '') =>
                                     (
                                         /\b(da?y|h(?:ou)?r|min(?:ute)?)s?\b/i.test(string)

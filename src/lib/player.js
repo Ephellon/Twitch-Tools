@@ -5,6 +5,10 @@
 
 // Get the video quality
     // GetQuality() → string<{ auto:boolean, high:boolean, low:boolean, source:boolean }>
+/**
+ * Determines the current video playback quality and its properties.
+ * @returns {Promise<String>} A string object containing the quality value and metadata (auto, high, mid, low, source)
+ */
 async function GetQuality() {
     const lock = { configurable: false, enumerable: true, writable: false };
 
@@ -48,6 +52,11 @@ async function GetQuality() {
         })
         .catch($error);
 
+    /**
+     * Extracts the text content or value from a given element.
+     * @param {*} text - The element or value to extract text from
+     * @returns {string|*} The extracted text or the original value
+     */
     const textOf = text => (text?.textContent ?? text?.value ?? text);
 
     const qualities = $.all('[data-a-target*="quality"i]:is([data-a-target*="option"i], [data-a-target*="setting"i]) input[type="radio"i]')
@@ -88,6 +97,12 @@ async function GetQuality() {
 
 // Change the video quality
     // SetQuality(quality:string?, backup:string?) → Object<{ oldValue:object<{ input:Element, label:Element }>, newValue:object<{ input:Element, label:Element }> }>
+/**
+ * Sets the video playback quality to the specified value.
+ * @param {string} [quality='auto'] - The desired quality (e.g., 'auto', 'high', '1080p')
+ * @param {string} [backup='source'] - The backup quality to use if the primary is unavailable
+ * @returns {Promise<Object>} An object containing the old and new quality values
+ */
 async function SetQuality(quality = 'auto', backup = 'source') {
     const buttons = {
         get settings() {
@@ -112,6 +127,11 @@ async function SetQuality(quality = 'auto', backup = 'source') {
         })
         .catch($error);
 
+    /**
+     * Extracts the text content or value from a given element.
+     * @param {*} text - The element or value to extract text from
+     * @returns {string|*} The extracted text or the original value
+     */
     const textOf = text => (text?.textContent ?? text?.value ?? text);
 
     const qualities = $.all('[data-a-target*="quality"i]:is([data-a-target*="option"i], [data-a-target*="setting"i]) input[type="radio"i]')
@@ -161,6 +181,11 @@ async function SetQuality(quality = 'auto', backup = 'source') {
 
 // Get the video volume
     // GetVolume(fromVideoElement:boolean?) → number<Percentage>
+/**
+ * Gets the current volume level of the video player.
+ * @param {boolean} [fromVideoElement=true] - Whether to get volume from the video element or the UI slider
+ * @returns {number} The volume level as a float
+ */
 function GetVolume(fromVideoElement = true) {
     const video = $('[data-a-target="video-player"i] video')
         , slider = $('[data-a-target*="player"i][data-a-target*="volume"i]');
@@ -190,6 +215,10 @@ Object.defineProperties(GetVolume, {
 
 // Change the video volume
     // SetVolume(volume:number<Percentage>) → undefined
+/**
+ * Sets the volume level of the video player and updates the UI.
+ * @param {number|string} [volume=0.5] - The volume level to set
+ */
 function SetVolume(volume = 0.5) {
     const video = $('[data-a-target="video-player"i] video')
         , thumb = $('[data-a-target*="player"i][data-a-target*="volume"i]')
@@ -209,6 +238,10 @@ function SetVolume(volume = 0.5) {
 
 // Get the view mode
     // GetViewMode() → string<{ "fullscreen" | "fullwidth" | "theatre" | "default" }>
+/**
+ * Detects the current layout mode of the player.
+ * @returns {string} The view mode (e.g., 'default', 'theatre', 'overview', 'fullwidth', 'fullscreen')
+ */
 function GetViewMode() {
     let mode = 'default'
         , theatre = false
@@ -252,6 +285,10 @@ function GetViewMode() {
 
 // Change the view mode
     // SetViewMode(mode:string<{ "fullscreen" | "fullwidth" | "theatre" | "default" }>) → undefined
+/**
+ * Changes the player's layout mode by simulating clicks on the corresponding UI toggles.
+ * @param {string} [mode='default'] - The desired view mode
+ */
 function SetViewMode(mode = 'default') {
     const buttons = []
         , toggles = {

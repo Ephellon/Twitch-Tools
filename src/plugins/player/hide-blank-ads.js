@@ -13,10 +13,16 @@ plugin({
     job: 'hide_blank_ads',
     timer: 500,
 
+    /**
+     * Initializes the blank ad detection state.
+     */
     init() {
         BLANK_AD_PRESENCE = false;
     },
 
+    /**
+     * Runs every tick: Detects blank advertisements by comparing the current video frame against a known blank-ad banner.
+     */
     handler: () => {
         if($.defined('[data-a-target*="ad-countdown"i]'))
             return window.postMessage({ action: 'report-blank-ad', from: 'player.js', purple: true }, '*');

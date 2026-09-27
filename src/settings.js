@@ -359,6 +359,12 @@ class DatePicker {
 
         const statusOptions = new Array(2).fill(0).map((v, i, a) => !!i);
 
+        /**
+         * Converts a 24-hour time value to a 12-hour format string.
+         * @param {number} time - The hour in 24-hour format.
+         * @param {string[]} [symbols=[AM, PM]] - The symbols used for AM and PM.
+         * @returns {string} The formatted 12-hour time.
+         */
         const to12H = (time, symbols = [AM, PM]) => [(time == 0 ? 12 : time > 12 ? time - 12 : time), symbols[+(time > 11)]].join(' ');
 
         const daySelect = f(`select.edit`, { type: 'days', value: dayDefault, multiple: true, selected: 1, onchange: ({ currentTarget }) => currentTarget.setAttribute('selected', currentTarget.selectedOptions.length) },
@@ -789,6 +795,13 @@ let SETTINGS
 
 let SUPPORTED_LANGUAGES = ['bg', 'cs', 'da', 'de', 'el', 'es', 'fi', 'fr', 'hu', 'it', 'ja', 'ko', 'nl', 'no', 'pl', 'ro', 'ru', 'sk', 'sv', 'th', 'tr', 'vi'];
 
+/**
+ * Regenerates the UI elements for a set of filtering or phrase rules.
+ * @param {string} rules - A delimited string of rules.
+ * @param {string} ruleType - The category of the rules.
+ * @param {string} [delimeter=','] - The character used to separate rules.
+ * @param {string} [scopes='all'] - The allowed scopes for rule identification.
+ */
 function RedoRuleElements(rules, ruleType, delimeter, scopes) {
     if(nullish(rules))
         return;
@@ -873,6 +886,11 @@ function RedoRuleElements(rules, ruleType, delimeter, scopes) {
     }
 }
 
+/**
+ * Regenerates the UI elements for a set of scheduled times.
+ * @param {string} schedules - A JSON string containing schedule data.
+ * @param {string} scheduleType - The category of the schedule.
+ */
 function RedoTimeElements(schedules, scheduleType) {
     if(!schedules?.length)
         return;
@@ -885,6 +903,11 @@ function RedoTimeElements(schedules, scheduleType) {
         // Add buttons per day
         if(defined(days))
             for(const day of days)
+                /**
+                 * Creates and appends a UI element for a single scheduled time slot.
+                 * @param {Object} self - The schedule details containing day, time, duration, and status.
+                 * @param {string} scheduleType - The category of the schedule.
+                 */
                 CreateTimeElement(({ day, time, duration, status }), scheduleType);
         else
             CreateTimeElement(schedule, scheduleType);
@@ -956,6 +979,10 @@ function CreateTimeElement(self, scheduleType) {
     $(`#${ scheduleType }_schedule [day-of-week="${ day }"i]`)?.append(E);
 }
 
+/**
+ * Collects values from the settings UI and saves them to the global settings object.
+ * @returns {Promise<void>}
+ */
 async function SaveSettings() {
     const { extractValue } = SaveSettings;
 
@@ -1083,6 +1110,11 @@ Object.defineProperties(SaveSettings, {
     },
 });
 
+/**
+ * Retrieves saved settings from storage and populates the settings UI.
+ * @param {Object|null} [OVER_RIDE_SETTINGS=null] - Optional settings to use instead of stored ones.
+ * @returns {Promise<void>}
+ */
 async function LoadSettings(OVER_RIDE_SETTINGS = null) {
     const assignValue = LoadSettings.assignValue;
 
@@ -1181,6 +1213,11 @@ Object.defineProperties(LoadSettings, {
     },
 });
 
+/**
+ * Formats a snake_case string into a human-readable name.
+ * @param {string} string - The string to format.
+ * @returns {string} The formatted string.
+ */
 function depadName(string) {
     return string.replace(/(^|_)([a-z])/g, ($0, $1, $2, $$, $_) => ['', ' '][+!!$1] + $2.toUpperCase()).replace(/_+/g, ' -');
 }
@@ -1295,6 +1332,11 @@ $.all('#help, .help').map(element => element.onclick = async event => {
     $('#accessibility').scrollIntoView();
 });
 
+/**
+ * Displays a temporary synchronization status message in the UI.
+ * @param {string} [message='\u00A0'] - The message to display.
+ * @param {string} [type='alert'] - The style type of the message.
+ */
 function PostSyncStatus(message = '\u00A0', type = 'alert') {
     clearTimeout(clearSyncStatus.clearID);
 
@@ -1316,6 +1358,9 @@ Object.defineProperties(PostSyncStatus, {
     warning: { value: message => PostSyncStatus(message, 'warning'), ...PRIVATE_OBJECT_CONFIGURATION },
 });
 
+/**
+ * Hides the synchronization status message from the UI.
+ */
 function clearSyncStatus() {
     $('#sync-status').setAttribute('style', $('#sync-status').getAttribute('style').replace(/;;[^]*$/, ';; opacity: 0'));
 }
@@ -1324,6 +1369,11 @@ clearSyncStatus.clearID = -1;
 
 wait(1000).then(clearSyncStatus);
 
+/**
+ * Converts a string into a short capitalized abbreviation.
+ * @param {string} [string=''] - The string to abbreviate.
+ * @returns {string} The abbreviated string.
+ */
 function Sym(string = '') {
     return string.replace(/([a-z\-]+)?_+([a-z\-]+)/gi, ($0, $1 = '', $2, $$, $_) => ($1[0] ?? '') + $2[0].toUpperCase());
 }
@@ -2695,6 +2745,12 @@ when.defined(() => SETTINGS)
     });
 
 // Deprecated: v5.32.14.3
+/**
+ * Fetches translation files for a specific language and applies them to elements with `tr-id` attributes.
+ * @param {string} [language='en'] - The language code to use for translation
+ * @param {Document|Element} [container=document] - The DOM element to search for translatable text
+ * @returns {Promise<void>}
+ */
 async function Translate(language = 'en', container = document) {
     await fetch(`/_locales/${ language }/settings.json`)
         .catch(error => {
@@ -2712,6 +2768,14 @@ async function Translate(language = 'en', container = document) {
                     return;
 
                 const [latin] = ISO.name.split('/');
+                /**
+                 * Generates an HTML anchor link to a GitHub issue template for translation help.
+                 * @param {*} $0 - Unused
+                 * @param {string} [$1='GitHub'] - The display text for the link
+                 * @param {*} $$ - Unused
+                 * @param {*} $_ - Unused
+                 * @returns {string} HTML string for the link
+                 */
                 const link = ($0, $1 = 'GitHub', $$, $_) => `<strong><a target="_blank" href="https://github.com/Ephellon/Twitch-Tools/issues/new?assignees=Ephellon&labels=enhancement%2C+help-wanted%2C+wiki&template=lang_help.md&title=Translations%3A+${ encodeURIComponent(latin) }">${ $1 }</a></strong>`;
 
                 alert.silent(`
@@ -2770,6 +2834,11 @@ async function Translate(language = 'en', container = document) {
                     };
 
                     let number;
+                    /**
+                     * Formats a translation string by applying padding and replacing numeric placeholders.
+                     * @param {string} [string=''] - The translation string to format
+                     * @returns {string} The formatted string
+                     */
                     const pad = (string = '') =>
                         padding.start
                         + string
@@ -2777,6 +2846,11 @@ async function Translate(language = 'en', container = document) {
                             .replace(/%([^>]*)>([^\s]*)/g, parseInt(number) > 1 ? '$2' : '$1')
                             + padding.stop;
 
+                    /**
+                     * Removes unnecessary whitespace and characters from a string to make it more compact.
+                     * @param {string} [string=''] - The string to minify
+                     * @returns {string} The slimmed string
+                     */
                     const slim = (string = '') => string
                         .replace(/\([\s]+/g, '(')
                         .replace(/[\s,:;]+\)/g, ')')
@@ -2826,6 +2900,10 @@ document.body.onload = async() => {
         if(nullish(search.installed))
             return;
 
+        /**
+         * Adds the 'chosen' class to the element that triggered the mouse down event.
+         * @param {Event} event - The mouse event
+         */
         const onmousedown = event => event.currentTarget.classList.add('chosen')
             , onmouseup = event => event.currentTarget.closest('.language-select')?.remove();
 

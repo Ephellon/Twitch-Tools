@@ -5,6 +5,10 @@
 
 // Get the current user activity
     // GetActivity() → Promise<string | null>
+/**
+ * Retrieves the user's current activity status from the page.
+ * @returns {Promise<string>} The activity text
+ */
 async function GetActivity() {
     return when.defined(() => {
         const open = $.defined('[data-a-target="user-display-name"i], [class*="dropdown-menu-header"i]');
@@ -23,6 +27,10 @@ async function GetActivity() {
 
 // Get the current page's language
     // GetLanguage() → Promise<string | null>
+/**
+ * Retrieves the current user interface language from the page settings.
+ * @returns {Promise<string>} The language code
+ */
 async function GetLanguage() {
     return when.defined(() => {
         const open = $.defined('[data-a-target="user-display-name"i], [class*="dropdown-menu-header"i]');
@@ -42,6 +50,11 @@ async function GetLanguage() {
 
 // Reloads the webpage
     // ReloadPage(onlineOnly:boolean?) → undefined
+/**
+ * Reloads the current page, with options to skip if offline or defer if the tab is hidden.
+ * @param {boolean} [onlineOnly=true] - Only reload if the browser is online
+ * @returns {Promise<void>}
+ */
 async function ReloadPage(onlineOnly = true) {
     // Navigaotr is offline, do not reload
     if(true

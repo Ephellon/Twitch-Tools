@@ -10,6 +10,9 @@ plugin({
     job: 'easy_helper_card_resizer',
     timer: 250,
 
+    /**
+     * Adjusts the height of viewer and emote card titles to prevent content clipping.
+     */
     handler: () => {
         const card = $('[data-a-target="viewer-card"i], [data-a-target="emote-card"i]');
 
@@ -23,6 +26,10 @@ plugin({
             title.modStyle(`height: ${ 3 * (length - 1) + 1 }rem`);
     },
 
+    /**
+     * Checks if the card resizer is enabled based on message filtering or highlighting settings.
+     * @returns {boolean} Whether the feature is enabled
+     */
     enabled() {
         return parseBool(Settings.filter_messages) || parseBool(Settings.highlight_phrases);
     },

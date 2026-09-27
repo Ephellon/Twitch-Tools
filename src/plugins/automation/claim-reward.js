@@ -8,6 +8,9 @@ import { plugin } from '../../lib/plugins.js';
 plugin({
     id: 'claim_reward',
 
+    /**
+     * Installs the reward claiming feature and configures settings for recording video clips of reward purchases.
+     */
     async install() {
         VideoClips = {
             dvr: parseBool(Settings.video_clips__dvr),
@@ -22,6 +25,19 @@ plugin({
             , TEXT_BOX_ALREADY_FOCUSED
             , USER_INVOKED_PAUSE = true;
 
+        /**
+         * Detects a reward purchase in chat and records a video clip of the event if the purchase matches the user.
+         * @param {Object} params - Purchase details
+         * @param {boolean} [params.updateRecords=true] - Whether to update the reward records in cache
+         * @param {boolean} [params.fromUser=true] - Whether the purchase must be from the current user
+         * @param {*} [params.override=null] - Manual override for reward ID or shop data
+         * @param {Element} params.element - The DOM element associated with the purchase
+         * @param {string} params.message - The chat message text
+         * @param {string} params.subject - The subject of the event
+         * @param {string[]} params.mentions - List of mentioned users
+         * @param {Object} params.AutoClaimRewards - Current auto-claim reward settings
+         * @returns {Promise<boolean|void>} False if conditions aren't met, otherwise the recording process
+         */
         async function RECORD_PURCHASE({ updateRecords = true, fromUser = true, override = null, element, message, subject, mentions, AutoClaimRewards }) {
             element = await element;
 
@@ -128,6 +144,13 @@ plugin({
         ;
 
         // Waits for `condition` to return an element; resolves `null` after `timeout` ms
+        /**
+         * Polls for a specific condition to be met within a maximum timeout.
+         * @param {function} condition - Function that returns a value when the element is found
+         * @param {number} [timeout=10000] - Maximum time to wait in ms
+         * @param {number} [ms=100] - Polling interval in ms
+         * @returns {Promise<*>} The result of the condition or null on timeout
+         */
         const WaitForElement = (condition, timeout = 10_000, ms = 100) => {
             const deadline = +new Date + timeout;
 
@@ -359,6 +382,10 @@ plugin({
                                         let { available, cost } = currentTarget.dataset;
 
                                         // Auto-buy rewards
+                                        /**
+                                         * Automatically purchases a specified number of emote rewards by interacting with the reward center UI.
+                                         * @param {number} [count=1] - Number of rewards to purchase
+                                         */
                                         function buyOut(count = 1) {
                                             count *= +$.defined('[class*="reward-center"i]');
                                             available |= 0;
@@ -427,6 +454,10 @@ plugin({
                                         modifiers = modifiers.split(',');
 
                                         // Auto-buy rewards
+                                        /**
+                                         * Automatically purchases reward emotes and modifiers.
+                                         * @param {number} [count=1] - The number of rewards to purchase
+                                         */
                                         function buyOut(count = 1) {
                                             const rewardsBackButton = $('[class*="reward-center"i] [class*="pop"i][class*="head"i] button');
 

@@ -13,10 +13,17 @@ plugin({
     job: 'highlight_phrases',
     timer: -2_500,
 
+    /**
+     * Initializes the phrase highlighter state.
+     */
     init() {
         PHRASE_HIGHLIGHTER = void null;
     },
 
+    /**
+     * Sets up a message listener to identify and highlight chat messages based on user, badge, emote, or text rules.
+     * @param {Object} context - The plugin context
+     */
     handler: (context) => {
         new context.StopWatch('highlight_phrases');
 
@@ -77,12 +84,18 @@ plugin({
         context.StopWatch.stop('highlight_phrases');
     },
 
+    /**
+     * Undoes phrase highlighting by removing the highlighting attribute from all affected elements.
+     */
     unhandler: () => {
         const highlight = $.all('[tt-light]');
 
         highlight.map(element => element.removeAttribute('tt-light'));
     },
 
+    /**
+     * Initializes the phrase highlighting feature.
+     */
     setup() {
         $remark("Adding phrase highlighting...");
     },

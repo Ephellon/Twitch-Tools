@@ -13,10 +13,18 @@ plugin({
     job: 'auto_chat__vip',
     timer: -5_000,
 
+    /**
+     * Runs on initialization: defines the cache key for the auto-chat feature based on the current streamer.
+     * @param {Object} context - The plugin context
+     */
     init(context) {
         AUTO_CHAT_NAME = `auto-chat/${ context.STREAMER.sole }`;
     },
 
+    /**
+     * Runs when triggered: automatically sends a chat message if the user is lurking and meets specific channel, badge, or VIP criteria.
+     * @param {Object} context - The plugin context
+     */
     handler: (context) => {
         if(Settings.auto_chat__vip === true)
             Settings.set({ auto_chat__vip: 'vip' });

@@ -13,12 +13,18 @@ plugin({
     timer: 2_500,
     register: false,          // setup() starts the job itself, when it should
 
+    /**
+     * Initializes constants and identifiers used for blocking banner ads.
+     */
     init() {
         UNWANTED_BANNER_AD_SELECTOR = new nanoid(21, nanoid.LOWERCASE_SAFE).value;
         LAST_ELEMENT = Symbol('last-selector-slot');
         EMPTY_ELEMENT_SUBSTITUTE = { dataset: {} };
     },
 
+    /**
+     * Loads and parses a remote list of banner ad selectors to identify and block unwanted banners.
+     */
     handler: () => {
         /** Syntax (CSS-superset) — Comments are not allowed in the actual syntax. Each line represents a banner query.
          * [class*="turbo"i]                // Find all `[class*="turbo"i]`
@@ -33,6 +39,11 @@ plugin({
                 const path = [''];
                 let curr = '';
                 let esc = false;
+                /**
+                 * Detects special syntax characters to determine the current parsing state of a banner selector.
+                 * @param {string} char - The character being processed.
+                 * @returns {boolean} True if the parser state was updated.
+                 */
                 const detect = char => {
                     const { length } = syntaxes;
 
@@ -150,10 +161,16 @@ plugin({
         });
     },
 
+    /**
+     * Undoes banner blocking by removing the associated custom CSS block.
+     */
     unhandler: () => {
         RemoveCustomCSSBlock('Remove Banner Ads');
     },
 
+    /**
+     * Sets up a delayed event listener on mouse-up to trigger banner blocking.
+     */
     setup() {
         const listener = DelayJob('block_banners');
 

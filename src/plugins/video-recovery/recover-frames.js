@@ -12,6 +12,9 @@ plugin({
     id: 'recover_frames',
     timer: 1000,
 
+    /**
+     * Initializes the state and constants for the video frame recovery system.
+     */
     init() {
         SECONDS_VIDEO_PAUSED_UNSAFELY = 0;
         VIDEO_CREATION_TIME = void null;
@@ -22,6 +25,10 @@ plugin({
         PREVIOUS_FRAME_HASH = void null;
     },
 
+    /**
+     * Runs every tick: Monitors the video for stalling frames or playback lag and attempts to recover by replacing the video with an embedded player if enabled.
+     * @param {Object} context - Contains the StopWatch utility
+     */
     handler: ({ StopWatch }) => {
         new StopWatch('recover_frames');
 
@@ -181,6 +188,9 @@ plugin({
         StopWatch.stop('recover_frames');
     },
 
+    /**
+     * Initializes the frame recovery feature by setting up a page visibility listener and registering the recovery job.
+     */
     setup() {
         $.on('visibilitychange', event => PAGE_HAS_FOCUS = document.visibilityState.equals('visible'));
 

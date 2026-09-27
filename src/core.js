@@ -124,6 +124,11 @@ class UUID {
 
         const _a = string.split('');
 
+        /**
+         * Counts how many elements in the internal array are less than a given value.
+         * @param {number} q - The value to compare against
+         * @returns {number} The count of elements smaller than q
+         */
         const _b = q => {
             let c = 0;
 
@@ -133,6 +138,12 @@ class UUID {
             return c;
         };
 
+        /**
+         * Counts occurrences of a specific value within the internal array up to a given index.
+         * @param {number} i - The index limit for the search
+         * @param {number} q - The value to search for
+         * @returns {number} The count of matching elements
+         */
         const _c = (i, q) => {
             let c = 0;
 
@@ -475,6 +486,10 @@ class LZW {
             , output = []
             , key;
 
+        /**
+         * Pushes a word's dictionary mapping or its character code to the output buffer.
+         * @param {string} word - The word to process
+         */
         function push(word) {
             output.push(word.length > 1 ? dictionary.get(word) : word.charCodeAt(0));
         }
@@ -549,6 +564,10 @@ class LZW {
             , output = []
             , key;
 
+        /**
+         * Pushes a Base64 encoded representation of a word's mapping or character code to the output buffer.
+         * @param {string} word - The word to process
+         */
         function push(word) {
             const k = 63;
 
@@ -2017,6 +2036,12 @@ Object.defineProperties(fetchURL, {
 
 prevent_fetch_dragging: if(top == window) {
     // Each probe hits several third-party CORS proxies, so only run one when something reads it
+    /**
+     * Creates a lazy-loading property descriptor that executes a function once upon first access.
+     * @param {string} name - The name of the property
+     * @param {function} run - The function to execute to determine the property value
+     * @returns {Object} The property descriptor
+     */
     const probe = (name, run) => ({
         configurable: true,
         get() {
@@ -2119,6 +2144,10 @@ prevent_fetch_dragging: if(top == window) {
 let Settings = window.Settings = {
     get(properties = null) {
         return new Promise((resolve, reject) => {
+            /**
+             * Maps provided settings values to the global Settings object.
+             * @param {Object} settings - The settings to parse
+             */
             function ParseSettings(settings) {
                 for(const setting in settings)
                     Settings[setting] = settings[setting] ?? null;
@@ -2192,6 +2221,11 @@ let Settings = window.Settings = {
  */
 let Cache = window.Cache = {
     async save(properties = {}, callback = null) {
+        /**
+         * Stores a value in the extension's cache storage.
+         * @param {string} key - The storage key
+         * @param {string} value - The value to store
+         */
         const set = (key, value) => CacheStorageArea.setItem(`ext.twitch-tools/${ encodeURI(key) }`, value);
 
         for(const key in properties)
@@ -2203,6 +2237,11 @@ let Cache = window.Cache = {
 
     async load(properties = null, callback = null) {
         const results = {};
+        /**
+         * Retrieves a value from the cache storage and parses it as JSON.
+         * @param {string} key - The cache key to look up
+         * @returns {*} The parsed value, or the raw value if parsing fails
+         */
         const get = key => {
             let value =
                 // New save name
@@ -2250,6 +2289,10 @@ let Cache = window.Cache = {
         });
     },
 
+    /**
+     * Removes a specific item from the extension's cache storage.
+     * @param {string} key - The storage key to remove
+     */
     async remove(properties, callback = null) {
         const results = {};
         const remove = key => CacheStorageArea.removeItem(`ext.twitch-tools/${ encodeURI(key) }`)
@@ -2303,6 +2346,11 @@ let Cache = window.Cache = {
 
     async getBytesInUse(properties, callback = null) {
         let bytesUsed = 0;
+        /**
+         * Calculates the approximate storage size of a cache item.
+         * @param {string} key - The cache key to measure
+         * @returns {number} The total size in bytes
+         */
         const size = key => {
             let value =
                 // New save name
@@ -2356,6 +2404,11 @@ let Cache = window.Cache = {
 
     large: {
         async save(keys = {}, callback = null) {
+            /**
+             * Stores a value in the large cache storage area.
+             * @param {string} key - The key to store the value under
+             * @param {*} value - The value to store
+             */
             const set = (key, value) => LargeCacheStorageArea.setItem(key, value);
 
             for(const key in keys)
@@ -2367,6 +2420,11 @@ let Cache = window.Cache = {
 
         async load(keys = null, callback = null) {
             const results = {};
+            /**
+             * Retrieves a value from the large cache storage area.
+             * @param {string} key - The key to look up
+             * @returns {Promise<*>} The stored value
+             */
             const get = key => LargeCacheStorageArea.getItem(key);
 
             keys ??= await Cache.large.keys();
@@ -2399,6 +2457,10 @@ let Cache = window.Cache = {
             });
         },
 
+        /**
+         * Removes an item from the large cache storage area.
+         * @param {string} key - The key of the item to remove
+         */
         async remove(keys, callback = null) {
             const results = {};
             const remove = key => LargeCacheStorageArea.removeItem(key)
@@ -2442,6 +2504,11 @@ let Cache = window.Cache = {
 
         async getBytesInUse(keys, callback = null) {
             let bytesUsed = 0;
+            /**
+             * Calculates the approximate storage size of an item in the large cache.
+             * @param {string} key - The cache key to measure
+             * @returns {Promise<number>} The total size in bytes
+             */
             const size = async key => (key?.length | 0) + (JSON.stringify(await LargeCacheStorageArea.getItem(key))?.length | 0);
 
             keys ??= await Cache.large.keys();

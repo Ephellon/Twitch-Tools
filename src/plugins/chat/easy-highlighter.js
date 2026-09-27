@@ -10,6 +10,9 @@ plugin({
     job: 'easy_highlighter',
     timer: 500,
 
+    /**
+     * Adds "Highlight" buttons to viewer and emote cards to quickly add them to the phrase highlighting rules.
+     */
     handler: () => {
         const card = $('[data-a-target="viewer-card"i], [data-a-target="emote-card"i]')
             , existing = $('#tt-highlight-rule--user, #tt-highlight-rule--emote');
@@ -98,6 +101,10 @@ plugin({
         }
     },
 
+    /**
+     * Checks if the phrase highlighting feature is enabled in settings.
+     * @returns {boolean} Whether the feature is enabled
+     */
     enabled() {
         return parseBool(Settings.highlight_phrases);
     },

@@ -13,11 +13,20 @@ plugin({
     timer: 250,
     register: false,          // setup() starts the job itself, when it should
 
+    /**
+     * Initializes state variables for the point watcher feature.
+     * @returns {void}
+     */
     init() {
         POINT_WATCHER_COUNTER = 0;
         HAS_POINTS_BALANCE = false;
     },
 
+    /**
+     * Runs periodically to update the channel points display in tooltips and apply styling to the balance text.
+     * @param {Object} context - The plugin context containing `StopWatch`
+     * @returns {Promise<void>}
+     */
     handler: async({ StopWatch }) => {
         // Display the points
         new StopWatch('point_watcher_placement');
@@ -150,11 +159,19 @@ plugin({
         StopWatch.stop('point_watcher_placement', 2_700);
     },
 
+    /**
+     * Undoes the point watcher's changes by removing all point amount elements from the DOM.
+     * @returns {void}
+     */
     unhandler: () => {
         $.all('.tt-point-amount')
             .forEach(span => span.remove());
     },
 
+    /**
+     * Prepares the point watcher by triggering the rewards menu and indexing available channel rewards.
+     * @returns {void}
+     */
     setup() {
         when.defined(() => $.last('[data-test-selector*="balance-string"i]')?.closest('button'))
             .then(async balanceButton => {

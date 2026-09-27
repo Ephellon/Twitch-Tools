@@ -13,6 +13,9 @@ plugin({
     job: 'link_maker__chat',
     timer: -500,
 
+    /**
+     * Initializes state and caches for the chat link maker.
+     */
     init() {
         LINK_MAKER_ENABLED = void null;
         CHAT_CARDIFIED = new Map;
@@ -22,6 +25,10 @@ plugin({
         LINK_PARSER = new DOMParser;
     },
 
+    /**
+     * Converts Blerp links in chat and reward cards into rich cards or audio players.
+     * @param {Object} context - Plugin context
+     */
     handler: (context) => {
         // Channel Point rewards (Blerp)
         REWARDS_CARDIFIER = setInterval(() => {
@@ -59,6 +66,11 @@ plugin({
                         throw TypeError(`No DOM available. Page not loaded`);
 
                     const f = furnish;
+                    /**
+                     * Retrieves a specific property from a DOM object.
+                     * @param {string} property - The property name to retrieve
+                     * @returns {*} The value of the property
+                     */
                     const get = property => DOM.get(property);
 
                     let [title, description, image, url, audio] = ['title', 'description', 'image', 'url', 'audio'].map(get)
@@ -145,6 +157,11 @@ plugin({
                         throw TypeError(`No DOM available. Page not loaded`);
 
                     const f = furnish;
+                    /**
+                     * Retrieves a specific property from a DOM object.
+                     * @param {string} property - The property name to retrieve
+                     * @returns {*} The value of the property
+                     */
                     const get = property => DOM.get(property);
 
                     const [title = '', description = '', image] = ['title', 'description', 'image'].map(get)
@@ -221,6 +238,9 @@ plugin({
         });
     },
 
+    /**
+     * Undoes the link maker feature by cleaning up intervals and removing generated cards.
+     */
     unhandler: () => {
         LINK_MAKER_ENABLED = false;
 
@@ -230,10 +250,17 @@ plugin({
             .map(card => card.remove());
     },
 
+    /**
+     * Checks if the chat link maker is enabled in settings.
+     * @returns {boolean} Whether the feature is enabled
+     */
     enabled() {
         return LINK_MAKER_ENABLED = parseBool(Settings.link_maker__chat);
     },
 
+    /**
+     * Sets up the chat link maker and logs the action.
+     */
     setup() {
         $remark("Adding link maker (chat)...");
     },

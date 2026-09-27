@@ -9,6 +9,9 @@ plugin({
     id: 'claim_loot',
     timer: -1_000,
 
+    /**
+     * Automatically identifies and claims available Prime Gaming loot offers.
+     */
     handler: () => {
         when.defined(() => $('.prime-offers button')).then(prime_btn => {
             let handled = 0;
@@ -53,10 +56,17 @@ plugin({
         });
     },
 
+    /**
+     * Checks if the Prime loot claiming feature is enabled in settings and allowed for the current tab.
+     * @returns {boolean} Whether the feature is enabled
+     */
     enabled() {
         return UP_NEXT_ALLOW_THIS_TAB && parseBool(Settings.claim_loot);
     },
 
+    /**
+     * Initializes the Prime loot claiming feature and logs a status remark.
+     */
     setup() {
         $remark("Claiming Prime Gaming Loot...");
     },

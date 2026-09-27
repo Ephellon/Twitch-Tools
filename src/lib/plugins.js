@@ -38,6 +38,11 @@ export function plugin(definition) {
 
     PLUGINS.set(id, {
         frames: ['main'],
+        /**
+         * Determines if the feature is enabled based on the provided settings.
+         * @param {Object} settings - The current configuration settings
+         * @returns {boolean} True if the feature is enabled
+         */
         enabled: settings => parseBool(settings[job]),
         ...definition,
         job,

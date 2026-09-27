@@ -12,6 +12,9 @@ plugin({
     id: 'time_zones',
     timer: 250,
 
+    /**
+     * Initializes time zone conversion utilities, including natural language time parsing and timezone mapping data.
+     */
     async init() {
         convertWordsToTimes = function convertWordsToTimes(string = '') {
             return string.normalize('NFKD')
@@ -1026,7 +1029,15 @@ plugin({
         };
     },
 
+    /**
+     * Scans stream titles and panels for timezone mentions and converts detected times to the local time zone.
+     */
     handler: () => {
+        /**
+         * Recursively flattens all child nodes of a given element into a single array.
+         * @param {Node} node - The root node to traverse
+         * @returns {Node[]} A flat array of all descendant nodes and the root node
+         */
         const allNodes = node => (node.childNodes.length ? [...node.childNodes].map(allNodes) : [node]).flat();
         const cTitle = $.all('[data-a-target="stream-title"i], [data-a-target="about-panel"i], [data-a-target^="panel"i]')
             , rTitle = $('[class*="-tooltip"i]:is([class*="channel"i], [class*="guest"i]):not([class*="offline"i]) > p + p');
@@ -1245,6 +1256,9 @@ plugin({
         TIME_ZONE__TEXT_MATCHES = TIME_ZONE__TEXT_MATCHES.isolate();
     },
 
+    /**
+     * Logs a message indicating that time zone conversion is starting.
+     */
     setup() {
         $remark("Converting time zones...");
     },

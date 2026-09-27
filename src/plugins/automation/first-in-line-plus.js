@@ -8,6 +8,11 @@ import { plugin } from '../../lib/plugins.js';
 plugin({
     id: 'first_in_line_plus',
 
+    /**
+     * Installs the "First in Line Plus" logic to track live followed streamers and ensure the side navigation is correctly loaded.
+     * @param {Object} options - Installation options
+     * @param {StopWatch} options.StopWatch - StopWatch utility for performance tracking
+     */
     async install({ StopWatch }) {
         let OLD_STREAMERS, NEW_STREAMERS, BAD_STREAMERS, ON_INSTALLED_REASON;
 

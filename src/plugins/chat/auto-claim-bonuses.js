@@ -10,6 +10,10 @@ plugin({
     job: 'auto_claim_bonuses',
     timer: 2_500,
 
+    /**
+     * Automatically claims available channel point bonuses and adds a status indicator to the UI.
+     * @param {Object} context - Plugin context
+     */
     handler: (context) => {
         new context.StopWatch('auto_claim_bonuses');
 
@@ -175,6 +179,9 @@ plugin({
         context.StopWatch.stop('auto_claim_bonuses');
     },
 
+    /**
+     * Undoes the auto-claim bonuses feature by removing the UI indicator.
+     */
     unhandler: () => {
         $('#tt-auto-claim-bonuses')?.remove();
     },

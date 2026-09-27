@@ -8,6 +8,10 @@ import { plugin } from '../../lib/plugins.js';
 plugin({
     id: 'miscellaneous',
 
+    /**
+     * Installs miscellaneous styling: detects the current theme and injects custom CSS to optimize channel color contrast and visibility.
+     * @returns {Promise<void>}
+     */
     async install() {
         Miscellaneous: {
             // The theme
@@ -30,6 +34,12 @@ plugin({
             PRIMARY = Color.HEXtoColor(PRIMARY);
             SECONDARY = Color.HEXtoColor(SECONDARY);
 
+            /**
+             * Calculates the color contrast ratio between two color objects.
+             * @param {Object} C1 - First color object containing R, G, B values
+             * @param {Object} C2 - Second color object containing R, G, B values
+             * @returns {number} The calculated contrast ratio
+             */
             const contrastOf = (C1, C2) => Color.contrast(...[C1, C2].map(({ R, G, B }) => [R, G, B]))
 
                 , black = { R: 0, G: 0, B: 0 }

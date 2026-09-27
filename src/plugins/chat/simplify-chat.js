@@ -13,10 +13,16 @@ plugin({
     job: 'simplify_chat',
     timer: -250,
 
+    /**
+     * Initializes the chat simplification toggle index.
+     */
     init() {
         SimplifyChatIndexToggle = 0;
     },
 
+    /**
+     * Applies visual simplifications to the chat, including custom fonts, monotone usernames, and text normalization.
+     */
     handler: () => {
         if(parseBool(Settings.simplify_chat_monotone_usernames))
             AddCustomCSSBlock('Simplify Chat Monotone Usernames', `[data-a-target="chat-message-username"i] { color: var(--color-text-base) !important }`);
@@ -74,6 +80,11 @@ plugin({
             AddCustomCSSBlock('Simplify Chat', `.tt-visible-message-even { background-color: #8882 }`);
 
         Chat.get().map(Chat.defer.onmessage = async line => {
+            /**
+             * Recursively collects all descendant nodes of a given element.
+             * @param {Element} node - The root element to traverse
+             * @returns {Array<Node>} A flat list of all child and descendant nodes
+             */
             const allNodes = node => (node.childNodes.length ? [...node.childNodes].map(allNodes) : [node]).flat();
 
             const element = await line.element;
@@ -89,14 +100,24 @@ plugin({
         });
     },
 
+    /**
+     * Undoes the chat simplification by removing applied custom CSS blocks.
+     */
     unhandler: () => {
         ['Simplify Chat', 'Simplify Chat Monotone Usernames', 'Simplify Chat Font', 'Simplify Page Font', 'Simplify Font (Head)'].map(block => RemoveCustomCSSBlock(block));
     },
 
+    /**
+     * Checks if the chat simplification feature is enabled.
+     * @returns {boolean} Always returns true
+     */
     enabled() {
         return true;
     },
 
+    /**
+     * Sets up the chat simplification feature and logs the action.
+     */
     setup() {
         $remark("Applying readability settings...");
     },

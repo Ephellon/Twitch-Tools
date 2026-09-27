@@ -13,6 +13,9 @@ plugin({
     job: 'filter_messages',
     timer: -2_500,
 
+    /**
+     * Initializes message filtering rules and the matching utility.
+     */
     init() {
         MatchesRule = function MatchesRule(text, message) {
             try {
@@ -25,6 +28,10 @@ plugin({
         MESSAGE_FILTER = void null;
     },
 
+    /**
+     * Runs every tick: Hides chat messages that match user, badge, emote, or text-based filter rules.
+     * @param {Object} context - The plugin context
+     */
     handler: (context) => {
         new context.StopWatch('filter_messages');
 
@@ -85,12 +92,18 @@ plugin({
         context.StopWatch.stop('filter_messages');
     },
 
+    /**
+     * Undoes message filtering by revealing all previously hidden messages.
+     */
     unhandler: () => {
         const hidden = $.all('[tt-hidden-message]');
 
         hidden.map(element => element.removeAttribute('tt-hidden-message'));
     },
 
+    /**
+     * Sets up the message filtering system.
+     */
     setup() {
         $remark("Adding message filtering...");
     },

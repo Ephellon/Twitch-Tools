@@ -13,6 +13,9 @@ plugin({
     job: 'filter_bulletins',
     timer: -2_500,
 
+    /**
+     * Initializes the bulletin filter rules and pinned message filter state.
+     */
     init() {
         BULLETIN_FILTERS = new Map([
             ['filter_messages__bullets_coin', ['coin']],
@@ -25,6 +28,10 @@ plugin({
         PINNED_FILTER = -1;
     },
 
+    /**
+     * Applies filters to hide specific types of chat bulletins using CSS or removal intervals.
+     * @param {Object} context - The plugin context
+     */
     handler: (context) => {
         new context.StopWatch('filter_bulletins');
 
@@ -37,12 +44,19 @@ plugin({
         context.StopWatch.stop('filter_bulletins');
     },
 
+    /**
+     * Undoes bulletin filtering by removing custom CSS blocks and clearing pinned message intervals.
+     */
     unhandler: () => {
         for(const [key, subjects] of BULLETIN_FILTERS)
             RemoveCustomCSSBlock(`FilterBulletType${ key.slice(-5) }`);
         clearInterval(PINNED_FILTER);
     },
 
+    /**
+     * Checks if any bulletin filtering options are enabled.
+     * @returns {boolean} Whether the feature is enabled
+     */
     enabled() {
         return [
             Settings.filter_messages__bullets_coin,
@@ -53,6 +67,9 @@ plugin({
         ].map(parseBool).contains(true);
     },
 
+    /**
+     * Initializes the bulletin filtering feature.
+     */
     setup() {
         $remark("Adding bulletin filtering...");
     },
