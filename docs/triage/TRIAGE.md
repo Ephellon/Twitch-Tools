@@ -82,3 +82,18 @@ Tooling: ESLint now sees `window.X ??=` globals, `Object.defineProperties(top, �
 ## Not actioned (robustness notes, not defects)
 
 About 40 candidates flag Twitch DOM that "may be null", brittle selectors, or `innerHTML` use. These are real risks, but there is no failing case to fix. They are addressed as each feature moves to a plugin in Phase 4.
+
+## GitHub issues
+
+| Issue | Status |
+|---|---|
+| #53 `reading 'name'` spam | **Fixed.** The clip-timer interval read `GLOBAL_EVENT_LISTENERS.KEYDOWN_ALT_Z.name` every tick, but that listener only exists while Extra Keyboard Shortcuts is on |
+| #31 Recover Frames too aggressive | **Fixed.** Recovery attempts are now 10s apart (were 3s), and the page reloads after 30s of stalling (was 15s). Background tabs were already skipped |
+| #57 memory | **Partly addressed** by the `PrepareForGarbageCollection` leak fix; the rest is Up Next (Phase 4) |
+| #27 CPU | **Partly addressed** by the leak fix and by removing the proxy probes; the settings-page CPU use is Phase 5 |
+| #18, #40, #43 reload loops | Need a reload policy decision (below) |
+| #44–#46, #49, #52, #54–#56 | Up Next, Phase 4 |
+| #50, #34 Stay Live | Phase 4 (shares `GetNextStreamer` with Up Next) |
+| #35, #48 Buy when available | Phase 4 (Claim Reward); needs live Twitch testing |
+| #42 collapsing, #26 lurk volume, #37 Auto-Focus, #13 DVR ads, #11 desync, #7 blank videos | Phase 4, per feature; need live Twitch testing |
+| #3 Firefox | Build exists since Phase 0; needs a gecko ID decision and a real test pass |

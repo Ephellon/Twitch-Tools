@@ -15941,7 +15941,8 @@ let Initialize = async(START_OVER = false) => {
             if(SECONDS_VIDEO_PAUSED_UNSAFELY > 0 && !(SECONDS_VIDEO_PAUSED_UNSAFELY % 5))
                 $warn(`The video has been stalling for ${ SECONDS_VIDEO_PAUSED_UNSAFELY }s`, { VIDEO_CREATION_TIME, TOTAL_VIDEO_FRAMES, SECONDS_VIDEO_PAUSED_UNSAFELY }, 'Frames fallen behind:', totalVideoFrames - TOTAL_VIDEO_FRAMES);
 
-            if(SECONDS_VIDEO_PAUSED_UNSAFELY > 5 && !(SECONDS_VIDEO_PAUSED_UNSAFELY % 3)) {
+            // Give each recovery attempt 10s before the next one (#31)
+            if(SECONDS_VIDEO_PAUSED_UNSAFELY > 5 && !(SECONDS_VIDEO_PAUSED_UNSAFELY % 10)) {
                 __RecoverFrames_Embed__:
                 if(parseBool(Settings.recover_frames__allow_embed)) {
                     $warn(`Attempting to override the video`);
@@ -16051,7 +16052,7 @@ let Initialize = async(START_OVER = false) => {
             return SECONDS_VIDEO_PAUSED_UNSAFELY = 0;
         }
 
-        if(SECONDS_VIDEO_PAUSED_UNSAFELY > 15)
+        if(SECONDS_VIDEO_PAUSED_UNSAFELY > 30)
             ReloadPage();
 
         StopWatch.stop('recover_frames');
@@ -16612,6 +16613,10 @@ let Initialize = async(START_OVER = false) => {
 
     let DEFAULT_CLIP_NAME = new ClipName(2);
     let GLOBAL_CLIP_HANDLER = setInterval(() => {
+        // The Alt+Z recorder only exists while Extra Keyboard Shortcuts is on (#53)
+        if(nullish(GLOBAL_EVENT_LISTENERS.KEYDOWN_ALT_Z))
+            return;
+
         let EVENT_NAME = GLOBAL_EVENT_LISTENERS.KEYDOWN_ALT_Z.name;
 
         // Maintains a timer of the clip
