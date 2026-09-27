@@ -113,8 +113,6 @@ let // These are option names. Anything else will be removed
             'parse_commands__create_links',
         // Prevent Raiding
         'prevent_raiding',
-        // Prevent Hosting
-        'prevent_hosting',
         // Prime Loot
         'claim_loot',
         // Prime Subscription
@@ -3013,5 +3011,12 @@ document.body.onload = async() => {
     /* Things needed after loading the page... */
         .then(() => {
             INITIAL_LOAD = false;
+
+            // A fresh install has nothing stored, so the pages would read every option as unset
+            // (not as its default); store the form's values whenever any option is missing
+            Storage.get(null, stored => {
+                if(usable_settings.some(id => !(id in stored)))
+                    SaveSettings();
+            });
         });
 };

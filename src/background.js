@@ -657,6 +657,8 @@ Runtime.onMessage.addListener((request, sender, respond) => {
 
                 Storage.set({ UP_NEXT_OWNER: null, UP_NEXT_OWNER_NAME: null });
             });
+
+            respond({ ok: true });
         } break;
 
         case 'GET_VERSION': {
@@ -686,6 +688,8 @@ Runtime.onMessage.addListener((request, sender, respond) => {
 
         case 'OPEN_OPTIONS_PAGE': {
             Runtime.openOptionsPage();
+
+            respond({ ok: true });
         } break;
 
         case 'BEGIN_REPORT': {
@@ -703,6 +707,8 @@ Runtime.onMessage.addListener((request, sender, respond) => {
             } catch(error) {
                 TabWatcherInterval = setInterval(TabWatcher, 2500);
             }
+
+            respond({ ok: true });
         } break;
 
         case 'WAIVE_REPORT': {
@@ -710,6 +716,8 @@ Runtime.onMessage.addListener((request, sender, respond) => {
             IGNORE_REPORTS = true;
 
             console.warn(`Ignoring reports for tab #${ tab.id }`);
+
+            respond({ ok: true });
         } break;
 
         case 'FETCH_SHARED_DATA': {
@@ -724,6 +732,8 @@ Runtime.onMessage.addListener((request, sender, respond) => {
         case 'POST_SHARED_DATA': {
             for(let key in request.data)
                 SHARED_DATA.set(key, request.data[key]);
+
+            respond({ ok: true });
         } break;
 
         case 'RESPAWN_THIS_TAB': {
@@ -739,7 +749,7 @@ Runtime.onMessage.addListener((request, sender, respond) => {
                         }
                 });
             else
-                console.debug(`Ignoring self-respawn, it is active still: ${ sender.tab.id }`);
+                console.debug(`Ignoring self-respawn, it is active still: ${ sender.tab.id }`), respond({ success: false });
         } break;
 
         default: {

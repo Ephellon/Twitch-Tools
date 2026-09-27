@@ -9704,67 +9704,6 @@ let Initialize = async(START_OVER = false) => {
         `);
     }
 
-    /*** Stop Hosting
-     *       _____ _                _    _           _   _
-     *      / ____| |              | |  | |         | | (_)
-     *     | (___ | |_ ___  _ __   | |__| | ___  ___| |_ _ _ __   __ _
-     *      \___ \| __/ _ \| '_ \  |  __  |/ _ \/ __| __| | '_ \ / _` |
-     *      ____) | || (_) | |_) | | |  | | (_) \__ \ |_| | | | | (_| |
-     *     |_____/ \__\___/| .__/  |_|  |_|\___/|___/\__|_|_| |_|\__, |
-     *                     | |                                    __/ |
-     *                     |_|                                   |___/
-     */
-    Handlers.prevent_hosting = async() => {
-        new StopWatch('prevent_hosting');
-
-        let hosting = $.defined('[data-a-target="hosting-indicator"i], [class*="status"i][class*="hosting"i]'),
-            next = await GetNextStreamer(),
-            host_banner = $.all('[href^="/"] h1, [href^="/"] > p, [data-a-target="hosting-indicator"i]').map(element => element.textContent),
-            host = (STREAMER.name ?? ''),
-            [guest] = host_banner.filter(name => !host.toLowerCase().includes(name.toLowerCase()));
-
-        guest ??= "anonymous";
-
-        let method = Settings.prevent_hosting ?? "none";
-
-        host_stopper:
-        if(hosting) {
-            // Ignore followed channels
-            if(["unfollowed"].contains(method)) {
-                let streamer = STREAMERS.find(channel => RegExp(`^${ guest }$`, 'i').test(channel.name));
-
-                // The channel being hosted (guest) is already in "followed." No need to leave
-                if(defined(streamer)) {
-                    $log(`[HOSTING] ${ guest } is already followed. Just head to the channel`);
-
-                    goto(parseURL(streamer.href).addSearch({ tool: `host-stopper--${ method }` }).href);
-                    break host_stopper;
-                }
-            }
-
-            for(let callback of STREAMER.__eventlisteners__.onhost)
-                callback({ hosting });
-
-            if(defined(next)) {
-                $log(`${ host } is hosting ${ guest }. Moving onto next channel (${ next.name })`, next.href, new Date);
-
-                goto(parseURL(next.href).addSearch({ tool: `host-stopper--${ method }` }).href);
-            } else {
-                $log(`${ host } is hosting ${ guest }. There doesn't seem to be any followed channels on right now`, new Date);
-
-                // ReloadPage();
-            }
-        }
-
-        StopWatch.stop('prevent_hosting');
-    };
-    Timers.prevent_hosting = 5000;
-
-    __PreventHosting__:
-    if(Settings.prevent_hosting.unlike("none")) {
-        RegisterJob('prevent_hosting');
-    }
-
     /*** Stop Raiding
      *       _____ _                _____       _     _ _
      *      / ____| |              |  __ \     (_)   | (_)
@@ -9881,7 +9820,7 @@ let Initialize = async(START_OVER = false) => {
     Timers.prevent_raiding = 10_000;
 
     __PreventRaiding__:
-    if(Settings.prevent_raiding.unlike("none")) {
+    if((Settings.prevent_raiding ?? "none").unlike("none")) {
         RegisterJob('prevent_raiding');
 
         Cache.load('LastRaid', ({ LastRaid }) => {
@@ -11898,7 +11837,7 @@ let Initialize = async(START_OVER = false) => {
             glyph = Glyphs.modify('channelpoints', { height: '20px', width: '20px', style: 'vertical-align:bottom' }),
             { abs } = Math;
 
-        receipt = receipt.floorToNearest(parseInt(Settings.channelpoints_receipt_display.replace('round', '')) || 1);
+        receipt = receipt.floorToNearest(parseInt(String(Settings.channelpoints_receipt_display ?? '').replace('round', '')) || 1);
 
         let TIME_LEFT = ((STREAMER.data?.dailyBroadcastTime ?? 16_200_000) - STREAMER.time);
         let AVAILABLE_POINTS = TIME_LEFT < 1? -1: ((120 + 200 * +!top.TWITCH_INTEGRITY_FAIL) * CHANNEL_POINTS_MULTIPLIER * (TIME_LEFT / 3_600_000)) | 0;
