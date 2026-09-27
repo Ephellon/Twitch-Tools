@@ -76,6 +76,7 @@
                 "dsl/parser.js",
                 "dsl/runtime.js",
                 "dsl/compiler.js",
+                "dsl/highlight.js",
                 "dsl/index.js",
                 "chat-plugins.js",
                 "chat.js"
@@ -106,6 +107,7 @@
                 "dsl/parser.js",
                 "dsl/runtime.js",
                 "dsl/compiler.js",
+                "dsl/highlight.js",
                 "dsl/index.js",
                 "chat-plugins.js",
                 "chat.js",

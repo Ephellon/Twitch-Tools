@@ -21,7 +21,7 @@
 globalThis.TTV_DSL ??= {};
 
 if(typeof require === 'function' && typeof module === 'object')
-    for(const name of ['./errors.js', './tokens.js', './tokenizer.js', './ast.js', './parser.js', './runtime.js', './compiler.js', './fake-page.js'])
+    for(const name of ['./errors.js', './tokens.js', './tokenizer.js', './ast.js', './parser.js', './runtime.js', './compiler.js', './highlight.js', './fake-page.js'])
         require(name);
 
 (() => {
@@ -56,6 +56,12 @@ if(typeof require === 'function' && typeof module === 'object')
 
         // -- diagnostics ------------------------------------------------------
         errors: DSL.errors,
+
+        // -- editor -----------------------------------------------------------
+        /** `(source) -> Array<{ type, text, start, end }>`, covering every character */
+        highlight: DSL.highlighter.highlight,
+        /** The fixed list of span types `highlight` uses */
+        HIGHLIGHT_TYPES: DSL.highlighter.HIGHLIGHT_TYPES,
     });
 
     /** Lists what a script will ask for, without running it — what a host shows the viewer
@@ -85,28 +91,66 @@ if(typeof require === 'function' && typeof module === 'object')
         return { blocks, calls };
     };
 
-    /** Parses without running, purely to collect diagnostics — what the settings-page
-     * editor wants in order to underline mistakes as they are typed.
-     * @param {String} source
-     * @return {Array<Object>} `{ name, message, loc, frame }`, empty when the script is clean
-     */
-    DSL.check = (source) => {
-        try {
-            const { errors } = DSL.parseTolerant(source);
+    /** One diagnostic, in the shape the editor relies on. */
+    const diagnostic = (error) => ({
+        name: error.name,
+        message: error.message,
+        loc: error.loc,
+        frame: (error.codeFrame ? error.codeFrame() : String(error.message)),
+    });
 
-            return errors.map(error => ({
-                name: error.name,
-                message: error.message,
-                loc: error.loc,
-                frame: error.codeFrame(),
-            }));
+    /** Finds a script's mistakes without running it — what the Settings editor underlines as
+     * the script is typed.
+     *
+     * The shape is stable: an array of `{ name, message, loc, frame }`, in source order, empty
+     * when the script is clean. `loc` is `{ line, column, start, end }` — `line` and `column`
+     * **1-based**, `start` and `end` **0-based** character offsets with `end` exclusive, the
+     * same offsets `highlight` uses. `name` is the error class (`DSLSyntaxError`,
+     * `DSLParseError`, …); `frame` is a ready monospace excerpt with a caret.
+     *
+     * Parse errors are all reported (the parser recovers line by line). A lexical fault stops
+     * the scan, so it is reported alone. When the script parses cleanly it is also
+     * *compiled* — never run — so the mistakes only the compiler sees are caught too: a
+     * permission not on the list, an undeclared `setting.name`, an unknown function or too
+     * many arguments. Compile mistakes are reported one at a time.
+     * @param {String} source
+     * @param {{ runtime?: Object }} [options] - compile against the host's runtime, so its
+     *   extra permissions and settings count; a default runtime otherwise
+     * @return {Array<{ name: String, message: String, loc: Object, frame: String }>}
+     */
+    DSL.check = (source, { runtime } = {}) => {
+        let program;
+
+        try {
+            const parsed = DSL.parseTolerant(source);
+
+            if(parsed.errors.length)
+                return parsed.errors.map(diagnostic);
+
+            program = parsed.program;
         } catch(error) {
             // A lexical fault aborts the scan outright, so it arrives here instead.
             if(!(error instanceof DSL.errors.DSLError))
                 throw error;
 
-            return [{ name: error.name, message: error.message, loc: error.loc, frame: error.codeFrame() }];
+            return [diagnostic(error)];
         }
+
+        // Compiling applies budget grants to `limits`; checking must not raise the host's, so
+        // it compiles against a view of the runtime with a `limits` of its own.
+        const base = (runtime ?? DSL.createRuntime({ logger: { log() {}, warn() {}, error() {} } }))
+            , view = Object.create(base, { limits: { value: Object.assign({}, base.limits) } });
+
+        try {
+            DSL.compile(program, view);
+        } catch(error) {
+            if(!(error instanceof DSL.errors.DSLError))
+                throw error;
+
+            return [diagnostic(error)];
+        }
+
+        return [];
     };
 
     /** A script's plugin id when it has no header: its file name, cleaned to a settings key.
