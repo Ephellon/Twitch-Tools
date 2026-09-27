@@ -710,43 +710,19 @@ class Tooltip {
         parent.setAttribute('tt-tooltip-id', tooltip.id = uuid);
 
         parent.addEventListener('mouseenter', (function(event) {
-            let { currentTarget } = event
+            const { currentTarget } = event
                 , offset = getOffset(currentTarget)
-                , screen = getOffset(document.body)
                 , fineTuning = JSON.parse(currentTarget.getAttribute('fine-tuning'))
                 , [groupID] = currentTarget.getAttribute('tt-tooltip-id').split(':');
-
-            const from = fineTuning.from.replace(/^[^]+--(up|down|left|right)$/i, '$1').toLowerCase();
 
             let container;
 
             $.queryBy('#root > *, body').first.append(
                 container = furnish(`.tt-tooltip-layer.tooltip-layer[for="${ groupID }"]`,
                     {
-                        style: (() => {
-                            let style = 'animation:.3s fade-in 1;';
-
-                            switch(from) {
-                                // case 'up':
-                                //     style += `transform: translate(${ offset.left + fineTuning.left }px, ${ offset.top + fineTuning.top }px); width: ${ offset.width }px; height: ${ offset.height }px; z-index: 99999;`;
-
-                                case 'down': {
-                                    style += `transform: translate(${ offset.left + fineTuning.left }px, ${ (offset.bottom - screen.height - offset.height) + fineTuning.top }px); width: ${ offset.width }px; height: ${ 0 & offset.height }px; z-index: 99999;`;
-                                }
-
-                                // case 'left':
-                                //     style += `transform: translate(${ offset.left + offset.width + fineTuning.left }px, ${ offset.top + fineTuning.top }px); width: ${ offset.width }px; height: ${ offset.height }px; z-index: 99999;`;
-
-                                // case 'right':
-                                //     style += `transform: translate(${ (offset.right - screen.width - offset.width) + fineTuning.left }px, ${ offset.top + fineTuning.top }px); width: ${ offset.width }px; height: ${ offset.height }px; z-index: 99999;`;
-
-                                default: {
-                                    style += `transform: translate(${ offset.left + fineTuning.left }px, ${ offset.top + fineTuning.top }px); width: ${ offset.width }px; height: ${ 0 & offset.height }px; z-index: 99999;`;
-                                }
-                            }
-
-                            return style;
-                        })()
+                        // One placement for every direction: the layer sits over the parent, and the
+                        // `.tt-tooltip--{from}` class positions the tooltip around it (see extras.css)
+                        style: `animation:.3s fade-in 1; transform: translate(${ offset.left + fineTuning.left }px, ${ offset.top + fineTuning.top }px); width: ${ offset.width }px; height: 0px; z-index: 99999;`
                     },
                     furnish('.tt-inline-flex.tt-relative.tt-tooltip-wrapper', { 'aria-describedby': groupID, 'show': true },
                         furnish('div', { style: `width: ${ offset.width }px; height: ${ offset.height }px;` }),

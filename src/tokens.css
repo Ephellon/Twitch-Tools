@@ -1,0 +1,88 @@
+/*** /tokens.css
+ * TTV Tools design tokens: the palette, shapes, layers, timings and fonts the extension's own styles share.
+ * Loaded first on every page that has TTV Tools styles (www.twitch.tv and the Settings page).
+ * Twitch's own theme variables (`--color-*`, from core.css) stay Twitch's; these are ours. See docs/STYLES.md.
+ */
+
+:root {
+    /* Brand */
+    --ttv-purple: #9147ff;
+    --ttv-purple-dark: #4700b3;
+    --ttv-purple-light: #a970ff;
+    --ttv-purple-soft: #6262c2;
+
+    /* Signals */
+    --ttv-red: #bb1411;
+    --ttv-red-dark: #991411;
+    --ttv-red-deep: #771411;
+    --ttv-live-red: #e91916;
+    --ttv-gold: #fcc21b;
+    --ttv-gold-53: #fcc21b88;
+    --ttv-gold-67: #fcc21baa;
+    --ttv-yellow: #e6cb00;
+    --ttv-yellow-dark: #ad9600;
+    --ttv-yellow-bright: #ffff00;
+    --ttv-green: #22fa7c;
+    --ttv-green-dark: #00c85a;
+    --ttv-green-light: #70ffa9;
+    --ttv-teal: #00ad96;
+    --ttv-teal-light: #00e6cb;
+    --ttv-prime-blue: #0e9bd8;
+    --ttv-blue: #387aff;
+    --ttv-sky: #00a6ed;
+    --ttv-pink: #f5009b;
+    --ttv-pink-light: #ff9ab4;
+    --ttv-orange: #f59b00;
+    --ttv-grey: #9b9b9b;
+
+    /* Neutrals; the number is the opacity in percent */
+    --ttv-white: #ffffff;
+    --ttv-white-7: #ffffff11;
+    --ttv-white-15: #ffffff26;
+    --ttv-white-20: #ffffff33;
+    --ttv-white-27: #ffffff44;
+    --ttv-white-53: #ffffff88;
+    --ttv-white-hover: #eeeeee;
+    --ttv-black: #000000;
+    --ttv-black-7: #00000011;
+    --ttv-black-13: #00000022;
+    --ttv-black-20: #00000033;
+    --ttv-black-27: #00000044;
+    --ttv-black-53: #00000088;
+    --ttv-black-87: #000000dd;
+    --ttv-transparent: #00000000;
+
+    /* Surfaces */
+    --ttv-surface-dark: #0e0e0f;
+    --ttv-surface-dark-raised: #18181b;
+    --ttv-surface-dark-hover: #222222;
+    --ttv-surface-light: #f1f1f0;
+    --ttv-surface-light-dim: #e8e8e5;
+    --ttv-surface-light-hover: #dddddd;
+
+    /* Shapes */
+    --ttv-radius-xs: 3px;
+    --ttv-radius-sm: 4px;
+    --ttv-radius: 0.4rem;
+    --ttv-radius-round: 50%;
+    --ttv-radius-pill: 10rem;
+
+    /* Layers (z-index) */
+    --ttv-layer-below: -1;
+    --ttv-layer-above: 99;
+    --ttv-layer-raised: 999;
+    --ttv-layer-overlay: 9999;
+    --ttv-layer-top: 99999;
+
+    /* Timings */
+    --ttv-quick: 0.1s;
+    --ttv-medium: 0.25s;
+    --ttv-slow: 0.3s;
+    --ttv-slower: 0.5s;
+
+    /* Fonts */
+    --ttv-font: Roobert, Inter, "Helvetica Neue", Helvetica, Arial, sans-serif;
+    --ttv-font-display: 'Inter', 'Roobert';
+    --ttv-font-live: 'Roobert', 'Inter', 'Arial', 'Sans-Serif';
+    --ttv-font-code: 'Liberation Mono', 'Courier', 'Consolas', 'Monospace', 'System-UI', 'Arial';
+}

@@ -99,6 +99,7 @@
                 "ext/mouth.js"
             ],
             "css": [
+                "tokens.css",
                 "core.css",
                 "extras.css"
             ]
