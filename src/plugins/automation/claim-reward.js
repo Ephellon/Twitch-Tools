@@ -18,6 +18,7 @@ plugin({
 
         let DISPLAY_WALLET_BUTTONS,
             REWARDS_ON_COOLDOWN = new Map,
+            CLAIMING_REWARD = false,
             TEXT_BOX_ALREADY_FOCUSED,
             USER_INVOKED_PAUSE = true;
 
@@ -124,6 +125,13 @@ plugin({
             return true;
         };
 
+        // Waits for `condition` to return an element; resolves `null` after `timeout` ms
+        let WaitForElement = (condition, timeout = 10_000, ms = 100) => {
+            let deadline = +new Date + timeout;
+
+            return when.defined(() => condition() ?? (+new Date > deadline? when.null: null), ms);
+        };
+
         Handlers.claim_reward = () => {
             if(top.TWITCH_INTEGRITY_FAIL)
                 return;
@@ -161,7 +169,11 @@ plugin({
                                                 return;
                                             if($.defined('#tt_saved_input_for_redemption'))
                                                 return;
+                                            // A purchase is still in progress; clicking again would close the menu
+                                            if(CLAIMING_REWARD)
+                                                return;
 
+                                            CLAIMING_REWARD = true;
                                             rewardsMenuButton.click();
 
                                             $log(`Purchasing "${ title }" for ${ cost } ${ fiat }...`);
@@ -200,19 +212,30 @@ plugin({
                                             }
 
                                             // Purchase and remove
-                                            await when.defined(() => $('.rewards-list')?.getElementByText(title, 'i')?.closest('.reward-list-item')?.querySelector('button'))
+                                            await WaitForElement(() => $('.rewards-list')?.getElementByText(title, 'i')?.closest('.reward-list-item')?.querySelector('button'))
                                                 .then(async rewardButton => {
                                                     let { coin, fiat } = STREAMER;
 
                                                     $notice(`Can "${ title }" be bought yet? ${ ['No', 'Yes'][+(coin >= cost)] }`);
 
-                                                    if(coin < cost)
-                                                        return;
+                                                    // Not listed (or not listed yet): close the menu, then try again later
+                                                    if(nullish(rewardButton) || coin < cost || rewardButton.disabled) {
+                                                        if(nullish(rewardButton) || rewardButton.disabled)
+                                                            REWARDS_ON_COOLDOWN.set(id, +(new Date) + 60_000);
+
+                                                        rewardsMenuButton.click();
+                                                        return CLAIMING_REWARD = false;
+                                                    }
 
                                                     rewardButton.click();
 
-                                                    when.defined(() => $('.reward-center-body [data-test-selector*="required"i][data-test-selector*="points"i]')?.closest('button'), 500)
+                                                    await WaitForElement(() => $('.reward-center-body [data-test-selector*="required"i][data-test-selector*="points"i]')?.closest('button'), 10_000, 500)
                                                         .then(purchaseButton => {
+                                                            if(nullish(purchaseButton) || purchaseButton.disabled) {
+                                                                $log(`Unable to purchase "${ title }" right now. Waiting ${ toTimeString(60_000) }`);
+                                                                return REWARDS_ON_COOLDOWN.set(id, +(new Date) + 60_000);
+                                                            }
+
                                                             let cooldown = parseTime(purchaseButton.previousElementSibling?.getElementByText(parseTime.pattern)?.textContent);
 
                                                             if(cooldown > 0) {
@@ -244,6 +267,7 @@ plugin({
                                                             });
                                                         }).finally(() => {
                                                             rewardsMenuButton.click();
+                                                            CLAIMING_REWARD = false;
                                                         });
                                                 });
                                         });

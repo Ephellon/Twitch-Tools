@@ -92,8 +92,18 @@ About 40 candidates flag Twitch DOM that "may be null", brittle selectors, or `i
 | #57 memory | **Partly addressed** by the `PrepareForGarbageCollection` leak fix; the rest is Up Next (Phase 4) |
 | #27 CPU | **Partly addressed** by the leak fix and by removing the proxy probes; the settings-page CPU use is Phase 5 |
 | #18, #40, #43 reload loops | **Addressed** (owner chose defer + cap). A hidden tab now waits until it's visible before `ReloadPage` reloads it. The background skips tabs that are still loading, and respawns a tab (by ID or URL) at most once per 2 min. A skipped respawn leaves the tab open instead of closing it without a replacement |
-| #44–#46, #49, #52, #54–#56 | Up Next, Phase 4 |
-| #50, #34 Stay Live | Phase 4 (shares `GetNextStreamer` with Up Next) |
-| #35, #48 Buy when available | Phase 4 (Claim Reward); needs live Twitch testing |
-| #42 collapsing, #26 lurk volume, #37 Auto-Focus, #13 DVR ads, #11 desync, #7 blank videos | Phase 4, per feature; need live Twitch testing |
+| #52 Skip doesn't skip | **Fixed (Phase 4).** Skipping the last queued channel left its countdown running. Skip also removed a second job, and "Go now" could go to the next channel instead of the confirmed one. The next job never got a prompt |
+| #55 open channel gets queued | **Fixed (Phase 4).** A channel going live while you're on its page isn't queued; bare `https://www.twitch.tv/` notifications are ignored |
+| #56 Auto-Focus un-pauses Up Next | **Fixed (Phase 4).** The pause button records who paused; Auto-Focus only resumes its own pauses |
+| #44 Up Next panel flashing | **Fixed (Phase 4).** The boost sync clicked the panel's toggle button (`$('[speeding]')`) every second |
+| #49 loud Up Next preview | **Mitigated (Phase 4).** Player pages embedded with `muted=true` stay muted until the viewer uses them. Needs a live check |
+| #50 Stay Live on offline channels | **Fixed (Phase 4).** Stay Live only moves on when the stream ended while being watched, or the extension brought you there. The viewer's intent is honoured (it never counted before) |
+| #26 Lurking volume released | **Fixed (Phase 4).** Lurking restores its volume when Twitch resets it. Found with Offser (`nemotron-3-ultra`), with the fix narrowed by hand |
+| #57 Up Next memory | **Partly addressed** by the Phase 2 `PrepareForGarbageCollection` leak fix. No other unbounded timer or list found by reading the code; needs a memory profile from a live tab |
+| #45, #46, #54 | Need live reproduction: sidebar-based live status, the button lost on SPA navigation, and tab ownership after a manual navigation |
+| #27 CPU | **Partly addressed** by the leak fix and by removing the proxy probes; the settings-page CPU use is Phase 5 |
+| #34 Stay Live with 7TV | Phase 4 fixes to Stay Live may help; needs a live check with 7TV |
+| #48 Buy when available toggles the menu | **Fixed (Phase 4).** Nothing stopped a new claim while one was still running, and the wait for the reward row never timed out. So every 15 s it clicked the rewards menu again (open, close) and left another poller running. Claims now run one at a time and give up after 10 s. A missing or disabled reward waits 60 s. If the row never matches, Twitch's reward-list markup has changed; needs a live check |
+| #35 shop data | Twitch's `jump` data no longer carries the shop, so it is scraped from the menu. Scraped items are always "available", with no input flag; needs live data |
+| #42 collapsing, #37 Auto-Focus, #13 DVR ads, #11 desync, #7 blank videos | Need live Twitch testing |
 | #3 Firefox | Build exists since Phase 0; needs a gecko ID decision and a real test pass |
