@@ -1065,6 +1065,10 @@ function PrepareForGarbageCollection(...objects) {
         if(ok)
             LEDGER.clear();
     });
+
+    // Every nested call ran synchronously above; the next call is top-most again
+    if(locale === LOCALE)
+        delete PrepareForGarbageCollection.__GARBAGE_COLLECTION_LOCATION__;
 }
 
 /**
@@ -1230,7 +1234,7 @@ try {
                 args = [].concat(args);
 
                 return new Promise((resolve, reject) => {
-                    return when(condition, ms, ...args).then(resolve.call(null, args));
+                    return when(condition, ms, ...args).then(() => resolve(args));
                 });
             },
         },
@@ -1243,7 +1247,7 @@ try {
                 args = [].concat(args);
 
                 return new Promise((resolve, reject) => {
-                    return when(condition, ms).then(resolve.call(null, args));
+                    return when(condition, ms).then(() => resolve(args));
                 });
             },
         },
@@ -1464,7 +1468,7 @@ try {
                 args = [].concat(args);
 
                 return new Promise((resolve, reject) => {
-                    when.defined(condition, ms, ...args).then(resolve.call(null, args));
+                    when.defined(condition, ms, ...args).then(() => resolve(args));
                 });
             },
         },
@@ -1477,7 +1481,7 @@ try {
                 args = [].concat(args);
 
                 return new Promise((resolve, reject) => {
-                    when.defined(condition, ms).then(resolve.call(null, args));
+                    when.defined(condition, ms).then(() => resolve(args));
                 });
             },
         },
@@ -1492,7 +1496,7 @@ try {
                 args = [].concat(args);
 
                 return new Promise((resolve, reject) => {
-                    when.nullish(condition, ms, ...args).then(resolve.call(null, args));
+                    when.nullish(condition, ms, ...args).then(() => resolve(args));
                 });
             },
         },
@@ -1505,7 +1509,7 @@ try {
                 args = [].concat(args);
 
                 return new Promise((resolve, reject) => {
-                    when.nullish(condition, ms).then(resolve.call(null, args));
+                    when.nullish(condition, ms).then(() => resolve(args));
                 });
             },
         },
@@ -1520,7 +1524,7 @@ try {
                 args = [].concat(args);
 
                 return new Promise((resolve, reject) => {
-                    when.empty(condition, ms, ...args).then(resolve.call(null, args));
+                    when.empty(condition, ms, ...args).then(() => resolve(args));
                 });
             },
         },
@@ -1533,7 +1537,7 @@ try {
                 args = [].concat(args);
 
                 return new Promise((resolve, reject) => {
-                    when.empty(condition, ms).then(resolve.call(null, args));
+                    when.empty(condition, ms).then(() => resolve(args));
                 });
             },
         },
@@ -1548,7 +1552,7 @@ try {
                 args = [].concat(args);
 
                 return new Promise((resolve, reject) => {
-                    when.sated(condition, ms, ...args).then(resolve.call(null, args));
+                    when.sated(condition, ms, ...args).then(() => resolve(args));
                 });
             },
         },
@@ -1561,7 +1565,7 @@ try {
                 args = [].concat(args);
 
                 return new Promise((resolve, reject) => {
-                    when.sated(condition, ms).then(resolve.call(null, args));
+                    when.sated(condition, ms).then(() => resolve(args));
                 });
             },
         },
@@ -1704,7 +1708,7 @@ function fetchURL(url, options = {}) {
 
             // https://alloworigin.com/get?url={ URL }
             case fetchURL.origins.ALLOW_ORIGIN: {
-                href = `https://alloworigin.com/get?url=${ href }`;
+                href = `https://alloworigin.com/get?url=${ encodeURIComponent(href) }`;
             } break;
 
             // POST@https://cors-proxy.taskcluster.net/request
@@ -1986,9 +1990,18 @@ Object.defineProperties(fetchURL, {
 });
 
 prevent_fetch_dragging: if(top == window) {
+    // Each probe hits several third-party CORS proxies, so only run one when something reads it
+    let probe = (name, run) => ({
+        configurable: true,
+        get() {
+            Object.defineProperty(this, name, { value: run() });
+
+            return this[name];
+        },
+    });
+
     Object.defineProperties(fetchURL.origins, {
-        BEST: {
-            value: Promise.any([
+        BEST: probe('BEST', () => Promise.any([
                 fetchURL.origins.CORSFIX
                 , fetchURL.origins.CORS_PROXY
                 , fetchURL.origins.CORS_ANYWHERE
@@ -2004,13 +2017,11 @@ prevent_fetch_dragging: if(top == window) {
                         Promise.reject(`Bad request @${ foster.toString() }`)
                     )
                 )
-            ).catch($ignore)
-        },
+            ).catch($ignore)),
     });
 
     Object.defineProperties(fetchURL.origins, {
-        JSON_BEST: {
-            value: Promise.any([
+        JSON_BEST: probe('JSON_BEST', () => Promise.any([
                 fetchURL.origins.WHATEVER_ORIGIN,
             ].map(foster =>
                 fetchURL.idempotent('https://example.org/', { foster, as: 'json', timeout: 1_000 })
@@ -2020,11 +2031,9 @@ prevent_fetch_dragging: if(top == window) {
                         Promise.reject(`Bad JSON request @${ foster.toString() }`)
                     )
                 )
-            ).catch($ignore)
-        },
+            ).catch($ignore)),
 
-        HTML_BEST: {
-            value: Promise.any([
+        HTML_BEST: probe('HTML_BEST', () => Promise.any([
                 fetchURL.origins.CORSFIX
                 , fetchURL.origins.CORS_PROXY
                 , fetchURL.origins.CORS_ANYWHERE
@@ -2040,11 +2049,9 @@ prevent_fetch_dragging: if(top == window) {
                         Promise.reject(`Bad HTML request @${ foster.toString() }`)
                     )
                 )
-            ).catch($ignore)
-        },
+            ).catch($ignore)),
 
-        TEXT_BEST: {
-            value: Promise.any([
+        TEXT_BEST: probe('TEXT_BEST', () => Promise.any([
                 fetchURL.origins.TEXT,
                 fetchURL.origins.TEXT_2,
                 fetchURL.origins.TEXT_3,
@@ -2059,8 +2066,7 @@ prevent_fetch_dragging: if(top == window) {
                         Promise.reject(`Bad text request @${ foster.toString() }`)
                     )
                 )
-            ).catch($ignore)
-        },
+            ).catch($ignore)),
     });
 }
 
@@ -2112,7 +2118,7 @@ let Settings = window.Settings = {
     remove(properties = []) {
         let removed = {};
 
-        if(properties instanceof String)
+        if(typeof properties == 'string' || properties instanceof String)
             properties = [properties];
 
         for(let key of properties)
@@ -2269,7 +2275,7 @@ let Cache = window.Cache = {
         });
     },
 
-    async getBytesInUse(properties) {
+    async getBytesInUse(properties, callback = null) {
         let bytesUsed = 0;
         let size = key => {
                 let value =
@@ -2408,7 +2414,7 @@ let Cache = window.Cache = {
             });
         },
 
-        async getBytesInUse(keys) {
+        async getBytesInUse(keys, callback = null) {
             let bytesUsed = 0;
             let size = async key => (key?.length | 0) + (JSON.stringify(await LargeCacheStorageArea.getItem(key))?.length | 0);
 
@@ -2494,12 +2500,13 @@ function AsteriskFn(feature) {
  * @desc These belong to the current window (occasionally a sub-frame).
  */
 __STATIC__: {
-    let browser, Storage, Runtime, Manifest, Extension, Container, BrowserNamespace;
+    let Storage, Runtime, Manifest, Extension, Container, BrowserNamespace;
 
-    if(defined(browser?.runtime))
-        BrowserNamespace = 'browser';
-    else if(defined(chrome?.extension))
+    // Prefer `chrome`: Firefox provides it too, and only it takes the callbacks this code passes
+    if(defined(globalThis.chrome?.runtime))
         BrowserNamespace = 'chrome';
+    else if(defined(globalThis.browser?.runtime))
+        BrowserNamespace = 'browser';
 
     Container = window[BrowserNamespace];
 

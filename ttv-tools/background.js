@@ -276,10 +276,10 @@ function TabIsOffline(tab) {
 
 let global, window, Storage, Runtime, Manifest, Extension, Container, BrowserNamespace, Alarms;
 
-if(globalThis.browser && globalThis.browser.runtime)
-    BrowserNamespace = 'browser';
-else if(globalThis.chrome && globalThis.chrome.extension)
+if(globalThis.chrome && globalThis.chrome.runtime)
     BrowserNamespace = 'chrome';
+else if(globalThis.browser && globalThis.browser.runtime)
+    BrowserNamespace = 'browser';
 
 // Can NOT be done programmatically?
 Container = globalThis[BrowserNamespace];
@@ -705,7 +705,7 @@ Runtime.onMessage.addListener((request, sender, respond) => {
                         }
                 });
             else
-                console.debug(`Ignoring self-respawn, it is active still: ${ tab.id }`);
+                console.debug(`Ignoring self-respawn, it is active still: ${ sender.tab.id }`);
         } break;
 
         default: {
@@ -840,7 +840,7 @@ let GALLOWS_CHECKER = setInterval(() => {
                 GALLOWS.delete(ID);
             }
         } catch(error) {
-            console.warn(`Failed to gallow-check tab #${ id } → "${ error }"`);
+            console.warn(`Failed to gallow-check tab #${ ID } → "${ error }"`);
 
             GALLOWS.delete(ID);
         }
@@ -877,7 +877,7 @@ async function auditMemory() {
                 title: title || "Twitch Stream",
                 url,
                 active,
-                action: act,
+                action: 'ignore',
                 ramUsed: 0,
                 tier: 'high',
                 discarded,
@@ -945,7 +945,7 @@ async function auditMemory() {
                 });
             });
         } catch(error) {
-            console.debug(`Skipping tab during memory audit: ${ tab.id }`, tab);
+            console.debug(`Skipping tab during memory audit: ${ id }`, { id, url, title });
         }
     }
 
