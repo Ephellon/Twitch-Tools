@@ -25,10 +25,11 @@ const BUNDLES = {
     'plugins/chat/index.js': 'chat-plugins.js',
     'plugins/player/index.js': 'player-plugins.js',
     'plugins/clips/index.js': 'clips-plugins.js',
+    'settings/index.js': 'settings-ui.js',
 };
 
 // Folders holding ES-module sources; only their bundles ship
-const MODULE_FOLDERS = /^(lib|plugins)\//;
+const MODULE_FOLDERS = /^(lib|plugins|settings)\//;
 
 // Firefox needs a stable add-on ID; changing it after publishing orphans existing installs
 const GECKO_ID = 'ttv-tools@ephellon.github.io';

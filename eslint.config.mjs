@@ -27,6 +27,7 @@ const BUNDLES = {
     'chat-plugins.js': 'plugins/chat/index.js',
     'player-plugins.js': 'plugins/player/index.js',
     'clips-plugins.js': 'plugins/clips/index.js',
+    'settings-ui.js': 'settings/index.js',
 };
 
 // Every ES-module source that ends up in a bundle
@@ -157,7 +158,7 @@ for(const group of groups) {
 const VENDORED = { localforage: 'readonly', Sortable: 'readonly', resemble: 'readonly' };
 
 const legacy = {
-    'no-unused-vars': 'warn',
+    'no-unused-vars': ['warn', { argsIgnorePattern: '^\\$' }],     // Replace callbacks list every positional parameter
     'no-useless-escape': 'warn',
     'no-unused-labels': 'off',                  // Features are wrapped in labeled blocks on purpose
     'no-constant-binary-expression': 'off',     // `(false || a || b)` is used for alignment
@@ -269,7 +270,7 @@ export default [
     },
     {
         // ES modules bundled into lib.js (plugins included); they share the page scope of the scripts loaded alongside it
-        files: [`${ ROOT }/lib/**/*.js`, `${ ROOT }/plugins/**/*.js`],
+        files: [`${ ROOT }/lib/**/*.js`, `${ ROOT }/plugins/**/*.js`, `${ ROOT }/settings/**/*.js`],
         languageOptions: { sourceType: 'module', globals: sharedGlobals['lib.js'] },
     },
     {
@@ -281,11 +282,12 @@ export default [
         // Smoke scripts: Node, plus browser code they evaluate inside Chromium
         files: ['scripts/**/*.cjs'],
         languageOptions: { sourceType: 'commonjs', globals: { ...globals.node, ...globals.browser, ...globals.webextensions } },
+        rules: { 'no-unused-vars': ['error', { argsIgnorePattern: '^\\$' }], 'no-constant-binary-expression': 'off' },
     },
     {
         files: ['*.mjs', 'scripts/**/*.mjs'],
         languageOptions: { sourceType: 'module', globals: globals.node },
         plugins: { '@stylistic': stylistic, ttv: house },
-        rules: { ...style, 'no-unused-vars': ['error', { ignoreRestSiblings: true }], 'no-constant-binary-expression': 'off' },
+        rules: { ...style, 'no-unused-vars': ['error', { ignoreRestSiblings: true, argsIgnorePattern: '^\\$' }], 'no-constant-binary-expression': 'off' },
     },
 ];
