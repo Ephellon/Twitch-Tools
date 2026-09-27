@@ -52,6 +52,15 @@ plugin({
             if(DO_NOT_AUTO_ADD.contains(href) || RESERVED_TWITCH_PATHNAMES.test(href))
                 continue;
 
+            // Already on this channel's page: there's nothing to queue or redirect to (#55)
+            if(parseURL(href).pathname?.equals(`/${ STREAMER?.name }`))
+                continue;
+
+            // A notification that links to Twitch's home page names no channel (it showed up as a bare
+            // `https://www.twitch.tv/` job)
+            if((parseURL(href).pathname ?? '/').length < 2)
+                continue;
+
             if(true
                 && !/\blive\b/i.test(innerText)
                 && $.nullish('[class*="toast"i][class*="action"i]', notification)
@@ -122,7 +131,7 @@ plugin({
                     subheader: `Coming up next`,
                     onremove: event => {
                         let index = ALL_FIRST_IN_LINE_JOBS.findIndex(href => event.href == href),
-                            [removed] = ALL_FIRST_IN_LINE_JOBS.splice(index, 1),
+                            [removed] = (index < 0? []: ALL_FIRST_IN_LINE_JOBS.splice(index, 1)),
                             purl = parseURL(removed),
                             name = purl.pathname?.slice(1),
                             redo = (purl.searchParameters?.redo ?? "");
@@ -430,13 +439,13 @@ plugin({
                                 name: streamer.name,
                             });
 
+                            // The queue keeps URLs; the job already holds this one (it used to be replaced by `restored`)
                             ALL_CHANNELS = [...ALL_CHANNELS, restored].filter(defined).filter(uniqueChannels);
-                            ALL_FIRST_IN_LINE_JOBS[index] = restored;
 
                             REDO_FIRST_IN_LINE_QUEUE(FIRST_IN_LINE_HREF = href);
                         })
                         .catch(error => {
-                            let [removed] = ALL_FIRST_IN_LINE_JOBS.splice(index, 1),
+                            let [removed] = (index < 0? []: ALL_FIRST_IN_LINE_JOBS.splice(index, 1)),
                                 name = parseURL(removed).pathname.slice(1);
 
                                 $notice(`Necromancy work:`, removed);

@@ -1346,7 +1346,7 @@ plugin({
                                 subheader: `Coming up next`,
                                 onremove: event => {
                                     let index = ALL_FIRST_IN_LINE_JOBS.findIndex(href => event.href == href),
-                                        [removed] = ALL_FIRST_IN_LINE_JOBS.splice(index, 1),
+                                        [removed] = (index < 0? []: ALL_FIRST_IN_LINE_JOBS.splice(index, 1)),
                                         purl = parseURL(removed),
                                         name = purl.pathname?.slice(1),
                                         redo = (purl.searchParameters?.redo ?? "");
