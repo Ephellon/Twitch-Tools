@@ -1,0 +1,79 @@
+/*** /plugins/clips/save-ttv-clips.js
+ * Video Clips.
+ * Moved verbatim from clips.js (Clips__Initialize) in Phase 4; it wires its own jobs and settings.
+ */
+
+import { plugin } from '../../lib/plugins.js';
+
+plugin({
+    id: 'clips.save_ttv_clips',
+
+    async install() {
+        Handlers.save_ttv_clips = () => {
+            let EDITOR_MODE = location.pathname.equals('/create');
+            let { src } = $('video');
+            let title, author, original, textContainer, placeBefore, carryQuery;
+
+            if(EDITOR_MODE) {
+                title = new ClipName(2);
+                author = window.USERNAME ?? $('[data-a-target="user-display-name"i]')?.textContent ?? '';
+
+                original = $(carryQuery = '[data-a-target*="label"i][data-a-target*="text"i]')?.closest('[style]');
+                placeBefore = original;
+
+                if(nullish(original))
+                    return;
+
+                $notice('Clip editor mode.');
+            } else {
+                let [streamerInfo,, clipInfo] = $.all('[class*="clip"i][class*="info"i]');
+                let [views, meta] = clipInfo.children;
+                let [clipTitle, data] = meta.children;
+                let [timestamp, clipAuthor] = $.queryBy('span, a', data);
+
+                views = parseInt(views.textContent.replace(/\D+/g, ''));
+                title = clipTitle.innerText;
+                timestamp = -parseTime(timestamp.innerText);
+                author = clipAuthor.innerText;
+
+                original = $('[class*="social"i][class*="button"i]:is([class*="copy"i], [class*="clip"i])').closest('[class*="social"i]:not(button, [class*="icon"i])').parentElement;
+                placeBefore = original.parentElement.lastElementChild;
+                carryQuery = '.tw-tooltip';
+
+                $notice('Clip data!', { src, views, title, timestamp, author });
+            }
+
+            let { filename } = parseURL(src);
+            let [ext, ...name] = filename.split('.').reverse();
+            name = name.join('.');
+
+            let parent = original.parentElement;
+            let container = original.cloneNode(true);
+            let button = $('button', container);
+            let id = 'tt_download_link';
+
+            for(let child of $.all('[class*="clip"i]', container))
+                for(let key of child.classList)
+                    child.classList.replace(key, key.replaceAll('clip', 'download'));
+
+            textContainer ??= $(carryQuery, container);
+
+            button.parentElement.setAttribute('aria-describedby', textContainer.id = id);
+
+            textContainer.innerText = `Download this clip`;
+
+            if(EDITOR_MODE)
+                textContainer.innerHTML = furnish(`a#tt-download__${ author.replace(/\W+/g, '') }__${ title.replace(/\W+/g, '_') }`, { href: src, download: title, style: `color:inherit!important` }, 'Download').outerHTML;
+            else
+                $('figure', button)?.replaceWith(furnish(`a#tt-download__${ author.replace(/\W+/g, '') }__${ title.replace(/\W+/g, '_') }`, { href: src, download: title }, Glyphs.utf8.download));
+
+            parent.insertBefore(container, placeBefore);
+        };
+        Timers.save_ttv_clips = -500;
+
+        __Save_TTV_Clips__:
+        if(true || parseBool(Settings?.save_ttv_clips)) {
+            RegisterJob('save_ttv_clips');
+        }
+    },
+});

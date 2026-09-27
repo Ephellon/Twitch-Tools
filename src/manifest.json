@@ -31,6 +31,7 @@
                 "ext/resemble.js",
                 "ext/glyphs.js",
                 "core.js",
+                "clips-plugins.js",
                 "clips.js"
             ]
         },
@@ -48,6 +49,7 @@
                 "ext/resemble.js",
                 "ext/glyphs.js",
                 "core.js",
+                "player-plugins.js",
                 "player.js"
             ]
         },

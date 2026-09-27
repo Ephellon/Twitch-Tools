@@ -69,127 +69,18 @@ let Clips__Initialize = async(START_OVER = false) => {
         }
     }
 
-    /*** Networking
-     *      _   _      _                      _    _
-     *     | \ | |    | |                    | |  (_)
-     *     |  \| | ___| |___      _____  _ __| | ___ _ __   __ _
-     *     | . ` |/ _ \ __\ \ /\ / / _ \| '__| |/ / | '_ \ / _` |
-     *     | |\  |  __/ |_ \ V  V / (_) | |  |   <| | | | | (_| |
-     *     |_| \_|\___|\__| \_/\_/ \___/|_|  |_|\_\_|_| |_|\__, |
-     *                                                      __/ |
-     *                                                     |___/
-     */
-    /*** Video Clips
-     *     __      ___     _               _____ _ _
-     *     \ \    / (_)   | |             / ____| (_)
-     *      \ \  / / _  __| | ___  ___   | |    | |_ _ __  ___
-     *       \ \/ / | |/ _` |/ _ \/ _ \  | |    | | | '_ \/ __|
-     *        \  /  | | (_| |  __/ (_) | | |____| | | |_) \__ \
-     *         \/   |_|\__,_|\___|\___/   \_____|_|_| .__/|___/
-     *                                              | |
-     *                                              |_|
-     */
-    Handlers.save_ttv_clips = () => {
-        let EDITOR_MODE = location.pathname.equals('/create');
-        let { src } = $('video');
-        let title, author, original, textContainer, placeBefore, carryQuery;
+    // What plugins (src/plugins/clips/) get from this scope; see docs/PLUGINS.md
+    let PLUGIN_CONTEXT = { StopWatch };
 
-        if(EDITOR_MODE) {
-            title = new ClipName(2);
-            author = window.USERNAME ?? $('[data-a-target="user-display-name"i]')?.textContent ?? '';
+    // Video Clips → src/plugins/clips/save-ttv-clips.js
+    await TTV.run('clips.save_ttv_clips', PLUGIN_CONTEXT);
 
-            original = $(carryQuery = '[data-a-target*="label"i][data-a-target*="text"i]')?.closest('[style]');
-            placeBefore = original;
-
-            if(nullish(original))
-                return;
-
-            $notice('Clip editor mode.');
-        } else {
-            let [streamerInfo,, clipInfo] = $.all('[class*="clip"i][class*="info"i]');
-            let [views, meta] = clipInfo.children;
-            let [clipTitle, data] = meta.children;
-            let [timestamp, clipAuthor] = $.queryBy('span, a', data);
-
-            views = parseInt(views.textContent.replace(/\D+/g, ''));
-            title = clipTitle.innerText;
-            timestamp = -parseTime(timestamp.innerText);
-            author = clipAuthor.innerText;
-
-            original = $('[class*="social"i][class*="button"i]:is([class*="copy"i], [class*="clip"i])').closest('[class*="social"i]:not(button, [class*="icon"i])').parentElement;
-            placeBefore = original.parentElement.lastElementChild;
-            carryQuery = '.tw-tooltip';
-
-            $notice('Clip data!', { src, views, title, timestamp, author });
-        }
-
-        let { filename } = parseURL(src);
-        let [ext, ...name] = filename.split('.').reverse();
-        name = name.join('.');
-
-        let parent = original.parentElement;
-        let container = original.cloneNode(true);
-        let button = $('button', container);
-        let id = 'tt_download_link';
-
-        for(let child of $.all('[class*="clip"i]', container))
-            for(let key of child.classList)
-                child.classList.replace(key, key.replaceAll('clip', 'download'));
-
-        textContainer ??= $(carryQuery, container);
-
-        button.parentElement.setAttribute('aria-describedby', textContainer.id = id);
-
-        textContainer.innerText = `Download this clip`;
-
-        if(EDITOR_MODE)
-            textContainer.innerHTML = furnish(`a#tt-download__${ author.replace(/\W+/g, '') }__${ title.replace(/\W+/g, '_') }`, { href: src, download: title, style: `color:inherit!important` }, 'Download').outerHTML;
-        else
-            $('figure', button)?.replaceWith(furnish(`a#tt-download__${ author.replace(/\W+/g, '') }__${ title.replace(/\W+/g, '_') }`, { href: src, download: title }, Glyphs.utf8.download));
-
-        parent.insertBefore(container, placeBefore);
-    };
-    Timers.save_ttv_clips = -500;
-
-    __Save_TTV_Clips__:
-    if(true || parseBool(Settings?.save_ttv_clips)) {
-        RegisterJob('save_ttv_clips');
-    }
-
-    /*** Miscellaneous
-     *      __  __ _              _ _
-     *     |  \/  (_)            | | |
-     *     | \  / |_ ___  ___ ___| | | __ _ _ __   ___  ___  _   _ ___
-     *     | |\/| | / __|/ __/ _ \ | |/ _` | '_ \ / _ \/ _ \| | | / __|
-     *     | |  | | \__ \ (_|  __/ | | (_| | | | |  __/ (_) | |_| \__ \
-     *     |_|  |_|_|___/\___\___|_|_|\__,_|_| |_|\___|\___/ \__,_|___/
-     *
-     *
-     */
-    Miscellaneous: {
-        // ...
-    }
-
-    // End of Clips__Initialize
 };
 // End of Clips__Initialize
 
 let Clips__Initialize_Safe_Mode = async(START_OVER = false) => {
-    /*** Miscellaneous
-     *      __  __ _              _ _
-     *     |  \/  (_)            | | |
-     *     | \  / |_ ___  ___ ___| | | __ _ _ __   ___  ___  _   _ ___
-     *     | |\/| | / __|/ __/ _ \ | |/ _` | '_ \ / _ \/ _ \| | | / __|
-     *     | |  | | \__ \ (_|  __/ | | (_| | | | |  __/ (_) | |_| \__ \
-     *     |_|  |_|_|___/\___\___|_|_|\__,_|_| |_|\___|\___/ \__,_|___/
-     *
-     *
-     */
-    Miscellaneous: {
-        // ...
-    }
+    let PLUGIN_CONTEXT = {};
 
-    // End of Clips__Initialize_Safe_Mode
 };
 // End of Clips__Initialize_Safe_Mode
 

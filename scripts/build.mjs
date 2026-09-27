@@ -23,6 +23,8 @@ const WATCH = process.argv.includes('--watch');
 const BUNDLES = {
     'lib/index.js': 'lib.js',
     'plugins/chat/index.js': 'chat-plugins.js',
+    'plugins/player/index.js': 'player-plugins.js',
+    'plugins/clips/index.js': 'clips-plugins.js',
 };
 
 // Folders holding ES-module sources; only their bundles ship
