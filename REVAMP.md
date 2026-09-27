@@ -61,8 +61,12 @@ Living plan for the multi-week revamp. One phase at a time; each phase ends in s
 - Up Next fixes: reordering now resets the queue (`jobs[0].href` was `undefined`); the Stay Live fallback warning shows. Prevent Hosting removed.
 - **Still to do:** convert installed plugins to the structured form as features are touched; the remaining Up Next and live-DOM issues (see `docs/triage/TRIAGE.md`).
 
-### 5. Settings UI from plugin metadata
-- Generate option rows from each plugin's `settings` block instead of hand-written HTML; keeps the JSON export/restore from #58 working.
+### 5. Settings UI from plugin metadata ✅
+- Owner choice: **declarative rows.** The 74 sections moved out of `settings.html` into `<plugin>.settings.js` files, with page-level ones in `src/settings/sections/`. `src/settings/layout.js` orders them and `settings-ui.js` renders them. See [docs/SETTINGS.md](docs/SETTINGS.md).
+- Converted mechanically (`scripts/settings/extract.cjs`, `write.cjs`) and checked twice: the rendered markup matched the hand-written page (92/92 blocks), and the live page DOM and first-run storage matched the old build.
+- The declared defaults are now the single source of truth. Content scripts fall back to them (`SETTINGS_DEFAULTS`) and the page starts unsaved settings at them. JSON export and restore (#58) still work.
+- Fixed along the way: the page ignored the declared defaults of three selects, because they were lost before first save. New installs now get your defaults: Accent Color twitch-purple, Next Channel random, notification sound "goes without saying". Eight settings (e.g. the Up Next minutes) were never saved on first run; content scripts now read their defaults.
+- Left for Phase 7: rows for user plugins, from the same `settings` declarations.
 
 ### 6. Styling
 - **Code style ✅ (side quest):** [docs/STYLEGUIDE.md](docs/STYLEGUIDE.md) is locked in, enforced by the house ESLint rules in `scripts/eslint/style.mjs`, and `npm run format` has been applied everywhere. Owner choices:

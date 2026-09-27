@@ -10,7 +10,6 @@ let IGNORE_ZOOM_STATE = false;
 plugin({
     id: 'auto_accept_mature',
     timer: 5000,
-    settings: { auto_accept_mature: false },
 
     /**
      * Automatically clicks buttons to bypass mature content, class, or watchparty overlays.

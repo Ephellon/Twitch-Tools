@@ -2152,6 +2152,14 @@ let Settings = window.Settings = {
                 for(const setting in settings)
                     Settings[setting] = settings[setting] ?? null;
 
+                // Settings that were never saved (new installs, settings added by an update) read as declared
+                const defaults = window.SETTINGS_DEFAULTS ?? {}
+                    , wanted = properties == null ? Object.keys(defaults) : [].concat(properties).filter(key => typeof key == 'string');
+
+                for(const setting of wanted)
+                    if(!(setting in settings) && setting in defaults)
+                        Settings[setting] = defaults[setting];
+
                 resolve(Settings);
             }
 

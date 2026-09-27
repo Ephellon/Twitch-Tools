@@ -162,7 +162,8 @@ export function settingIds(groups) {
 }
 
 /**
- * Collects every setting's default value.
+ * Collects every setting's default value, in the form settings.js saves it: toggles as booleans, other
+ * controls as their string value, and `scale`d numbers (e.g. a percentage kept as a fraction) as numbers.
  * @param {Array<Object>} groups - The layout
  * @returns {Object} Setting ids mapped to their defaults
  */
@@ -174,13 +175,18 @@ export function settingDefaults(groups) {
             for(const id in settings) {
                 const setting = settings[id];
 
-                if(setting.store === false)
+                if(setting.store === false || setting.type == 'custom')
                     continue;
 
-                if(setting.type == 'select')
-                    defaults[id] = (setting.options.find(option => option.default) ?? setting.options[0])?.value ?? null;
-                else if('default' in setting)
-                    defaults[id] = setting.default;
+                if(setting.type == 'select') {
+                    const option = setting.options.find(option => option.default) ?? setting.options[0];
+
+                    defaults[id] = option?.value ?? option?.label.replace(/<[^>]*>/g, '').trim() ?? null;
+                } else if(setting.type == 'checkbox' || setting.type == 'radio') {
+                    defaults[id] = !!setting.default
+                } else if('default' in setting) {
+                    defaults[id] = setting.scale ? Number(setting.default) * setting.scale : String(setting.default)
+                }
             }
 
     return defaults;

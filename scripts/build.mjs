@@ -83,8 +83,30 @@ function listFiles(directory, base = directory) {
     });
 }
 
+/**
+ * Reads every setting's declared default from src/settings/layout.js.
+ * @returns {Promise<Object>} Setting ids mapped to their defaults
+ */
+async function settingDefaults() {
+    const { outputFiles: [result] } = await esbuild.build({
+        stdin: {
+            contents: `import layout from './settings/layout.js'; import { settingDefaults } from './settings/render.js'; export default settingDefaults(layout);`,
+            resolveDir: SOURCE,
+        },
+        bundle: true, format: 'esm', platform: 'neutral', write: false, logLevel: 'warning',
+    });
+
+    const { default: defaults } = await import('data:text/javascript;base64,' + Buffer.from(result.text).toString('base64'));
+
+    return defaults;
+}
+
+// Bundles that run as content scripts get the defaults, so a setting that was never saved reads as declared
+const CONTENT_BUNDLES = ['lib.js', 'chat-plugins.js', 'player-plugins.js', 'clips-plugins.js'];
+
 async function bundle() {
     const output = {};
+    const defaults = `globalThis.SETTINGS_DEFAULTS ??= Object.freeze(${ JSON.stringify(await settingDefaults()) });`;
 
     for(const [entry, file] of Object.entries(BUNDLES)) {
         const { outputFiles: [result] } = await esbuild.build({
@@ -98,6 +120,7 @@ async function bundle() {
             outfile: file,
             keepNames: true,            // Legacy code reads constructor and function names
             logLevel: 'warning',
+            banner: CONTENT_BUNDLES.includes(file) ? { js: defaults } : void null,
         });
 
         output[file] = Buffer.from(result.contents);

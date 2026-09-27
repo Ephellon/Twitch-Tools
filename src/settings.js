@@ -890,7 +890,8 @@ async function LoadSettings(OVER_RIDE_SETTINGS = null) {
         , using = elements.map(element => element.id);
 
     return await Storage.get(null, settings => {
-        SETTINGS = OVER_RIDE_SETTINGS ?? settings;
+        // Anything never saved starts at its declared default
+        SETTINGS = OVER_RIDE_SETTINGS ?? { ...SETTINGS_DEFAULTS, ...settings };
 
         loading:
         for(const id of using) {

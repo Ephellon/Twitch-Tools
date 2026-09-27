@@ -142,6 +142,7 @@ export default {
             min: 1,
             max: 25,
             unit: '%',
+            scale: 0.01,     // Saved as a fraction of full volume
         },
         away_mode_schedule: {
             type: 'custom',

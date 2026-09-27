@@ -26,7 +26,7 @@ const PLUGINS = (globalThis.__TTV_PLUGINS__ ??= new Map);
  * @param {boolean}  [definition.register = true]   `false` when `setup` decides for itself whether to call `RegisterJob`
  * @param {function} [definition.install]           A section moved verbatim from an initializer: it wires its own jobs
  *                                                  (Handlers/Timers/RegisterJob) and runs whether or not it's enabled
- * @param {object}   [definition.settings]          The feature's settings and their defaults (used by the Settings page, Phase 5)
+ * The feature's settings (controls, text, defaults) are declared beside it in `<plugin>.settings.js`; see docs/SETTINGS.md.
  */
 export function plugin(definition) {
     const { id } = definition;

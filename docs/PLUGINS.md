@@ -32,7 +32,6 @@ const EXTENSION_VIEWS = '[class*="extension"i]:is([class*="view"i], [class*="pop
 plugin({
     id: 'kill_extensions',                  // settings key = job name
     timer: 2_500,                           // > 0 repeats every N ms; < 0 runs once after N ms
-    settings: { kill_extensions: false },   // the settings it owns, with defaults
 
     handler({ StopWatch }) {                // the job; receives the context from TTV.start()
         new StopWatch('kill_extensions');
@@ -54,7 +53,24 @@ plugin({
 });
 ```
 
-Then add it to `src/plugins/index.js`, which sets the order plugins start in:
+Its settings go beside it in `kill-extensions.settings.js` (see [Settings](SETTINGS.md)), which `src/settings/layout.js` places on the Settings page:
+
+```js
+export default {
+    title: "Kill Extensions",
+    tr: 'kill-extensions',
+    glyph: 'extensions',
+    rows: [
+        { toggle: 'kill_extensions' },
+        { text: "Hides Twitch extension overlays and pop-overs on the player." },
+    ],
+    settings: {
+        kill_extensions: { type: 'checkbox', default: false },
+    },
+};
+```
+
+Then add the plugin to `src/plugins/index.js`, which sets the order plugins start in:
 
 ```js
 import './automation/kill-extensions.js';
@@ -75,7 +91,6 @@ import './automation/kill-extensions.js';
 | `register` | no | `false` when `setup` decides for itself whether to call `RegisterJob(job)` |
 | `install(context)` | no | Installed form: runs the moved section verbatim, whether or not the feature is enabled. If present, the fields above are ignored |
 | `frames` | no | Where `TTV.start(frame)` runs it: `main` (www.twitch.tv; the default), `chat`, `player`, `clips`. The bundle a plugin is in decides which pages load it (see below) |
-| `settings` | no | The settings it owns, with defaults; the Settings page will be generated from these in Phase 5 |
 
 ## Where plugins run
 

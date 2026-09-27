@@ -9,7 +9,6 @@ const EXTENSION_VIEWS = '[class*="extension"i]:is([class*="view"i], [class*="pop
 plugin({
     id: 'kill_extensions',
     timer: 2_500,
-    settings: { kill_extensions: false },
 
     /**
      * Hides all Twitch extension views from the page.

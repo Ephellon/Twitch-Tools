@@ -7,7 +7,6 @@ import { plugin } from '../../lib/plugins.js';
 plugin({
     id: 'view_mode',
     timer: -2_500,
-    settings: { view_mode: null },
 
     /**
      * Sets the Twitch player view mode based on the provided mode or the default setting.
