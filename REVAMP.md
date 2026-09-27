@@ -108,6 +108,7 @@ All Offser output is treated as a draft — verified against the code before it 
 - **Stop/Prevent Hosting:** removed in Phase 4 (Twitch dropped hosting in 2022).
 - **Tooltip `from: 'down'`:** resolved in Phase 6 (dead placement code removed; behaviour unchanged).
 - **Version:** the revamp ships as **v6** (manifest bump happens at release, Phase 8).
+- **Phase 6.5 roles:** the TTV Transpiler agent owns the DSL (`src/dsl/`, language, runtime), and its rulings there are final. This session manages the extension side: host adapter, plugin registry, Settings UI, build. They coordinate through Offser shares (`ttv-dsl-*`).
 - **Plugins:** both — built-in features become plugins (Phases 3–4), user plugins via TTV DSL (Phase 7).
 - **Build step:** allowed. Source stays in `ttv-tools/` (still loads unpacked as-is); `scripts/build.mjs` produces `dist/`. esbuild joins in Phase 3 when plugins get real `import`s.
 - **Browsers:** Chrome + Firefox — build emits a Chrome MV3 manifest and a Firefox variant (`browser_specific_settings`, background `scripts` fallback); `chrome.*` calls go through one compat shim.
