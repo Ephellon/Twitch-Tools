@@ -19,7 +19,7 @@ plugin({
                     return;
 
                 const emoteContainer =
-                furnish('.tt-emote-captured.tt-pd-x-05.tt-relative').with(
+                    furnish('.tt-emote-captured.tt-pd-x-05.tt-relative').with(
                     furnish('.emote-button').with(
                         furnish('.tt-inline-flex').with(
                             furnish(`button.emote-button__link.tt-align-items-center.tt-flex.tt-justify-content-center[@testSelector=emote-button-clickable][@aTarget=${ name }]`,
@@ -58,7 +58,7 @@ plugin({
                             )
                         )
                     )
-                );
+                    );
 
                 if(makeTooltip !== false)
                     new Tooltip(emoteContainer, name);
@@ -68,11 +68,11 @@ plugin({
 
         // Convert emote URL to a short url
         const shrt = url => url.replace(/https:\/\/static-cdn\.jtvnw\.net\/emoticons\/v1\/(\d+)\/([\d\.]+)/i, ($0, $1, $2, $$, $_) => {
-                const id = parseInt($1).toString(36)
-                    , version = $2;
+            const id = parseInt($1).toString(36)
+                , version = $2;
 
-                return [id, version].join('-');
-            });
+            return [id, version].join('-');
+        });
 
         Handlers.convert_emotes = () => {
             let emoteSection = $('#tt-captured-emotes');
@@ -111,7 +111,7 @@ plugin({
                 caughtEmotes.push({ name, src });
 
             emoteSection =
-            furnish('#tt-captured-emotes.emote-picker__content-block',
+                furnish('#tt-captured-emotes.emote-picker__content-block',
                 {
                     ondragover: event => {
                         event.preventDefault();
@@ -142,10 +142,11 @@ plugin({
                         ...caughtEmotes.map(CONVERT_TO_CAPTURED_EMOTE)
                     )
                 )
-            );
+                );
 
             parent.insertBefore(emoteSection, parent.firstChild);
         };
+
         Timers.convert_emotes = 2_500;
 
         __ConvertEmotes__:
@@ -236,7 +237,7 @@ plugin({
 
                         const f = furnish;
                         const img =
-                        f('.chat-line__message--emote-button[@testSelector=emote-button]').with(
+                            f('.chat-line__message--emote-button[@testSelector=emote-button]').with(
                             f('span[@aTarget=emote-name]').with(
                                 f('.class.chat-image__container.tt-align-center.tt-inline-block').with(
                                     f('img.chat-image.chat-line__message--emote', {
@@ -244,7 +245,7 @@ plugin({
                                     })
                                 )
                             )
-                        );
+                            );
 
                         when(line => (defined(line.element) ? line : false), 1000, line).then(async element => {
                             alt = alt.replace(/\s+/g, '_');
@@ -266,6 +267,7 @@ plugin({
                                         const { capturedEmote } = element.dataset;
                                         // ... //
                                     });
+
                                 context.REFURBISH_BTTV_EMOTE_TOOLTIPS(fragment);
                             });
                         });
@@ -347,6 +349,7 @@ plugin({
             }
 
             const channels = RegExp(`^(${ (channel.length ? channel.map(({ name }) => name).join('|') : '[\\b]') })$`, 'i');
+
             Object.defineProperties(channel, {
                 test: { value: channels.test.bind(channels) },
                 exec: { value: channels.exec.bind(channels) },

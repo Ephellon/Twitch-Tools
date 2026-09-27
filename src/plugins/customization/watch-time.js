@@ -160,27 +160,27 @@ plugin({
                 method: 'POST',
                 headers: { "client-id": Search.anonID },
                 body: JSON.stringify([{
-            		operationName: 'DirectoryPage_Game',
-            		variables: {
-            			imageWidth: 50,
-            			slug: filename,
-            			options: {
-            				sort: 'VIEWER_COUNT',
-            				freeformTags: null,
-            				tags: [],
-            				broadcasterLanguages: [],
-            				systemFilters: [],
-            			},
-            			sortTypeIsRecency: false,
-            			limit: 100, // [1, 100]
-            		},
+                    operationName: 'DirectoryPage_Game',
+                    variables: {
+                        imageWidth: 50,
+                        slug: filename,
+                        options: {
+                            sort: 'VIEWER_COUNT',
+                            freeformTags: null,
+                            tags: [],
+                            broadcasterLanguages: [],
+                            systemFilters: [],
+                        },
+                        sortTypeIsRecency: false,
+                        limit: 100, // [1, 100]
+                    },
                     extensions: {
                         persistedQuery: {
                             version: 1,
                             sha256Hash: `3c9a94ee095c735e43ed3ad6ce6d4cbd03c4c6f754b31de54993e0d48fd54e30`,
                         },
                     },
-            	}]),
+                }]),
             }).then(r => r.json()).then(json => {
                 if(!json?.length)
                     throw `No query data available @ ${ filename }`;
@@ -195,7 +195,7 @@ plugin({
                     ?.game      // { displayName:string, id:string<int>, name:string, streams:object }
                     ?.streams   // { edges:array<object>, pageInfo:object<{ hasNextPage:boolean }> }
                     ?.edges     // [...{ broadcaster:object, freeFormTags:object|array, game:object, id:string<int~GameID>, previewImageURL:object<{ *:string<URL> }>, title:string, type:string, viewersCount:number<int> }]
-                ?? [];
+                    ?? [];
 
                 const { game, poll, sole } = STREAMER;
 

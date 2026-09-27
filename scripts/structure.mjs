@@ -20,8 +20,10 @@ let targets = process.argv.slice(2).filter(arg => !arg.startsWith('--'));
 if(!targets.length) {
     const visit = dir => fs.readdirSync(dir).flatMap(name => {
         const file = path.join(dir, name);
+
         return fs.statSync(file).isDirectory() ? visit(file) : file.endsWith('.js') && name != 'index.js' ? [file] : [];
     });
+
     targets = visit('src/plugins');
 }
 
@@ -43,12 +45,14 @@ function walk(node, visit, parent = null) {
 // `this`/`arguments` that belong to the function itself (not to a nested non-arrow function)
 function usesOwnThis(fn) {
     let found = false;
+
     walk(fn.body, node => {
         if(node.type == 'FunctionExpression' || node.type == 'FunctionDeclaration')
             return false;
         if(node.type == 'ThisExpression' || (node.type == 'Identifier' && node.name == 'arguments'))
             found = true;
     });
+
     return found;
 }
 
@@ -94,6 +98,7 @@ function block(source, statements, from, to) {
     // Keep comments/blank lines between statements; start from the first statement's line
     const lineStart = source.lastIndexOf('\n', start) + 1;
     const text = source.slice(lineStart, end);
+
     return text.split('\n').map(line => line.trim() ? (to > from ? ' '.repeat(to - from) + line : line.replace(new RegExp(`^ {0,${ from - to }}`), '')) : '').join('\n');
 }
 
@@ -112,6 +117,7 @@ function withParameter(source, fn, parameter) {
     }
 
     const open = text.indexOf('(');
+
     return text.slice(0, open + 1) + parameter + text.slice(open + 1);
 }
 
@@ -151,44 +157,44 @@ for(const file of targets) {
     }
 
     if(handlers.length != 1 || timers.length > 1 || unhandlers.length > 1 || labels.length != 1) {
- skip(`shape: ${ handlers.length } handlers, ${ timers.length } timers, ${ unhandlers.length } unhandlers, ${ labels.length } setup blocks`);
+        skip(`shape: ${ handlers.length } handlers, ${ timers.length } timers, ${ unhandlers.length } unhandlers, ${ labels.length } setup blocks`);
 
- continue;
-}
+        continue;
+    }
 
     const job = member(handlers[0].left, 'Handlers');
 
     if([timers[0], unhandlers[0]].some(a => a && member(a.left, 'Timers') != job && member(a.left, 'Unhandlers') != job)) {
- skip('timer/unhandler for another job');
+        skip('timer/unhandler for another job');
 
- continue;
-}
+        continue;
+    }
 
     const [label] = labels;
 
     if(statements.at(-1) !== label) {
- skip('code after the setup block');
+        skip('code after the setup block');
 
- continue;
-}
+        continue;
+    }
     if(label.body.alternate) {
- skip('setup block has an else');
+        skip('setup block has an else');
 
- continue;
-}
+        continue;
+    }
 
     const jobFunctions = [handlers[0].right, unhandlers[0]?.right].filter(Boolean);
 
     if(jobFunctions.some(f => !/FunctionExpression$/.test(f.type))) {
- skip('handler is not a function literal');
+        skip('handler is not a function literal');
 
- continue;
-}
+        continue;
+    }
     if(jobFunctions.some(usesOwnThis)) {
- skip('handler uses this/arguments');
+        skip('handler uses this/arguments');
 
- continue;
-}
+        continue;
+    }
 
     // Setup: the block's statements, minus a final top-level RegisterJob(job)
     const consequent = label.body.consequent;
@@ -199,16 +205,17 @@ for(const file of targets) {
     const setup = register ? body.filter((_, i) => i != registerAt) : body;
 
     if(after.some(s => /\bJobs\b/.test(source.slice(s.range[0], s.range[1])))) {
- skip('reads Jobs after RegisterJob');
+        skip('reads Jobs after RegisterJob');
 
- continue;
-}
+        continue;
+    }
 
     let labelUsed = false;
+
     walk(consequent, node => {
- if((node.type == 'BreakStatement' || node.type == 'ContinueStatement') && node.label?.name == label.label.name)
-        labelUsed = true;
-});
+        if((node.type == 'BreakStatement' || node.type == 'ContinueStatement') && node.label?.name == label.label.name)
+            labelUsed = true;
+    });
 
     // State: top-level declarations become module-level, assigned in init()
     const state = [], hoisted = [], initLines = [];
@@ -220,9 +227,12 @@ for(const file of targets) {
         if(statement.type == 'VariableDeclaration') {
             for(const d of statement.declarations) {
                 const names = patternNames(d.id);
+
                 state.push(...names);
+
                 const target = source.slice(d.id.range[0], d.id.range[1]);
                 const value = d.init ? source.slice(d.init.range[0], d.init.range[1]) : 'undefined';
+
                 initLines.push(d.id.type == 'ObjectPattern' ? `(${ target } = ${ value });` : `${ target } = ${ value };`);
             }
         } else if(statement.type == 'FunctionDeclaration') {
@@ -238,10 +248,10 @@ for(const file of targets) {
 
     // Anything in state must not already be a name this module uses otherwise (import, plugin)
     if(state.includes('plugin')) {
- skip('state named "plugin"');
+        skip('state named "plugin"');
 
- continue;
-}
+        continue;
+    }
 
     const uses = (text, name) => new RegExp(`\\b${ name }\\b`).test(text);
     const needsParameter = text => parameter && (parameter == 'context' ? uses(text, 'context') : uses(text, 'StopWatch'));
@@ -257,7 +267,7 @@ for(const file of targets) {
     const setupStatements = [...setup.filter(s => !after.includes(s)), ...after];
     const setupText = labelUsed
         ? `        ${ label.label.name }: {\n${ block(source, setupStatements, 12, 12) }\n        }`
-    : block(source, setupStatements, 12, 8);
+        : block(source, setupStatements, 12, 8);
 
     const handlerFn = handlers[0].right;
     const handlerText = shift(needsParameter(source.slice(handlerFn.range[0], handlerFn.range[1])) || handlerFn.params.length ? withParameter(source, handlerFn, parameter || 'context') : source.slice(handlerFn.range[0], handlerFn.range[1]), -4);
@@ -277,9 +287,11 @@ for(const file of targets) {
     // Header: keep the title, say how it was converted
     const header = source.slice(0, source.indexOf('import '))
         .replace(/ \* Moved verbatim from (.+?) in Phase 4; it wires its own jobs and settings\.\n/, ' * Moved from $1 in Phase 4 and converted to the structured form (docs/PLUGINS.md).\n');
+
     const importLine = source.slice(source.indexOf('import '), source.indexOf('\n', source.indexOf('import ')) + 1);
 
     const parts = [];
+
     parts.push(`    id: '${ id }',`);
     if(job != id)
         parts.push(`    job: '${ job }',`);

@@ -36,14 +36,14 @@ plugin({
                 const f = furnish;
 
                 const addedClasses = {
-                    bubbleContainer: ['chat-input-tray__open', 'tt-block', 'tt-border-b', 'tt-border-l', 'tt-border-r', 'tt-border-radius-large', 'tt-border-t', 'tt-c-background-base', 'tt-elevation-1', 'tt-left-0', 'tt-pd-05', 'tt-right-0', 'tt-z-below'],
-                    chatContainer: ['chat-input-container__open', 'tt-block', 'tt-border-bottom-left-radius-large', 'tt-border-bottom-right-radius-large', 'tt-c-background-base', 'tt-pd-05'],
-                    chatContainerChild: ['chat-input-container__input-wrapper'],
-                }
-                , removedClasses = {
-                    bubbleContainer: ['tt-block', 'tt-border-radius-large', 'tt-elevation-0', 'tt-left-0', 'tt-pd-0', 'tt-right-0', 'tt-z-below'],
-                    chatContainer: ['tt-block', 'tt-border-radius-large', 'tt-pd-0'],
-                };
+                        bubbleContainer: ['chat-input-tray__open', 'tt-block', 'tt-border-b', 'tt-border-l', 'tt-border-r', 'tt-border-radius-large', 'tt-border-t', 'tt-c-background-base', 'tt-elevation-1', 'tt-left-0', 'tt-pd-05', 'tt-right-0', 'tt-z-below'],
+                        chatContainer: ['chat-input-container__open', 'tt-block', 'tt-border-bottom-left-radius-large', 'tt-border-bottom-right-radius-large', 'tt-c-background-base', 'tt-pd-05'],
+                        chatContainerChild: ['chat-input-container__input-wrapper'],
+                    }
+                    , removedClasses = {
+                        bubbleContainer: ['tt-block', 'tt-border-radius-large', 'tt-elevation-0', 'tt-left-0', 'tt-pd-0', 'tt-right-0', 'tt-z-below'],
+                        chatContainer: ['tt-block', 'tt-border-radius-large', 'tt-pd-0'],
+                    };
 
                 return f('.chat-line__reply-icon.tt-absolute.tt-border-radius-medium.tt-c-background-base.tt-elevation-1').with(
                     f('button.tt-align-items-center.tt-align-middle.tt-border-bottom-left-radius-medium.tt-border-bottom-right-radius-medium.tt-border-top-left-radius-medium.tt-border-top-right-radius-medium.tt-button-icon.tt-core-button.tt-inline-flex.tt-interactive.tt-justify-content-center.tt-overflow-hidden.tt-relative[@testSelector=chat-reply-button]',

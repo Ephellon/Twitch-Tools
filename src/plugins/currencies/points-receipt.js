@@ -11,7 +11,9 @@ plugin({
     async install({ StopWatch }) {
         let RECEIPT_TOOLTIP;
         let COUNTING_POINTS;
+
         EXACT_POINTS_SPENT = 0;
+
         let EXACT_POINTS_DEBTED = 0;
         let EXACT_POINTS_EARNED = 0;
         const COUNTING_HREF = NORMALIZED_PATHNAME;
@@ -42,8 +44,9 @@ plugin({
                 // Available (according to stremer's average stream time)
                 parseBool(Settings.show_stats)
                     ? [furnish(`marquee[direction=left][scrollamount=1]`, { style: 'width:fit-content;vertical-align:top' }).html(`&larr;`), Glyphs.modify('channelpoints', { height: '12px', width: '12px', style: 'vertical-align:-1px;position:relative' }).asNode, furnish(`span#tt-points-left-this-stream`).html(AVAILABLE_POINTS.prefix('', 1, 'natural'))].map(e => e.outerHTML).join('')
-                : null
+                    : null
             ].filter(defined).join(' | ');
+
             $('#tt-points-receipt').innerHTML = `${ glyph } ${ abs(receipt).suffix(`&${ 'du'[+(receipt >= 0)] }arr;`, 1, 'natural') }`;
         }
 
@@ -115,9 +118,9 @@ plugin({
                     rank = (
                         rank < 1 || isNaN(rank)
                             ? '&infin;'
-                        : place <= 30
-                            ? `<span style="text-decoration:${ 4 - ((place / 10).ceil() || 1) }px underline ${ color }">${ string }</span>`
-                        : string
+                            : place <= 30
+                                ? `<span style="text-decoration:${ 4 - ((place / 10).ceil() || 1) }px underline ${ color }">${ string }</span>`
+                                : string
                     );
 
                     if(nullish(ranking))
@@ -236,6 +239,7 @@ plugin({
 
             StopWatch.stop('points_receipt_placement');
         };
+
         Timers.points_receipt_placement = -2_500;
 
         Unhandlers.points_receipt_placement = () => {

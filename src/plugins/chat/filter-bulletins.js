@@ -21,6 +21,7 @@ plugin({
             ['filter_messages__bullets_note', ['note']],
             ['filter_messages__bullets_paid', ['PINNED_MESSAGES']],
         ]);
+
         PINNED_FILTER = -1;
     },
 
@@ -44,12 +45,12 @@ plugin({
 
     enabled() {
         return [
-        Settings.filter_messages__bullets_coin,
-        Settings.filter_messages__bullets_raid,
-        Settings.filter_messages__bullets_subs,
-        Settings.filter_messages__bullets_note,
-        Settings.filter_messages__bullets_paid,
-    ].map(parseBool).contains(true);
+            Settings.filter_messages__bullets_coin,
+            Settings.filter_messages__bullets_raid,
+            Settings.filter_messages__bullets_subs,
+            Settings.filter_messages__bullets_note,
+            Settings.filter_messages__bullets_paid,
+        ].map(parseBool).contains(true);
     },
 
     setup() {

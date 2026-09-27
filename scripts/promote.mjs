@@ -51,6 +51,7 @@ for(const name of names) {
 
     if(def.type == 'FunctionName') {
         const node = def.node;
+
         edits.push([node.range[0], node.range[1], `${ name } = ${ source.slice(node.range[0], node.range[1]) };`]);
     } else if(def.type == 'Variable') {
         const statement = def.parent;
@@ -72,6 +73,7 @@ for(const name of names) {
 
         // Comments between declarators would be lost; keep them above the statement
         const comments = (ast.comments ?? []).filter(c => c.range[0] > statement.range[0] && c.range[1] < statement.range[1] && !statement.declarations.some(d => c.range[0] >= d.range[0] && c.range[1] <= d.range[1]));
+
         parts.unshift(...comments.map(c => source.slice(c.range[0], c.range[1])));
 
         edits.push([statement.range[0], statement.range[1], parts.join(`\n${ indent }`)]);
@@ -87,6 +89,7 @@ for(const [start, end, text] of edits)
 // Declare them once: at the top of the initializer (--head), or above it
 if(HEAD) {
     const open = fn.body.range[0] + 1;
+
     source = source.slice(0, open) + `\n    // Shared between this initializer's features and their plugins (src/plugins/)\n    let ${ names.join(', ') };\n` + source.slice(open);
     fs.writeFileSync(file, source);
     console.log(`Promoted ${ names.join(', ') } to the top of ${ initializer } in ${ file }`);
@@ -99,6 +102,7 @@ const existing = source.lastIndexOf(marker, at);
 
 if(existing > -1 && existing < at) {
     const lineEnd = source.indexOf(';\n', existing + marker.length);
+
     source = source.slice(0, lineEnd) + `, ${ names.join(', ') }` + source.slice(lineEnd);
 } else {
     source = source.slice(0, at) + marker + `let ${ names.join(', ') };\n\n` + source.slice(at)

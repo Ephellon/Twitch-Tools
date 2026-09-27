@@ -67,6 +67,7 @@ plugin({
         const averageBroadcastTime = ((context.STREAMER.data?.dailyBroadcastTime ?? 16_200_000) / 3_600_000).clamp(0, 24)
             , activeDaysPerWeek = (context.STREAMER.data?.activeDaysPerWeek ?? 5).clamp(1, 7)
             , pointsEarnedPerHour = 120 + (200 * +Settings.auto_claim_bonuses); // https://help.twitch.tv/s/article/channel-points-guide
+
         const timeLeftInBroadcast = averageBroadcastTime - (context.STREAMER.time / 3_600_000);
 
         // Set the progress bar of the button
@@ -82,7 +83,7 @@ plugin({
         const hours = (need / (pointsEarnedPerHour * context.CHANNEL_POINTS_MULTIPLIER))
             , days = (hours / 24) * (24 / averageBroadcastTime)
             , weeks = (days / 7) * (7 / (activeDaysPerWeek || (averageBroadcastTime / 24)))
-                // ... OR fraction of active day
+            // ... OR fraction of active day
             , months = weeks / 4
             , years = months / 12;
 
@@ -92,22 +93,28 @@ plugin({
 
         if(hours < 0) {
             return
-        } if(hours > 1) {
+        }
+        if(hours > 1) {
             estimated = 'hour';
             timeEstimated = hours;
-        } if(hours > averageBroadcastTime) {
+        }
+        if(hours > averageBroadcastTime) {
             estimated = 'day';
             timeEstimated = days;
-        } if(days > activeDaysPerWeek) {
+        }
+        if(days > activeDaysPerWeek) {
             estimated = 'week';
             timeEstimated = weeks;
-        } if(days > 30) {
+        }
+        if(days > 30) {
             estimated = 'month';
             timeEstimated = months;
-        } if(months > 12) {
+        }
+        if(months > 12) {
             estimated = 'year';
             timeEstimated = years;
-        } if(years > 100) {
+        }
+        if(years > 100) {
             estimated = 'century';
             timeEstimated = years / 100;
         }
@@ -129,6 +136,7 @@ plugin({
         }
 
         const T_L = top.LANGUAGE;
+
         switch(T_L) {
             case 'bg': {
                 // Adopted from /ext/times.json/#bg

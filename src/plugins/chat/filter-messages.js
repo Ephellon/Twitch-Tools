@@ -21,6 +21,7 @@ plugin({
                 return message.toLowerCase().includes(text.toLowerCase());
             }
         };
+
         MESSAGE_FILTER = void null;
     },
 

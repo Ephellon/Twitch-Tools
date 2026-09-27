@@ -74,7 +74,7 @@ plugin({
             pointsToEarnNext = parseInt(
                 (notEarned >= -Infinity)
                     ? pointsToEarnNext
-                : 0
+                    : 0
             );
 
             const amounter = $(`.tt-point-amount[name="${ name }"i]`, target);
@@ -96,9 +96,9 @@ plugin({
                         ? furnish(pointFace, {
                             innerHTML: ` | ${ furnish('img', { src: `https://static-cdn.jtvnw.net/channel-points-icons/${ face }`, style: style.toString() }).outerHTML } `,
                         })
-                    : furnish(pointFace, {
-                        innerHTML: ` | ${ Glyphs.modify('channelpoints', { style, ...style.toObject() }) } `,
-                    });
+                        : furnish(pointFace, {
+                            innerHTML: ` | ${ Glyphs.modify('channelpoints', { style, ...style.toObject() }) } `,
+                        });
 
                 target.append(icon);
                 target.append(text);
@@ -119,10 +119,11 @@ plugin({
                 notEarned = (
                     (allRewards?.length)
                         ? allRewards.filter(({ cost = 0 }) => cost > STREAMER.coin).length
-                    : (notEarned >= -Infinity)
-                        ? notEarned
-                    : -1
+                        : (notEarned >= -Infinity)
+                            ? notEarned
+                            : -1
                 );
+
                 pointsToEarnNext = (
                     (allRewards?.length)
                         ? allRewards
@@ -130,9 +131,9 @@ plugin({
                             .sort((x, y) => (x > y ? -1 : +1))
                             .filter(x => x > 0)
                             .pop()
-                    : (notEarned >= -Infinity)
-                        ? pointsToEarnNext
-                    : 0
+                        : (notEarned >= -Infinity)
+                            ? pointsToEarnNext
+                            : 0
                 );
 
                 face = face?.replace(/^(?:https?:.*?)?([\d]+\/[\w\-\.\/]+)$/i, '$1');
@@ -173,7 +174,7 @@ plugin({
                             || $('button [style]')
                                 ?.getComputedStyle?.($(`main a[href$="${ NORMALIZED_PATHNAME }"i]`) ?? $(':root'))
                                 ?.getPropertyValue?.('background-color')
-                            || '#9147FF'
+                                || '#9147FF'
                         ).toUpperCase();
 
                     image = image?.src ?? 'https://static-cdn.jtvnw.net/custom-reward-images/default-1.png';
@@ -204,7 +205,7 @@ plugin({
                                     'CHOOSE-EMOTE': 'CHOSEN_SUB_EMOTE_UNLOCK',
                                     CHOSEN_SUB_EMOTE_UNLOCK: 'CHOSEN_SUB_EMOTE_UNLOCK',
                                 }[imgName.replace(/(\W?\d+)?\.(gif|jpe?g|png)$/i, '').replace(/^(\d+)$/, imgSub).toUpperCase()])
-                            : null
+                                : null
                         );
 
                     const item = {

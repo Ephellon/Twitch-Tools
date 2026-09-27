@@ -591,6 +591,7 @@ Runtime.onMessage.addListener((request, sender, respond) => {
                                     return true;
                             return false;
                         };
+
                         let name = null
                             , owner = null
                             , ownerAlive = false;
@@ -694,6 +695,7 @@ Runtime.onMessage.addListener((request, sender, respond) => {
 
         case 'BEGIN_REPORT': {
             const { tab } = sender;
+
             IGNORE_REPORTS = false;
 
             console.warn(`Beginning report for tab #${ tab.id }`);
@@ -713,6 +715,7 @@ Runtime.onMessage.addListener((request, sender, respond) => {
 
         case 'WAIVE_REPORT': {
             const { tab } = sender;
+
             IGNORE_REPORTS = true;
 
             console.warn(`Ignoring reports for tab #${ tab.id }`);
@@ -951,14 +954,15 @@ async function auditMemory() {
                                 ? 'low'
                                 : 'normal'
                 );
+
                 const act = ram_[`ram_on${ tier }`] ?? 'ignore';
 
                 const onAccept = 'RESPAWN_THIS_TAB'
                     , onIgnore = (true
                         && autoDiscardable
                         && FOCUSED_TAB !== id
-                            ? 'RESPAWN_THIS_TAB'
-                            : void null
+                        ? 'RESPAWN_THIS_TAB'
+                        : void null
                     );
 
                 // Boomer Tabs — over 30, high resource usage, and inactive

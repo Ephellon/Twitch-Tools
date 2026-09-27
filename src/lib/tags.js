@@ -27,11 +27,9 @@ function scoreTagActivity(...tags) {
             case 'SHOOTER':     case '523FE736-FA95-44C7-B22F-13008CA2172C': // Shooter
             case 'SPORTS':      case '0D4233AF-7AC6-49DA-937D-E0F42B7DB187': // Sports
             case 'WRESTLING':   case '7199189A-0569-4854-908E-08E6C3667379': { // Wrestling
-            {
                 score += 20;
-            }
 
- continue scoring;
+                continue scoring;
             }
 
             case '4X':          case '7304B834-D065-47D5-9865-C19CD17D2639': // 4X
@@ -54,11 +52,9 @@ function scoreTagActivity(...tags) {
             case 'ROGUELIKE':   case 'CAD488FB-C95C-4BE1-B197-5B851D3A12FA': // Roguelike
             case 'VR':          case 'CA470745-C1DF-4C11-9474-9AB79DFC1863': // VR
             case 'VTUBER':      case '52D7E4CC-633D-46F5-818C-BB59102D9549': { // Vtuber
-            {
                 score += 15;
-            }
 
- continue scoring;
+                continue scoring;
             }
 
             case '100%':            case 'E659959D-392F-44C5-83A5-FB959CDBACCC': // 100%
@@ -81,11 +77,9 @@ function scoreTagActivity(...tags) {
             case 'RPG':             case '9D38085E-EE62-4203-877B-81797052A18B': // RPG
             case 'RTS':             case '3E30C47A-26C0-4DD3-9C3A-9CD6AD35589C': // RTS
             case 'SURVIVAL':        case 'AE7D0652-8B2E-476B-8B51-A076550B234F': { // Survival
-            {
                 score += 10;
-            }
 
- continue scoring;
+                continue scoring;
             }
 
             case 'ANIMALS':         case '3DC8F084-D886-4264-B20F-8BD5F90562B5': // Animals
@@ -104,21 +98,18 @@ function scoreTagActivity(...tags) {
             case 'SIMULATION':      case '22E434B6-CA88-46E8-91EF-C18EE1CB8A67': // Simulation
             case 'STEALTH':         case '0472BAB0-E068-49B3-9BB8-789FDFE3C66A': // Stealth
             case 'UNBOXING':        case 'CD9ED640-426D-4A08-B8E0-417A61197264': { // Unboxing
-            {
                 score += 5;
-            }
 
- continue scoring;
+                continue scoring;
             }
 
             default: {
-                {
-                    ++score;
-                }
+                ++score;
 
- continue scoring;
+                continue scoring;
             }
-        };
+        } // :scoring
+    ;
 
     return score;
 }

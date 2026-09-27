@@ -68,7 +68,7 @@ class UUID {
                 } // switch type
             },
         });
-	}
+    }
 
     /**
      * Returns a "normalized" (32 character string) version of the UUID.
@@ -102,14 +102,14 @@ class UUID {
         if(/^[\x32]*$/.test(string))
             return '';
 
-    	const _a = `\u0001${ string }`;
-    	const _b = `\u0001${ string }\u0001${ string }`;
-    	const _p = [];
+        const _a = `\u0001${ string }`;
+        const _b = `\u0001${ string }\u0001${ string }`;
+        const _p = [];
 
-    	for(let n = 0; n < _a.length; n++)
-    		_p.push(_b.slice(n, _a.length + n));
+        for(let n = 0; n < _a.length; n++)
+            _p.push(_b.slice(n, _a.length + n));
 
-    	return _p.sort().map(c => c.slice(-1)[0]).join('');
+        return _p.sort().map(c => c.slice(-1)[0]).join('');
     }
 
     /**
@@ -246,9 +246,10 @@ class UUID {
         const hash =
             [...new Uint8Array(hashBuffer)]                                     // convert buffer to byte array
                 .map(B => B.toString(16).padStart(2, '0'));                     // convert each byte into a hex-string
+
         const native = hash
-                .join('')                                                       // convert bytes to hex string
-                .replace(/(.{16})(.{8})(.{8})(.{8})/, '$1-$2-$3-$4-');          // format the string into a large UUID string
+            .join('')                                                       // convert bytes to hex string
+            .replace(/(.{16})(.{8})(.{8})(.{8})/, '$1-$2-$3-$4-');          // format the string into a large UUID string
 
         PrepareForGarbageCollection(hash);
 
@@ -348,10 +349,10 @@ class nanoid {
             id = nanoid.#customAlphabet(alphabet)(size);
         else
             while(size--)
-            // Using the bitwise AND operator to "cap" the value of
-            // the random byte from 255 to 63, in that way we can make sure
-            // that the value will be a valid index for the "chars" string.
-            id += nanoid.#scopedUrlAlphabet[bytes[size] & 63];
+                // Using the bitwise AND operator to "cap" the value of
+                // the random byte from 255 to 63, in that way we can make sure
+                // that the value will be a valid index for the "chars" string.
+                id += nanoid.#scopedUrlAlphabet[bytes[size] & 63];
 
         return Object.assign(this, new String(id), {
             value: id,
@@ -517,9 +518,9 @@ class LZW {
             word = (
                 key < 256
                     ? String.fromCharCode(key)
-                : dictionary.has(key)
-                    ? dictionary.get(key)
-                : word + word.charAt(0)
+                    : dictionary.has(key)
+                        ? dictionary.get(key)
+                        : word + word.charAt(0)
             );
 
             output.push(word);
@@ -609,9 +610,9 @@ class LZW {
             word = (
                 key < 256
                     ? String.fromCharCode(key)
-                : dictionary.has(key)
-                    ? dictionary.get(key)
-                : word + word.charAt(0)
+                    : dictionary.has(key)
+                        ? dictionary.get(key)
+                        : word + word.charAt(0)
             );
 
             output.push(word);
@@ -625,7 +626,8 @@ class LZW {
 
         return decodeURIComponent(escape(output.join('')));
     }
-};
+}
+;
 
 /**
  * An over-arching adjustment schema.
@@ -698,6 +700,7 @@ class Tooltip {
             const from = fineTuning.from.replace(/^[^]+--(up|down|left|right)$/i, '$1').toLowerCase();
 
             let container;
+
             $.queryBy('#root > *, body').first.append(
                 container = furnish(`.tt-tooltip-layer.tooltip-layer[for="${ groupID }"]`,
                     {
@@ -796,7 +799,8 @@ class Tooltip {
             return false;
         }
     }
-};
+}
+;
 
 /** @typedef {string} CSSSelector
  * See {@link https://developer.mozilla.org/en-US/docs/Web/CSS/CSS_selectors CSS selectors}
@@ -835,7 +839,7 @@ class Tooltip {
 function $(selector, container = document, multiple = false) {
     return multiple
         ? [...(container?.querySelectorAll(selector) ?? [])]
-    : (container?.querySelector(selector) ?? null);
+        : (container?.querySelector(selector) ?? null);
 }
 
 Object.defineProperties($, {
@@ -955,7 +959,7 @@ function nullish(value) {
  * @return {boolean}    Returns <i>true</i> if the value is <i>null</i> or <i>undefined</i>
  */
 nullish.literal = function(value) {
-	return (value === null) || (value === void null);
+    return (value === null) || (value === void null);
 };
 
 /**
@@ -977,7 +981,7 @@ function defined(value) {
  * @return {boolean}    Returns <i>true</i> if the value is <strong>not</strong> <i>null</i> or <i>undefined</i>
  */
 defined.literal = function(value) {
-	return !nullish.literal(value);
+    return !nullish.literal(value);
 };
 
 /**
@@ -987,15 +991,15 @@ defined.literal = function(value) {
  * @return {boolean}        Whether the object is empty or not
  */
 function empty(iterable) {
-	const itr = iterable ?? [];
+    const itr = iterable ?? [];
 
-	if(itr instanceof Map || itr instanceof Set)
-		return itr.size < 1;
+    if(itr instanceof Map || itr instanceof Set)
+        return itr.size < 1;
 
-	if(itr.constructor === Object)
-		return empty(Object.keys(itr));
+    if(itr.constructor === Object)
+        return empty(Object.keys(itr));
 
-	return (itr.length | 0) < 1;
+    return (itr.length | 0) < 1;
 }
 
 /**
@@ -1005,7 +1009,7 @@ function empty(iterable) {
  * @return {boolean}        Whether the object is empty or not
  */
 function sated(iterable) {
-	return !empty(iterable);
+    return !empty(iterable);
 }
 
 /**
@@ -1194,9 +1198,9 @@ async function when(condition, ms = 30, ...args) {
                 resolve(
                     (value === when.false)
                         ? false
-                    : (value === when.true)
-                        ? true
-                    : value
+                        : (value === when.true)
+                            ? true
+                            : value
                 );
             }
         }, ms, [].concat(args));
@@ -1284,11 +1288,11 @@ try {
                             resolve(
                                 (value === when.null)
                                     ? null
-                                : (value === when.void)
-                                    ? void null
-                                : (value === when.undefined)
-                                    ? void null
-                                : value
+                                    : (value === when.void)
+                                        ? void null
+                                        : (value === when.undefined)
+                                            ? void null
+                                            : value
                             );
                         }
                     }, ms, [].concat(args));
@@ -1622,6 +1626,7 @@ function wait(delay = 1, ...values) {
  */
 function delay(executor, ms = 0, ...args) {
     let timer = -1;
+
     return function(...argz) {
         clearTimeout(timer);
         timer = setTimeout(executor.bind(this, ...[].concat(args, argz)), ms);
@@ -1738,6 +1743,7 @@ function fetchURL(url, options = {}) {
                     headers: { 'content-type': 'application/json' },
                     body: JSON.stringify({ url: href }),
                 });
+
                 href = `https://cors-proxy.taskcluster.net/request`;
             } break;
 
@@ -2022,71 +2028,71 @@ prevent_fetch_dragging: if(top == window) {
 
     Object.defineProperties(fetchURL.origins, {
         BEST: probe('BEST', () => Promise.any([
-                fetchURL.origins.CORSFIX
-                , fetchURL.origins.CORS_PROXY
-                , fetchURL.origins.CORS_ANYWHERE
-                , fetchURL.origins.ALL_ORIGINS
-                , fetchURL.origins.ALLOW_ORIGIN
-                , fetchURL.origins.TASK_CLUSTER
-                , fetchURL.origins.CODE_TABS
-            ].map(foster =>
-                fetchURL.idempotent('https://example.org/', { foster, as: 'native', timeout: 3_000 })
-                    .then(async r =>
-                        r.ok && (r.status >= 100 && r.status < 300) && /\bexample\b/i.test(await r.text())
-                            ? foster
+            fetchURL.origins.CORSFIX
+            , fetchURL.origins.CORS_PROXY
+            , fetchURL.origins.CORS_ANYWHERE
+            , fetchURL.origins.ALL_ORIGINS
+            , fetchURL.origins.ALLOW_ORIGIN
+            , fetchURL.origins.TASK_CLUSTER
+            , fetchURL.origins.CODE_TABS
+        ].map(foster =>
+            fetchURL.idempotent('https://example.org/', { foster, as: 'native', timeout: 3_000 })
+                .then(async r =>
+                    r.ok && (r.status >= 100 && r.status < 300) && /\bexample\b/i.test(await r.text())
+                        ? foster
                         : Promise.reject(`Bad request @${ foster.toString() }`)
-                    )
                 )
-            ).catch($ignore)),
+        )
+        ).catch($ignore)),
     });
 
     Object.defineProperties(fetchURL.origins, {
         JSON_BEST: probe('JSON_BEST', () => Promise.any([
-                fetchURL.origins.WHATEVER_ORIGIN,
-            ].map(foster =>
-                fetchURL.idempotent('https://example.org/', { foster, as: 'json', timeout: 1_000 })
-                    .then(async r =>
-                        r.ok && (r.status >= 100 && r.status < 300) && /\bexample\b/i.test(await r.text())
-                            ? foster
+            fetchURL.origins.WHATEVER_ORIGIN,
+        ].map(foster =>
+            fetchURL.idempotent('https://example.org/', { foster, as: 'json', timeout: 1_000 })
+                .then(async r =>
+                    r.ok && (r.status >= 100 && r.status < 300) && /\bexample\b/i.test(await r.text())
+                        ? foster
                         : Promise.reject(`Bad JSON request @${ foster.toString() }`)
-                    )
                 )
-            ).catch($ignore)),
+        )
+        ).catch($ignore)),
 
         HTML_BEST: probe('HTML_BEST', () => Promise.any([
-                fetchURL.origins.CORSFIX
-                , fetchURL.origins.CORS_PROXY
-                , fetchURL.origins.CORS_ANYWHERE
-                , fetchURL.origins.ALL_ORIGINS
-                , fetchURL.origins.ALLOW_ORIGIN
-                , fetchURL.origins.TASK_CLUSTER
-                , fetchURL.origins.CODE_TABS
-            ].map(foster =>
-                fetchURL.idempotent('https://example.org/', { foster, as: 'html', timeout: 1_000 })
-                    .then(async r =>
-                        r.ok && (r.status >= 100 && r.status < 300) && /\bexample\b/i.test(await r.text())
-                            ? foster
+            fetchURL.origins.CORSFIX
+            , fetchURL.origins.CORS_PROXY
+            , fetchURL.origins.CORS_ANYWHERE
+            , fetchURL.origins.ALL_ORIGINS
+            , fetchURL.origins.ALLOW_ORIGIN
+            , fetchURL.origins.TASK_CLUSTER
+            , fetchURL.origins.CODE_TABS
+        ].map(foster =>
+            fetchURL.idempotent('https://example.org/', { foster, as: 'html', timeout: 1_000 })
+                .then(async r =>
+                    r.ok && (r.status >= 100 && r.status < 300) && /\bexample\b/i.test(await r.text())
+                        ? foster
                         : Promise.reject(`Bad HTML request @${ foster.toString() }`)
-                    )
                 )
-            ).catch($ignore)),
+        )
+        ).catch($ignore)),
 
         TEXT_BEST: probe('TEXT_BEST', () => Promise.any([
-                fetchURL.origins.TEXT,
-                fetchURL.origins.TEXT_2,
-                fetchURL.origins.TEXT_3,
-                fetchURL.origins.TEXT_4,
-                fetchURL.origins.TEXT_5,
-                // fetchURL.origins.TEXT_6,
-            ].map(foster =>
-                fetchURL.idempotent('https://example.org/', { foster, as: 'text', timeout: 1_000 })
-                    .then(async r =>
-                        r.ok && (r.status >= 100 && r.status < 300) && /\bexample\b/i.test(await r.text())
-                            ? foster
+            fetchURL.origins.TEXT,
+            fetchURL.origins.TEXT_2,
+            fetchURL.origins.TEXT_3,
+            fetchURL.origins.TEXT_4,
+            fetchURL.origins.TEXT_5,
+            // fetchURL.origins.TEXT_6,
+        ].map(foster =>
+            fetchURL.idempotent('https://example.org/', { foster, as: 'text', timeout: 1_000 })
+                .then(async r =>
+                    r.ok && (r.status >= 100 && r.status < 300) && /\bexample\b/i.test(await r.text())
+                        ? foster
                         : Promise.reject(`Bad text request @${ foster.toString() }`)
-                    )
                 )
-            ).catch($ignore)),
+        )
+        ).catch($ignore)),
     });
 } // :prevent_fetch_dragging
 
@@ -2123,7 +2129,7 @@ let Settings = window.Settings = {
             window.Storage.get(properties, settings =>
                 window.Runtime.lastError
                     ? window.Storage.get(null, ParseSettings)
-                : ParseSettings(settings)
+                    : ParseSettings(settings)
             );
         });
     },
@@ -2198,21 +2204,21 @@ let Cache = window.Cache = {
     async load(properties = null, callback = null) {
         const results = {};
         const get = key => {
-                let value =
-                    // New save name
-                    CacheStorageArea.getItem(`ext.twitch-tools/${ encodeURI(key) }`);
-                    // Old save name
-                    // if (value === undefined)
-                    //     value = CacheStorageArea.getItem(key);
+            let value =
+                // New save name
+                CacheStorageArea.getItem(`ext.twitch-tools/${ encodeURI(key) }`);
+            // Old save name
+            // if (value === undefined)
+            //     value = CacheStorageArea.getItem(key);
 
-                try {
-                    value = JSON.parse(value);
-                } catch(error) {
-                    // Suppress
-                }
+            try {
+                value = JSON.parse(value);
+            } catch(error) {
+                // Suppress
+            }
 
-                return value;
-            };
+            return value;
+        };
 
         properties ??= await Cache.keys();
 
@@ -2298,21 +2304,21 @@ let Cache = window.Cache = {
     async getBytesInUse(properties, callback = null) {
         let bytesUsed = 0;
         const size = key => {
-                let value =
-                    // New save name
-                    CacheStorageArea.getItem(`ext.twitch-tools/${ encodeURI(key) }`);
-                    // Old save name
-                    // if (value === undefined)
-                    //     value = CacheStorageArea.getItem(key);
+            let value =
+                // New save name
+                CacheStorageArea.getItem(`ext.twitch-tools/${ encodeURI(key) }`);
+            // Old save name
+            // if (value === undefined)
+            //     value = CacheStorageArea.getItem(key);
 
-                try {
-                    value = JSON.parse(value);
-                } catch(error) {
-                    // Suppress
-                }
+            try {
+                value = JSON.parse(value);
+            } catch(error) {
+                // Suppress
+            }
 
-                return (key?.length | 0) + (JSON.stringify(value)?.length | 0);
-            };
+            return (key?.length | 0) + (JSON.stringify(value)?.length | 0);
+        };
 
         properties ??= await Cache.keys();
 
@@ -2661,7 +2667,7 @@ __STATIC__: {
 
         return Jobs[JobName] ??= Timers[JobName] > 0
             ? setInterval(Handlers[JobName], Timers[JobName])
-        : -setTimeout(Handlers[JobName], -Timers[JobName]);
+            : -setTimeout(Handlers[JobName], -Timers[JobName]);
     }
     Handlers.__reasons__.set('RegisterJob', UUID.from(RegisterJob).value);
 
@@ -2745,4 +2751,5 @@ __STATIC__: {
     }
     Handlers.__reasons__.set('RestartJob', UUID.from(RestartJob).value);
     Unhandlers.__reasons__.set('RestartJob', UUID.from(RestartJob).value);
-};
+} // :__STATIC__
+;

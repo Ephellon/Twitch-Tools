@@ -103,7 +103,7 @@ Rules are grouped by concern. Where a rule refers to another, it names that rule
 ## IV. Statements and control flow
 
 ### One statement per line
-- Every statement gets its own line. **lint** (`max-statements-per-line`)
+- Every statement gets its own line. **lint, fix** (`ttv/statement-per-line`)
 
 ### One-line bodies
 - The body of a brace-less `if`, `else`, `for` or `while` goes on its own line, indented. **lint, fix** (`ttv/body-below`)
@@ -113,7 +113,22 @@ Rules are grouped by concern. Where a rule refers to another, it names that rule
   ```
 
 ### Block separation
-- Different kinds of block are separated by a blank line. The kinds are: `if`/`else` chains (a whole chain counts as one), `for` loops, `while` loops, and declaration groups. A run of the same kind may stay together. **lint, fix** (`padding-line-between-statements`)
+Leave room to breathe. All of these are **lint, fix** (`padding-line-between-statements`):
+- A **declaration group** (`const`/`let`/`var`) has a blank line before its first declaration and after its last. Declarations within a group stay together.
+- A **statement that spans lines**, one ending `…);`, `…];` or `…};`, is followed by a blank line.
+- **Different kinds of block** are separated by a blank line. The kinds are: `if`/`else` chains (a whole chain counts as one), `for` loops and `while` loops. A run of the same kind may stay together.
+  ```javascript
+  const [streamer] = online.filter(({ name }) => name.equals(channel));
+
+  if(nullish(streamer))
+      continue filtering;
+
+  Cache.save({
+      FIRST_IN_LINE_DUE_DATE,
+  });
+
+  RegisterJob('up_next');
+  ```
 - A standalone `break` or `continue` has a blank line before it. The `} break;` form of a switch case doesn't. **lint, fix**
 
 ### Labels
@@ -205,7 +220,10 @@ Rules are grouped by concern. Where a rule refers to another, it names that rule
 ---
 
 ## IX. Formatting
-- Indent with **4 spaces**, never tabs. **lint**
+- Indent with **4 spaces**, never tabs: one level per block, case, continued declaration (`, next`), leading operator (`|| x`, `? y`) and chained call (`.then(…)`). **lint, fix** (`indent`, `indent-binary-ops`)
+  - Exception: the arguments of a call keep their hand indentation. `furnish(…)`/`f(…)` DOM trees indent children under their parent to show nesting.
+  - Exception: a function assigned on the next line (`top.Name =` then `function Name() {…}`) stays level with the assignment.
+- A comment is indented like the code after it. A group of comments moves together and keeps its internal indentation, so a signature line stays one level under its description. **lint, fix** (`ttv/comment-indent`)
 - No space between a control keyword and its parenthesis: `if(`, `for(`, `while(`, `switch(`. **lint, fix**
 - No space before a function's parameter list: `function name(`, `async(x) =>`. **lint, fix**
 - Braces follow 1TBS (`} else {`). **lint, fix**

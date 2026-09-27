@@ -467,16 +467,16 @@ Chat__PAGE_CHECKER = setInterval(Chat__WAIT_FOR_PAGE = async() => {
                                         , subject = (
                                             'sub resub'.split(' ').contains(msg_id)
                                                 ? 'dues'
-                                            : 'giftpaidupgrade anongiftpaidupgrade'.split(' ').contains(msg_id)
-                                                ? 'keep'
-                                            : 'subgift rewardgift submysterygift rewardmysterygift'.split(' ').contains(msg_id)
-                                                ? 'gift'
-                                            : 'raid unraid'.split(' ').contains(msg_id)
-                                                ? 'raid' // incoming raids
-                                            : 'pointsredeemed'.split(' ').contains(msg_id)
-                                                ? 'coin'
-                                            // ritual (new_chatter, etc.); bitsbadgetier (100, 1000, 10000, etc.)
-                                            : 'note'
+                                                : 'giftpaidupgrade anongiftpaidupgrade'.split(' ').contains(msg_id)
+                                                    ? 'keep'
+                                                    : 'subgift rewardgift submysterygift rewardmysterygift'.split(' ').contains(msg_id)
+                                                        ? 'gift'
+                                                        : 'raid unraid'.split(' ').contains(msg_id)
+                                                            ? 'raid' // incoming raids
+                                                            : 'pointsredeemed'.split(' ').contains(msg_id)
+                                                                ? 'coin'
+                                                                // ritual (new_chatter, etc.); bitsbadgetier (100, 1000, 10000, etc.)
+                                                                : 'note'
                                         )
                                         , element = when.defined(async(message, subject) =>
                                             // TODO: get bullets via text content
@@ -522,7 +522,7 @@ Chat__PAGE_CHECKER = setInterval(Chat__WAIT_FOR_PAGE = async() => {
 
                                                     return message.mutilate().errs(element.textContent.mutilate()) < .2;
                                                 })
-                                            , 100, message, subject);
+                                        , 100, message, subject);
 
                                     const results = {
                                         element,
@@ -635,7 +635,7 @@ Chat__PAGE_CHECKER = setInterval(Chat__WAIT_FOR_PAGE = async() => {
                                                             return match;
                                                         })
                                                 )
-                                            , 100, message, tags.id)
+                                        , 100, message, tags.id)
                                         , emotes = Object.keys(tags.emotes ?? {}).map(key => {
                                             const emote = (tags.emotes[+key] || tags.emotes[key]).shift()
                                                 , name = parameters.substring(+emote.startPosition, ++emote.endPosition)
@@ -720,7 +720,8 @@ Chat__PAGE_CHECKER = setInterval(Chat__WAIT_FOR_PAGE = async() => {
                                 } break;
 
                                 default: { continue }
-                            };
+                            } // switch command.command
+                            ;
                         }
                     };
                 };
@@ -757,66 +758,66 @@ Chat__PAGE_CHECKER = setInterval(Chat__WAIT_FOR_PAGE = async() => {
                             });
                     });
 
-                    // Play catch-up...
-                    when.defined(() => $('[data-test-selector$="message-container"i]'), 100)
-                        .then(chat => {
-                            const unhandled = $.all('[data-a-target="chat-line-message"i]:not([data-uuid])', chat);
+                // Play catch-up...
+                when.defined(() => $('[data-test-selector$="message-container"i]'), 100)
+                    .then(chat => {
+                        const unhandled = $.all('[data-a-target="chat-line-message"i]:not([data-uuid])', chat);
 
-                            for(const element of unhandled) {
-                                let raw = $('[class*="message"i][class*="container"i]', element).textContent.trim().replace($('[data-a-target="chat-timestamp"]', element)?.textContent || '', '')
-                                    , uuid = UUID.from(raw).toString()
-                                    , reply = $('[class*="reply"i] button', element)
-                                    , style = $('[data-a-user]', element)?.getAttribute('style')?.trim()
-                                    , author = $('[data-a-user]', element).dataset.aUser
-                                    , emotes = new Set
-                                    , badges = new Set
-                                    , __bs__ = $.all('[class*="username"i][class*="container"i] [data-a-target*="badge"i] img', element).map(e => badges.add(e.alt.toLowerCase()))
-                                    , handle = $('[data-a-user]', element).textContent
-                                    , usable = false
-                                    , message = raw.replace(/^[^:]+?:/, '').trim()
-                                    , mentions = $.all('[data-a-target*="mention"i]', element).map(e => e.textContent)
-                                    , highlighted = parseBool(element.dataset.testSelector?.contains('notice'));
+                        for(const element of unhandled) {
+                            let raw = $('[class*="message"i][class*="container"i]', element).textContent.trim().replace($('[data-a-target="chat-timestamp"]', element)?.textContent || '', '')
+                                , uuid = UUID.from(raw).toString()
+                                , reply = $('[class*="reply"i] button', element)
+                                , style = $('[data-a-user]', element)?.getAttribute('style')?.trim()
+                                , author = $('[data-a-user]', element).dataset.aUser
+                                , emotes = new Set
+                                , badges = new Set
+                                , __bs__ = $.all('[class*="username"i][class*="container"i] [data-a-target*="badge"i] img', element).map(e => badges.add(e.alt.toLowerCase()))
+                                , handle = $('[data-a-user]', element).textContent
+                                , usable = false
+                                , message = raw.replace(/^[^:]+?:/, '').trim()
+                                , mentions = $.all('[data-a-target*="mention"i]', element).map(e => e.textContent)
+                                , highlighted = parseBool(element.dataset.testSelector?.contains('notice'));
 
-                                element.dataset.uuid = uuid;
+                            element.dataset.uuid = uuid;
 
-                                emotes = [...emotes];
-                                badges = [...badges];
+                            emotes = [...emotes];
+                            badges = [...badges];
 
-                                const results = {
-                                    raw,
-                                    uuid,
-                                    reply,
-                                    style,
-                                    author,
-                                    emotes,
-                                    badges,
-                                    handle,
-                                    usable,
-                                    element,
-                                    message,
-                                    mentions,
-                                    highlighted,
-                                    deleted: $.defined('[data-a-target*="delete"i]', element),
-                                };
+                            const results = {
+                                raw,
+                                uuid,
+                                reply,
+                                style,
+                                author,
+                                emotes,
+                                badges,
+                                handle,
+                                usable,
+                                element,
+                                message,
+                                mentions,
+                                highlighted,
+                                deleted: $.defined('[data-a-target*="delete"i]', element),
+                            };
 
-                                Chat.__allmessages__.set(uuid, results);
+                            Chat.__allmessages__.set(uuid, results);
 
-                                for(const [name, callback] of Chat.__onmessage__)
-                                    when(() => PAGE_IS_READY, 250).then(() => callback(results));
+                            for(const [name, callback] of Chat.__onmessage__)
+                                when(() => PAGE_IS_READY, 250).then(() => callback(results));
 
-                                for(const [name, callback] of Chat.__deferredEvents__.__onmessage__)
-                                    when.defined.pipe(async(callback, results) => await results?.element, 1000, callback, results).then(([callback, results]) => callback(results));
+                            for(const [name, callback] of Chat.__deferredEvents__.__onmessage__)
+                                when.defined.pipe(async(callback, results) => await results?.element, 1000, callback, results).then(([callback, results]) => callback(results));
 
-                                for(const [name, callback] of Chat.__consumableEvents__.__onmessage__) {
-                                    when(() => PAGE_IS_READY, 250).then(() =>
-                                        callback(results).then(complete => {
-                                            if(complete)
-                                                Chat.__consumableEvents__.__onmessage__.delete(name);
-                                        })
-                                    );
-                                }
+                            for(const [name, callback] of Chat.__consumableEvents__.__onmessage__) {
+                                when(() => PAGE_IS_READY, 250).then(() =>
+                                    callback(results).then(complete => {
+                                        if(complete)
+                                            Chat.__consumableEvents__.__onmessage__.delete(name);
+                                    })
+                                );
                             }
-                        });
+                        }
+                    });
             } // :ChatObserver
 
             // Override variables
@@ -844,7 +845,7 @@ Chat__PAGE_CHECKER = setInterval(Chat__WAIT_FOR_PAGE = async() => {
 
                     return Jobs[JobName] ??= Timers[JobName] > 0
                         ? setInterval(Handlers[JobName], Timers[JobName])
-                    : -setTimeout(Handlers[JobName], -Timers[JobName]);
+                        : -setTimeout(Handlers[JobName], -Timers[JobName]);
                 };
             }
         }

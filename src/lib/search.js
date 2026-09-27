@@ -69,10 +69,10 @@ class Search {
                                 .replace(/\//g, '')
                                 .replace(/^v/, '')
                         )
-                    // Is a channel
-                    : (
-                        channelName = pathname.replace(/\//g, '')
-                    )
+                        // Is a channel
+                        : (
+                            channelName = pathname.replace(/\//g, '')
+                        )
                 )
             )
                 /* All good */;
@@ -101,6 +101,7 @@ class Search {
             return Search.#cache.get(searchID);
 
         let template;
+
         switch(Search.parseType = as) {
             case 'query': {
                 const query = ('query PlaybackAccessToken_Template($login: String!, $isLive: Boolean!, $vodID: ID!, $isVod: Boolean!, $playerType: String!) { streamPlaybackAccessToken(channelName: $login, params: { platform: "web", playerBackend: "mediaplayer", playerType: $playerType }) @include(if: $isLive) { value signature __typename } videoPlaybackAccessToken(id: $vodID, params: { platform: "web", playerBackend: "mediaplayer", playerType: $playerType }) @include(if: $isVod) { value signature __typename }}');
@@ -286,6 +287,7 @@ class Search {
         } // switch Search.parseType = as
 
         let body, results;
+
         switch(type) {
             case 'vod': {
                 body = JSON.stringify({
@@ -387,10 +389,10 @@ class Search {
                                 .replace(/\//g, '')
                                 .replace(/^v/, '')
                         )
-                    // Is a channel
-                    : (
-                        channelName = pathname.replace(/\//g, '')
-                    )
+                        // Is a channel
+                        : (
+                            channelName = pathname.replace(/\//g, '')
+                        )
                 )
             )
                 /* All good */;
@@ -458,43 +460,43 @@ class Search {
 
     static async convertResults(response) {
         let json = (null
-                ?? (await response?.json?.())
-                ?? ({})
+            ?? (await response?.json?.())
+            ?? ({})
             )
             , data = {};
 
         let ConversionKey = {
-            banStatus:          'veto',
-            broadcaster_id:     'sole',
-            channel:            'name',
-            channel_id:         'sole',
-            createdAt:          'date',
-            displayName:        'name',
-            hosting:            'host',
-            id:                 'sole',
-            isMature:           'nsfw',
-            login:              'name',
-            mature:             'nsfw',
-            partner:            'ally',
-            primaryColorHex:    'tint',
-            profileImageURL:    'icon',
-            role:               'role',
-            subscriber:         'paid',
-            turbo:              'fast',
-            viewersCount:       'poll',
+                banStatus:          'veto',
+                broadcaster_id:     'sole',
+                channel:            'name',
+                channel_id:         'sole',
+                createdAt:          'date',
+                displayName:        'name',
+                hosting:            'host',
+                id:                 'sole',
+                isMature:           'nsfw',
+                login:              'name',
+                mature:             'nsfw',
+                partner:            'ally',
+                primaryColorHex:    'tint',
+                profileImageURL:    'icon',
+                role:               'role',
+                subscriber:         'paid',
+                turbo:              'fast',
+                viewersCount:       'poll',
 
-            display_name:       'name',
-            status:             'desc',
-            title:              "desc",
-            live:               'live',
-            href:               'href',
-            profile_image:      'icon',
-        }
-        , DataConversionKey = {
-            started_at:         'actualStartTime',
-            updated_at:         'lastSeen',
-            stream:             'broadcast',
-        }
+                display_name:       'name',
+                status:             'desc',
+                title:              "desc",
+                live:               'live',
+                href:               'href',
+                profile_image:      'icon',
+            }
+            , DataConversionKey = {
+                started_at:         'actualStartTime',
+                updated_at:         'lastSeen',
+                stream:             'broadcast',
+            }
             , deeper = [];
 
         switch(Search.parseType) {

@@ -52,7 +52,7 @@ plugin({
             ?? ALL_CHANNELS.find(({ name }) => (
                 (name.contains('(') && name.contains(')'))
                     ? name.contains(alias)
-                : name.equals(alias)
+                    : name.equals(alias)
             ))
             ?? { name: alias.normalize('NFKD') }
         )?.name?.replace(/[^]*\(([^\(\)]+)\)[^]*/, '$1');
@@ -83,14 +83,14 @@ plugin({
             name,
             element:
                 furnish(`.tt-stream-preview.invisible[@position=${ (top + height / 2 < body.height / 2) ? 'below' : 'above' }][@vods=${ richTooltips.length > 1 }]`, {
-                        style: (
-                            (top + height / 2 < body.height / 2)
-                                // Below tooltip
-                                ? `top: calc(${ bottom }px + 0.5em);`
+                    style: (
+                        (top + height / 2 < body.height / 2)
+                            // Below tooltip
+                            ? `top: calc(${ bottom }px + 0.5em);`
                             // Above tooltip
                             : `top: calc(${ top }px - 0.5em - (15rem * ${ scale }));`
-                        ) + `left: calc(${ (watchParty ? getOffset($('[data-a-target^="side-nav-bar"i]'))?.width : video?.left) ?? 50 }px - 6rem); height: calc(15rem * ${ scale }); width: calc(26.75rem * ${ scale }); z-index: ${ '9'.repeat(1 + parseInt(Settings.stream_preview_position ?? 0)) };`,
-                    },
+                    ) + `left: calc(${ (watchParty ? getOffset($('[data-a-target^="side-nav-bar"i]'))?.width : video?.left) ?? 50 }px - 6rem); height: calc(15rem * ${ scale }); width: calc(26.75rem * ${ scale }); z-index: ${ '9'.repeat(1 + parseInt(Settings.stream_preview_position ?? 0)) };`,
+                },
                     furnish('.tt-stream-preview--poster', {
                         style: `background-image: url("https://static-cdn.jtvnw.net/previews-ttv/live_user_${ name.toLowerCase() }-1280x720.jpg?${ +new Date }");`,
                         onerror: event => {
@@ -107,13 +107,13 @@ plugin({
 
                                     controls, muted, quality,
                                 })
-                            : ({
-                                video: `v${ richTooltip.closest('[href^="/videos/"i]').href.split('/').pop() }`,
-                                parent: 'twitch.tv',
-                                autoplay: true,
+                                : ({
+                                    video: `v${ richTooltip.closest('[href^="/videos/"i]').href.split('/').pop() }`,
+                                    parent: 'twitch.tv',
+                                    autoplay: true,
 
-                                controls, muted, quality,
-                            })
+                                    controls, muted, quality,
+                                })
                         ).href,
 
                         height: '100%',

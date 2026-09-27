@@ -192,7 +192,7 @@ let nth = (n, s = '') => {
 
             n = n
                 .replace(/([\d\s\,\.]+)$/, '$1-то')
-            + c(s);
+                + c(s);
         } break;
 
         case 'cs':
@@ -208,7 +208,7 @@ let nth = (n, s = '') => {
 
             n = n
                 .replace(/([\d\s\,\.]+)$/, '$1.')
-            + c(s);
+                + c(s);
         } break;
 
         case 'el': {
@@ -216,7 +216,7 @@ let nth = (n, s = '') => {
 
             n = n
                 .replace(/([\d\s\,\.]+)$/, '$1η')
-            + c(s);
+                + c(s);
         } break;
 
         case 'es': {
@@ -224,7 +224,7 @@ let nth = (n, s = '') => {
 
             n = n
                 .replace(/([\d\s\,\.]+)$/, '$1°')
-            + c(s);
+                + c(s);
         } break;
 
         case 'fr':
@@ -233,7 +233,7 @@ let nth = (n, s = '') => {
 
             n = n
                 .replace(/([\d\s\,\.]+)$/, '$1')
-            + c(s);
+                + c(s);
         } break;
 
         case 'it':
@@ -242,7 +242,7 @@ let nth = (n, s = '') => {
 
             n = n
                 .replace(/([\d\s\,\.]+)$/, '$1')
-            + c(s);
+                + c(s);
         } break;
 
         case 'ja':
@@ -252,14 +252,14 @@ let nth = (n, s = '') => {
 
             n = n
                 .replace(/([\d\s\,\.]+)$/, '$1号')
-            + c(s);
+                + c(s);
         } break;
 
         case 'ko': {
             // 1번 2번 3번 4번 ... 11번 12번 13번 ... 21번 22번 23번
             n = n
                 .replace(/([\d\s\,\.]+)$/, '$1번')
-            + c(s);
+                + c(s);
         } break;
 
         case 'ru': {
@@ -267,7 +267,7 @@ let nth = (n, s = '') => {
 
             n = n
                 .replace(/([\d\s\,\.]+)$/, '$1-й')
-            + c(s);
+                + c(s);
         } break;
 
         case 'sv': {
@@ -275,7 +275,7 @@ let nth = (n, s = '') => {
 
             n = n
                 .replace(/([\d\s\,\.]+)$/, '$1:')
-            + c(s);
+                + c(s);
         } break;
 
         case 'th': {
@@ -283,7 +283,7 @@ let nth = (n, s = '') => {
 
             n = n
                 .replace(/([\d\s\,\.]+)$/, 'หมายเลข $1')
-            + c(s);
+                + c(s);
         } break;
 
         case 'vi': {
@@ -291,7 +291,7 @@ let nth = (n, s = '') => {
 
             n = n
                 .replace(/([\d\s\,\.]+)$/, 'Thứ $1')
-            + c(s);
+                + c(s);
         } break;
 
         case 'en':
@@ -303,7 +303,7 @@ let nth = (n, s = '') => {
                 .replace(/1$/, '1st')
                 .replace(/2$/, '2nd')
                 .replace(/3$/, '3rd')
-            + c(s);
+                + c(s);
         } break;
     } // switch window.LANGUAGE
 
@@ -736,6 +736,7 @@ try {
                                                 if(/^imageURL\b/i.test(key)) {
                                                     let href = badge.meta[key]
                                                         , [path, version, uuid, size] = parseURL(href).pathname.slice(0).split('/');
+
                                                     size = parseInt(size);
 
                                                     if(size > max) {
@@ -862,6 +863,7 @@ try {
         // Text Selection(s)
         let selectionText = getSelection()
             , { baseNode, baseOffset, extentNode, extentOffset } = selectionText;
+
         selectionText = (selectionText + '').trim().normalize('NFKD');
 
         // Anchors
@@ -983,6 +985,7 @@ try {
         else if(defined(image)) {
             const { src } = image;
             let [tail = 'png', ...name] = parseURL(src).filename?.split('.')?.reverse() ?? [];
+
             name = (name ?? [image.alt]).join('.');
             tail = /^(bmp|[gt]if+|ico|p?j(fif|p(e?g)?)|a?png|svg|webp)$/i.test(tail) ? tail : 'jpeg';
 
@@ -1150,8 +1153,9 @@ try {
                     // Wait for completion
                     when(() => ((JS_index >= JS_length) && (CSS_index >= CSS_length))).then(() => {
                         const blob = new Blob([
-                                `<!DOCTYPE ${ DOM.doctype.name }${ DOM.doctype.publicId.replace(/^([^$]+)$/, ' PUBLIC "$1"') }${ DOM.doctype.systemId.replace(/^([^$]+)$/, ' "$1"') }>\n${ DOM.documentElement.outerHTML }`
-                            ], { type });
+                            `<!DOCTYPE ${ DOM.doctype.name }${ DOM.doctype.publicId.replace(/^([^$]+)$/, ' PUBLIC "$1"') }${ DOM.doctype.systemId.replace(/^([^$]+)$/, ' "$1"') }>\n${ DOM.documentElement.outerHTML }`
+                        ], { type });
+
                         const link = furnish('a', { href: URL.createObjectURL(blob), download: `${ name }.html`, hidden: true }, [name, (new Date).toJSON()].join('/'));
 
                         document.head.append(link);
@@ -1401,26 +1405,26 @@ const TWITCH_PATHNAMES = [
     ]
     , RESERVED_TWITCH_PATHNAMES = RegExp(`/(${ TWITCH_PATHNAMES.join('|') })(?:[/#?$])`, 'i');
 
-    const UNSAFE_PATHNAMES = window.UNSAFE_PATHNAMES = [
-            '[up]/',
+const UNSAFE_PATHNAMES = window.UNSAFE_PATHNAMES = [
+        '[up]/',
 
-            'activate',
-            'bits(-checkout/?)?',
-            'checkout/', 'collections/?', 'communities/?',
-            'dashboard/?', 'downloads?',
-            'event/?',
-            'following', 'friends?',
-            'jobs?',
-            'luna',
-            'prime/?', 'products/?',
-            'schedule',
-            'settings/?', 'store/?', 'subs/?', 'subscriptions?',
-            'team', 'turbo',
-            'user',
-            'videos?',
-            'wallet',
-        ]
-        , UNSAFE_TWITCH_PATHNAMES = window.UNSAFE_TWITCH_PATHNAMES = RegExp(`/(${ UNSAFE_PATHNAMES.join('|') })(?:[/#?$])`, 'i');
+        'activate',
+        'bits(-checkout/?)?',
+        'checkout/', 'collections/?', 'communities/?',
+        'dashboard/?', 'downloads?',
+        'event/?',
+        'following', 'friends?',
+        'jobs?',
+        'luna',
+        'prime/?', 'products/?',
+        'schedule',
+        'settings/?', 'store/?', 'subs/?', 'subscriptions?',
+        'team', 'turbo',
+        'user',
+        'videos?',
+        'wallet',
+    ]
+    , UNSAFE_TWITCH_PATHNAMES = window.UNSAFE_TWITCH_PATHNAMES = RegExp(`/(${ UNSAFE_PATHNAMES.join('|') })(?:[/#?$])`, 'i');
 
 /*** First in Line Helpers - NOT A SETTING. Create, manage, and display the "Up Next" balloon
  *      ______ _          _     _         _      _              _    _      _
@@ -1432,6 +1436,7 @@ const TWITCH_PATHNAMES = [
  *                                                                           | |
  *                                                                           |_|
  */;
+
 let FIRST_IN_LINE_JOB = null           // The current job (interval)
     , FIRST_IN_LINE_HREF = '#'           // The upcoming HREF
     , FIRST_IN_LINE_BOOST                // The "Up Next Boost" toggle
@@ -1461,11 +1466,11 @@ let Initialize = async(START_OVER = false) => {
     // Modify the logging feature via the settings
     if(!parseBool(Settings.display_in_console))
         $log =
-        $warn =
-        $error =
-        $remark =
-        $notice =
-        $ignore = ($=>$);
+            $warn =
+                $error =
+                    $remark =
+                        $notice =
+                            $ignore = ($=>$);
 
     if(!parseBool(Settings.display_in_console__log))
         $log = ($=>$);
@@ -1526,10 +1531,11 @@ let Initialize = async(START_OVER = false) => {
 
 
     const GLOBAL_TWITCH_API = (window.GLOBAL_TWITCH_API ??= {});
+
     GLOBAL_EVENT_LISTENERS = (window.GLOBAL_EVENT_LISTENERS ??= {
-            KEYDOWN_ALT_X: function Clip() {/* Managed by Twitch */},
-            KEYDOWN_ALT_T: function Toggle_Theatre_Mode() {/* Managed by Twitch */},
-        });
+        KEYDOWN_ALT_X: function Clip() {/* Managed by Twitch */},
+        KEYDOWN_ALT_T: function Toggle_Theatre_Mode() {/* Managed by Twitch */},
+    });
 
     if(SPECIAL_MODE) {
         let { $1, $2 } = RegExp
@@ -1565,6 +1571,7 @@ let Initialize = async(START_OVER = false) => {
     }
 
     const GLOBAL_ANCHORS = new Map;
+
     setInterval(() => {
         $.all('a[href]')
             .filter(a => !GLOBAL_ANCHORS.has(a))
@@ -1808,12 +1815,12 @@ let Initialize = async(START_OVER = false) => {
                             , url = parseURL(href)
                             , { pathname } = url;
 
-                            const parent = $(`.search-tray [href$="${ pathname }"i]:not([href*="/search?"])`);
+                        const parent = $(`.search-tray [href$="${ pathname }"i]:not([href*="/search?"])`);
 
-                            if(nullish(parent))
-                                return false;
+                        if(nullish(parent))
+                            return false;
 
-                            const live = $.defined(`[data-test-selector="live-badge"i]`, parent);
+                        const live = $.defined(`[data-test-selector="live-badge"i]`, parent);
 
                         return live;
                     },
@@ -2177,7 +2184,7 @@ let Initialize = async(START_OVER = false) => {
                                     )
                                 )
                             )
-                        )
+                    )
                     );
 
             return score;
@@ -2209,32 +2216,32 @@ let Initialize = async(START_OVER = false) => {
                 (
                     STREAMER.name == USERNAME
                         ? (level ||= 1500, 'owner')
-                    : ''
+                        : ''
                 ),
                 (
                     parseBool(Search.cookies?.twilight_user?.roles?.isStaff)
                         ? (level ||= 1000, 'admin')
-                    : ''
+                        : ''
                 ),
                 (
                     (STREAMER.mods = Chat.mods).contains(mod => mod.equals(USERNAME))
                         ? (level ||= 500, 'moderator')
-                    : ''
+                        : ''
                 ),
                 (
                     (STREAMER.vips = Chat.vips).contains(vip => vip.equals(USERNAME))
                         ? (level ||= 400, 'vip')
-                    : ''
+                        : ''
                 ),
                 (
                     STREAMER.ping
                         ? (level ||= 300, 'regular')
-                    : ''
+                        : ''
                 ),
                 (
                     STREAMER.paid
                         ? (level ||= 250, 'subscriber')
-                    : ''
+                        : ''
                 ),
                 (level ||= 100, 'everyone')
             ].filter(level => level.length);
@@ -2356,6 +2363,7 @@ let Initialize = async(START_OVER = false) => {
                     inventory.push(__item__);
 
             const cachedShopAddress = `points_shop_${ STREAMER.sole }`;
+
             Cache.large.load(cachedShopAddress, shop => {
                 shop = shop[cachedShopAddress];
 
@@ -2480,7 +2488,7 @@ let Initialize = async(START_OVER = false) => {
                                         return item.itemListElement.map(({ name, url }) => (
                                             (parseURL(url).pathname.contains('/videos/'))
                                                 ? { name, href: url }
-                                            : null
+                                                : null
                                         )).filter(defined);
                     });
 
@@ -2918,7 +2926,10 @@ let Initialize = async(START_OVER = false) => {
                                         let avgH = 0, avgM = 0;
 
                                         dlyStartTime[day]
-                                            .map(([h, m]) => { avgH += h; avgM += m })
+                                            .map(([h, m]) => {
+                                                avgH += h;
+                                                avgM += m;
+                                            })
                                             .filter((v, i, a) => !i)
                                             .map(() => {
                                                 const { length } = dlyStartTime[day];
@@ -2964,13 +2975,13 @@ let Initialize = async(START_OVER = false) => {
                                         (
                                             parseBool(Settings.first_in_line)
                                                 ? Settings.first_in_line_time_minutes
-                                            : parseBool(Settings.first_in_line_plus)
-                                                ? Settings.first_in_line_plus_time_minutes
-                                            : parseBool(Settings.first_in_line_all)
-                                                ? Settings.first_in_line_all_time_minutes
-                                            : parseBool(Settings.first_in_line_now)
-                                                ? 0
-                                            : 15
+                                                : parseBool(Settings.first_in_line_plus)
+                                                    ? Settings.first_in_line_plus_time_minutes
+                                                    : parseBool(Settings.first_in_line_all)
+                                                        ? Settings.first_in_line_all_time_minutes
+                                                        : parseBool(Settings.first_in_line_now)
+                                                            ? 0
+                                                            : 15
                                         ) * 60_000
                                     ));
 
@@ -2985,7 +2996,7 @@ let Initialize = async(START_OVER = false) => {
                                 })
                                 .catch(error => {
                                     $warn(`Failed to get STREAM details (1§1): ${ error }`);
-                                        // .toNativeStack();
+                                    // .toNativeStack();
 
                                     if(!ErrGet.length)
                                         addReport({ [$ErrGet]: `https://www.twitchmetrics.net/c/${ sole }-${ name?.toLowerCase() }/stream_time_values` });
@@ -3005,9 +3016,9 @@ let Initialize = async(START_OVER = false) => {
                                         value = (
                                             /^(followers)$/i.test(name)
                                                 ? parseInt(value.replace(/\D/g, ''))
-                                            : /^((first|last)seen)$/i.test(name)
-                                                ? new Date($('time', dd).getAttribute('datetime'))
-                                            : value
+                                                : /^((first|last)seen)$/i.test(name)
+                                                    ? new Date($('time', dd).getAttribute('datetime'))
+                                                    : value
                                         );
 
                                         data[name] = value;
@@ -3024,7 +3035,7 @@ let Initialize = async(START_OVER = false) => {
                                 })
                                 .catch(error => {
                                     $warn(`Failed to get CHANNEL details (1§2): ${ error }`);
-                                        // .toNativeStack();
+                                    // .toNativeStack();
 
                                     if(!ErrGet.length)
                                         addReport({ [$ErrGet]: `https://www.twitchmetrics.net/c/${ sole }-${ name?.toLowerCase() }` });
@@ -3069,13 +3080,13 @@ let Initialize = async(START_OVER = false) => {
                                     (
                                         /\b(da?y|h(?:ou)?r|min(?:ute)?)s?\b/i.test(string)
                                             ? parseTime(string.replace(/([a-z\s,]+)/gi, ':').replace(/:?$/, '00'))
-                                        : /^([-])$/.test(string)
-                                            ? ''
-                                        : /^\d/.test(string)
-                                            ? parseFloat(string.replace(/[^\d\.]+/g, '')) + ''
-                                        : /^(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)/i.test(string)
-                                            ? new Date(string) + ''
-                                        : string
+                                            : /^([-])$/.test(string)
+                                                ? ''
+                                                : /^\d/.test(string)
+                                                    ? parseFloat(string.replace(/[^\d\.]+/g, '')) + ''
+                                                    : /^(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)/i.test(string)
+                                                        ? new Date(string) + ''
+                                                        : string
                                     );
 
                                 parsing: for(const child of children)
@@ -3131,7 +3142,7 @@ let Initialize = async(START_OVER = false) => {
                             })
                             .catch(error => {
                                 $warn(`Failed to get CHANNEL details (2): ${ error }`);
-                                    // .toNativeStack();
+                                // .toNativeStack();
 
                                 if(!ErrGet.length)
                                     addReport({ [$ErrGet]: `https://twitchstats.net/streamer/${ name?.toLowerCase() }` });
@@ -3171,7 +3182,7 @@ let Initialize = async(START_OVER = false) => {
                             })
                             .catch(error => {
                                 $warn(`Failed to get CHANNEL details (3): ${ error }`);
-                                    // .toNativeStack();
+                                // .toNativeStack();
 
                                 if(!ErrGet.length)
                                     addReport({ [$ErrGet]: `https://twitchtracker.com/api/channels/summary/${ name?.toLowerCase() }` });
@@ -3238,7 +3249,7 @@ let Initialize = async(START_OVER = false) => {
                             })
                             .catch(error => {
                                 $warn(`Failed to get CHANNEL details (4): ${ error }`);
-                                    // .toNativeStack();
+                                // .toNativeStack();
 
                                 if(!ErrGet.length)
                                     addReport({ [$ErrGet]: `https://api.twitch.tv/helix/users?id=${ STREAMER.sole }` });
@@ -3303,25 +3314,25 @@ let Initialize = async(START_OVER = false) => {
                             okay="Grant access"
                             deny="Never ask again"
                             >TTV Tools would like to use Twitch's APIs on your behalf.</div>`)
-                        .then(answer => {
-                            if(answer === false)
-                                return Cache.save({ clientID: '.DENIED', oauthToken: '.DENIED' });
+                            .then(answer => {
+                                if(answer === false)
+                                    return Cache.save({ clientID: '.DENIED', oauthToken: '.DENIED' });
 
-                            const redirectURI = encodeURIComponent('https://ephellon.github.io/TTVAuth')
-                                , scope = encodeURIComponent(['user:read:follows', 'user:read:subscriptions', 'chat:read'].join(' '))
-                                , state = (new UUID).value;
+                                const redirectURI = encodeURIComponent('https://ephellon.github.io/TTVAuth')
+                                    , scope = encodeURIComponent(['user:read:follows', 'user:read:subscriptions', 'chat:read'].join(' '))
+                                    , state = (new UUID).value;
 
-                            const oauth = open(`https://id.twitch.tv/oauth2/authorize?response_type=code&client_id=${ clientID }&redirect_uri=${ redirectURI }&response_type=token&scope=${ scope }&state=${ state }`, '_blank');
+                                const oauth = open(`https://id.twitch.tv/oauth2/authorize?response_type=code&client_id=${ clientID }&redirect_uri=${ redirectURI }&response_type=token&scope=${ scope }&state=${ state }`, '_blank');
 
-                            when(() => oauth.closed).then(async() => {
-                                const { oauthToken } = await Settings.get('oauthToken');
+                                when(() => oauth.closed).then(async() => {
+                                    const { oauthToken } = await Settings.get('oauthToken');
 
-                                Cache.save({ oauthToken, clientID });
+                                    Cache.save({ oauthToken, clientID });
 
-                                Search.authorization = `Bearer ${ oauthToken }`;
-                                Search.clientID = clientID;
+                                    Search.authorization = `Bearer ${ oauthToken }`;
+                                    Search.clientID = clientID;
+                                });
                             });
-                        });
                     })
                 } else {
                     Cache.save({ oauthToken, clientID });
@@ -3574,71 +3585,71 @@ if(top == window) {
         PAGE_CHECKER = !isProperRuntime
             ? $error(`The current runtime (v${ Manifest.version }) is not correct (v${ version })`)
                 .toNativeStack()
-        : setInterval(WAIT_FOR_PAGE = async() => {
-            // Do NOT run on unsafe pages
-            if(UNSAFE_TWITCH_PATHNAMES.test(location.pathname))
-                return false;
+            : setInterval(WAIT_FOR_PAGE = async() => {
+                // Do NOT run on unsafe pages
+                if(UNSAFE_TWITCH_PATHNAMES.test(location.pathname))
+                    return false;
 
-            const sadOverlay = $('[data-test-selector*="sad"i][data-test-selector*="overlay"i]');
-            const adCountdown = $('[data-a-target*="ad-countdown"i]');
+                const sadOverlay = $('[data-test-selector*="sad"i][data-test-selector*="overlay"i]');
+                const adCountdown = $('[data-a-target*="ad-countdown"i]');
 
-            // Ensure settings are loaded
-            if(nullish(Settings?.versionRetrivalDate))
-                await Settings.get();
+                // Ensure settings are loaded
+                if(nullish(Settings?.versionRetrivalDate))
+                    await Settings.get();
 
-            // Set the ad volume, if applicable
-            // Ensures the volume gets set once; just in case the user actually wants to hear it
-            NORMALIZED_AD_VOLUME = true
-                && $.defined('[data-a-target*="ad-countdown"i]')
-                && (NORMALIZED_AD_COUNTER != NORMALIZED_AD_COUNTER_CURRENT)
-                && (false
-                    || SetVolume(Settings.away_mode__volume)
-                    || (NORMALIZED_AD_COUNTER = NORMALIZED_AD_COUNTER_CURRENT)
-                );
+                // Set the ad volume, if applicable
+                // Ensures the volume gets set once; just in case the user actually wants to hear it
+                NORMALIZED_AD_VOLUME = true
+                    && $.defined('[data-a-target*="ad-countdown"i]')
+                    && (NORMALIZED_AD_COUNTER != NORMALIZED_AD_COUNTER_CURRENT)
+                    && (false
+                        || SetVolume(Settings.away_mode__volume)
+                        || (NORMALIZED_AD_COUNTER = NORMALIZED_AD_COUNTER_CURRENT)
+                    );
 
-            // Ensures the ad does not freeze the page
-            refresh_on_ad_freeze: if(defined(sadOverlay) || defined(adCountdown)) {
-                if(nullish(LAST_TIME_AD_WAS_CHECKED)) {
-                    LAST_TIME_AD_WAS_CHECKED = +new Date;
-                    LAST_VALUE_WHEN_AD_WAS_CHECKED = adCountdown?.textContent;
+                // Ensures the ad does not freeze the page
+                refresh_on_ad_freeze: if(defined(sadOverlay) || defined(adCountdown)) {
+                    if(nullish(LAST_TIME_AD_WAS_CHECKED)) {
+                        LAST_TIME_AD_WAS_CHECKED = +new Date;
+                        LAST_VALUE_WHEN_AD_WAS_CHECKED = adCountdown?.textContent;
 
-                    break refresh_on_ad_freeze;
+                        break refresh_on_ad_freeze;
+                    }
+
+                    if(true
+                        && (+new Date - LAST_TIME_AD_WAS_CHECKED) > (VIDEO_AD_COUNTDOWN + 2_500)
+                        && LAST_VALUE_WHEN_AD_WAS_CHECKED.equals(adCountdown.textContent)
+                    ) {
+                        $warn(`The advertisement seems to be stalled... Refreshing page...`);
+
+                        ReloadPage(false);
+                    }
                 }
 
-                if(true
-                    && (+new Date - LAST_TIME_AD_WAS_CHECKED) > (VIDEO_AD_COUNTDOWN + 2_500)
-                    && LAST_VALUE_WHEN_AD_WAS_CHECKED.equals(adCountdown.textContent)
-                ) {
-                    $warn(`The advertisement seems to be stalled... Refreshing page...`);
+                // Enables previews on the home page (#19)
+                live_previews_on_hompage: if(top.location.pathname == '/')
+                    when(() => parseBool(Settings?.stream_preview), 3e3).then(() => {
+                        const scale = parseFloat(Settings.stream_preview_scale) || 1
+                            , muted = !parseBool(Settings.stream_preview_sound)
+                            , quality = (scale > 1 ? 'auto' : '720p')
+                            , controls = false;
 
-                    ReloadPage(false);
-                }
-            }
+                        $.all('[data-a-target*="preview"i][data-a-target*="card"i]:not([data-test-selector])').map(a => {
+                            a.addEventListener('mouseenter', ({ currentTarget }) => {
+                                const { href } = currentTarget;
+                                const name = (parseURL(href).pathname ?? '/').slice(1).split('/').shift();
 
-            // Enables previews on the home page (#19)
-            live_previews_on_hompage: if(top.location.pathname == '/')
-                when(() => parseBool(Settings?.stream_preview), 3e3).then(() => {
-                    const scale = parseFloat(Settings.stream_preview_scale) || 1
-                        , muted = !parseBool(Settings.stream_preview_sound)
-                        , quality = (scale > 1 ? 'auto' : '720p')
-                        , controls = false;
+                                if(!name?.length)
+                                    return;
 
-                    $.all('[data-a-target*="preview"i][data-a-target*="card"i]:not([data-test-selector])').map(a => {
-                        a.addEventListener('mouseenter', ({ currentTarget }) => {
-                            const { href } = currentTarget;
-                            const name = (parseURL(href).pathname ?? '/').slice(1).split('/').shift();
+                                const isOnline = $.defined('[class*="status"i][class*="indicator"i]', currentTarget);
 
-                            if(!name?.length)
-                                return;
+                                if($.defined('#tt-stream-preview--iframe'))
+                                    return;
 
-                            const isOnline = $.defined('[class*="status"i][class*="indicator"i]', currentTarget);
-
-                            if($.defined('#tt-stream-preview--iframe'))
-                                return;
-
-                            const iframe = furnish(`iframe#tt-stream-preview--iframe[@index=0][@name=${ name }][@live=${ isOnline }][@controls=${ controls }][@muted=${ muted }][@quality=${ quality }]`, {
-                                allow: 'autoplay',
-                                src: parseURL(`https://player.twitch.tv/`).addSearch(
+                                const iframe = furnish(`iframe#tt-stream-preview--iframe[@index=0][@name=${ name }][@live=${ isOnline }][@controls=${ controls }][@muted=${ muted }][@quality=${ quality }]`, {
+                                    allow: 'autoplay',
+                                    src: parseURL(`https://player.twitch.tv/`).addSearch(
                                     isOnline
                                         ? ({
                                             channel: name,
@@ -3646,109 +3657,109 @@ if(top == window) {
 
                                             controls, muted, quality,
                                         })
-                                    : href
-                                ).href,
+                                        : href
+                                    ).href,
 
-                                height: '100%',
-                                width: '100%',
-                                style: `display:block;position:absolute;z-index:99999;`,
+                                    height: '100%',
+                                    width: '100%',
+                                    style: `display:block;position:absolute;z-index:99999;`,
+                                });
+
+                                currentTarget.insertAdjacentElement('afterbegin', iframe);
                             });
 
-                            currentTarget.insertAdjacentElement('afterbegin', iframe);
-                        });
-
-                        a.addEventListener('mouseleave', ({ currentTarget }) => {
-                            $.all('#tt-stream-preview--iframe', currentTarget).map(iframe => iframe.remove());
+                            a.addEventListener('mouseleave', ({ currentTarget }) => {
+                                $.all('#tt-stream-preview--iframe', currentTarget).map(iframe => iframe.remove());
+                            });
                         });
                     });
-                });
 
-            const ready = (true
-                // There is a valid username
-                && defined(USERNAME)
+                const ready = (true
+                    // There is a valid username
+                    && defined(USERNAME)
 
-                // The follow button exists
-                && $.defined(`[data-a-target="follow-button"i], [data-a-target="unfollow-button"i]`)
+                    // The follow button exists
+                    && $.defined(`[data-a-target="follow-button"i], [data-a-target="unfollow-button"i]`)
 
-                // There are channel buttons on the side
-                && parseBool($.all('[id*="side"i][id*="nav"i] .side-nav-section[aria-label]')?.length)
+                    // There are channel buttons on the side
+                    && parseBool($.all('[id*="side"i][id*="nav"i] .side-nav-section[aria-label]')?.length)
 
-                // There isn't an advertisement playing
-                && nullish(sadOverlay)
-                && nullish(adCountdown)
+                    // There isn't an advertisement playing
+                    && nullish(sadOverlay)
+                    && nullish(adCountdown)
 
-                // There are proper containers
-                && (false
-                    // There is a message container
-                    || $.defined('[data-test-selector$="message-container"i]')
+                    // There are proper containers
+                    && (false
+                        // There is a message container
+                        || $.defined('[data-test-selector$="message-container"i]')
 
-                    // There is an ongoing search
-                    || (true
-                        && $.defined('[data-test-selector*="search-result"i][data-test-selector$="name"i]')
-                        && $.defined('[data-a-target^="threads-box-"i]')
+                        // There is an ongoing search
+                        || (true
+                            && $.defined('[data-test-selector*="search-result"i][data-test-selector$="name"i]')
+                            && $.defined('[data-a-target^="threads-box-"i]')
+                        )
+
+                        // The page is a channel viewing page
+                        // || /^((?:Channel|Video)Watch|(?:Squad)Stream)Page$/i.test($('#root')?.dataset?.aPageLoadedName)
+
+                        // There is an error message
+                        || $.defined('[data-a-target*="error"i][data-a-target*="message"i], [data-test-selector*="content"i][data-test-selector*="overlay"i]')
+
+                        // There is a "muted segments" warning
+                        || $.defined('[data-test-selector*="muted"i][data-test-selector*="overlay"i]')
                     )
+                );
 
-                    // The page is a channel viewing page
-                    // || /^((?:Channel|Video)Watch|(?:Squad)Stream)Page$/i.test($('#root')?.dataset?.aPageLoadedName)
+                if(!ready)
+                    return when.defined(() => $('[data-a-target*="ad-countdown"i]'))
+                        .then(countdown => {
+                            if(ready || defined(VIDEO_AD_COUNTDOWN))
+                                return;
 
-                    // There is an error message
-                    || $.defined('[data-a-target*="error"i][data-a-target*="message"i], [data-test-selector*="content"i][data-test-selector*="overlay"i]')
+                            let { count = 1, time = 15 } = (/(?:(?<count>\d+)\D+)?(?<time>(?<minute>\d{1,2})(?<seconds>:[0-5]\d))/.exec(countdown.textContent)?.groups ?? {});
 
-                    // There is a "muted segments" warning
-                    || $.defined('[data-test-selector*="muted"i][data-test-selector*="overlay"i]')
-                )
-            );
+                            if('00:00'.contains(time))
+                                return;
 
-            if(!ready)
-                return when.defined(() => $('[data-a-target*="ad-countdown"i]'))
-                    .then(countdown => {
-                        if(ready || defined(VIDEO_AD_COUNTDOWN))
-                            return;
+                            count = parseInt(count);
+                            time = (parseTime(time) + 10).floorToNearest(15);
 
-                        let { count = 1, time = 15 } = (/(?:(?<count>\d+)\D+)?(?<time>(?<minute>\d{1,2})(?<seconds>:[0-5]\d))/.exec(countdown.textContent)?.groups ?? {});
+                            NORMALIZED_AD_COUNTER_CURRENT = count;
 
-                        if('00:00'.contains(time))
-                            return;
+                            alert.timed(`${ Manifest.name } will resume after the ad-break.`, VIDEO_AD_COUNTDOWN = count * time);
+                        });
 
-                        count = parseInt(count);
-                        time = (parseTime(time) + 10).floorToNearest(15);
+                Runtime.sendMessage({ action: 'CLAIM_UP_NEXT' }, async info => top.UP_NEXT_ALLOW_THIS_TAB = UP_NEXT_ALLOW_THIS_TAB = info?.owner ?? true);
 
-                        NORMALIZED_AD_COUNTER_CURRENT = count;
+                $log("Main container ready");
 
-                        alert.timed(`${ Manifest.name } will resume after the ad-break.`, VIDEO_AD_COUNTDOWN = count * time);
-                    });
+                // Set the user's language
+                const [documentLanguage] = (document.documentElement?.lang ?? navigator?.userLanguage ?? navigator?.language ?? 'en').toLowerCase().split('-');
 
-            Runtime.sendMessage({ action: 'CLAIM_UP_NEXT' }, async info => top.UP_NEXT_ALLOW_THIS_TAB = UP_NEXT_ALLOW_THIS_TAB = info?.owner ?? true);
+                window.LANGUAGE = LANGUAGE = Settings.user_language_preference || documentLanguage;
 
-            $log("Main container ready");
-
-            // Set the user's language
-            const [documentLanguage] = (document.documentElement?.lang ?? navigator?.userLanguage ?? navigator?.language ?? 'en').toLowerCase().split('-');
-
-            window.LANGUAGE = LANGUAGE = Settings.user_language_preference || documentLanguage;
-
-            // Give the storage 3s to perform any "catch-up"
-            wait(3000, ready).then(async ready => {
-                await Initialize(ready)
-                    .then(() => {
-                        // TTV Tools has the max Timer amount to initilize correctly...
-                        const REINIT_JOBS =
-                        when(() => {
-                            const NOT_LOADED_CORRECTLY = []
-                                , ALL_LOADED_CORRECTLY = (true
-                                    // Lurking
-                                    && parseBool(
+                // Give the storage 3s to perform any "catch-up"
+                wait(3000, ready).then(async ready => {
+                    await Initialize(ready)
+                        .then(() => {
+                            // TTV Tools has the max Timer amount to initilize correctly...
+                            const REINIT_JOBS =
+                                when(() => {
+                                    const NOT_LOADED_CORRECTLY = []
+                                        , ALL_LOADED_CORRECTLY = (true
+                                            // Lurking
+                                            && parseBool(
                                             parseBool(Settings.away_mode)
                                                 ? (false
                                                     || $.defined('#away-mode')
 
                                                     || !NOT_LOADED_CORRECTLY.push('away_mode')
                                                 )
-                                            : true
-                                        )
+                                                : true
+                                            )
 
-                                    // Auto-Claim Bonuses
-                                    && parseBool(
+                                            // Auto-Claim Bonuses
+                                            && parseBool(
                                             parseBool(Settings.auto_claim_bonuses)
                                                 ? (false
                                                     || $.defined('#tt-auto-claim-bonuses')
@@ -3758,292 +3769,294 @@ if(top == window) {
 
                                                     || !NOT_LOADED_CORRECTLY.push('auto_claim_bonuses')
                                                 )
-                                            : true
-                                        )
+                                                : true
+                                            )
 
-                                    // Up Next
-                                    && parseBool(
+                                            // Up Next
+                                            && parseBool(
                                             !parseBool(Settings.first_in_line_none)
                                                 ? (false
                                                     || $.defined('[up-next--container]')
 
                                                     || !NOT_LOADED_CORRECTLY.push('first_in_line')
                                                 )
-                                            : true
-                                        )
+                                                : true
+                                            )
 
-                                    // Watch Time
-                                    && parseBool(
+                                            // Watch Time
+                                            && parseBool(
                                             parseBool(Settings.watch_time_placement)
                                                 ? (false
                                                     || $.defined('#tt-watch-time')
 
                                                     || !NOT_LOADED_CORRECTLY.push('watch_time_placement')
                                                 )
-                                            : true
-                                        )
+                                                : true
+                                            )
 
-                                    // Channel Points Receipt
-                                    && parseBool(
+                                            // Channel Points Receipt
+                                            && parseBool(
                                             parseBool(Settings.points_receipt_placement)
                                                 ? (false
                                                     || $.defined('#tt-points-receipt')
 
                                                     || !NOT_LOADED_CORRECTLY.push('points_receipt_placement')
                                                 )
-                                            : true
-                                        )
-                                );
+                                                : true
+                                            )
+                                        );
 
-                            if(false
-                                // This page shouldn't be touched...
-                                || RESERVED_TWITCH_PATHNAMES.test(location.pathname)
+                                    if(false
+                                        // This page shouldn't be touched...
+                                        || RESERVED_TWITCH_PATHNAMES.test(location.pathname)
 
-                                // Everything loaded just fine
-                                || ALL_LOADED_CORRECTLY
-                            )
-                                return PAGE_IS_READY = !clearInterval(REINIT_JOBS);
+                                        // Everything loaded just fine
+                                        || ALL_LOADED_CORRECTLY
+                                    )
+                                        return PAGE_IS_READY = !clearInterval(REINIT_JOBS);
 
-                            $warn(`The following did not activate properly: ${ NOT_LOADED_CORRECTLY }. Reloading...`);
+                                    $warn(`The following did not activate properly: ${ NOT_LOADED_CORRECTLY }. Reloading...`);
 
-                            for(const job of NOT_LOADED_CORRECTLY)
-                                if(defined(job))
-                                    RestartJob(job, 'FAILED_TO_ACTIVATE');
+                                    for(const job of NOT_LOADED_CORRECTLY)
+                                        if(defined(job))
+                                            RestartJob(job, 'FAILED_TO_ACTIVATE');
 
-                            if(parseBool(Settings.recover_pages)) {
-                                if(++RECOVERY_TRIALS > 10)
-                                    addReport(NOT_LOADED_CORRECTLY.map(fail => ({ [`fail-to-load-${ fail }`]: true })), true);
-                                return false;
-                            }
+                                    if(parseBool(Settings.recover_pages)) {
+                                        if(++RECOVERY_TRIALS > 10)
+                                            addReport(NOT_LOADED_CORRECTLY.map(fail => ({ [`fail-to-load-${ fail }`]: true })), true);
+                                        return false;
+                                    }
 
-                            // Failed to activate job at...
-                            // addReport({ 'TTV-Tools-failed-to-load-module': new Date().toString() }, true);
+                                    // Failed to activate job at...
+                                    // addReport({ 'TTV-Tools-failed-to-load-module': new Date().toString() }, true);
 
-                            return ready;
-                        }, Math.max(...Object.values(Timers))).then(ready => Initialize.ready = ready);
+                                    return ready;
+                                }, Math.max(...Object.values(Timers))).then(ready => Initialize.ready = ready);
+                        });
+
+                    // Handle coin related bulletins
+                    setInterval(async() => {
+                        const { sole, name, fiat } = STREAMER;
+                        const line = $('[data-test-selector="user-notice-line"i]:not([data-uuid])');
+
+                        if(nullish(line))
+                            return;
+
+                        let [head, body] = line.children
+                            , type = 'unknown';
+
+                        if($.defined(`img[class*="channel-points"i][class*="icon"i][alt="${ fiat }"i], [class*="channel-points"i][class*="icon"i] svg`, head))
+                            type = 'coin';
+                        else if($.defined(`a[target="_blank"i]:is([rel~="noopener"i], [rel~="noreferrer"i])`))
+                            type = 'shoutout';
+
+                        const [user] = ($('[data-a-target$="username"i]', body) || head).textContent.split(' ');
+
+                        const badges = $.all('img.chat-badge', body).map(badge => badge.alt.toLowerCase() + badge.src.replace(/^.*?\/(?:v(\d+))\/.*$/i, '/$1'))
+                            , color = Color.destruct($('[data-a-target$="username"i]', body)?.style?.color || '#9147FF').HEX
+                            , mod = +STREAMER.perm.is('mod')
+                            , sub = +STREAMER.paid
+                            , shopID = await STREAMER.shop.find(entry => (true
+                                && head.textContent.contains(entry.title)
+                                && head.textContent.contains(comify(entry.cost))
+                            ))?.id
+                            , spotlight = $('a[target="_blank"i]', body)?.textContent;
+
+                        line.dataset.uuid = UUID.from(line.getPath());
+
+                        let data = `@color=${ color };display-name=${ user };login=${ user.toLowerCase() };mod=${ mod };msg-id=pointsredeemed;<!>;subscriber=${ sub } :tmi.twitch.tv USERNOTICE #${ name } :${ [head, body].filter(defined).map(element => element.innerText.trim().replace(/\s+/g, ' ')).join(' ') }`;
+
+                        if(defined(shopID))
+                            data = data.replace('<!>', `msg-param-shop-id=${ shopID }`);
+                        else if(defined(spotlight))
+                            data = data.replace('<!>', `msg-param-spotlight=${ spotlight }`);
+                        data = data.replace('<!>;', '');
+
+                        TTV_IRC.socket?.reflect?.({ data });
+                    }, 100);
+
+                    // Handle saved states...
+                    wait(1000).then(() => {
+                        const { mini = '' } = parseURL(location).searchParameters;
+
+                        if(mini.length)
+                            MiniPlayer = mini;
                     });
-
-                // Handle coin related bulletins
-                setInterval(async() => {
-                    const { sole, name, fiat } = STREAMER;
-                    const line = $('[data-test-selector="user-notice-line"i]:not([data-uuid])');
-
-                    if(nullish(line))
-                        return;
-
-                    let [head, body] = line.children
-                        , type = 'unknown';
-
-                    if($.defined(`img[class*="channel-points"i][class*="icon"i][alt="${ fiat }"i], [class*="channel-points"i][class*="icon"i] svg`, head))
-                        type = 'coin';
-                    else if($.defined(`a[target="_blank"i]:is([rel~="noopener"i], [rel~="noreferrer"i])`))
-                        type = 'shoutout';
-
-                    const [user] = ($('[data-a-target$="username"i]', body) || head).textContent.split(' ');
-
-                    const badges = $.all('img.chat-badge', body).map(badge => badge.alt.toLowerCase() + badge.src.replace(/^.*?\/(?:v(\d+))\/.*$/i, '/$1'))
-                        , color = Color.destruct($('[data-a-target$="username"i]', body)?.style?.color || '#9147FF').HEX
-                        , mod = +STREAMER.perm.is('mod')
-                        , sub = +STREAMER.paid
-                        , shopID = await STREAMER.shop.find(entry => (true
-                            && head.textContent.contains(entry.title)
-                            && head.textContent.contains(comify(entry.cost))
-                        ))?.id
-                        , spotlight = $('a[target="_blank"i]', body)?.textContent;
-
-                    line.dataset.uuid = UUID.from(line.getPath());
-
-                    let data = `@color=${ color };display-name=${ user };login=${ user.toLowerCase() };mod=${ mod };msg-id=pointsredeemed;<!>;subscriber=${ sub } :tmi.twitch.tv USERNOTICE #${ name } :${ [head, body].filter(defined).map(element => element.innerText.trim().replace(/\s+/g, ' ')).join(' ') }`;
-
-                    if(defined(shopID))
-                        data = data.replace('<!>', `msg-param-shop-id=${ shopID }`);
-                    else if(defined(spotlight))
-                        data = data.replace('<!>', `msg-param-spotlight=${ spotlight }`);
-                    data = data.replace('<!>;', '');
-
-                    TTV_IRC.socket?.reflect?.({ data });
-                }, 100);
-
-                // Handle saved states...
-                wait(1000).then(() => {
-                    const { mini = '' } = parseURL(location).searchParameters;
-
-                    if(mini.length)
-                        MiniPlayer = mini;
                 });
-            });
-            PAGE_CHECKER = clearInterval(PAGE_CHECKER);
 
-            window.MAIN_CONTROLLER_READY = true;
+                PAGE_CHECKER = clearInterval(PAGE_CHECKER);
 
-            // Observe the volume changes
-            VolumeObserver: {
-                $.all(':is(video, [class*="video"i][class*="render"i]) ~ * .player-controls *:is([data-a-target*="volume"i], [data-a-target*="mute"i])')
-                    .map(element => {
-                        element.addEventListener('mousedown', ({ currentTarget, isTrusted }) => {
-                            currentTarget.closest('.player-controls').dataset.isTrusted = isTrusted;
+                window.MAIN_CONTROLLER_READY = true;
 
-                            for(const [name, callback] of GetVolume.__onchange__)
-                                callback(currentTarget.value, { isTrusted });
+                // Observe the volume changes
+                VolumeObserver: {
+                    $.all(':is(video, [class*="video"i][class*="render"i]) ~ * .player-controls *:is([data-a-target*="volume"i], [data-a-target*="mute"i])')
+                        .map(element => {
+                            element.addEventListener('mousedown', ({ currentTarget, isTrusted }) => {
+                                currentTarget.closest('.player-controls').dataset.isTrusted = isTrusted;
+
+                                for(const [name, callback] of GetVolume.__onchange__)
+                                    callback(currentTarget.value, { isTrusted });
+                            });
+
+                            element.addEventListener('mouseup', ({ currentTarget, isTrusted }) => {
+                                currentTarget.closest('.player-controls').dataset.isTrusted = isTrusted;
+
+                                for(const [name, callback] of GetVolume.__onchange__)
+                                    callback(currentTarget.value, { isTrusted });
+                            });
+
+                            element.addEventListener('change', ({ currentTarget, isTrusted }) => {
+                                currentTarget.closest('.player-controls').dataset.isTrusted = isTrusted;
+
+                                for(const [name, callback] of GetVolume.__onchange__)
+                                    callback(currentTarget.value, { isTrusted });
+                            });
                         });
+                }
 
-                        element.addEventListener('mouseup', ({ currentTarget, isTrusted }) => {
-                            currentTarget.closest('.player-controls').dataset.isTrusted = isTrusted;
+                // Set the SVGs' section IDs
+                SectionLabeling: {
+                    const conversions = {
+                        favorite: [
+                            'followed',
+                        ],
 
-                            for(const [name, callback] of GetVolume.__onchange__)
-                                callback(currentTarget.value, { isTrusted });
-                        });
+                        video: [
+                            'related',
+                            'suggested',
+                        ],
 
-                        element.addEventListener('change', ({ currentTarget, isTrusted }) => {
-                            currentTarget.closest('.player-controls').dataset.isTrusted = isTrusted;
+                        people: [
+                            'watch-channel-trailer',
+                            'friends',
+                        ],
 
-                            for(const [name, callback] of GetVolume.__onchange__)
-                                callback(currentTarget.value, { isTrusted });
-                        });
-                    });
-            }
+                        inform: [
+                            'live-reminders',
+                        ],
 
-            // Set the SVGs' section IDs
-            SectionLabeling: {
-                const conversions = {
-                    favorite: [
-                        'followed',
-                    ],
+                        checkmark: [
+                            'live-reminders',
+                        ],
 
-                    video: [
-                        'related',
-                        'suggested',
-                    ],
+                        rewind: [
+                            'rewind-stream',
+                        ],
 
-                    people: [
-                        'watch-channel-trailer',
-                        'friends',
-                    ],
+                        crown: [
+                            'prime-subscription',
+                        ],
 
-                    inform: [
-                        'live-reminders',
-                    ],
+                        button_2to1_transparent: [
+                            'theatre-mode-off'
+                        ],
 
-                    checkmark: [
-                        'live-reminders',
-                    ],
+                        button_2to1_opaque: [
+                            'theatre-mode-on'
+                        ],
+                    };
 
-                    rewind: [
-                        'rewind-stream',
-                    ],
+                    for(const container of $.all('[id*="side"i][id*="nav"i] .side-nav-section[aria-label], .about-section__actions > * > *, [data-target^="channel-header"i] button, :is([data-test-selector*="video-player"i], [data-test-selector*="video-container"i]) button')) {
+                        const svg = $('svg', container);
 
-                    crown: [
-                        'prime-subscription',
-                    ],
+                        if(nullish(svg))
+                            continue;
 
-                    button_2to1_transparent: [
-                        'theatre-mode-off'
-                    ],
+                        comparing:
+                        for(const glyph in Glyphs)
+                            if(Glyphs.__exclusionList__.contains(glyph))
+                                continue comparing;
+                            else if(conversions[glyph]?.length)
+                                resemble(svg.toImage())
+                                    .compareTo(Glyphs.modify(glyph, { height: '20px', width: '20px' }).asNode.toImage())
+                                    .ignoreColors()
+                                    .scaleToSameSize()
+                                    .onComplete(async data => {
+                                        let { analysisTime, misMatchPercentage } = data;
 
-                    button_2to1_opaque: [
-                        'theatre-mode-on'
-                    ],
+                                        analysisTime = parseInt(analysisTime);
+                                        misMatchPercentage = parseFloat(misMatchPercentage);
+
+                                        const matchPercentage = 100 - misMatchPercentage;
+
+                                        if(matchPercentage < 80 || container.getAttribute('tt-svg-label')?.length)
+                                            return;
+
+                                        const family = conversions[glyph].pop();
+
+                                        if(!family)
+                                            return;
+
+                                        // $notice(`Labeling section "${ family[family.length - 1] }" (${ matchPercentage }% match | "${ glyph }")...`, container);
+
+                                        container.setAttribute('tt-svg-label', family);
+
+                                        if(family.missing('-mode-'))
+                                            return;
+
+                                        // Auto-toggle
+                                        const observer = new MutationObserver(function(mutations) {
+                                            for(const { target, attributeName, oldValue } of mutations) {
+                                                if(attributeName.unlike('aria-label'))
+                                                    continue;
+
+                                                let [state, ...name] = target.getAttribute('tt-svg-label').split('-').reverse();
+
+                                                name = name.reverse().join('-');
+
+                                                target.setAttribute('tt-svg-label', [name, ['on', 'off'][+state.equals('on')]].join('-'));
+                                            }
+                                        });
+
+                                        observer.observe(container, { attributes: true, subtree: true });
+                                    });
+                    }
+                } // :SectionLabeling
+
+                top.onlocationchange = () => {
+                    $warn("[Parent] Re-initializing...");
+
+                    Balloon.get('Up Next')?.remove();
+
+                    // Do NOT soft-reset ("turn off, turn on") these settings
+                    // They will be destroyed, including any data they are using
+                    const VOLATILE = window.VOLATILE = ['first_in_line*'].map(AsteriskFn);
+
+                    DestroyingJobs:
+                    for(const job in Jobs)
+                        if(~VOLATILE.findIndex(name => name.test(job)))
+                            continue DestroyingJobs;
+                        else
+                            RestartJob(job, 'job-destruction');
+
+                    Reinitialize:
+                    if(NORMAL_MODE) {
+                        if(parseBool(Settings.keep_popout)) {
+                            PAGE_CHECKER ??= setInterval(WAIT_FOR_PAGE, 500);
+
+                            // Save states...
+                            const states = {
+                                mini: (MiniPlayer?.dataset?.name),
+                                redo: (parseURL(window.location).searchParameters?.redo ?? ''),
+                            };
+
+                            for(const key in states)
+                                if(parseBool(states[key]))
+                                    addToSearch({ [key]: states[key] });
+
+                            break Reinitialize;
+                        }
+
+                        ReloadPage();
+                    }
                 };
 
-                for(const container of $.all('[id*="side"i][id*="nav"i] .side-nav-section[aria-label], .about-section__actions > * > *, [data-target^="channel-header"i] button, :is([data-test-selector*="video-player"i], [data-test-selector*="video-container"i]) button')) {
-                    const svg = $('svg', container);
+                // Add custom styling
+                CustomCSSInitializer: {
+                    const [accent, contrast] = (Settings.accent_color || 'blue/12').split('/');
 
-                    if(nullish(svg))
-                        continue;
-
-                    comparing:
-                    for(const glyph in Glyphs)
-                        if(Glyphs.__exclusionList__.contains(glyph))
-                            continue comparing;
-                        else if(conversions[glyph]?.length)
-                            resemble(svg.toImage())
-                                .compareTo(Glyphs.modify(glyph, { height: '20px', width: '20px' }).asNode.toImage())
-                                .ignoreColors()
-                                .scaleToSameSize()
-                                .onComplete(async data => {
-                                    let { analysisTime, misMatchPercentage } = data;
-
-                                    analysisTime = parseInt(analysisTime);
-                                    misMatchPercentage = parseFloat(misMatchPercentage);
-
-                                    const matchPercentage = 100 - misMatchPercentage;
-
-                                    if(matchPercentage < 80 || container.getAttribute('tt-svg-label')?.length)
-                                        return;
-
-                                    const family = conversions[glyph].pop();
-
-                                    if(!family)
-                                        return;
-
-                                    // $notice(`Labeling section "${ family[family.length - 1] }" (${ matchPercentage }% match | "${ glyph }")...`, container);
-
-                                    container.setAttribute('tt-svg-label', family);
-
-                                    if(family.missing('-mode-'))
-                                        return;
-
-                                    // Auto-toggle
-                                    const observer = new MutationObserver(function(mutations) {
-                                        for(const { target, attributeName, oldValue } of mutations) {
-                                            if(attributeName.unlike('aria-label'))
-                                                continue;
-
-                                            let [state, ...name] = target.getAttribute('tt-svg-label').split('-').reverse();
-                                            name = name.reverse().join('-');
-
-                                            target.setAttribute('tt-svg-label', [name, ['on', 'off'][+state.equals('on')]].join('-'));
-                                        }
-                                    });
-
-                                    observer.observe(container, { attributes: true, subtree: true });
-                                });
-                }
-            } // :SectionLabeling
-
-            top.onlocationchange = () => {
-                $warn("[Parent] Re-initializing...");
-
-                Balloon.get('Up Next')?.remove();
-
-                // Do NOT soft-reset ("turn off, turn on") these settings
-                // They will be destroyed, including any data they are using
-                const VOLATILE = window.VOLATILE = ['first_in_line*'].map(AsteriskFn);
-
-                DestroyingJobs:
-                for(const job in Jobs)
-                    if(~VOLATILE.findIndex(name => name.test(job)))
-                        continue DestroyingJobs;
-                    else
-                        RestartJob(job, 'job-destruction');
-
-                Reinitialize:
-                if(NORMAL_MODE) {
-                    if(parseBool(Settings.keep_popout)) {
-                        PAGE_CHECKER ??= setInterval(WAIT_FOR_PAGE, 500);
-
-                        // Save states...
-                        const states = {
-                            mini: (MiniPlayer?.dataset?.name),
-                            redo: (parseURL(window.location).searchParameters?.redo ?? ''),
-                        };
-
-                        for(const key in states)
-                            if(parseBool(states[key]))
-                                addToSearch({ [key]: states[key] });
-
-                        break Reinitialize;
-                    }
-
-                    ReloadPage();
-                }
-            };
-
-            // Add custom styling
-            CustomCSSInitializer: {
-                const [accent, contrast] = (Settings.accent_color || 'blue/12').split('/');
-
-                AddCustomCSSBlock('tools.js', `
+                    AddCustomCSSBlock('tools.js', `
                     :root {
                         --user-accent-color: var(--color-${ accent });
                         --user-contrast-color: var(--color-${ accent }-${ contrast });
@@ -4335,191 +4348,191 @@ if(top == window) {
                         display: none !important;
                     }
                 `);
-            } // :CustomCSSInitializer
+                } // :CustomCSSInitializer
 
-            // Update the settings
-            SettingsInitializer: {
-                switch(Settings.onInstalledReason) {
-                    // Is this the first time the extension has run?
-                    // If so, then point out what's been changed
-                    case INSTALL: {
-                        // Detect the user's desired language
-                            // Capitalizing the language code notifies the Settings page the code was not manually input
-                        const [user_language_preference] = (document.documentElement?.lang ?? navigator?.userLanguage ?? navigator?.language ?? 'en').toUpperCase().split('-');
+                // Update the settings
+                SettingsInitializer: {
+                    switch(Settings.onInstalledReason) {
+                        // Is this the first time the extension has run?
+                        // If so, then point out what's been changed
+                        case INSTALL: {
+                            // Detect the user's desired language
+                                // Capitalizing the language code notifies the Settings page the code was not manually input
+                            const [user_language_preference] = (document.documentElement?.lang ?? navigator?.userLanguage ?? navigator?.language ?? 'en').toUpperCase().split('-');
 
-                        Settings.set({ user_language_preference });
+                            Settings.set({ user_language_preference });
 
-                        // Point out the newly added buttons
-                        wait(10_000).then(() => {
-                            for(const element of $.all('#tt-auto-claim-bonuses, [up-next--container]'))
-                                element.classList.add('tt-first-run');
+                            // Point out the newly added buttons
+                            wait(10_000).then(() => {
+                                for(const element of $.all('#tt-auto-claim-bonuses, [up-next--container]'))
+                                    element.classList.add('tt-first-run');
 
-                            const style = new CSSObject({ verticalAlign: 'bottom', height: '20px', width: '20px', fill: '#ff9ab4' });
+                                const style = new CSSObject({ verticalAlign: 'bottom', height: '20px', width: '20px', fill: '#ff9ab4' });
 
-                            // Make sure the user goes to the Settings page
-                            alert
-                                .timed(`Please visit the <a href="#" onmouseup="top.postMessage({action:'open-options-page'})">Settings</a> page or click the ${ Glyphs.modify('channelpoints', { style, ...style.toObject() }) } to finalize setup`, 30_000, true)
-                                .then(action => $.all('.tt-first-run').forEach(element => element.classList.remove('tt-first-run')));
-                        });
-                    } break;
+                                // Make sure the user goes to the Settings page
+                                alert
+                                    .timed(`Please visit the <a href="#" onmouseup="top.postMessage({action:'open-options-page'})">Settings</a> page or click the ${ Glyphs.modify('channelpoints', { style, ...style.toObject() }) } to finalize setup`, 30_000, true)
+                                    .then(action => $.all('.tt-first-run').forEach(element => element.classList.remove('tt-first-run')));
+                            });
+                        } break;
+                    }
+
+                    Settings.set({ onInstalledReason: null });
                 }
 
-                Settings.set({ onInstalledReason: null });
-            }
-
-            // Jump some frames
-            FrameJumper: {
-                document.head.append(
+                // Jump some frames
+                FrameJumper: {
+                    document.head.append(
                     furnish('script', {
                         src: Runtime.getURL('ext/jump.js'),
                         onload() {
                             // Do something when the data is jumped...
                         },
                     })
-                );
-            }
+                    );
+                }
 
-            // Add message listeners; wait until the page is ready before adding this to ensure the background script can handle bad instances properly //
-            // Receive messages from the background service worker
-            Runtime.onMessage.addListener(async(request, sender, respond) => {
-                if(sender.id.unlike(Runtime.id))
-                    return /* Not meant for us... */;
+                // Add message listeners; wait until the page is ready before adding this to ensure the background script can handle bad instances properly //
+                // Receive messages from the background service worker
+                Runtime.onMessage.addListener(async(request, sender, respond) => {
+                    if(sender.id.unlike(Runtime.id))
+                        return /* Not meant for us... */;
 
-                const R = RegExp;
+                    const R = RegExp;
 
-                switch(request?.action) {
-                    case 'heap-audit': {
-                        respond({ ok: true, results: [window.performance?.memory?.usedJSHeapSize | 0, window.performance?.now?.() | 0] });
-                    } break;
+                    switch(request?.action) {
+                        case 'heap-audit': {
+                            respond({ ok: true, results: [window.performance?.memory?.usedJSHeapSize | 0, window.performance?.now?.() | 0] });
+                        } break;
 
-                    case 'notify': {
-                        $notice(request.message);
-                        confirm.timed(request.message, (request.timeout | 0) || 15e3)
-                            .then(answer => {
-                                // Is this tab active: taking input, hovering a link, or contains an active element?
-                                const meta = {
-                                    isOkay: (answer == true),
-                                    isDeny: (answer === false),
-                                    isDead: (answer == null),
-                                    isActive: $.defined('input:focus, a:hover, *:active'),
-                                };
+                        case 'notify': {
+                            $notice(request.message);
+                            confirm.timed(request.message, (request.timeout | 0) || 15e3)
+                                .then(answer => {
+                                    // Is this tab active: taking input, hovering a link, or contains an active element?
+                                    const meta = {
+                                        isOkay: (answer == true),
+                                        isDeny: (answer === false),
+                                        isDead: (answer == null),
+                                        isActive: $.defined('input:focus, a:hover, *:active'),
+                                    };
 
-                                // OK
-                                if(answer)
-                                    Runtime.sendMessage({ action: request.onAccept, meta });
-                                // Cancel
-                                else if(answer === false)
-                                    Runtime.sendMessage({ action: request.onDeny, meta });
-                                // Timeout
-                                else
-                                    Runtime.sendMessage({ action: request.onIgnore, meta });
-                            });
-                    } break;
+                                    // OK
+                                    if(answer)
+                                        Runtime.sendMessage({ action: request.onAccept, meta });
+                                    // Cancel
+                                    else if(answer === false)
+                                        Runtime.sendMessage({ action: request.onDeny, meta });
+                                    // Timeout
+                                    else
+                                        Runtime.sendMessage({ action: request.onIgnore, meta });
+                                });
+                        } break;
 
-                    case 'report-back': {
-                        respond({ ok: true, performance: (performance.memory.usedJSHeapSize / performance.memory.totalJSHeapSize), timestamp: +new Date });
-                    } break;
+                        case 'report-back': {
+                            respond({ ok: true, performance: (performance.memory.usedJSHeapSize / performance.memory.totalJSHeapSize), timestamp: +new Date });
+                        } break;
 
-                    case 'consume-up-next': {
-                        let { next, obit } = request
-                            , name = parseURL(next).pathname?.slice(1);
+                        case 'consume-up-next': {
+                            let { next, obit } = request
+                                , name = parseURL(next).pathname?.slice(1);
 
-                        if(nullish(name))
-                            return;
+                            if(nullish(name))
+                                return;
 
-                        $notice(`Job stolen "${ name }" by "${ obit }" tab`);
+                            $notice(`Job stolen "${ name }" by "${ obit }" tab`);
 
-                        // Can't be the next user if the job was stolen...
-                        if(top.GetNextStreamer?.cachedStreamer?.name?.equals(name))
-                            top.GetNextStreamer.cachedStreamer = null;
+                            // Can't be the next user if the job was stolen...
+                            if(top.GetNextStreamer?.cachedStreamer?.name?.equals(name))
+                                top.GetNextStreamer.cachedStreamer = null;
 
-                        when.defined(name => $(`[id^="tt-balloon-job"i][name="${ name }"i]`), 100, name)
-                            .then(element => {
-                                $('button[class*="del-btn"i]', element)?.click();
-                            });
-                    } break;
+                            when.defined(name => $(`[id^="tt-balloon-job"i][name="${ name }"i]`), 100, name)
+                                .then(element => {
+                                    $('button[class*="del-btn"i]', element)?.click();
+                                });
+                        } break;
 
-                    case 'reload': {
-                        if(UP_NEXT_ALLOW_THIS_TAB || request.forced) {
+                        case 'reload': {
+                            if(UP_NEXT_ALLOW_THIS_TAB || request.forced) {
+                                Cache.load([`Watching`], ({ Watching }) => {
+                                    Watching = Watching.filter(p => p.unlike(NORMALIZED_PATHNAME));
+
+                                    Cache.save({ Watching });
+                                });
+
+                                await top.beforeleaving?.(new CustomEvent('locationchange', { from: NORMALIZED_PATHNAME, to: NORMALIZED_PATHNAME, persisted: document.readyState.unlike('unloading') }));
+
+                                respond({ ok: true });
+                            } else {
+                                respond({ ok: false })
+                            }
+                        } break;
+
+                        case 'close': {
                             Cache.load([`Watching`], ({ Watching }) => {
                                 Watching = Watching.filter(p => p.unlike(NORMALIZED_PATHNAME));
 
                                 Cache.save({ Watching });
                             });
 
-                            await top.beforeleaving?.(new CustomEvent('locationchange', { from: NORMALIZED_PATHNAME, to: NORMALIZED_PATHNAME, persisted: document.readyState.unlike('unloading') }));
+                            await top.beforeleaving?.(new CustomEvent('locationchange', { from: NORMALIZED_PATHNAME, to: '', persisted: document.readyState.unlike('unloading') }));
 
                             respond({ ok: true });
-                        } else {
-                            respond({ ok: false })
-                        }
-                    } break;
 
-                    case 'close': {
-                        Cache.load([`Watching`], ({ Watching }) => {
-                            Watching = Watching.filter(p => p.unlike(NORMALIZED_PATHNAME));
+                            wait(500).then(() => window.close());
+                        } break;
 
-                            Cache.save({ Watching });
-                        });
+                        case 'update-pinned-streamer': {
+                            $log("Updating pinned streamer...", request);
 
-                        await top.beforeleaving?.(new CustomEvent('locationchange', { from: NORMALIZED_PATHNAME, to: '', persisted: document.readyState.unlike('unloading') }));
+                            when.defined(() => top.GetNextStreamer).then(_ => {
+                                const imgSize = '70px';
 
-                        respond({ ok: true });
+                                unpin: if(defined(request.oldValue?.name)) {
+                                    const pidged = $(`.tt-pinnable [data-name="${ request.oldValue.name }"i]`);
 
-                        wait(500).then(() => window.close());
-                    } break;
+                                    delete _.pinnedStreamer;
+                                    $('#pinned-streamer').innerHTML = Glyphs.pinned;
 
-                    case 'update-pinned-streamer': {
-                        $log("Updating pinned streamer...", request);
+                                    if(nullish(pidged))
+                                        break unpin;
 
-                        when.defined(() => top.GetNextStreamer).then(_ => {
-                            const imgSize = '70px';
+                                    pidged.dataset.pinned = false;
+                                    pidged.closest('.tt-pinnable').modStyle(`background:var(--color-background-base);`);
+                                    $('.tt-balloon-message strong', pidged).modStyle(`color:!delete`);
+                                    $('strong', pidged).html(`${ name } &bull; Click to pin \uD83D\uDCCC`);
 
-                            unpin: if(defined(request.oldValue?.name)) {
-                                const pidged = $(`.tt-pinnable [data-name="${ request.oldValue.name }"i]`);
+                                    pidged.closest('form')?.insertAdjacentElement('afterend', pidged.closest('.tt-pinnable'));
+                                }
 
-                                delete _.pinnedStreamer;
-                                $('#pinned-streamer').innerHTML = Glyphs.pinned;
+                                pin: if(defined(request.newValue?.name)) {
+                                    const currentTarget = $(`.tt-pinnable [data-name="${ request.newValue.name }"i]`);
 
-                                if(nullish(pidged))
-                                    break unpin;
+                                    _.pinnedStreamer = request.newValue.name;
+                                    $('#pinned-streamer')?.html(furnish(`.tt-border-radius-rounded`).with(furnish.img({ src: request.newValue.icon, style: `min-width:calc(${ imgSize }/2); border-radius:${ imgSize }` })).outerHTML);
 
-                                pidged.dataset.pinned = false;
-                                pidged.closest('.tt-pinnable').modStyle(`background:var(--color-background-base);`);
-                                $('.tt-balloon-message strong', pidged).modStyle(`color:!delete`);
-                                $('strong', pidged).html(`${ name } &bull; Click to pin \uD83D\uDCCC`);
+                                    if(nullish(currentTarget))
+                                        break pin;
 
-                                pidged.closest('form')?.insertAdjacentElement('afterend', pidged.closest('.tt-pinnable'));
-                            }
+                                    currentTarget.dataset.pinned = true;
+                                    currentTarget.closest('.tt-pinnable').modStyle(`background:var(--color-background-chat);`);
+                                    $('.tt-balloon-message strong', currentTarget).modStyle(`color:var(--color-amazon)`);
+                                    $('strong', currentTarget).html(`${ name } &bull; Pinned. Click to unpin`);
 
-                            pin: if(defined(request.newValue?.name)) {
-                                const currentTarget = $(`.tt-pinnable [data-name="${ request.newValue.name }"i]`);
+                                    currentTarget.closest('[id$="listing"i]').querySelector('form')?.insertAdjacentElement('beforeend', currentTarget.closest('.tt-pinnable'));
 
-                                _.pinnedStreamer = request.newValue.name;
-                                $('#pinned-streamer')?.html(furnish(`.tt-border-radius-rounded`).with(furnish.img({ src: request.newValue.icon, style: `min-width:calc(${ imgSize }/2); border-radius:${ imgSize }` })).outerHTML);
+                                    Cache.save({ PinnedStreamer: _.pinnedStreamer });
+                                } else {
+                                    Cache.remove(['PinnedStreamer'])
+                                }
+                            });
+                        } break;
+                    } // switch request?.action
+                });
 
-                                if(nullish(currentTarget))
-                                    break pin;
-
-                                currentTarget.dataset.pinned = true;
-                                currentTarget.closest('.tt-pinnable').modStyle(`background:var(--color-background-chat);`);
-                                $('.tt-balloon-message strong', currentTarget).modStyle(`color:var(--color-amazon)`);
-                                $('strong', currentTarget).html(`${ name } &bull; Pinned. Click to unpin`);
-
-                                currentTarget.closest('[id$="listing"i]').querySelector('form')?.insertAdjacentElement('beforeend', currentTarget.closest('.tt-pinnable'));
-
-                                Cache.save({ PinnedStreamer: _.pinnedStreamer });
-                            } else {
-                                Cache.remove(['PinnedStreamer'])
-                            }
-                        });
-                    } break;
-                } // switch request?.action
-            });
-
-            // Lag reporter
-            Runtime.sendMessage({ action: `${ (Settings.auto_tab_reloads ? 'BEGIN' : 'WAIVE') }_REPORT` });
-        }, 500);
+                // Lag reporter
+                Runtime.sendMessage({ action: `${ (Settings.auto_tab_reloads ? 'BEGIN' : 'WAIVE') }_REPORT` });
+            }, 500);
     });
 
     document.body.onload = event => {
@@ -4740,16 +4753,16 @@ if(top == window) {
                                     , subject = (
                                         'sub resub'.split(' ').contains(msg_id)
                                             ? 'dues'
-                                        : 'giftpaidupgrade anongiftpaidupgrade'.split(' ').contains(msg_id)
-                                            ? 'keep'
-                                        : 'subgift rewardgift submysterygift rewardmysterygift'.split(' ').contains(msg_id)
-                                            ? 'gift'
-                                        : 'raid unraid'.split(' ').contains(msg_id)
-                                            ? 'raid' // incoming raids
-                                        : 'pointsredeemed'.split(' ').contains(msg_id)
-                                            ? 'coin'
-                                        // ritual (new_chatter, etc.); bitsbadgetier (100, 1000, 10000, etc.)
-                                        : 'note'
+                                            : 'giftpaidupgrade anongiftpaidupgrade'.split(' ').contains(msg_id)
+                                                ? 'keep'
+                                                : 'subgift rewardgift submysterygift rewardmysterygift'.split(' ').contains(msg_id)
+                                                    ? 'gift'
+                                                    : 'raid unraid'.split(' ').contains(msg_id)
+                                                        ? 'raid' // incoming raids
+                                                        : 'pointsredeemed'.split(' ').contains(msg_id)
+                                                            ? 'coin'
+                                                            // ritual (new_chatter, etc.); bitsbadgetier (100, 1000, 10000, etc.)
+                                                            : 'note'
                                     )
                                     , element = when.defined((message, subject) =>
                                         // @TODO: get bullets via text content
@@ -4795,7 +4808,7 @@ if(top == window) {
 
                                                 return message.mutilate().errs(element.textContent.mutilate()) < .2;
                                             })
-                                        , 100, message, subject);
+                                    , 100, message, subject);
 
                                 const results = {
                                     element,
@@ -4908,7 +4921,7 @@ if(top == window) {
                                                         return match;
                                                     })
                                             )
-                                        , 100, message, tags.id)
+                                    , 100, message, tags.id)
                                     , emotes = Object.keys(tags.emotes ?? {}).map(key => {
                                         const emote = (tags.emotes[+key] || tags.emotes[key]).shift()
                                             , name = parameters.substring(+emote.startPosition, ++emote.endPosition)
@@ -4993,7 +5006,8 @@ if(top == window) {
                             } break;
 
                             default: { continue }
-                        };
+                        } // switch command.command
+                        ;
                     }
                 };
             };

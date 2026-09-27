@@ -78,7 +78,7 @@ function listFiles(directory, base = directory) {
 
         return entry.isDirectory()
             ? listFiles(full, base)
-        : [path.relative(base, full).split(path.sep).join('/')];
+            : [path.relative(base, full).split(path.sep).join('/')];
     });
 }
 
@@ -129,7 +129,7 @@ function write(target, transform, files, manifest, bundles) {
     for(const file of files) {
         const data = file == 'manifest.json'
             ? Buffer.from(JSON.stringify(transform(structuredClone(manifest)), null, 4) + '\n')
-        : fs.readFileSync(path.join(SOURCE, file));
+            : fs.readFileSync(path.join(SOURCE, file));
 
         fs.mkdirSync(path.dirname(path.join(directory, file)), { recursive: true });
         fs.writeFileSync(path.join(directory, file), data);
@@ -171,6 +171,7 @@ function zip(entries) {
         const crc = crc32(data);
 
         const header = Buffer.alloc(30);
+
         header.writeUInt32LE(0x04034b50, 0);
         header.writeUInt16LE(20, 4);
         header.writeUInt16LE(0x0800, 6);           // UTF-8 names
@@ -183,6 +184,7 @@ function zip(entries) {
         header.writeUInt16LE(nameBuffer.length, 26);
 
         const central = Buffer.alloc(46);
+
         central.writeUInt32LE(0x02014b50, 0);
         central.writeUInt16LE(20, 4);
         central.writeUInt16LE(20, 6);
@@ -203,6 +205,7 @@ function zip(entries) {
 
     const directory = Buffer.concat(centrals);
     const end = Buffer.alloc(22);
+
     end.writeUInt32LE(0x06054b50, 0);
     end.writeUInt16LE(entries.length, 8);
     end.writeUInt16LE(entries.length, 10);

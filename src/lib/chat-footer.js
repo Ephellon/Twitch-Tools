@@ -20,7 +20,7 @@ class ChatFooter {
 
         const parent = $('[data-a-target="chat-scroller"i]')
             , footer =
-            f('#tt-chat-footer.tt-absolute.tt-border-radius-medium.tt-bottom-0.tt-mg-b-1',
+                f('#tt-chat-footer.tt-absolute.tt-border-radius-medium.tt-bottom-0.tt-mg-b-1',
                 {
                     uuid,
                     ...options,
@@ -35,7 +35,7 @@ class ChatFooter {
                         })
                     )
                 )
-            );
+                );
 
         parent.append(footer);
 

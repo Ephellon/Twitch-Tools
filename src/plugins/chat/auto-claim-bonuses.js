@@ -14,10 +14,10 @@ plugin({
         new context.StopWatch('auto_claim_bonuses');
 
         const ChannelPoints = (null
-                ?? $('[class*="bonus"i]')?.closest('button')
-                ?? $('[data-test-selector*="points"i][data-test-selector*="summary"i] button[class*="success"i]')
-                ?? $('[data-test-selector*="points"i][data-test-selector*="summary"i] button:is([class*="destruct"i], [class*="error"i])')
-                ?? $('[class*="points"i] button [class*="bonus"i]')?.closest('button')
+            ?? $('[class*="bonus"i]')?.closest('button')
+            ?? $('[data-test-selector*="points"i][data-test-selector*="summary"i] button[class*="success"i]')
+            ?? $('[data-test-selector*="points"i][data-test-selector*="summary"i] button:is([class*="destruct"i], [class*="error"i])')
+            ?? $('[class*="points"i] button [class*="bonus"i]')?.closest('button')
             )
             , Enabled = (Settings.auto_claim_bonuses && parseBool($('#tt-auto-claim-bonuses')?.getAttribute('tt-auto-claim-enabled') ?? $('[data-a-page-loaded-name="PopoutChatPage"i]')));
 
@@ -72,6 +72,7 @@ plugin({
 
                 if(defined(textContainer)) {
                     const { parentElement } = textContainer;
+
                     parentElement.removeAttribute('data-test-selector');
                 } else {
                     return context.StopWatch.stop('auto_claim_bonuses')
@@ -156,6 +157,7 @@ plugin({
 
             // Clean up leftovers from Twitch animations
             const junk = $(`#tt-auto-claim-bonuses ${ '> :last-child'.repeat(3) }`);
+
             junk && (junk.innerHTML = "");
 
             // Set the Channel Point icon's color & positioning

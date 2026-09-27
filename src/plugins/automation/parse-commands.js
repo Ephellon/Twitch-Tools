@@ -20,67 +20,67 @@ plugin({
 
                     const gameText = STREAMER.game + '';
                     let properties = ({
-                        // StreamElements
-                        user: {
-                            _: USERNAME,
-                            name: USERNAME.toLocaleLowerCase(top.LANGUAGE),
-                            level: 100,
+                            // StreamElements
+                            user: {
+                                _: USERNAME,
+                                name: USERNAME.toLocaleLowerCase(top.LANGUAGE),
+                                level: 100,
 
-                            points: STREAMER.coin,
-                            points_rank: [STREAMER.rank, STREAMER.cult].join('/'),
-                            points_alltime_rank: [STREAMER.rank, STREAMER.cult].join('/'),
-                            time_online_rank: [STREAMER.rank, STREAMER.cult].join('/'),
-                            time_offline_rank: [STREAMER.rank, STREAMER.cult].join('/'),
+                                points: STREAMER.coin,
+                                points_rank: [STREAMER.rank, STREAMER.cult].join('/'),
+                                points_alltime_rank: [STREAMER.rank, STREAMER.cult].join('/'),
+                                time_online_rank: [STREAMER.rank, STREAMER.cult].join('/'),
+                                time_offline_rank: [STREAMER.rank, STREAMER.cult].join('/'),
 
-                            lastmessage: Chat.get().filter(({ author }) => USERNAME.equals(author)).pop(),
-                            lastseen: toTimeString(0, '!minute_m !second_s'),
-                            lastactive: toTimeString(0, '!minute_m !second_s'),
+                                lastmessage: Chat.get().filter(({ author }) => USERNAME.equals(author)).pop(),
+                                lastseen: toTimeString(0, '!minute_m !second_s'),
+                                lastactive: toTimeString(0, '!minute_m !second_s'),
 
-                            time_online: toTimeString((parseCoin($('#tt-points-receipt')?.textContent) / 320) * 4000),
-                            time_offline: toTimeString(+(new Date) - +new Date(STREAMER.data?.lastSeen || $('#root').dataset.aPageLoaded)),
-                        },
-                        user1: USERNAME,
-                        '2': USERNAME,
-                        user2: STREAMER.name,
-                        '1': STREAMER.name,
+                                time_online: toTimeString((parseCoin($('#tt-points-receipt')?.textContent) / 320) * 4000),
+                                time_offline: toTimeString(+(new Date) - +new Date(STREAMER.data?.lastSeen || $('#root').dataset.aPageLoaded)),
+                            },
+                            user1: USERNAME,
+                            '2': USERNAME,
+                            user2: STREAMER.name,
+                            '1': STREAMER.name,
 
-                        channel: {
-                            _: STREAMER.name,
-                            [STREAMER.name]: STREAMER.name,
-                            [USERNAME]: USERNAME,
-                            viewers: STREAMER.poll,
-                            views: (STREAMER.cult * (1 + (STREAMER.poll / STREAMER.cult))).floor(),
-                            followers: STREAMER.cult,
-                            subs: STREAMER.poll,
-                            display_name: STREAMER.name,
-                            alias: STREAMER.name,
-                        },
+                            channel: {
+                                _: STREAMER.name,
+                                [STREAMER.name]: STREAMER.name,
+                                [USERNAME]: USERNAME,
+                                viewers: STREAMER.poll,
+                                views: (STREAMER.cult * (1 + (STREAMER.poll / STREAMER.cult))).floor(),
+                                followers: STREAMER.cult,
+                                subs: STREAMER.poll,
+                                display_name: STREAMER.name,
+                                alias: STREAMER.name,
+                            },
 
-                        title: $('[data-a-target="stream-title"i]').textContent,
-                        status: $('[data-a-target="stream-title"i]').textContent,
+                            title: $('[data-a-target="stream-title"i]').textContent,
+                            status: $('[data-a-target="stream-title"i]').textContent,
 
-                        game: {
-                            _: gameText,
-                            [STREAMER.name]: gameText,
-                            [USERNAME]: gameText,
-                        },
+                            game: {
+                                _: gameText,
+                                [STREAMER.name]: gameText,
+                                [USERNAME]: gameText,
+                            },
 
-                        pointsname: STREAMER.fiat,
+                            pointsname: STREAMER.fiat,
 
-                        uptime: toTimeString(STREAMER.time),
+                            uptime: toTimeString(STREAMER.time),
 
-                        // NightBot
-                        channelid: STREAMER.sole,
-                        userlevel: 'everyone',
-                        sender: USERNAME,
-                        touser: USERNAME,
+                            // NightBot
+                            channelid: STREAMER.sole,
+                            userlevel: 'everyone',
+                            sender: USERNAME,
+                            touser: USERNAME,
 
-                        // Either...
-                        customapi: `ℂ𝕦𝕤𝕥𝕠𝕞 𝔸ℙ𝕀`,
+                            // Either...
+                            customapi: `ℂ𝕦𝕤𝕥𝕠𝕞 𝔸ℙ𝕀`,
 
-                        // Fetched...
-                        ...variables
-                    })
+                            // Fetched...
+                            ...variables
+                        })
                         , value = properties;
 
                     dir:
@@ -91,10 +91,11 @@ plugin({
 
                     return value || $_;
                 })
-                ?.replace(/^\/(?:\w\S+)\s*/, '');
+                    ?.replace(/^\/(?:\w\S+)\s*/, '');
 
             return string;
         };
+
         decodeMD = function decodeMD(string = '') {
             return string
                 .replace(/(`{3})((?:[\w\-]+\s)?)([^$]+)\1/g, '<code type="$2">$3</code>')
@@ -119,7 +120,7 @@ plugin({
                         string += (
                             /[a-z]/i.test(char)
                                 ? `&${ char }${ type };`
-                            : char
+                                : char
                         );
 
                     return string;
@@ -293,17 +294,17 @@ plugin({
 
             const listable = (AvailableCommands ??= await STREAMER.coms)
                 .sort((a, b) => (
-                        (false
-                            || (true
-                                && a.command.toLowerCase().contains(value)
-                                && b.command.toLowerCase().missing(value)
-                            )
-                            || (true
-                                && defined(a.aliases.find(aka => aka.toLowerCase().contains(value)))
-                                && nullish(b.aliases.find(aka => aka.toLowerCase().contains(value)))
-                            )
+                    (false
+                        || (true
+                            && a.command.toLowerCase().contains(value)
+                            && b.command.toLowerCase().missing(value)
                         )
-                            ? -1
+                        || (true
+                            && defined(a.aliases.find(aka => aka.toLowerCase().contains(value)))
+                            && nullish(b.aliases.find(aka => aka.toLowerCase().contains(value)))
+                        )
+                    )
+                        ? -1
                         : (false
                             || (true
                                 && b.command.toLowerCase().contains(value)
@@ -315,8 +316,8 @@ plugin({
                             )
                         )
                             ? +1
-                        : 0
-                    )
+                            : 0
+                )
                 )
                 .slice(0, 30)
                 .map(data => ({ ...data, textDistance: Math.min(...[data.command, ...data.aliases].map(string => value.distanceFrom(string.toLowerCase()))) }))
@@ -382,8 +383,8 @@ plugin({
                                                                 , { index } = match
                                                                 , [text, word] = match;
 
-                                                                target.setRangeText(`!${ command }`, index, index + text.length, 'end');
-                                                                target.focus();
+                                                            target.setRangeText(`!${ command }`, index, index + text.length, 'end');
+                                                            target.focus();
                                                         }
 
                                                         tray.classList.remove('tt-chat-input-tray__open');

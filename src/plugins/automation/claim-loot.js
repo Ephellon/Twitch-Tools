@@ -12,6 +12,7 @@ plugin({
     handler: () => {
         when.defined(() => $('.prime-offers button')).then(prime_btn => {
             let handled = 0;
+
             prime_btn.click();
 
             // There's at least one offer...

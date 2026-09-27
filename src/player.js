@@ -157,10 +157,10 @@ Player__PAGE_CHECKER = setInterval(Player__WAIT_FOR_PAGE = async() => {
         // Set the SVGs' section IDs
         SectionLabeling: {
             const conversions = {
-                unmute: [
-                            'unmute'
-                        ].reverse(),
-            }
+                    unmute: [
+                        'unmute'
+                    ].reverse(),
+                }
                 , Glyphs = window.Glyphs;
 
             for(const container of $.all('figure')) {

@@ -116,34 +116,34 @@ plugin({
                         } break;
                     } // :constructing | switch syntaxes.at(-1)
 
-                    path.push(LAST_ELEMENT);
+                path.push(LAST_ELEMENT);
 
-                    return path.reduce((elements, v, i, a) => {
-                        if(v === LAST_ELEMENT)
-                            return elements;
-                        else if(v.trim() === '')
-                            return [EMPTY_ELEMENT_SUBSTITUTE];
-                        else if(i === 0)
-                            return $.all(v);
+                return path.reduce((elements, v, i, a) => {
+                    if(v === LAST_ELEMENT)
+                        return elements;
+                    else if(v.trim() === '')
+                        return [EMPTY_ELEMENT_SUBSTITUTE];
+                    else if(i === 0)
+                        return $.all(v);
 
-                        let c = parseInt(v.trim() || '1');
+                    let c = parseInt(v.trim() || '1');
 
-                        if(Number.isNaN(c)) {
-                            return elements.map(el => el.closest(v)).filter(defined)
-                        } else {
-                            for(;c-- > 0;)
-                                elements = elements.map(el => el.parentElement).filter(defined);
+                    if(Number.isNaN(c)) {
+                        return elements.map(el => el.closest(v)).filter(defined)
+                    } else {
+                        for(;c-- > 0;)
+                            elements = elements.map(el => el.parentElement).filter(defined);
 
-                            return elements;
-                        }
-                    }, []).isolate().forEach(el => {
-                        if(parseBool(el.dataset?.[UNWANTED_BANNER_AD_SELECTOR]))
-                            return;
+                        return elements;
+                    }
+                }, []).isolate().forEach(el => {
+                    if(parseBool(el.dataset?.[UNWANTED_BANNER_AD_SELECTOR]))
+                        return;
 
-                        $remark("Blocking...", el);
+                    $remark("Blocking...", el);
 
-                        el.dataset[UNWANTED_BANNER_AD_SELECTOR] = true;
-                    });
+                    el.dataset[UNWANTED_BANNER_AD_SELECTOR] = true;
+                });
             });
 
             AddCustomCSSBlock('Remove Banner Ads', `[data-${ UNWANTED_BANNER_AD_SELECTOR }="true"i] {display:none!important}`);

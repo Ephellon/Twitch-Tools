@@ -46,6 +46,7 @@ plugin({
 
         const { filename } = parseURL(src);
         let [ext, ...name] = filename.split('.').reverse();
+
         name = name.join('.');
 
         const parent = original.parentElement;

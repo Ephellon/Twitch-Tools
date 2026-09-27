@@ -51,6 +51,7 @@ export function analyze(file, initializer) {
 
     for(const variable of variables) {
         const home = sectionAt(variable.defs[0].name.loc.start.line);
+
         home.declares.add(variable.name);
 
         for(const ref of variable.references) {
@@ -113,5 +114,5 @@ if(import.meta.url == pathToFileURL(process.argv[1]).href) {
         console.log(JSON.stringify(rows, null, 2));
     else
         for(const r of rows)
-        console.log(`${ r.standalone ? "✓" : " " } ${ r.lines.padEnd(12) } ${ r.title.slice(0, 48).padEnd(48) } jobs:${ r.jobs.length } needs:${ Object.keys(r.needs).length } usedBy:${ r.usedBy.length }${ r.awaits ? " await" : "" }${ r.returns.length ? " RETURN@" + r.returns : "" }`);
+            console.log(`${ r.standalone ? "✓" : " " } ${ r.lines.padEnd(12) } ${ r.title.slice(0, 48).padEnd(48) } jobs:${ r.jobs.length } needs:${ Object.keys(r.needs).length } usedBy:${ r.usedBy.length }${ r.awaits ? " await" : "" }${ r.returns.length ? " RETURN@" + r.returns : "" }`);
 }

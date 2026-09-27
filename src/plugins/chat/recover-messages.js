@@ -100,8 +100,8 @@ plugin({
                 for(const word of message.split(' ').filter(s => s.length))
                     inter.push(
                         emotes.contains(word)
-                        // Create an emote button...
-                        ? f('.chat-line__message--emote-button[@testSelector=emote-button]').with(
+                            // Create an emote button...
+                            ? f('.chat-line__message--emote-button[@testSelector=emote-button]').with(
                             f('div').with(
                                 f('span[@aTarget=emote-name]').with(
                                     f('.chat-image__container').with(
@@ -109,9 +109,9 @@ plugin({
                                     )
                                 )
                             )
-                        )
-                        // Just push the message...
-                        : word
+                            )
+                            // Just push the message...
+                            : word
                     );
 
                 let fragments = [];

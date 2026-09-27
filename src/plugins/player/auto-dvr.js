@@ -23,7 +23,7 @@ plugin({
             return (
                 parseBool(autosave)
                     ? video?.stopRecording()
-                : null
+                    : null
             );
 
         if(defined(video.__recorder__))

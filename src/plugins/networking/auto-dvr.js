@@ -11,6 +11,7 @@ plugin({
     async install({ StopWatch }) {
         let AUTO_DVR__CHECKING;
         let AUTO_DVR__CHECKING_INTERVAL;
+
         MASTER_VIDEO = $('[data-a-player-state] video');
 
         // Might take a few seconds to fulfill...
@@ -46,7 +47,7 @@ plugin({
 
                 // Create the action button...
                 const action =
-                f('div', { 'tt-action': 'auto-dvr', 'for': DVR_ID, enabled, 'action-origin': 'foreign', style: `animation:1s fade-in 1;` },
+                    f('div', { 'tt-action': 'auto-dvr', 'for': DVR_ID, enabled, 'action-origin': 'foreign', style: `animation:1s fade-in 1;` },
                     f('button', {
                         onmouseup: async event => {
                             const { currentTarget, isTrusted = false, button = -1 } = event;
@@ -115,7 +116,7 @@ plugin({
                             f('p.tt-action-subtitle').with(subtitle)
                         )
                     ))
-                );
+                    );
 
                 actionPanel.append(action);
 
@@ -164,6 +165,7 @@ plugin({
 
             StopWatch.stop('video_clips__dvr');
         };
+
         Timers.video_clips__dvr = -2_500;
 
         try {
@@ -216,15 +218,15 @@ plugin({
                     , halt = parseBool(feed?.getAttribute('halt'))
                     , name = (feed?.getAttribute('value') || DVR_CLIP_PRECOMP_NAME).replace(GetFileSystem().allIllegalFilenameCharacters, '-');
             })
-            ?.stop()
-            ?.save(DVR_CLIP_PRECOMP_NAME)
-            ?.then(link => alert.silent(`
+                ?.stop()
+                ?.save(DVR_CLIP_PRECOMP_NAME)
+                ?.then(link => alert.silent(`
                 <video controller controls
                     title="Video Saved &mdash; ${ link.download }"
                     src="${ link.href }" style="max-width:-webkit-fill-available"
                 ></video>
                 `)
-            );
+                );
         };
 
         Unhandlers.video_clips__dvr = () => {
@@ -239,7 +241,7 @@ plugin({
                     document.title = (
                         MASTER_VIDEO.hasRecording(Recording.ANY)
                             ? `\u{1f534} ${ STREAMER.name } - ${ toTimeString((new Date) - MASTER_VIDEO.getRecording(Recording.ANY)?.creationTime, 'clock') }`
-                        : `${ STREAMER.name } - Twitch`
+                            : `${ STREAMER.name } - Twitch`
                     );
                 }, 250);
         }, 1000);
@@ -296,89 +298,90 @@ plugin({
             // This is where the magic happens
                 // Begin looking for DVR channels...
             AUTO_DVR__CHECKING_INTERVAL =
-            setInterval(AUTO_DVR__CHECKING ??= () => {
-                new StopWatch('video_clips__dvr__checking_interval');
+                setInterval(AUTO_DVR__CHECKING ??= () => {
+                    new StopWatch('video_clips__dvr__checking_interval');
 
-                if(UP_NEXT_ALLOW_THIS_TAB)
-                    Cache.load('DVRChannels', async({ DVRChannels }) => {
-                        try {
-                            DVRChannels = JSON.parse(DVRChannels || '{}');
-                        } catch(error) {
-                            // Probably an object already...
-                            DVRChannels ??= {};
-                        }
-
-                        checking:
-                        // Only check for the stream when it's live; if the dates don't match, it just went live again
-                        for(const DVR_ID in DVRChannels) {
-                            const streamer = (DVR_ID + '').toLowerCase();
-                            let channel = await new Search(streamer).then(Search.convertResults)
-                                , ok = parseBool(channel?.ok);
-
-                            // Search did not complete...
-                            let num = 3;
-
-                            while(!ok && num-- > 0) {
-
-                                Search.void(streamer);
-
-                                // @research
-                                channel = await new Search(streamer).then(Search.convertResults);
-                                ok = parseBool(channel?.ok);
-
-                                // $warn(`Re-search, ${ num } ${ 'retry'.pluralSuffix(num) } left [DVR]: "${ streamer }" → OK = ${ ok }`);
+                    if(UP_NEXT_ALLOW_THIS_TAB)
+                        Cache.load('DVRChannels', async({ DVRChannels }) => {
+                            try {
+                                DVRChannels = JSON.parse(DVRChannels || '{}');
+                            } catch(error) {
+                                // Probably an object already...
+                                DVRChannels ??= {};
                             }
 
-                            if(!num && !ok) {
-                                channel = ALL_CHANNELS.find(channel => channel.name.equals(DVR_ID));
+                            checking:
+                            // Only check for the stream when it's live; if the dates don't match, it just went live again
+                            for(const DVR_ID in DVRChannels) {
+                                const streamer = (DVR_ID + '').toLowerCase();
+                                let channel = await new Search(streamer).then(Search.convertResults)
+                                    , ok = parseBool(channel?.ok);
 
-                                if(nullish(channel?.name))
+                                // Search did not complete...
+                                let num = 3;
+
+                                while(!ok && num-- > 0) {
+
+                                    Search.void(streamer);
+
+                                    // @research
+                                    channel = await new Search(streamer).then(Search.convertResults);
+                                    ok = parseBool(channel?.ok);
+
+                                    // $warn(`Re-search, ${ num } ${ 'retry'.pluralSuffix(num) } left [DVR]: "${ streamer }" → OK = ${ ok }`);
+                                }
+
+                                if(!num && !ok) {
+                                    channel = ALL_CHANNELS.find(channel => channel.name.equals(DVR_ID));
+
+                                    if(nullish(channel?.name))
+                                        continue checking;
+                                }
+
+                                if(!parseBool(channel.live)) {
+                                    // @performance
+                                    PrepareForGarbageCollection(channel, DVRChannels);
+
                                     continue checking;
-                            }
+                                }
 
-                            if(!parseBool(channel.live)) {
-                                // @performance
-                                PrepareForGarbageCollection(channel, DVRChannels);
+                                let { name, live, icon, href, data = { actualStartTime: null } } = channel
+                                    , slug = DVRChannels[name.toLowerCase()]
+                                    , enabled = defined(slug);
 
-                                continue checking;
-                            }
+                                const index = (ALL_FIRST_IN_LINE_JOBS.findIndex(href => parseURL(href).pathname.slice(1).equals(name)))
+                                    , job = ALL_FIRST_IN_LINE_JOBS[index];
 
-                            let { name, live, icon, href, data = { actualStartTime: null } } = channel
-                                , slug = DVRChannels[name.toLowerCase()]
-                                , enabled = defined(slug);
-                            const index = (ALL_FIRST_IN_LINE_JOBS.findIndex(href => parseURL(href).pathname.slice(1).equals(name)))
-                                , job = ALL_FIRST_IN_LINE_JOBS[index];
+                                if(defined(job) && name.unlike(STREAMER.name) && enabled) {
+                                    // Skip the queue!
+                                    const [removed] = ALL_FIRST_IN_LINE_JOBS.splice(index, 1)
+                                        , name = parseURL(removed).pathname.slice(1);
 
-                            if(defined(job) && name.unlike(STREAMER.name) && enabled) {
-                                // Skip the queue!
-                                const [removed] = ALL_FIRST_IN_LINE_JOBS.splice(index, 1)
-                                    , name = parseURL(removed).pathname.slice(1);
+                                    $notice(`Skipper work:`, removed);
 
-                                $notice(`Skipper work:`, removed);
+                                    FIRST_IN_LINE_DUE_DATE = NEW_DUE_DATE(FIRST_IN_LINE_TIMER);
 
-                                FIRST_IN_LINE_DUE_DATE = NEW_DUE_DATE(FIRST_IN_LINE_TIMER);
+                                    // Skipper
+                                    REDO_FIRST_IN_LINE_QUEUE(ALL_FIRST_IN_LINE_JOBS[0], { redo: (parseURL(removed).searchParameters?.redo ?? '') });
 
-                                // Skipper
-                                REDO_FIRST_IN_LINE_QUEUE(ALL_FIRST_IN_LINE_JOBS[0], { redo: (parseURL(removed).searchParameters?.redo ?? '') });
+                                    Cache.save({ ALL_FIRST_IN_LINE_JOBS, FIRST_IN_LINE_DUE_DATE }, () => {
+                                        $log("Skipping queue in favor of a DVR channel", job);
 
-                                Cache.save({ ALL_FIRST_IN_LINE_JOBS, FIRST_IN_LINE_DUE_DATE }, () => {
-                                    $log("Skipping queue in favor of a DVR channel", job);
+                                        goto(parseURL(job).addSearch({ dvr: true }).href);
+                                    });
+                                }
 
-                                    goto(parseURL(job).addSearch({ dvr: true }).href);
-                                });
-                            }
+                            } // :checking
 
-                        }
+                            // Send the length to the settings page
+                            Settings.set({ 'DVR_CHANNELS': Object.keys(DVRChannels) });
 
-                        // Send the length to the settings page
-                        Settings.set({ 'DVR_CHANNELS': Object.keys(DVRChannels) });
+                            StopWatch.stop('video_clips__dvr__checking_interval', 30_000);
 
-                        StopWatch.stop('video_clips__dvr__checking_interval', 30_000);
-
-                        // @performance
-                        PrepareForGarbageCollection(DVRChannels);
-                    });
-            }, 30_000);
+                            // @performance
+                            PrepareForGarbageCollection(DVRChannels);
+                        });
+                }, 30_000);
 
             // Add the panel & button
             let actionPanel = $('.about-section__actions');

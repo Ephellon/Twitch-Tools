@@ -47,7 +47,7 @@ plugin({
 
             // Create the action button...
             action =
-            f('div', { 'tt-action': 'live-reminders', 'for': realName, 'remind': hasReminder, 'action-origin': 'foreign', style: `animation:1s fade-in 1;` },
+                f('div', { 'tt-action': 'live-reminders', 'for': realName, 'remind': hasReminder, 'action-origin': 'foreign', style: `animation:1s fade-in 1;` },
                 f('button', {
                     onmouseup: async event => {
                         const { currentTarget, isTrusted = false, button = -1 } = event;
@@ -106,7 +106,7 @@ plugin({
                         f('p.tt-action-subtitle').with(subtitle)
                     )
                 ))
-            );
+                );
 
             actionPanel.append(action);
 
@@ -124,10 +124,10 @@ plugin({
 
     enabled() {
         return true
-        && (false
-            || nullish(Settings.live_reminders)
-            || parseBool(Settings.live_reminders)
-        );
+            && (false
+                || nullish(Settings.live_reminders)
+                || parseBool(Settings.live_reminders)
+            );
     },
 
     setup() {
@@ -202,6 +202,7 @@ plugin({
                         } else {
                             $(`[tt-action="live-reminders"i][for="${ realName }"i][remind="true"i] button`)
                                 ?.dispatchEvent?.(new MouseEvent('mouseup', { bubbles: false }));
+
                             delete LiveReminders[realName];
                         }
 

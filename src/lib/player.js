@@ -148,7 +148,7 @@ async function SetQuality(quality = 'auto', backup = 'source') {
     return new Promise((resolve, reject) => {
         const checker = setInterval(() => {
             const video = $.all('video').pop()
-            , computed = (video?.videoHeight | 0) + 'p';
+                , computed = (video?.videoHeight | 0) + 'p';
 
             if(desired !== computed) {
                 clearInterval(checker);
@@ -239,10 +239,10 @@ function GetViewMode() {
 
     if(false
         || (true
-                && theatre
-                && fullwidth
-                && !overview
-            )
+            && theatre
+            && fullwidth
+            && !overview
+        )
         || $.all(classes, container.parentElement).length <= 3
     )
         mode = 'fullscreen';

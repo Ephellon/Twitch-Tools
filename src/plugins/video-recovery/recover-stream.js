@@ -54,7 +54,8 @@ plugin({
                 $warn("No video controls presented.");
 
                 break __RecoverVideoProgramatically__;
-            } if(attempts > 3) {
+            }
+            if(attempts > 3) {
                 $warn("Automatic attempts are not helping.");
 
                 break __RecoverVideoProgramatically__;

@@ -52,7 +52,8 @@ function parseCoin(amount = '') {
             book[symbol] = index++;
 
         return book;
-    };
+    }
+    ;
 
     const units = getUnits(LITERATURE);
     const points = amount?.toString()?.replace(RegExp(`(\\d{1,3})(${ '(?:\\D\\d{1,3})?'.repeat(9) })?(?:\\s*(\\D))?`, 'i'), ($0, $1, $2 = '0', $3 = '_', $$, $_) => {

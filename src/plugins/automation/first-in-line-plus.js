@@ -33,7 +33,7 @@ plugin({
             // Detect if the channels got removed incorrectly?
             if(bad_names?.length) {
                 $warn("Twitch failed to add these channels correctly:", bad_names);
-                    // .toNativeStack();
+                // .toNativeStack();
 
                 BAD_STREAMERS = '';
 
@@ -123,6 +123,7 @@ plugin({
 
             StopWatch.stop('first_in_line_plus');
         };
+
         Timers.first_in_line_plus = 1000;
 
         Unhandlers.first_in_line_plus = Unhandlers.first_in_line;

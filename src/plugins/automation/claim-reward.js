@@ -124,7 +124,8 @@ plugin({
             });
 
             return true;
-        };
+        }
+        ;
 
         // Waits for `condition` to return an element; resolves `null` after `timeout` ms
         const WaitForElement = (condition, timeout = 10_000, ms = 100) => {
@@ -205,6 +206,7 @@ plugin({
                                                                     });
                                                         }
                                                     });
+
                                                     inputBox.modStyle(`background:#387aff`);
                                                     inputBox.focus();
 
@@ -278,6 +280,7 @@ plugin({
                 PrepareForGarbageCollection(AutoClaimRewards, AutoClaimAnswers);
             });
         };
+
         Timers.claim_reward = 15_000;
 
         Unhandlers.claim_reward = () => {
@@ -638,7 +641,7 @@ plugin({
                     const textContent = (
                         itemIDs.contains(rewardID)
                             ? `Do not buy`
-                        : `Buy when available${ '*'.repeat(+item.needsInput) }`
+                            : `Buy when available${ '*'.repeat(+item.needsInput) }`
                     );
 
                     $('[id$="header"i], [class*="header"i]', head)?.modStyle(`animation-duration:${ (1 / (STREAMER.coin / $cost)).clamp(1, 30).toFixed(2) }s`);
@@ -697,7 +700,7 @@ plugin({
                                                 node.textContent = (
                                                     !~index
                                                         ? `Do not buy`
-                                                    : `Buy when available${ '*'.repeat(+item.needsInput) }`
+                                                        : `Buy when available${ '*'.repeat(+item.needsInput) }`
                                                 );
 
                                                 currentTarget.closest('[class*="reward"i][class*="content"i]')?.querySelector('[id$="header"i]')?.setAttribute('rainbow-text', !~index);

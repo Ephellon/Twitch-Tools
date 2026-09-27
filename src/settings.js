@@ -74,91 +74,91 @@ let // These are option names. Anything else will be removed
         /* Automation */
         // Away Mode
         'away_mode',
-            'away_mode__hide_chat',
-            'away_mode__volume_control',
-            'away_mode__volume',
-            'away_mode_schedule',
+        'away_mode__hide_chat',
+        'away_mode__volume_control',
+        'away_mode__volume',
+        'away_mode_schedule',
         // Auto-claim Bonuses
         'auto_claim_bonuses',
         // Claim Drops
         'claim_drops',
-            'claim_drops__interval',
+        'claim_drops__interval',
         // Auto-Follow
         'auto_follow_none',
         'auto_follow_raids',
         'auto_follow_time',
-            'auto_follow_time_minutes',
+        'auto_follow_time_minutes',
         'auto_follow_all',
         'live_reminders',
         'keep_live_reminders',
         // Keep Watching
         'stay_live',
-            'stay_live__ignore_channel_reruns',
-            // Up Next Preference
-            'next_channel_preference',
+        'stay_live__ignore_channel_reruns',
+        // Up Next Preference
+        'next_channel_preference',
         // First in Line
         'first_in_line_none',
         'first_in_line',
-            'first_in_line_time_minutes',
+        'first_in_line_time_minutes',
         'first_in_line_plus',
-            'first_in_line_plus_time_minutes',
+        'first_in_line_plus_time_minutes',
         'first_in_line_all',
-            'first_in_line_all_time_minutes',
+        'first_in_line_all_time_minutes',
         'first_in_line_now',
         'up_next__one_instance',
         // Greedy Raiding
         'greedy_raiding',
-            'greedy_raiding_leave_before',
+        'greedy_raiding_leave_before',
         // Parse Commands
         'parse_commands',
-            'parse_commands__create_links',
+        'parse_commands__create_links',
         // Prevent Raiding
         'prevent_raiding',
         // Prime Loot
         'claim_loot',
         // Prime Subscription
         'claim_prime',
-            'claim_prime__max_claims',
+        'claim_prime__max_claims',
         // Kill Extensions
         'kill_extensions',
         // Auto Accept Mature Content
         'auto_accept_mature',
         // Auto-Focus*
         'auto_focus',
-            'auto_focus_detection_threshold',
-            'auto_focus_poll_interval',
-            'auto_focus_poll_image_type',
+        'auto_focus_detection_threshold',
+        'auto_focus_poll_interval',
+        'auto_focus_poll_image_type',
         // Time Zones
-            'time_zones',
+        'time_zones',
         // View Mode
         'view_mode',
 
         /* Chat & Messaging */
         // Highlight Mentions
         'highlight_mentions',
-            // Extra
-            'highlight_mentions_extra',
+        // Extra
+        'highlight_mentions_extra',
         // Show Pop-ups
         'highlight_mentions_popup',
         // Highlight phrases
         'highlight_phrases',
-            // phrase Rules
-            'phrase_rules',
+        // phrase Rules
+        'phrase_rules',
         // Filter Messages
         'filter_messages',
-            'filter_rules',
-            'filter_messages__bullets_coin',
-            'filter_messages__bullets_raid',
-            'filter_messages__bullets_subs',
-            'filter_messages__bullets_note',
-            'filter_messages__bullets_paid',
+        'filter_rules',
+        'filter_messages__bullets_coin',
+        'filter_messages__bullets_raid',
+        'filter_messages__bullets_subs',
+        'filter_messages__bullets_note',
+        'filter_messages__bullets_paid',
         // BetterTTV Emotes
         'bttv_emotes',
-            'auto_load_bttv_emotes',
-            'bttv_emotes_maximum',
-            'bttv_emotes_location',
-            'bttv_emotes_channel',
-            'bttv_emotes_extras',
+        'auto_load_bttv_emotes',
+        'bttv_emotes_maximum',
+        'bttv_emotes_location',
+        'bttv_emotes_channel',
+        'bttv_emotes_extras',
         // TODO: Chat Commands
         // 'chat_commands',
         //     'commands',
@@ -168,10 +168,10 @@ let // These are option names. Anything else will be removed
         'link_maker__chat',
         // Auto-Chat (VIP)
         'auto_chat__vip',
-            'auto_chat__mentions',
-            'auto_chat__lurking_message',   // ↓ Replaced: v5.32.10
-            'lurking_rules',                // ↑
-            'auto_chat__wait_time',
+        'auto_chat__mentions',
+        'auto_chat__lurking_message',   // ↓ Replaced: v5.32.10
+        'lurking_rules',                // ↑
+        'auto_chat__wait_time',
         // Native Twitch Replies
         'native_twitch_reply',
         // Notification Sounds
@@ -181,28 +181,28 @@ let // These are option names. Anything else will be removed
         'whisper_audio_sound',
         // Prevent spam
         'prevent_spam',
-            'prevent_spam_look_back',
-            'prevent_spam_minimum_length',
-            'prevent_spam_ignore_under',
+        'prevent_spam_look_back',
+        'prevent_spam_minimum_length',
+        'prevent_spam_ignore_under',
         // Accessibility
             // Chat
-            'simplify_chat',
-                'simplify_chat_monotone_usernames',
-                'simplify_chat_font',
-                'simplify_page_font',
-                // 'simplify_chat_reverse_emotes',
-            // Display
-            'simplify_look_auto_marquee',
-            'simplify_look_normalize_text',
+        'simplify_chat',
+        'simplify_chat_monotone_usernames',
+        'simplify_chat_font',
+        'simplify_page_font',
+        // 'simplify_chat_reverse_emotes',
+    // Display
+        'simplify_look_auto_marquee',
+        'simplify_look_normalize_text',
         // Recover chat
         'recover_chat',
         // Recover messages
         'recover_messages',
         // Soft Unban
         'soft_unban',
-            'soft_unban_keep_bots',
-            'soft_unban_prevent_clipping',
-            'soft_unban_fade_old_messages',
+        'soft_unban_keep_bots',
+        'soft_unban_prevent_clipping',
+        'soft_unban_fade_old_messages',
 
         /* Currencies */
         // Convert Bits
@@ -229,9 +229,9 @@ let // These are option names. Anything else will be removed
         'point_watcher_placement',
         // Stream Preview
         'stream_preview',
-            'stream_preview_scale',
-            'stream_preview_sound',
-            'stream_preview_position',
+        'stream_preview_scale',
+        'stream_preview_sound',
+        'stream_preview_position',
         // Accent Color
         'accent_color',
 
@@ -241,11 +241,11 @@ let // These are option names. Anything else will be removed
 
         // Store integration
         'store_integration',
-            'store_integration__steam',
-            'store_integration__playstation',
-            'store_integration__xbox',
-            'store_integration__nintendo',
-            'store_integration__epic',
+        'store_integration__steam',
+        'store_integration__playstation',
+        'store_integration__xbox',
+        'store_integration__nintendo',
+        'store_integration__epic',
 
         // DVR Settings
         'video_clips__file_type',
@@ -253,7 +253,7 @@ let // These are option names. Anything else will be removed
         'video_clips__length',
         'video_clips__dvr',
         'video_clips__trophy',
-            'video_clips__trophy_length',
+        'video_clips__trophy_length',
         'record_foreign_rewards',
 
         /* Error Recovery */
@@ -270,7 +270,7 @@ let // These are option names. Anything else will be removed
         'recover_ads',
         // Recover Frames
         'recover_frames',
-            'recover_frames__allow_embed',
+        'recover_frames__allow_embed',
         // Recover Page
         'recover_pages',
         // Keep Pop-out
@@ -279,12 +279,12 @@ let // These are option names. Anything else will be removed
         /* Developer Options */
         // Log messages
         'display_in_console',
-            'display_in_console__log',
-            'display_in_console__warn',
-            'display_in_console__error',
-            'display_in_console__remark',
-            'display_in_console__notice',
-            'display_in_console__ignore',
+        'display_in_console__log',
+        'display_in_console__warn',
+        'display_in_console__error',
+        'display_in_console__remark',
+        'display_in_console__notice',
+        'display_in_console__ignore',
         // Display stats
         'show_stats',
         // Enable emperimental features
@@ -376,8 +376,8 @@ class DatePicker {
                             AM.length && PM.length
                                 // Uses meridiem indicators
                                 ? to12H(value, (value % 12 ? [AM, PM] : [' \u{1f31a}', ' \u{1f31e}']))
-                            // Uses 24H format only
-                            : value + (value % 12 ? '' : [' \u{1f31a}', ' \u{1f31e}'][+(value > 11)])
+                                // Uses 24H format only
+                                : value + (value % 12 ? '' : [' \u{1f31a}', ' \u{1f31e}'][+(value > 11)])
                         )
                     )
                 )
@@ -502,7 +502,10 @@ class DatePicker {
 
         document.body.append(container);
 
-        return when.defined(() => JSON.parse($('#date-picker-value')?.value || 'null')).then(values => { DatePicker.values = []; return values });
+        return when.defined(() => JSON.parse($('#date-picker-value')?.value || 'null')).then(values => {
+            DatePicker.values = [];
+            return values;
+        });
     }
 }
 
@@ -592,16 +595,16 @@ class CommandMaker {
         const preExisting = defaultName?.length > 0;
 
         const who = f('select.edit#authority', {
-            value: defaultLevel,
-            style: `background-image:url("${ CommandMaker.badges.everyone }")`,
+                value: defaultLevel,
+                style: `background-image:url("${ CommandMaker.badges.everyone }")`,
 
-            onchange({ target }) {
-                const [selected] = target.selectedOptions
-                    , who = selected.getAttribute('name');
+                onchange({ target }) {
+                    const [selected] = target.selectedOptions
+                        , who = selected.getAttribute('name');
 
-                target.modStyle(`background-image:url("${ CommandMaker.badges[who] }")`);
-            },
-        }).with(
+                    target.modStyle(`background-image:url("${ CommandMaker.badges[who] }")`);
+                },
+            }).with(
             ...CommandMaker.levels.map(who =>
                 f(`option[value=${ who.level }][name=${ who.toLowerCase() }]`).with(
                     who.replace(/[^aeiou]$/i, '$&s')
@@ -609,7 +612,7 @@ class CommandMaker {
                         .replace(/^(owner)s$/i, 'Only you ($1)')
                 )
             )
-        )
+            )
             , type = f('select.edit#type', {
                 value: defaultType,
 
@@ -756,7 +759,10 @@ class CommandMaker {
 
         document.body.append(container);
 
-        return when.defined(() => JSON.parse($('.command-maker-value')?.value || 'null')).then(values => { CommandMaker.values = []; return values });
+        return when.defined(() => JSON.parse($('.command-maker-value')?.value || 'null')).then(values => {
+            CommandMaker.values = [];
+            return values;
+        });
     }
 }
 
@@ -780,6 +786,7 @@ let Glyphs = {
 let SETTINGS
     , TRANSLATED = false
     , INITIAL_LOAD = true;
+
 let SUPPORTED_LANGUAGES = ['bg', 'cs', 'da', 'de', 'el', 'es', 'fi', 'fr', 'hu', 'it', 'ja', 'ko', 'nl', 'no', 'pl', 'ro', 'ru', 'sk', 'sv', 'th', 'tr', 'vi'];
 
 function RedoRuleElements(rules, ruleType, delimeter, scopes) {
@@ -839,6 +846,7 @@ function RedoRuleElements(rules, ruleType, delimeter, scopes) {
 
             currentTarget.remove();
         };
+
         E.setAttribute('up-tooltip', `Edit rule`);
         E.setAttribute('tr-skip', true);
         E.append(R);
@@ -856,6 +864,7 @@ function RedoRuleElements(rules, ruleType, delimeter, scopes) {
 
             event.stopPropagation();
         };
+
         R.setAttribute('up-tooltip', `Remove rule`);
 
         $(`#${ ruleType }_rules [${ ruleType }-type="${ itemType }"i]`).setAttribute('not-empty', true);
@@ -913,7 +922,7 @@ function CreateTimeElement(self, scheduleType) {
 
         dayOffset = (dayOffset > 0)
             ? dayOffset
-        : dayOffset + 7;
+            : dayOffset + 7;
 
         const offset = new Date([DatePicker.months[date.getMonth()], dayOffset, date.getFullYear(), time].join(' '));
 
@@ -921,6 +930,7 @@ function CreateTimeElement(self, scheduleType) {
 
         currentTarget.remove();
     };
+
     E.setAttribute('up-tooltip', `Edit schedule`);
     E.setAttribute('tr-skip', true);
     E.append(R);
@@ -938,6 +948,7 @@ function CreateTimeElement(self, scheduleType) {
 
         event.stopPropagation();
     };
+
     R.setAttribute('up-tooltip', `Remove schedule`);
 
     // Add to parent container
@@ -1204,6 +1215,7 @@ $.all('#whisper_audio_sound-test').map(button => button.onclick = async event =>
             .map(type => {
                 const types = { mp3: 'mpeg' }
                     , src = `${ location.origin }/aud/${ selected.value }.${ type }`;
+
                 type = `audio/${ types[type] ?? type }`;
 
                 return furnish('source', { src, type }).outerHTML;
@@ -1287,6 +1299,7 @@ function PostSyncStatus(message = '\u00A0', type = 'alert') {
     clearTimeout(clearSyncStatus.clearID);
 
     const syncStatus = $('#sync-status');
+
     syncStatus.setAttribute('style', $('#sync-status').getAttribute('style').replace(/;;[^]*$/, ';; opacity: 1'));
     syncStatus.textContent = "";
     syncStatus.append(
@@ -1476,6 +1489,7 @@ $('#sync-settings--upload').onmouseup = async event => {
                     } // switch ID
 
                     const [...id] = ID;
+
                     ID = Sym(ID);
 
                     while(settings.has(ID))
@@ -1487,15 +1501,15 @@ $('#sync-settings--upload').onmouseup = async event => {
                         settings.set(ID,
                             (nullish(value))
                                 ? '_'
-                            : (value === false)
-                                ? 'F'
-                            : (value === true)
-                                ? 'T'
-                            : (+value == value)
-                                ? value
-                            : (value.length)
-                                ? `**${ value }**`
-                            : 'X'
+                                : (value === false)
+                                    ? 'F'
+                                    : (value === true)
+                                        ? 'T'
+                                        : (+value == value)
+                                            ? value
+                                            : (value.length)
+                                                ? `**${ value }**`
+                                                : 'X'
                         );
                 }
 
@@ -1555,6 +1569,7 @@ $('#sync-settings--download').onmouseup = async event => {
                 }
 
                 const data = new Map;
+
                 try {
                     const raw = decodeURIComponent(parseURL(url).searchParameters.json);
                     let mode = 'get-key', key = '', val = '', thread = '';
@@ -1636,7 +1651,8 @@ $('#sync-settings--download').onmouseup = async event => {
 
                                 val += char;
                             } break;
-                        };
+                        } // :parsing
+                    ;
 
                     // $log('Raw data:', { url, raw, data });
 
@@ -2194,10 +2210,10 @@ let FETCHED_DATA = { wasFetched: false };
                             return val;
                         });
 
-                        if(directProperties.contains(attribute))
-                            element[attribute] = value;
-                        else
-                            element.setAttribute(attribute, value);
+                    if(directProperties.contains(attribute))
+                        element[attribute] = value;
+                    else
+                        element.setAttribute(attribute, value);
                 }
                 // Symbolic (x→y) - Sets attribute to parsed, unescaped right-hand
                 else if(/^([\w\-]+)(?:->|→)/.test(expression)) {
@@ -2229,43 +2245,44 @@ let FETCHED_DATA = { wasFetched: false };
                                 case 'udouble':
                                 case 'number':
                                 case 'bigint':
-                                {
-                                    const u = $2.startsWith('u')
-                                        , r = parseInt($3 || 10)
-                                        , R = parseInt($4 || r)
-                                        , t = parseInt($5 || 1);
-                                    val = parseFloat(val.replace(/[^a-z\d\.]+/ig, '').split('.').map(n => parseInt(n, r)).join('.'));
+                                    {
+                                        const u = $2.startsWith('u')
+                                            , r = parseInt($3 || 10)
+                                            , R = parseInt($4 || r)
+                                            , t = parseInt($5 || 1);
 
-                                    // 16b
-                                    if($2.endsWith('short'))
-                                        val = val.clamp(-(2 ** (15 * +!u)), 2 ** (15 + +!u)).ceil();
+                                        val = parseFloat(val.replace(/[^a-z\d\.]+/ig, '').split('.').map(n => parseInt(n, r)).join('.'));
 
-                                    // 32b
-                                    if($2.endsWith('int'))
-                                        if($2.startsWith('big'))
-                                            val = BigInt(val.ceil());
-                                        else
-                                            val = val.clamp(-(2 ** (31 * +!u)), 2 ** (31 + +!u)).ceil();
-                                    if($2.endsWith('float'))
-                                        val = val.clamp(-(2 ** (31 * +!u)), 2 ** (31 + +!u));
+                                        // 16b
+                                        if($2.endsWith('short'))
+                                            val = val.clamp(-(2 ** (15 * +!u)), 2 ** (15 + +!u)).ceil();
 
-                                    // 64b
-                                    if($2.endsWith('long'))
-                                        val = val.clamp(-(2 ** (63 * +!u)), 2 ** (63 + +!u)).ceil();
-                                    if($2.endsWith('double'))
-                                        val = val.clamp(-(2 ** (63 * +!u)), 2 ** (63 + +!u));
+                                        // 32b
+                                        if($2.endsWith('int'))
+                                            if($2.startsWith('big'))
+                                                val = BigInt(val.ceil());
+                                            else
+                                                val = val.clamp(-(2 ** (31 * +!u)), 2 ** (31 + +!u)).ceil();
+                                        if($2.endsWith('float'))
+                                            val = val.clamp(-(2 ** (31 * +!u)), 2 ** (31 + +!u));
 
-                                    val = val.toString(R).padStart(t, '0');
-                                } break;
+                                        // 64b
+                                        if($2.endsWith('long'))
+                                            val = val.clamp(-(2 ** (63 * +!u)), 2 ** (63 + +!u)).ceil();
+                                        if($2.endsWith('double'))
+                                            val = val.clamp(-(2 ** (63 * +!u)), 2 ** (63 + +!u));
+
+                                        val = val.toString(R).padStart(t, '0');
+                                    } break;
                             } // switch $2 = $2?.toLowerCase()
 
                             return val;
                         });
 
-                        if(directProperties.contains(attribute))
-                            element[attribute] = value;
-                        else
-                            element.setAttribute(attribute, value);
+                    if(directProperties.contains(attribute))
+                        element[attribute] = value;
+                    else
+                        element.setAttribute(attribute, value);
                 }
             }
         });
@@ -2493,17 +2510,19 @@ $.all('#search').map(input => {
                 'n': '[ghjbnm ]',
                 'm': '[hjknm, ]',
             })[$0.toLowerCase().normalize('NFKD')])
-        , 'i')).slice(0, 10).map(result => result.closest('section, [opt]')?.querySelector('.title'));
+            , 'i')).slice(0, 10).map(result => result.closest('section, [opt]')?.querySelector('.title'));
+
         const synonymous = $.all('article')
             .map(element => [...element.childNodes].filter(node => node.nodeName.equals('#comment')))
             .flat()
             .filter(comment => comment.textContent.toLowerCase().contains(query.toLowerCase()))
             .filter(defined)
             .map(comment => comment.nextElementSibling);
+
         const attributions = (
             /^[\w-]{3,}$/.test(query)
                 ? $.all(`[${ query }]`).map(e => ($('[tr-id]', e) ?? e)?.closest('[tr-id]')).filter(defined)
-            : []
+                : []
         );
 
         const results = [...exact, ...partial, ...synonymous, ...attributions]
@@ -2569,6 +2588,7 @@ when.defined(() => SETTINGS)
                 input.value = amount;
                 input.closest('[unit]')?.setAttribute('unit', unit);
             });
+
             $.all('[id*="data-usage"i][id*="browser-storage"i][id*="itemized"i]').map(table => {
                 let settBytes = 0
                     , miscBytes = 0
@@ -2592,6 +2612,7 @@ when.defined(() => SETTINGS)
 
                 const f = furnish
                     , dD = /\.0+([kMG]?B)/;
+
                 const tbody = f.tbody(
                     f.tr(
                         f.td(`Settings`),
@@ -2754,7 +2775,7 @@ async function Translate(language = 'en', container = document) {
                         + string
                             .replace(/%d\b/g, number = node.textContent.replace(/[^]*?(\d+)[^]*/, '$1'))
                             .replace(/%([^>]*)>([^\s]*)/g, parseInt(number) > 1 ? '$2' : '$1')
-                        + padding.stop;
+                            + padding.stop;
 
                     const slim = (string = '') => string
                         .replace(/\([\s]+/g, '(')
@@ -2782,7 +2803,7 @@ async function Translate(language = 'en', container = document) {
 
                     placement[translation_id] = (placement[translation_id] + 1 < translations.length)
                         ? placement[translation_id] + 1
-                    : 0;
+                        : 0;
 
                     if(SEND_BACK += +(/%</.test(translation ?? '')))
                         PREV_NODE = node.parentElement;
@@ -2812,7 +2833,7 @@ document.body.onload = async() => {
 
         Storage.get({ user_language_preference: '' }, ({ user_language_preference = '' }) => {
             // if(/^[A-Z]+$/.test(user_language_preference))
-                detectedLanguage = user_language_preference;
+            detectedLanguage = user_language_preference;
         });
 
         return when.defined(() => {
@@ -2843,7 +2864,7 @@ document.body.onload = async() => {
         });
     })()
 
-    /* Things needed before loading the page... */
+        /* Things needed before loading the page... */
         .then(async language => {
             if(defined(language))
                 await Storage.set({ user_language_preference: language.toLowerCase() });
@@ -2858,7 +2879,7 @@ document.body.onload = async() => {
             TRANSLATED = true;
         })
 
-    /* Continue loading/parsing the page */
+        /* Continue loading/parsing the page */
         .then(async() => {
             /* Continue loading the page after translations have been made/skipped */
 
@@ -3038,7 +3059,7 @@ document.body.onload = async() => {
             });
         })
 
-    /* Things needed after loading the page... */
+        /* Things needed after loading the page... */
         .then(() => {
             INITIAL_LOAD = false;
 

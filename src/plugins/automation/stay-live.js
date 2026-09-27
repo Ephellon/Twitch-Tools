@@ -21,6 +21,7 @@ plugin({
 
             ...TWITCH_PATHNAMES
         ];
+
         reserved_twitch_pathnames = RegExp(`/(${ twitch_pathnames.join('|') })`, 'i');
     },
 

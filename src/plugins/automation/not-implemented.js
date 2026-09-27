@@ -12,6 +12,7 @@ plugin({
         Handlers.phone_number = () => {
             const syntax = /(?<countryCode>\+?\d{1,3})?[\s\.\-\(]?(?<areaCode>\d{3})?[\)\.\-\s]?(?<officeCode>\d{3})[\s\.\-]?(?<lineNumber>\d{1,4})/;
         };
+
         Timers.phone_number = 250;
 
         __PhoneNumber__:
@@ -46,6 +47,7 @@ plugin({
                     element.innerHTML = element.innerHTML.replace(phrases, replacement);
                 }
         };
+
         Timers.common_phrase_translations = 250;
 
         __CommonPhraseTranslations__:

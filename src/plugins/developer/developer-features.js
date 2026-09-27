@@ -243,6 +243,7 @@ plugin({
                         );
                     }
         };
+
         Timers.extra_keyboard_shortcuts = 2_5_0;
 
         __ExtraKeyboardShortcuts__:

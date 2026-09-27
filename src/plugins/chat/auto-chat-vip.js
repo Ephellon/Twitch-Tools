@@ -67,6 +67,7 @@ plugin({
                                 )
                             );
                         }))?.random()?.text;
+
                         reason = 'channel';
                     } else if(Rules.badge.test(badges.join(','))) {
                         message = (messages = Rules.rules.specific.badge?.filter(({ badge, text }) => {
@@ -74,6 +75,7 @@ plugin({
                                 || badges.filter(medal => medal.toLowerCase().startsWith(badge.toLowerCase())).length
                             );
                         }))?.random()?.text;
+
                         reason = 'badge';
                     } else if(context.STREAMER.perm?.has(Settings.auto_chat__vip)) {
                         message = (messages = Rules.rules.general).random();

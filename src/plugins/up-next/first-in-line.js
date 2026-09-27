@@ -35,7 +35,7 @@ plugin({
             const action = (
                 notification instanceof Element
                     ? $('a[href^="/"]', notification)
-                : notification
+                    : notification
             );
 
             if(nullish(action))
@@ -117,6 +117,7 @@ plugin({
                     continue;
 
                 const { live } = channel;
+
                 name = channel.name;
 
                 if($.defined(`[live][time][name="${ name }"i]`))
@@ -154,7 +155,10 @@ plugin({
 
                             FIRST_IN_LINE_HREF = void null;
                             FIRST_IN_LINE_DUE_DATE = NEW_DUE_DATE();
-                            Cache.save({ ALL_FIRST_IN_LINE_JOBS, FIRST_IN_LINE_DUE_DATE }, () => { REDO_FIRST_IN_LINE_QUEUE(ALL_FIRST_IN_LINE_JOBS[0]); event.callback(event.element) });
+                            Cache.save({ ALL_FIRST_IN_LINE_JOBS, FIRST_IN_LINE_DUE_DATE }, () => {
+                                REDO_FIRST_IN_LINE_QUEUE(ALL_FIRST_IN_LINE_JOBS[0]);
+                                event.callback(event.element);
+                            });
                         }
                     },
 
@@ -203,7 +207,8 @@ plugin({
                                     ?? new Search(name).then(Search.convertResults)
                                 )
                                 , { live } = channel;
-                                name = channel.name;
+
+                            name = channel.name;
 
                             const time = timeRemaining
                                 , intervalID = parseInt(container.getAttribute('animationID'))
@@ -238,7 +243,7 @@ plugin({
                                     FIRST_IN_LINE_DUE_DATE = NEW_DUE_DATE();
                                     Cache.save({ ALL_FIRST_IN_LINE_JOBS: ALL_FIRST_IN_LINE_JOBS.filter(href => parseURL(href).pathname.unlike(parseURL(FIRST_IN_LINE_HREF).pathname)), FIRST_IN_LINE_DUE_DATE: FIRST_IN_LINE_DUE_DATE = NEW_DUE_DATE() }, () => {
                                         $warn(`Timer overdue [animation:first-in-line-balloon] » ${ FIRST_IN_LINE_HREF }`);
-                                            // .toNativeStack();
+                                        // .toNativeStack();
 
                                         goto(FIRST_IN_LINE_HREF);
                                     });
@@ -259,6 +264,7 @@ plugin({
                             if(container.getAttribute('live') != (live + '')) {
                                 $('.tt-balloon-message', container).innerHTML =
                                     `${ name } <span style="display:${ live ? "none" : "inline-block" }">is not live</span>`;
+
                                 container.modStyle(`opacity: ${ 2 ** -!live }!important`);
                                 container.setAttribute('live', live);
                             }
@@ -269,7 +275,7 @@ plugin({
                         }, 1000);
                     },
                 })
-                    ?? [];
+                ?? [];
 
                 if(defined(FIRST_IN_LINE_WAIT_TIME) && nullish(FIRST_IN_LINE_HREF)) {
                     REDO_FIRST_IN_LINE_QUEUE(FIRST_IN_LINE_HREF = href);
@@ -340,18 +346,18 @@ plugin({
                                         // Boost is enabled
                                         FIRST_IN_LINE_BOOST
                                             ? fiveMin + (tenMin - STREAMER.time)
-                                        // Boost is disabled
-                                        : FIRST_IN_LINE_WAIT_TIME * oneMin
+                                            // Boost is disabled
+                                            : FIRST_IN_LINE_WAIT_TIME * oneMin
                                     )
-                                // Streamer has been live longer than 10mins
-                                : (
-                                    // Boost is enabled
-                                    FIRST_IN_LINE_BOOST
+                                    // Streamer has been live longer than 10mins
+                                    : (
                                         // Boost is enabled
-                                        ? Math.min(GET_TIME_REMAINING(), fiveMin)
-                                    // Boost is disabled
-                                    : FIRST_IN_LINE_WAIT_TIME * oneMin
-                                )
+                                        FIRST_IN_LINE_BOOST
+                                            // Boost is enabled
+                                            ? Math.min(GET_TIME_REMAINING(), fiveMin)
+                                            // Boost is disabled
+                                            : FIRST_IN_LINE_WAIT_TIME * oneMin
+                                    )
                             )
                         )
                     )
@@ -384,7 +390,7 @@ plugin({
                         $('.tt-redo-btn svg', el).modStyle(
                             redo
                                 ? 'animation: 1s linear 0s infinite normal none running spinner'
-                            : 'animation: !delete'
+                                : 'animation: !delete'
                         );
                     }
                 })
@@ -415,9 +421,9 @@ plugin({
                             .filter(channel => channel.href !== STREAMER.href)
                             // Gets the channel in question, if applicable
                             .find(channel => parseURL(channel.href).pathname === parseURL(href).pathname)
-                        // Attempts to find the channel via a search
+                            // Attempts to find the channel via a search
 
-                        ?? new Search(parseURL(href).pathname.slice(1)).then(Search.convertResults)
+                            ?? new Search(parseURL(href).pathname.slice(1)).then(Search.convertResults)
                     );
 
                 if(nullish(channel) && !first) {
@@ -450,10 +456,10 @@ plugin({
                             const [removed] = (index < 0 ? [] : ALL_FIRST_IN_LINE_JOBS.splice(index, 1))
                                 , name = parseURL(removed).pathname.slice(1);
 
-                                $notice(`Necromancy work:`, removed);
+                            $notice(`Necromancy work:`, removed);
 
-                                // Necromancer
-                                REDO_FIRST_IN_LINE_QUEUE(ALL_FIRST_IN_LINE_JOBS[0], { redo: (parseURL(removed).searchParameters?.redo ?? '') });
+                            // Necromancer
+                            REDO_FIRST_IN_LINE_QUEUE(ALL_FIRST_IN_LINE_JOBS[0], { redo: (parseURL(removed).searchParameters?.redo ?? '') });
 
                             Cache.save({ ALL_FIRST_IN_LINE_JOBS }, () => {
                                 $warn(`Unable to perform search for "${ name }" - ${ error }`, removed);

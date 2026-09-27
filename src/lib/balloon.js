@@ -50,7 +50,7 @@ class Balloon {
         }
 
         const p =
-        f('.tt-align-self-center.tt-flex-grow-0.tt-flex-nowrap.tt-flex-shrink-0.tt-mg-x-05', { style: `animation:1s fade-in 1;` },
+            f('.tt-align-self-center.tt-flex-grow-0.tt-flex-nowrap.tt-flex-shrink-0.tt-mg-x-05', { style: `animation:1s fade-in 1;` },
             f.div(
                 f('.tt-relative').with(
                     // Navigation Icon
@@ -327,7 +327,7 @@ class Balloon {
                     )
                 )
             )
-        );
+            );
 
         R_pane?.insertBefore(p, R_pane.firstElementChild);
 

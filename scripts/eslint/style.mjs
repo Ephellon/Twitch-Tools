@@ -82,10 +82,12 @@ const USER_FACING_CALLS = new Set([
     '$log', '$warn', '$error', '$notice', '$remark', '$ok', '$debug', 'alert', 'confirm', 'prompt', 'console',
     'Error', 'TypeError', 'RangeError', 'SyntaxError', 'ReferenceError', 'EvalError', 'URIError',
 ]);
+
 const USER_FACING_PROPS = new Set([
     'textContent', 'innerText', 'innerHTML', 'outerHTML', 'title', 'placeholder', 'tooltip',
     'message', 'text', 'label', 'description', 'alt',
 ]);
+
 const USER_FACING_ATTRIBUTES = new Set(['title', 'placeholder', 'aria-label', 'alt', 'tooltip']);
 
 /*
@@ -247,6 +249,98 @@ const rules = {
         return declaration?.parent?.type == 'Program';
     }),
 
+    'comment-indent': {
+        meta: { type: 'layout', fixable: 'whitespace', schema: [], messages: { indent: 'Indent this comment like the code it precedes.' } },
+        create(context) {
+            const { sourceCode } = context;
+
+            // A comment with nothing but whitespace before it on its line
+            const alone = comment => /^\s*$/.test(sourceCode.lines[comment.loc.start.line - 1].slice(0, comment.loc.start.column));
+
+            return {
+                'Program:exit'() {
+                    const comments = sourceCode.getAllComments().filter(alone)
+                        , groups = [];
+
+                    // Runs of comments on consecutive lines move together, keeping their relative indentation
+                    for(const comment of comments) {
+                        const group = groups.at(-1);
+
+                        if(group && group.at(-1).loc.end.line + 1 == comment.loc.start.line)
+                            group.push(comment);
+                        else
+                            groups.push([comment]);
+                    }
+
+                    for(const group of groups) {
+                        const first = group[0]
+                            , last = group.at(-1)
+                            , next = sourceCode.getTokenAfter(last, { includeComments: false });
+
+                        // Only code that starts its own line sets the indentation
+                        if(!next || sourceCode.lines[next.loc.start.line - 1].slice(0, next.loc.start.column).trim())
+                            continue;
+
+                        const nextIndent = sourceCode.lines[next.loc.start.line - 1].match(/^\s*/)[0].length
+                            , target = nextIndent + (/^[)\]}]$/.test(next.value) ? 4 : 0)
+                            , delta = target - first.loc.start.column;
+
+                        if(delta == 0)
+                            continue;
+
+                        const lines = sourceCode.lines.slice(first.loc.start.line - 1, last.loc.end.line);
+
+                        // Never cut into text
+                        if(delta < 0 && lines.some(line => line.trim() && line.match(/^\s*/)[0].length < -delta))
+                            continue;
+
+                        const start = sourceCode.getIndexFromLoc({ line: first.loc.start.line, column: 0 })
+                            , end = last.range[1]
+                            , text = sourceCode.text.slice(start, end).split('\n')
+                                .map(line => !line.trim() ? line : delta > 0 ? ' '.repeat(delta) + line : line.slice(-delta))
+                                .join('\n');
+
+                        context.report({ loc: first.loc, messageId: 'indent', fix: fixer => fixer.replaceTextRange([start, end], text) });
+                    }
+                },
+            };
+        },
+    },
+
+    'statement-per-line': {
+        meta: { type: 'layout', fixable: 'whitespace', schema: [], messages: { split: 'Put each statement on its own line.' } },
+        create(context) {
+            const { sourceCode } = context;
+
+            const check = statements => {
+                for(let index = 1; index < statements.length; ++index) {
+                    const previous = statements[index - 1]
+                        , current = statements[index];
+
+                    if(previous.loc.end.line != current.loc.start.line)
+                        continue;
+
+                    // `} break;` closes a case
+                    if(previous.type == 'BlockStatement' && current.type == 'BreakStatement' && previous.parent.type == 'SwitchCase')
+                        continue;
+
+                    context.report({
+                        node: current,
+                        messageId: 'split',
+                        fix: fixer => fixer.replaceTextRange([previous.range[1], current.range[0]], `\n${ lineIndent(sourceCode, previous) }`),
+                    });
+                }
+            };
+
+            return {
+                Program: node => check(node.body),
+                BlockStatement: node => check(node.body),
+                StaticBlock: node => check(node.body),
+                SwitchCase: node => check(node.consequent),
+            };
+        },
+    },
+
     'body-below': {
         meta: { type: 'layout', fixable: 'whitespace', schema: [], messages: { below: 'Put a one-line body on its own line, indented.' } },
         create(context) {
@@ -352,10 +446,13 @@ const rules = {
                         if(inner.length == 1 && inner[0].type == 'BlockStatement' && (!hasBreak || inner[0].loc.end.line == last.loc.start.line))
                             continue;
 
+                        // `{ … }` followed by more than a break (`} continue x;`, …) needs a person
+                        const blockFirst = body[0].type == 'BlockStatement' && !(inner.length == 1 && hasBreak);
+
                         context.report({
                             node: kase,
                             messageId: 'braces',
-                            fix: !fixable ? null : fixer => {
+                            fix: (!fixable || blockFirst) ? null : fixer => {
                                 // A block followed by a break on its own line: pull the break up
                                 if(inner.length == 1 && inner[0].type == 'BlockStatement')
                                     return fixer.replaceTextRange([inner[0].range[1], last.range[0]], ' ');
@@ -590,9 +687,11 @@ const rules = {
                             const open = callback.params.length
                                 ? sourceCode.getTokenBefore(callback.params[0])
                                 : sourceCode.getFirstToken(callback, token => token.value == '(');
+
                             const close = callback.params.length
                                 ? sourceCode.getTokenAfter(callback.params.at(-1))
                                 : sourceCode.getTokenAfter(open);
+
                             const list = names.join(', ');
 
                             // `x => …` has no parentheses
@@ -670,10 +769,10 @@ const rules = {
 
                 SwitchStatement(node) {
                     check(node, sourceCode.getLastToken(node), false
-                        || node.cases.length > 3
-                        || insideSwitch(node)
-                        || blockDepth(node) > 3
-                        || long(node)
+                    || node.cases.length > 3
+                    || insideSwitch(node)
+                    || blockDepth(node) > 3
+                    || long(node)
                     );
                 },
 

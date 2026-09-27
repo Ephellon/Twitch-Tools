@@ -53,6 +53,7 @@ if(live) {
 
     const inside = node => node.loc.start.line >= first && node.loc.end.line <= last;
     const parents = new Map;
+
     (function link(node, parent) {
         if(!node || typeof node.type != 'string')
             return;
@@ -80,9 +81,10 @@ if(live) {
         liveNames.push([variable.name, def.kind ?? def.parent?.kind ?? def.type]);
         for(const { identifier } of refs) {
             const parent = parents.get(identifier);
+
             edits.push(parent?.type == 'Property' && parent.shorthand
                 ? [parent.range[0], parent.range[1], `${ variable.name }: context.${ variable.name }`]
-            : [identifier.range[0], identifier.range[1], `context.${ variable.name }`]);
+                : [identifier.range[0], identifier.range[1], `context.${ variable.name }`]);
         }
     }
 
@@ -101,6 +103,7 @@ if(live) {
     const accessors = liveNames
         .filter(([name]) => !block.some(line => line.includes(`get ${ name }()`)))
         .map(([name, kind]) => `${ indent }get ${ name }() { return ${ name } },${ ['const', 'ClassName', 'FunctionName'].includes(kind) ? '' : ` set ${ name }(value) { ${ name } = value },` }`);
+
     head.splice(at + 1, 0, ...accessors);
 
     // The section moved down by the lines just added
@@ -178,6 +181,7 @@ lines.splice(first - 1, last - first + 1,
     `    await TTV.run('${ id }', PLUGIN_CONTEXT);`,
     ``,
 );
+
 fs.writeFileSync(file, lines.join('\n'));
 
 // Register it

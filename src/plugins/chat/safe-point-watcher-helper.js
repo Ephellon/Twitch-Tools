@@ -37,10 +37,11 @@ plugin({
             notEarned = (
                 (allRewards?.length)
                     ? allRewards.filter(amount => parseCoin(amount?.innerText) > context.STREAMER.coin).length
-                : (notEarned > -Infinity)
-                    ? notEarned
-                : -1
+                    : (notEarned > -Infinity)
+                        ? notEarned
+                        : -1
             );
+
             pointsToEarnNext = (
                 (allRewards?.length)
                     ? allRewards
@@ -48,9 +49,9 @@ plugin({
                         .sort((x, y) => (x > y ? -1 : +1))
                         .filter(x => x > 0)
                         .pop()
-                : (notEarned > -Infinity)
-                    ? pointsToEarnNext
-                : 0
+                    : (notEarned > -Infinity)
+                        ? pointsToEarnNext
+                        : 0
             );
 
             face = face?.replace(/^(?:https?:.*?)?([\d]+\/[\w\-\.\/]+)$/i, '$1');

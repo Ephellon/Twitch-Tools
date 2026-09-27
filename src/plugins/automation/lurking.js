@@ -53,7 +53,7 @@ plugin({
                 const scapeGoat = await GetNextStreamer();
 
                 $warn(`The following page failed to load correctly (no quality controls present): ${ STREAMER.name } @ ${ (new Date) }`);
-                    // .toNativeStack();
+                // .toNativeStack();
 
                 goto(parseURL(scapeGoat.href).addSearch({ tool: 'away-mode--scape-goat' }).href);
             }
@@ -153,6 +153,7 @@ plugin({
                 Glyphs.modify('show', { id: 'tt-away-mode--show', height: '20px', width: '20px' }).toString(),
                 Glyphs.modify('hide', { id: 'tt-away-mode--hide', height: '20px', width: '20px' }).toString(),
             ].filter(defined).join('');
+
             button.icon = $('svg', container);
         } else {
             const container = $('#away-mode');
@@ -260,6 +261,7 @@ plugin({
                 , svgContainer = $('figure', currentTarget)
                 , svgShow = $('svg#tt-away-mode--show', svgContainer)
                 , svgHide = $('svg#tt-away-mode--hide', svgContainer);
+
             const enabled = parseBool(currentTarget.closest('#away-mode').getAttribute('tt-away-mode-enabled'));
 
             svgShow?.setAttribute('preview', !enabled);

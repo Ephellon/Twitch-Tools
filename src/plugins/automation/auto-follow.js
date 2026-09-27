@@ -48,6 +48,7 @@ plugin({
 
             StopWatch.stop('auto_follow_raids');
         };
+
         Timers.auto_follow_raids = 1000;
 
         __AutoFollowRaid__:
@@ -56,6 +57,7 @@ plugin({
         }
 
         let AUTO_FOLLOW_EVENT;
+
         Handlers.auto_follow_time = async() => {
             new StopWatch('auto_follow_time');
 
@@ -73,6 +75,7 @@ plugin({
 
             StopWatch.stop('auto_follow_time');
         };
+
         Timers.auto_follow_time = 1000;
 
         __AutoFollowTime__:

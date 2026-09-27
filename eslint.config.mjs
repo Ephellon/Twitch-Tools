@@ -138,6 +138,7 @@ function collectPattern(node, names) {
 // Each group of scripts that share a scope: one per content-script entry, plus the settings page
 const manifest = JSON.parse(read('manifest.json'));
 const groups = manifest.content_scripts.map(({ js }) => js);
+
 groups.push([...read('settings.html').matchAll(/<script[^>]*\bsrc=['"]([^'"]+)['"]/gi)].map(([, src]) => src));
 
 const sharedGlobals = {};
@@ -188,7 +189,8 @@ const legacy = {
 const PADDED = ['const', 'let', 'var', 'if', 'for', 'while'];
 const DECLARATIONS = ['const', 'let', 'var'];
 const style = {
-    '@stylistic/indent-binary-ops': 'off',
+    '@stylistic/indent': ['warn', 4, { SwitchCase: 1, MemberExpression: 1, CallExpression: { arguments: 'off' }, offsetTernaryExpressions: false, VariableDeclarator: 1, ignoreComments: true, ignoredNodes: ['ExpressionStatement > AssignmentExpression > FunctionExpression', 'ExpressionStatement > AssignmentExpression > ArrowFunctionExpression'] }],
+    '@stylistic/indent-binary-ops': ['warn', 4],
     '@stylistic/keyword-spacing': ['warn', {
         before: true, after: true,
         overrides: Object.fromEntries(['if', 'for', 'while', 'switch'].map(k => [k, { after: false }])),
@@ -205,7 +207,8 @@ const style = {
     ].map(type => [type, true])) }],
     'ttv/body-below': 'warn',
     '@stylistic/comma-spacing': ['warn', { before: false, after: true }],
-    '@stylistic/max-statements-per-line': ['warn', { max: 1 }],
+    'ttv/statement-per-line': 'warn',
+    'ttv/comment-indent': 'warn',
     '@stylistic/brace-style': ['warn', '1tbs', { allowSingleLine: true }],
     '@stylistic/padding-line-between-statements': ['warn',
         { blankLine: 'always', prev: '*', next: ['break', 'continue'] },
@@ -215,6 +218,12 @@ const style = {
             blankLine: 'always', prev: kind,
             next: PADDED.filter(other => other != kind && !(DECLARATIONS.includes(kind) && DECLARATIONS.includes(other))),
         })),
+        // A declaration group has a blank line before and after it
+        { blankLine: 'always', prev: '*', next: DECLARATIONS },
+        { blankLine: 'always', prev: DECLARATIONS, next: '*' },
+        { blankLine: 'any', prev: DECLARATIONS, next: DECLARATIONS },
+        // So does anything after a statement that spans lines (`…);`, `…];`, `…};`)
+        { blankLine: 'always', prev: ['multiline-expression', 'multiline-const', 'multiline-let', 'multiline-var'], next: '*' },
     ],
     'no-var': 'warn',
     'ttv/prefer-const': ['warn', { destructuring: 'all' }],
