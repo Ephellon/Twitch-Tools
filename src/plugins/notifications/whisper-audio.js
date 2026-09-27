@@ -1,4 +1,4 @@
-/*** /plugins/chat/whisper-audio.js
+/*** /plugins/notifications/whisper-audio.js
  * Whisper Audio.
  * Moved verbatim from tools.js (Initialize) in Phase 4; it wires its own jobs and settings.
  */

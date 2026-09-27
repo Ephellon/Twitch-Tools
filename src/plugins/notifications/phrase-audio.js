@@ -1,4 +1,4 @@
-/*** /plugins/chat/phrase-audio.js
+/*** /plugins/notifications/phrase-audio.js
  * Phrase Audio.
  * Moved verbatim from tools.js (Initialize) in Phase 4; it wires its own jobs and settings.
  */

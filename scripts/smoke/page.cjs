@@ -44,7 +44,7 @@ const path = require('path');
     const early = await ctx.newCDPSession(page);
     early.on('Runtime.exceptionThrown', ({ exceptionDetails: d }) => errors.push(`exception: ${ (d.exception?.description ?? d.text).split('\n').slice(0, 3).join(' | ') } @ ${ d.url?.split('/').pop() }:${ d.lineNumber + 1 }`));
     await early.send('Runtime.enable');
-    await page.goto('https://www.twitch.tv/stubchannel');
+    await page.goto(process.env.URL || 'https://www.twitch.tv/stubchannel');
     await page.waitForTimeout(Number(process.argv[3] || 12000));
     console.log('effects:', JSON.stringify(await page.evaluate(() => ({ matureClicked: document.body.dataset.matureClicked ?? null, extensionStyle: document.getElementById('ext')?.getAttribute('style') ?? null }))));
     if(process.env.PROBE) {

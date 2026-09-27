@@ -1,4 +1,4 @@
-/*** /plugins/chat/notification-sounds.js
+/*** /plugins/notifications/notification-sounds.js
  * Notification Sounds.
  * Moved verbatim from tools.js (Initialize) in Phase 4; it wires its own jobs and settings.
  */

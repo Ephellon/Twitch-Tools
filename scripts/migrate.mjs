@@ -7,16 +7,25 @@
  * The section becomes `plugin({ id, async install(context) { …section… } })`, and the initializer
  * gets `await TTV.run('<id>', PLUGIN_CONTEXT);` where the section was, so the order is unchanged.
  * Sections that share initializer variables with other sections are refused unless `--force`.
+ *
+ * `--live` handles sections that read the initializer's own variables (e.g. chat.js's STREAMER):
+ * each such reference becomes `context.NAME`, and the initializer's PLUGIN_CONTEXT gets a getter
+ * and setter for NAME, so the plugin reads and writes the real variable.
+ * `--index <file>` registers the plugin somewhere other than src/plugins/index.js.
  * `--delete` removes a section that is only a banner (no code).
  */
 
 import fs from 'node:fs';
 import path from 'node:path';
+import * as espree from 'espree';
+import * as eslintScope from 'eslint-scope';
 import { analyze } from './sections.mjs';
 
-let args = process.argv.slice(2).filter(arg => !arg.startsWith('--'));
-let [file, initializer, title, target, id] = args;
 let force = process.argv.includes('--force');
+let live = process.argv.includes('--live');
+let indexFile = process.argv.includes('--index')? process.argv[process.argv.indexOf('--index') + 1]: 'src/plugins/index.js';
+let args = process.argv.slice(2).filter(arg => !arg.startsWith('--') && arg != indexFile);
+let [file, initializer, title, target, id] = args;
 let remove = process.argv.includes('--delete');
 
 let section = analyze(file, initializer).find(s => s.title == title);
@@ -24,11 +33,77 @@ let section = analyze(file, initializer).find(s => s.title == title);
 if(!section)
     throw new Error(`No section "${ title }" in ${ initializer } (${ file })`);
 
-if(!section.standalone && !force)
+if(!section.standalone && !force && !(live && !section.usedBy.length))
     throw new Error(`"${ title }" shares variables: needs ${ JSON.stringify(section.needs) }, used by ${ JSON.stringify(section.usedBy) }`);
 
-let lines = fs.readFileSync(file, 'utf8').split('\n');
 let [first, last] = section.lines.split('-').map(Number);
+let liveNames = [];
+
+// --live: rewrite the section's references to initializer variables into `context.NAME`
+if(live) {
+    let source = fs.readFileSync(file, 'utf8');
+    let ast = espree.parse(source, { ecmaVersion: 'latest', sourceType: 'script', loc: true, range: true });
+    let scopes = eslintScope.analyze(ast, { ecmaVersion: 2024, sourceType: 'script' });
+    let fn;
+    for(let node of ast.body)
+        for(let d of node.type == 'VariableDeclaration'? node.declarations: [])
+            if(d.id.name == initializer)
+                fn = d.init;
+
+    let inside = node => node.loc.start.line >= first && node.loc.end.line <= last;
+    let parents = new Map;
+    (function link(node, parent) {
+        if(!node || typeof node.type != 'string')
+            return;
+        parents.set(node, parent);
+        for(let key in node)
+            if(key != 'loc' && key != 'range')
+                for(let child of [].concat(node[key]))
+                    if(child && typeof child == 'object' && child.type)
+                        link(child, node);
+    })(fn.body, fn);
+
+    let edits = [];
+    for(let variable of scopes.acquire(fn).variables) {
+        let [def] = variable.defs;
+        if(!def || inside(def.name) || variable.name == 'PLUGIN_CONTEXT')
+            continue;
+
+        let refs = variable.references.filter(ref => inside(ref.identifier));
+        if(!refs.length)
+            continue;
+
+        liveNames.push([variable.name, def.kind ?? def.parent?.kind ?? def.type]);
+        for(let { identifier } of refs) {
+            let parent = parents.get(identifier);
+            edits.push(parent?.type == 'Property' && parent.shorthand?
+                [parent.range[0], parent.range[1], `${ variable.name }: context.${ variable.name }`]:
+            [identifier.range[0], identifier.range[1], `context.${ variable.name }`]);
+        }
+    }
+
+    for(let [start, end, text] of edits.sort((a, b) => b[0] - a[0]))
+        source = source.slice(0, start) + text + source.slice(end);
+
+    // Give PLUGIN_CONTEXT a live accessor for each name
+    let head = source.split('\n');
+    let at = head.findIndex((line, index) => index >= fn.loc.start.line - 1 && /^\s*let PLUGIN_CONTEXT = \{/.test(line));
+    if(at < 0)
+        throw new Error(`${ initializer } has no \`let PLUGIN_CONTEXT = {\` to extend`);
+    let indent = head[at].match(/^\s*/)[0] + '    ';
+    let block = head.slice(at, head.findIndex((line, index) => index > at && /^\s*};/.test(line)));
+    let accessors = liveNames
+        .filter(([name]) => !block.some(line => line.includes(`get ${ name }()`)))
+        .map(([name, kind]) => `${ indent }get ${ name }() { return ${ name } },${ ['const', 'ClassName', 'FunctionName'].includes(kind)? '': ` set ${ name }(value) { ${ name } = value },` }`);
+    head.splice(at + 1, 0, ...accessors);
+
+    // The section moved down by the lines just added
+    first += accessors.length;
+    last += accessors.length;
+    fs.writeFileSync(file, head.join('\n'));
+}
+
+let lines = fs.readFileSync(file, 'utf8').split('\n');
 
 // Stop at a plugin that already ran from here (`// Title → src/plugins/…` + its `TTV.run`); it stays put
 let pointer = lines.slice(first - 1, last).findIndex(line => /^\s*\/\/ .+ → src\/plugins\//.test(line));
@@ -61,6 +136,7 @@ if(!target || !id)
 
 let uses = name => code.some(line => new RegExp(`\\b${ name }\\b`).test(line));
 let context = ['StopWatch', 'PLUGIN_CONTEXT'].filter(uses).filter(name => name != 'PLUGIN_CONTEXT');
+let parameter = live? 'context': context.length? `{ ${ context.join(', ') } }`: '';
 let source = path.basename(file);
 let depth = target.split('/').length - 1;
 let pluginFile = path.join('src', target);
@@ -79,7 +155,7 @@ let text = [
     `plugin({`,
     `    id: '${ id }',`,
     ``,
-    `    async install(${ context.length? `{ ${ context.join(', ') } }`: '' }) {`,
+    `    async install(${ parameter }) {`,
     ...code.map(line => line.trim()? '    ' + line: ''),
     `    },`,
     `});`,
@@ -98,8 +174,8 @@ lines.splice(first - 1, last - first + 1,
 fs.writeFileSync(file, lines.join('\n'));
 
 // Register it
-let index = 'src/plugins/index.js';
-let entry = `import './${ path.relative('plugins', target).split(path.sep).join('/') }';`;
+let index = indexFile;
+let entry = `import './${ path.relative(path.dirname(path.relative('src', index)), target).split(path.sep).join('/') }';`;
 let current = fs.readFileSync(index, 'utf8');
 
 if(!current.includes(entry))

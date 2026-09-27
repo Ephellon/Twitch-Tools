@@ -20,8 +20,10 @@ import { plugin, plugins, run, start } from './plugins.js';
 // Registers every plugin; tools.js starts them with `TTV.start('main', …)`
 import '../plugins/index.js';
 
+// chat-plugins.js publishes the same functions over the same registry, so either may come first
+globalThis.TTV ??= { plugin, plugins, run, start };
+
 Object.assign(globalThis, {
-    TTV: { plugin, plugins, run, start },
     Balloon,
     ChatFooter,
     Card,

@@ -21,7 +21,7 @@ const read = file => fs.readFileSync(path.join(ROOT, file), 'utf8');
 
 // Top-level names a classic script contributes to the shared global scope
 // Built bundles listed in the manifest → the ES-module entry they come from (see scripts/build.mjs)
-const BUNDLES = { 'lib.js': 'lib/index.js' };
+const BUNDLES = { 'lib.js': 'lib/index.js', 'chat-plugins.js': 'plugins/chat/index.js' };
 
 // Every ES-module source that ends up in a bundle
 function moduleSources(entry) {

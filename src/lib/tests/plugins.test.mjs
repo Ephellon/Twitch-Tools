@@ -8,6 +8,7 @@ import assert from 'node:assert/strict';
 // Stand-ins for the globals core.js and polyfill.js provide on the page
 let registered;
 beforeEach(() => {
+    delete globalThis.__TTV_PLUGINS__;
     registered = [];
     Object.assign(globalThis, {
         Handlers: {}, Timers: {}, Unhandlers: {},

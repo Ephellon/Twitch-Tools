@@ -6,7 +6,8 @@
  * `Storage.onChanged` in tools.js) registers or unregisters the job like any legacy feature.
  */
 
-const PLUGINS = new Map;
+// One registry per page, shared by every bundle that registers plugins (lib.js, chat-plugins.js)
+const PLUGINS = (globalThis.__TTV_PLUGINS__ ??= new Map);
 
 /**
  * Registers a feature.

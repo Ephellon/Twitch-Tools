@@ -22,6 +22,7 @@ const WATCH = process.argv.includes('--watch');
 // ES-module entry points (in SOURCE) → the classic script each becomes (in the extension)
 const BUNDLES = {
     'lib/index.js': 'lib.js',
+    'plugins/chat/index.js': 'chat-plugins.js',
 };
 
 // Folders holding ES-module sources; only their bundles ship

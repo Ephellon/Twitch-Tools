@@ -67,6 +67,7 @@
                 "ext/glyphs.js",
                 "ext/irc.js",
                 "core.js",
+                "chat-plugins.js",
                 "chat.js"
             ]
         },
@@ -88,6 +89,7 @@
                 "core.js",
                 "lib.js",
                 "tools.js",
+                "chat-plugins.js",
                 "chat.js",
                 "ext/tracking.js",
                 "ext/face.js",

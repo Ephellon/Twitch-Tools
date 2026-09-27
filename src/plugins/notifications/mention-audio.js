@@ -1,4 +1,4 @@
-/*** /plugins/chat/mention-audio.js
+/*** /plugins/notifications/mention-audio.js
  * Mention Audio.
  * Moved verbatim from tools.js (Initialize) in Phase 4; it wires its own jobs and settings.
  */
