@@ -1944,7 +1944,7 @@ let Initialize = async(START_OVER = false) => {
                         for(let metadata of commands) {
                             let { aliases, command, reply, accessLevel, enabled, count = 0, cooldown, cost } = metadata;
 
-                            COMMANDS.push({ aliases: [...aliases, ...commands.filter(alias => alias.reply?.contains(command))], command, reply, availability: match(accessLevel), enabled, origin: 'StreamElements', variables: { count, coolDown: cooldown.global, cost } });
+                            COMMANDS.push({ aliases: [...aliases, ...commands.filter(alias => alias.reply?.contains(command)).map(alias => alias.command)], command, reply, availability: match(accessLevel), enabled, origin: 'StreamElements', variables: { count, coolDown: cooldown.global, cost } });
                         }
                     })
                     .catch($warn);

@@ -138,7 +138,7 @@ plugin({
             for(let { aliases, command, reply, availability, enabled, origin, variables } of await STREAMER.coms)
                 // Wait here to keep from lagging the page...
                 await wait(1).then(() => {
-                    let regexp = RegExp(`([!](?:${ [command, ...aliases].map(s => s.replace(/[\.\\\/\?\+\(\)\[\]\{\}\$\*\|]/g, '\\$&')).join('|') })(?!\\p{L}))`, 'igu');
+                    let regexp = RegExp(`([!](?:${ [command, ...aliases].filter(s => typeof s == 'string' && s.length).map(s => s.replace(/[\.\\\/\?\+\(\)\[\]\{\}\$\*\|]/g, '\\$&')).join('|') })(?!\\p{L}))`, 'igu');
 
                     if(!regexp.test(element.innerHTML))
                         return;
