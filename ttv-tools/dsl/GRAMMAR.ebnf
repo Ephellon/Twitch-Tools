@@ -224,11 +224,13 @@ calc_operand   = "(" , sum , ")" | member_expr ;
 (* (v2) A host-registered binding, reached by dotted path. The path is a single
    token; resolution is a property walk over a table the host supplied, never
    compilation of text. *)
-js_invoke      = JS_PATH , "(" ,
+(* (v2.1) With "(" GLUED to the path, a call; without, a constant read
+   (`&Math.PI`). Reading a method or calling a constant is a runtime error. *)
+js_invoke      = JS_PATH , [ "(" ,
                    { NEWLINE | "," } ,
                    [ expression , { { NEWLINE | "," } , expression } ] ,
                    { NEWLINE | "," } ,
-                 ")" ;
+                 ")" ] ;
 
 (* (v2) The current subject itself - the thing `.prop` reads a property from. *)
 this_expr      = "_" | "__this__" | "__self__" | "__me__" ;

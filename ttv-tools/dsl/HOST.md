@@ -26,6 +26,9 @@ runtime.dispatch(event);                      // §4 — once per incoming event
 context.stop();                               // cancels every timer and handler
 ```
 
+- `createRuntime` throws on a host mistake — a bound function with no permission, a
+  permission not on the list, a binding named after a built-in (§2) — before any script
+  is involved.
 - `run` parses, compiles and **starts** the script, then returns. It throws on a syntax
   error, an unknown grant, or a `write`/`eval` grant with no description — nothing has
   run at that point.

@@ -1228,11 +1228,11 @@ if (typeof require === 'function' && typeof module === 'object') {
         },
     };
 
-    /** Picks whose badges `<badge>` is asking about.
+    /** Picks whose badges `[badge]` is asking about.
      *
      * The innermost subject is preferred, but only when it actually carries badges. Inside
      * `await * with (...)` the subject is the *event*, and an event has no badges — so
-     * `using <moderator>` there has to mean the channel's moderator badge, not the chat
+     * `using [moderator]` there has to mean the channel's moderator badge, not the chat
      * message's. Falling through on shape rather than on scope depth is what makes both
      * readings work without the script having to say which it meant.
      * @param {Object} context

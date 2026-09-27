@@ -104,7 +104,7 @@ globalThis.TTV_DSL ??= {};
          * grouped expression, as before. */
         ListExpression: 'ListExpression',
 
-        /** Any sigil: `#`, `#prop`, `/name`, `REALM/id`, `<badge>`, `@user`, `:emote:`, `.prop`. */
+        /** Any sigil: `#`, `#prop`, `/name`, `REALM/id`, `[badge ...]`, `@user`, `.prop`. */
         Selector: 'Selector',
         /** A backtick template. */
         TemplateLiteral: 'TemplateLiteral',
@@ -401,14 +401,14 @@ globalThis.TTV_DSL ??= {};
 
         /**
          * @param {Array<String>} path
-         * @param {Array<Object>} args
+         * @param {?Array<Object>} args - null for a constant read (`&Math.PI`)
          * @param {Object} loc
          */
         jsInvokeExpression: (path, args, loc) => node(NodeType.JSInvokeExpression, { path, arguments: args }, loc),
 
         /**
          * @param {Object} subject
-         * @param {Array<String>} letters - the class run; `[]` means the `%n%s` default
+         * @param {Array<String>} letters - the class run; `[]` means the default run
          * @param {Object} replacement
          * @param {Object} loc
          */
