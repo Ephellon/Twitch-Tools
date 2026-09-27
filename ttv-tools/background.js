@@ -877,7 +877,7 @@ async function auditMemory() {
                 title: title || "Twitch Stream",
                 url,
                 active,
-                action: 'ignore',
+                action: ram_.ram_onhigh ?? 'ignore',
                 ramUsed: 0,
                 tier: 'high',
                 discarded,

@@ -15584,7 +15584,7 @@ let Initialize = async(START_OVER = false) => {
     Handlers.__MASTER_AUTO_DVR_HANDLER__ = event => {
         MASTER_VIDEO.DEFAULT_RECORDING?.then(({ target }) => {
             let chunks = target.blobs;
-            let feed = $(`.tt-prompt[uuid="${ UUID.from(body).value }"i]`),
+            let feed = null /* No prompt exists for the master recording */,
                 halt = parseBool(feed?.getAttribute('halt')),
                 name = (feed?.getAttribute('value') || DVR_CLIP_PRECOMP_NAME).replace(GetFileSystem().allIllegalFilenameCharacters, '-');
         })

@@ -34,10 +34,38 @@ function declaredNames(file) {
     for(let node of program.body)
         collectStatement(node, names, true);
 
+    // Object.defineProperties(top, { NAME: … }) and Object.defineProperty(window, 'NAME', …)
+    walk(program, node => {
+        let { callee, arguments: [target, what] = [] } = node.type == 'CallExpression'? node: {};
+
+        if(callee?.object?.name != 'Object' || !GLOBAL_OBJECTS.has(target?.name))
+            return;
+
+        if(callee.property?.name == 'defineProperties' && what?.type == 'ObjectExpression')
+            what.properties.forEach(({ key }) => key && names.add(key.name ?? key.value));
+        else if(callee.property?.name == 'defineProperty' && typeof what?.value == 'string')
+            names.add(what.value);
+    });
+
     for(let [, name] of source.matchAll(/\b(?:window|globalThis|self|top)\.([A-Za-z_$][\w$]*)\s*(?:\?\?|\|\||&&)?=[^=]/g))
         names.add(name);
 
     return names;
+}
+
+const GLOBAL_OBJECTS = new Set(['window', 'top', 'globalThis', 'self']);
+
+function walk(node, visit) {
+    if(!node || typeof node.type != 'string')
+        return;
+
+    visit(node);
+
+    for(let key in node)
+        if(key != 'parent')
+            for(let child of [].concat(node[key]))
+                if(child && typeof child == 'object')
+                    walk(child, visit);
 }
 
 // Sloppy-mode scripts also leak function declarations out of top-level blocks (Annex B), e.g. `__STATIC__: { function RegisterJob() {} }`

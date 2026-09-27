@@ -48,10 +48,12 @@ Sources: the 163 Offser candidates in [`offser-bug-candidates.md`](offser-bug-ca
 | settings.js L2330 | `parseValue` doesn't exist | Unit fields threw on non-integer input |
 | settings.js L1229, L2782 | `{ user_language_preference }` shorthand | Default was the `<select>` element (named-access global) |
 | settings.js L2414 | Enter with no search results | TypeError |
-| background.js L880 | `act` used outside its scope | **RAM Alarms audit threw whenever any tab was frozen**; frozen tabs now get `ignore` |
+| background.js L880 | `act` used outside its scope | **RAM Alarms audit threw whenever any tab was frozen**; frozen tabs now get the high tier's action |
 | background.js L708, L843, L948 | Out-of-scope `tab`/`id` in error paths | The error handlers themselves threw |
 
-Tooling: ESLint now sees `window.X ??=` globals, Annex B block functions (`RegisterJob` & co.) and the UMD libs, so `no-undef` went from 139 findings to 17 real ones.
+| tools.js L15587 | Auto DVR master handler looked up a prompt with an undefined `body` | Every master save threw |
+
+Tooling: ESLint now sees `window.X ??=` globals, `Object.defineProperties(top, …)`, Annex B block functions (`RegisterJob` & co.) and the UMD libs, so `no-undef` went from 139 findings to 3, all in dead code (`gameID` after an intentional `return`).
 
 ## Deferred to Phase 4 (Up Next, entangled with shared state)
 
@@ -62,12 +64,12 @@ Tooling: ESLint now sees `window.X ??=` globals, Annex B block functions (`Regis
 - tools.js L3809 `FIRST_IN_LINE_WARNING_TEXT_UPDATE` is never assigned.
 - GitHub issues #44–#57, #52, #55, #56 (all Up Next).
 
-## Needs owner input
+## Owner decisions
 
-1. **Auto DVR:** `DVR_CLIP_PRECOMP_NAME` is never defined, and `body` is undefined in `Handlers.__MASTER_AUTO_DVR_HANDLER__` (tools.js L15456–15843). Enabling DVR from the channel action and saving recordings throw. The Up Next DVR toggle uses `new ClipName(2)` instead. Is that the intended value?
-2. **Stop Hosting / Prevent Hosting:** Twitch removed hosting in 2022. Remove the feature?
-3. **Tooltip `from: 'down'`** (core.js L696–705): `0 & offset.height` always gives `0`, and the case falls through to `default`, which overrides it. Intentional?
-4. **Frozen tabs in RAM Alarms:** they now get `ignore`. Should they use the `high` tier's action instead?
+1. **Auto DVR:** not a bug. `DVR_CLIP_PRECOMP_NAME` is a getter defined on `top` (tools.js L15542), and it already falls back to `new ClipName(2)`; the lint config now sees such globals. The master handler's undefined `body` is fixed. It had no prompt to look up.
+2. **Stop Hosting / Prevent Hosting:** to be removed in Phase 4. Twitch dropped hosting in 2022.
+3. **Tooltip `from: 'down'`** (core.js L696–705): unclear, so it is revisited in Phase 6 (styling).
+4. **Frozen tabs in RAM Alarms:** they use the `high` tier's action (`ram_onhigh`, else `ignore`).
 
 ## Not bugs (false positives, by kind)
 

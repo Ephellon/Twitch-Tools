@@ -92,6 +92,8 @@ All Offser output is treated as a draft — verified against the code before it 
 
 ## Decisions
 
+- **Stop/Prevent Hosting:** removed in Phase 4 (Twitch dropped hosting in 2022).
+- **Tooltip `from: 'down'`:** revisit in Phase 6.
 - **Version:** the revamp ships as **v6** (manifest bump happens at release, Phase 8).
 - **Plugins:** both — built-in features become plugins (Phases 3–4), user plugins via TTV DSL (Phase 7).
 - **Build step:** allowed. Source stays in `ttv-tools/` (still loads unpacked as-is); `scripts/build.mjs` produces `dist/`. esbuild joins in Phase 3 when plugins get real `import`s.
