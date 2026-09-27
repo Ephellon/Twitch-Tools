@@ -23,10 +23,29 @@ const read = file => fs.readFileSync(path.join(ROOT, file), 'utf8');
 // Built bundles listed in the manifest → the ES-module entry they come from (see scripts/build.mjs)
 const BUNDLES = { 'lib.js': 'lib/index.js' };
 
+// Every ES-module source that ends up in a bundle
+function moduleSources(entry) {
+    let folder = path.join(ROOT, path.dirname(entry));
+    let all = [];
+    let visit = dir => fs.readdirSync(dir, { withFileTypes: true }).forEach(e => e.isDirectory()? visit(path.join(dir, e.name)): e.name.endsWith('.js') && all.push(path.relative(ROOT, path.join(dir, e.name))));
+
+    visit(folder);
+    visit(path.join(ROOT, 'plugins'));
+
+    return all;
+}
+
 function declaredNames(file) {
+    // A bundle publishes whatever its modules assign to window/top/globalThis
+    if(file in BUNDLES)
+        return new Set(moduleSources(BUNDLES[file]).flatMap(source => [...declaredNamesIn(source, true)]));
+
+    return declaredNamesIn(file, false);
+}
+
+function declaredNamesIn(file, module) {
     let names = new Set;
-    let module = file in BUNDLES;
-    let source = read(BUNDLES[file] ?? file);
+    let source = read(file);
     let program;
 
     try {
