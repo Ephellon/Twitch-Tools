@@ -32,16 +32,38 @@ function declaredNames(file) {
     }
 
     for(let node of program.body)
-        if(node.type == 'VariableDeclaration')
-            for(let { id } of node.declarations)
-                collectPattern(id, names);
-        else if(node.type == 'FunctionDeclaration' || node.type == 'ClassDeclaration')
-            node.id && names.add(node.id.name);
+        collectStatement(node, names, true);
 
-    for(let [, name] of source.matchAll(/\b(?:window|globalThis|self|top)\.([A-Za-z_$][\w$]*)\s*=[^=]/g))
+    for(let [, name] of source.matchAll(/\b(?:window|globalThis|self|top)\.([A-Za-z_$][\w$]*)\s*(?:\?\?|\|\||&&)?=[^=]/g))
         names.add(name);
 
     return names;
+}
+
+// Sloppy-mode scripts also leak function declarations out of top-level blocks (Annex B), e.g. `__STATIC__: { function RegisterJob() {} }`
+function collectStatement(node, names, topLevel = false) {
+    switch(node?.type) {
+        case 'VariableDeclaration':
+            if(topLevel || node.kind == 'var')
+                node.declarations.forEach(({ id }) => collectPattern(id, names));
+            break;
+        case 'FunctionDeclaration':
+            names.add(node.id.name);
+            break;
+        case 'ClassDeclaration':
+            topLevel && names.add(node.id.name);
+            break;
+        case 'LabeledStatement':
+            collectStatement(node.body, names);
+            break;
+        case 'BlockStatement':
+            node.body.forEach(child => collectStatement(child, names));
+            break;
+        case 'IfStatement':
+            collectStatement(node.consequent, names);
+            collectStatement(node.alternate, names);
+            break;
+    }
 }
 
 function collectPattern(node, names) {
@@ -68,6 +90,9 @@ for(let group of groups) {
     for(let file of group)
         Object.assign(sharedGlobals[file] ??= {}, names);
 }
+
+// UMD libraries in `ext/` that attach themselves through a wrapper the scan above can't see
+const VENDORED = { localforage: 'readonly', Sortable: 'readonly', resemble: 'readonly' };
 
 const legacy = {
     'no-unused-vars': 'warn',
@@ -126,7 +151,7 @@ export default [
         languageOptions: {
             ecmaVersion: 'latest',
             sourceType: 'script',
-            globals: { ...globals.browser, ...globals.webextensions },
+            globals: { ...globals.browser, ...globals.webextensions, ...VENDORED },
         },
         linterOptions: { reportUnusedDisableDirectives: 'off' },
         plugins: { '@stylistic': stylistic },
