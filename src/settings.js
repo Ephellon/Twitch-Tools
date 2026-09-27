@@ -2734,6 +2734,9 @@ document.body.onload = async() => {
             for(const attribute in search)
                 $('body').classList.add(attribute);
 
+            // The viewer's scripts add their own settings (settings/user-scripts.js)
+            await window.SETTINGS_EXTRA;
+
             // Stop or continue loading settings
             if((search['show-defaults'] + '').unlike('true'))
                 await LoadSettings();
@@ -2913,7 +2916,8 @@ document.body.onload = async() => {
             // A fresh install has nothing stored, so the pages would read every option as unset
             // (not as its default); store the form's values whenever any option is missing
             Storage.get(null, stored => {
-                if(usable_settings.some(id => !(id in stored)))
+                // (values kept without a control, like the user scripts list, are written by their own code)
+                if(usable_settings.some(id => !(id in stored) && $.defined(`#${ id }`)))
                     SaveSettings();
             });
         });

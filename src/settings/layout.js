@@ -58,6 +58,7 @@ import displayStatistics52 from './sections/display-statistics.js';
 import experimentalFeatures53 from '../plugins/developer/developer-features.experimental-features.settings.js';
 import extraKeyboardShortcuts54 from '../plugins/developer/developer-features.settings.js';
 import lowDataUsage55 from './sections/low-data-usage.js';
+import userScripts from './sections/user-scripts.js';
 import useFineDetails56 from './sections/use-fine-details.js';
 import automaticTabReloads57 from './sections/automatic-tab-reloads.js';
 import showDefaultValues58 from './sections/show-default-values.js';
@@ -167,6 +168,19 @@ export default [
             recoverStream49,
             recoverVideo50,
         ],
+    },
+    {
+        header: 'User Scripts',
+        tr: 'header:user-scripts',
+        headerAttrs: {
+            subtitle: 'Your own automation, written in the TTV DSL.',
+        },
+        save: true,
+        sections: [
+            userScripts,
+        ],
+        // The installed scripts and the permissions approved for them (kept by the list above, not a control)
+        stored: ['user_scripts', 'user_scripts__consent'],
     },
     {
         header: 'Developer Features',

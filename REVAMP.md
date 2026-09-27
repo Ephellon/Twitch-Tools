@@ -85,8 +85,17 @@ Living plan for the multi-week revamp. One phase at a time; each phase ends in s
 - CSS custom-property token layer (colors, spacing, radii, fonts) shared by `core.css`, `extras.css`, `settings.css`.
 - Per-plugin CSS where styles are feature-specific; dedupe the rest.
 
-### 7. User plugins via TTV DSL
-- Load `dsl/` in the extension, add a script editor/manager in Settings, wire host calls to the plugin API.
+### 7. User plugins via TTV DSL ✅
+- **Phase 6.5 (with the TTV Transpiler, over Offser shares):**
+  - The DSL is now v2.1, with the plugin header and editor support. It loads in the chat frames.
+  - `docs/DSL-HOST.md` is the host contract; `src/lib/dsl-host.js` implements it and passes the conformance suite.
+  - `src/lib/user-scripts.js` runs each script as its own plugin.
+- **Settings:** the new **User Scripts** group lets the viewer install (new or imported), edit, approve and remove scripts.
+  - The editor highlights as you type and lists problems live.
+  - Each script's own settings are rendered from `TTV_DSL.inspect` and save like any other setting.
+  - Scripts and approvals are included in export and restore. See `docs/USER-SCRIPTS.md`.
+- **Verified in Chromium on the Settings page:** list, section, save, approval, editor diagnostics, and new-script save.
+- **Still to verify on live Twitch:** the runner inside chat (the stub page doesn't start chat).
 
 ### 8. Documentation & release
 - JSDoc for remaining files, README + wiki refresh, CONTRIBUTING (how to write a plugin), CHANGELOG, version bump.

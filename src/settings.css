@@ -2204,3 +2204,125 @@ code[fill], [code][fill], [type^="code"i][fill] {
                     #store_integration__epic + label {
                         background: linear-gradient(to right, #a040f0 5%, #9a29e9 95%) !important;
                     }
+
+/* User Scripts: the list, and the editor (settings/user-scripts.js) */
+.user-scripts--list {
+    border-collapse: collapse;
+    margin: 0.5rem 0;
+    width: 100%;
+}
+
+.user-scripts--list td {
+    padding: 0.25rem 0.5rem 0.25rem 0;
+    vertical-align: middle;
+}
+
+.user-scripts--list td:last-child {
+    text-align: right;
+    white-space: nowrap;
+}
+
+.user-scripts--status[status="ok"] {
+    color: var(--ttv-green);
+}
+
+.user-scripts--status[status="warning"] {
+    color: var(--ttv-gold);
+}
+
+.user-scripts--status[status="error"] {
+    color: var(--ttv-live-red);
+}
+
+.user-scripts--actions {
+    margin: 0.5rem 0;
+}
+
+#user-script-editor {
+    align-items: center;
+    background: var(--ttv-black-53);
+    display: flex;
+    inset: 0;
+    justify-content: center;
+    position: fixed;
+    z-index: var(--ttv-layer-overlay);
+}
+
+.user-script-editor--dialog {
+    background: var(--ttv-surface-dark-raised);
+    border-radius: var(--ttv-radius-sm);
+    box-shadow: 0 0 2rem 0 var(--ttv-black-53);
+    color: var(--ttv-white);
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    max-height: 90vh;
+    padding: 1rem;
+    width: min(60rem, 95vw);
+}
+
+.user-script-editor--meta {
+    opacity: 0.7;
+}
+
+/* The highlighted copy sits exactly under a transparent textarea */
+.user-script-editor--code {
+    height: 50vh;
+    position: relative;
+}
+
+.user-script-editor--code pre, .user-script-editor--code textarea {
+    border: 1px solid var(--ttv-white-20);
+    border-radius: var(--ttv-radius-xs);
+    box-sizing: border-box;
+    font: 0.9rem/1.4 var(--ttv-font-code);
+    height: 100%;
+    inset: 0;
+    margin: 0;
+    overflow: auto;
+    padding: 0.5rem;
+    position: absolute;
+    tab-size: 4;
+    white-space: pre;
+    width: 100%;
+}
+
+.user-script-editor--code pre {
+    background: var(--ttv-surface-dark);
+    pointer-events: none;
+}
+
+.user-script-editor--code textarea {
+    background: var(--ttv-transparent);
+    caret-color: var(--ttv-white);
+    color: var(--ttv-transparent);
+    resize: none;
+}
+
+.user-script-editor--problems {
+    color: var(--ttv-gold);
+    margin: 0;
+    max-height: 8rem;
+    overflow: auto;
+    padding-left: 1.2rem;
+}
+
+.user-script-editor--actions {
+    text-align: right;
+}
+
+.user-script-editor--actions .save[disabled] {
+    opacity: 0.5;
+}
+
+/* TTV DSL highlighting (TTV_DSL.HIGHLIGHT_TYPES) */
+.ttv-dsl-keyword { color: var(--ttv-purple-light) }
+.ttv-dsl-verb { color: var(--ttv-gold) }
+.ttv-dsl-string, .ttv-dsl-template { color: var(--ttv-green-light) }
+.ttv-dsl-number, .ttv-dsl-duration { color: var(--ttv-orange) }
+.ttv-dsl-selector { color: var(--ttv-sky) }
+.ttv-dsl-sigil { color: var(--ttv-teal-light) }
+.ttv-dsl-operator, .ttv-dsl-punctuation { color: var(--ttv-grey) }
+.ttv-dsl-comment { color: var(--ttv-grey); font-style: italic }
+.ttv-dsl-identifier, .ttv-dsl-whitespace { color: var(--ttv-white) }
+.ttv-dsl-invalid { text-decoration: wavy underline var(--ttv-live-red) }
