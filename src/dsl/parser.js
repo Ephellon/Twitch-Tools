@@ -78,6 +78,25 @@ if(typeof require === 'function' && typeof module === 'object') {
         TokenType.SELECTOR_BADGE, TokenType.SELECTOR_USER, TokenType.SELECTOR_CONTEXT,
     ];
 
+    /** A plugin id: it becomes a settings key, so it is kept to what those allow. */
+    const PLUGIN_ID_PATTERN = /^[a-z][a-z0-9_]*$/;
+
+    /** A setting's name — it becomes part of a settings key, `<id>__<name>`. */
+    const SETTING_NAME_PATTERN = /^[a-z][a-z0-9_]*$/;
+
+    /** Where a script may run. */
+    const PLUGIN_FRAMES = new Set(['chat', 'main']);
+
+    /** The setting types a header may declare, and what each one's block may carry. */
+    const SETTING_KEYS = {
+        checkbox: [],
+        number: ['min', 'max', 'step', 'unit'],
+        text: ['placeholder'],
+        select: ['option'],
+    };
+
+    const SETTING_TYPES = new Set(Object.keys(SETTING_KEYS));
+
     /** The diagnostic each poisoned reserved word produces. They exist for no other reason.
      * @type {Object<String, String>}
      */
@@ -332,6 +351,11 @@ if(typeof require === 'function' && typeof module === 'object') {
                     if(isContinuation(statement) && this.#foldAlternate(body, statement))
                         continue;
 
+                    // The header describes the whole script, so it comes before anything the
+                    // script does — and there is only one.
+                    if(NodeType.PluginHeader === statement.type && (body.length || this.#blockDepth > 0))
+                        this.#fail('`plugin` must be the first statement of a script', { loc: statement.loc });
+
                     body.push(statement);
                 } catch(error) {
                     // A `DSLSyntaxError` can arrive here too: a template's `${ ... }` is
@@ -533,6 +557,241 @@ if(typeof require === 'function' && typeof module === 'object') {
                 this.#fail(`${ what[0].toUpperCase() + what.slice(1) } needs a lower-case letter; ALL-CAPS names like \`${ token.value }\` are the host's constants and verbs`, token);
 
             return this.#next();
+        }
+
+        /** `plugin <id> [-- "Name"]` + an indented header of `about`, `frames` and `setting`
+         * lines. Parsed as its own small grammar: none of these lines is a statement. */
+        #parsePluginHeader(token) {
+            this.#next();
+
+            const idToken = this.#peek();
+
+            if(TokenType.IDENT !== idToken.type || !PLUGIN_ID_PATTERN.test(idToken.value))
+                this.#fail(`A plugin id is lower-case letters, digits and \`_\`, starting with a letter — e.g. \`plugin raid_shoutouts\`; found ${ this.#describe(idToken) }`, idToken);
+
+            this.#next();
+
+            const fields = { id: idToken.value, name: null, description: null, frames: null, settings: [] };
+
+            if(this.#accept(TokenType.DESCRIBE))
+                fields.name = this.#expect(TokenType.STRING, 'the plugin\'s name in quotes, after `--`').value;
+
+            this.#expect(TokenType.NEWLINE, 'end of line');
+
+            if(this.#accept(TokenType.INDENT)) {
+                while(true) {
+                    this.#skipNewlines();
+
+                    if(this.#at(TokenType.DEDENT, TokenType.EOF))
+                        break;
+
+                    this.#parsePluginLine(fields);
+                }
+
+                this.#accept(TokenType.DEDENT);
+            }
+
+            return AST.pluginHeader(fields, span(token.loc, this.#peek(-1).loc));
+        }
+
+        /** One line of a `plugin` header. */
+        #parsePluginLine(fields) {
+            const token = this.#peek()
+                , word = (TokenType.SETTING === token.type ? 'setting' : (TokenType.IDENT === token.type ? token.value : null));
+
+            switch(word) {
+                case 'about': {
+                    this.#next();
+
+                    if(null !== fields.description)
+                        this.#fail('`about` is given twice', token);
+
+                    fields.description = this.#expect(TokenType.STRING, 'the description in quotes').value;
+                    this.#expect(TokenType.NEWLINE, 'end of line');
+
+                    return;
+                }
+
+                case 'frames': {
+                    this.#next();
+
+                    if(null !== fields.frames)
+                        this.#fail('`frames` is given twice', token);
+
+                    fields.frames = [];
+
+                    do {
+                        const frame = this.#peek();
+
+                        if(TokenType.IDENT !== frame.type || !PLUGIN_FRAMES.has(frame.value))
+                            this.#fail(`Unknown frame ${ this.#describe(frame) }; a script runs in \`${ [...PLUGIN_FRAMES].join('`, `') }\``, frame);
+
+                        this.#next();
+
+                        if(!fields.frames.includes(frame.value))
+                            fields.frames.push(frame.value);
+                    } while(this.#accept(TokenType.COMMA));
+
+                    this.#expect(TokenType.NEWLINE, 'end of line');
+
+                    return;
+                }
+
+                case 'setting': {
+                    return this.#parseSettingDeclaration(fields);
+                }
+
+                default: {
+                    this.#fail(`A \`plugin\` header holds only \`about\`, \`frames\` and \`setting\` lines; found ${ this.#describe(token) }`, token);
+                }
+            } // switch word
+        }
+
+        /** `setting name: type default [-- "Label"]` + an optional block of limits/options. */
+        #parseSettingDeclaration(fields) {
+            const start = this.#next()
+                , nameToken = this.#peek();
+
+            if(TokenType.IDENT !== nameToken.type || !SETTING_NAME_PATTERN.test(nameToken.value))
+                this.#fail(`A setting name is lower-case letters, digits and \`_\`, starting with a letter; found ${ this.#describe(nameToken) }`, nameToken);
+
+            if(fields.settings.some(entry => entry.name === nameToken.value))
+                this.#fail(`Setting \`${ nameToken.value }\` is declared twice`, nameToken);
+
+            this.#next();
+            this.#expect(TokenType.COLON, '`:` after the setting name');
+
+            const typeToken = this.#peek();
+
+            if(TokenType.IDENT !== typeToken.type || !SETTING_TYPES.has(typeToken.value))
+                this.#fail(`Unknown setting type ${ this.#describe(typeToken) }; use \`${ [...SETTING_TYPES].join('`, `') }\``, typeToken);
+
+            this.#next();
+
+            const type = typeToken.value
+                , valueToken = this.#peek()
+                , value = this.#readSettingLiteral(`a default ${ type }`)
+                , setting = { name: nameToken.value, type, default: value, label: null, loc: span(start.loc, valueToken.loc) };
+
+            const expected = { checkbox: 'boolean', number: 'number', text: "string", select: 'string' }[type];
+
+            if(typeof value !== expected)
+                this.#fail(`A \`${ type }\` setting's default is a ${ expected }; found ${ this.#describe(valueToken) }`, valueToken);
+
+            if(this.#accept(TokenType.DESCRIBE))
+                setting.label = this.#expect(TokenType.STRING, 'the setting\'s label in quotes, after `--`').value;
+
+            this.#expect(TokenType.NEWLINE, 'end of line');
+
+            if(this.#accept(TokenType.INDENT)) {
+                while(true) {
+                    this.#skipNewlines();
+
+                    if(this.#at(TokenType.DEDENT, TokenType.EOF))
+                        break;
+
+                    this.#parseSettingLine(setting);
+                }
+
+                this.#accept(TokenType.DEDENT);
+            }
+
+            if('select' === type) {
+                if(!setting.options?.length)
+                    this.#fail(`Select setting \`${ setting.name }\` needs at least one \`option\``, { loc: setting.loc });
+
+                if(!setting.options.some(option => option.value === setting.default))
+                    this.#fail(`Select setting \`${ setting.name }\` defaults to "${ setting.default }", which is not one of its options`, { loc: setting.loc });
+            }
+
+            if('number' === type) {
+                if(null != setting.min && null != setting.max && setting.min > setting.max)
+                    this.#fail(`Setting \`${ setting.name }\` has \`min\` above \`max\``, { loc: setting.loc });
+
+                if((null != setting.min && setting.default < setting.min) || (null != setting.max && setting.default > setting.max))
+                    this.#fail(`Setting \`${ setting.name }\` defaults to ${ setting.default }, outside its \`min\`/\`max\``, { loc: setting.loc });
+            }
+
+            fields.settings.push(setting);
+        }
+
+        /** One line inside a setting's block: `min 0, max 60, step 1, unit "s"`, `placeholder
+         * "…"`, or `option "value" [-- "Label"]`. */
+        #parseSettingLine(setting) {
+            do {
+                const token = this.#peek()
+                    , key = (TokenType.IDENT === token.type ? token.value : null)
+                    , allowed = SETTING_KEYS[setting.type];
+
+                if(!key || !allowed.includes(key))
+                    this.#fail(`A \`${ setting.type }\` setting takes ${ allowed.length ? `\`${ allowed.join('`, `') }\`` : 'nothing' } here; found ${ this.#describe(token) }`, token);
+
+                this.#next();
+
+                if('option' === key) {
+                    const valueToken = this.#peek()
+                        , value = this.#expect(TokenType.STRING, 'the option\'s value in quotes').value
+                        , label = (this.#accept(TokenType.DESCRIBE) ? this.#expect(TokenType.STRING, 'the option\'s label in quotes, after `--`').value : value);
+
+                    setting.options ??= [];
+
+                    if(setting.options.some(option => option.value === value))
+                        this.#fail(`Option "${ value }" is listed twice`, valueToken);
+
+                    setting.options.push({ value, label });
+
+                    continue;
+                }
+
+                if(key in setting)
+                    this.#fail(`\`${ key }\` is given twice`, token);
+
+                const valueToken = this.#peek()
+                    , value = this.#readSettingLiteral(`a value for \`${ key }\``)
+                    , expected = (('unit' === key || 'placeholder' === key) ? 'string' : 'number');
+
+                if(typeof value !== expected)
+                    this.#fail(`\`${ key }\` takes a ${ expected }; found ${ this.#describe(valueToken) }`, valueToken);
+
+                if('step' === key && !(value > 0))
+                    this.#fail('`step` must be above 0', valueToken);
+
+                setting[key] = value;
+            } while(this.#accept(TokenType.COMMA));
+
+            this.#expect(TokenType.NEWLINE, 'end of line');
+        }
+
+        /** A plain literal in a header: a string, a boolean, or a (signed) number or duration. */
+        #readSettingLiteral(what) {
+            const negative = !!this.#accept(TokenType.MINUS)
+                , token = this.#peek();
+
+            switch(token.type) {
+                case TokenType.NUMBER:
+                case TokenType.DURATION: {
+                    this.#next();
+
+                    return (negative ? -token.value : token.value);
+                }
+
+                case TokenType.STRING:
+                case TokenType.TRUE:
+                case TokenType.FALSE: {
+                    if(negative)
+                        break;
+
+                    this.#next();
+
+                    return (TokenType.STRING === token.type ? token.value : TokenType.TRUE === token.type);
+                }
+
+                default: {
+                    break;
+                }
+            } // switch token.type
+
+            return this.#fail(`Expected ${ what }: a quoted string, a number, \`true\` or \`false\`; found ${ this.#describe(token) }`, token);
         }
 
         /** `define name(param, ...) [with +perm ...]` + block. */
@@ -956,6 +1215,7 @@ if(typeof require === 'function' && typeof module === 'object') {
         #statementParsers = {
             [TokenType.AWAIT]: this.#parseAwaitStatement,
             [TokenType.AFTER]: this.#parseAfterStatement,
+            [TokenType.PLUGIN]: this.#parsePluginHeader,
             [TokenType.DEFINE]: this.#parseDefineStatement,
             [TokenType.RETURN]: this.#parseReturnStatement,
             [TokenType.FOR]: this.#parseForStatement,
@@ -1216,6 +1476,18 @@ if(typeof require === 'function' && typeof module === 'object') {
                         return AST.wildcard(token.loc, PRESENCE_WORDS[token.value]);
 
                     return AST.identifier(token.value, !!token.isUpper, token.loc);
+                }
+
+                case TokenType.SETTING: {
+                    this.#next();
+
+                    // `setting.delay` — the `.name` glued on, like any property read.
+                    if(!(this.#at(TokenType.SELECTOR_CONTEXT) && this.#peek().loc.start === token.loc.end))
+                        this.#fail('A setting is read as `setting.name`', token);
+
+                    const property = this.#next();
+
+                    return AST.settingRead(property.value, span(token.loc, property.loc));
                 }
 
                 case TokenType.COUNTER: {

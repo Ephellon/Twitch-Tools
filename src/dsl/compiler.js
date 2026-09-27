@@ -327,6 +327,9 @@ if(typeof require === 'function' && typeof module === 'object') {
         // against it once the whole script has compiled.
         functions: new Map(),
         calls: [],
+        // The plugin header's settings by name, filled in by the Program before anything
+        // else compiles, so `setting.name` can be checked where it is written.
+        settings: new Map(),
     });
 
     /** The grant set a program starts with: nothing. */
@@ -365,6 +368,7 @@ if(typeof require === 'function' && typeof module === 'object') {
         mode: scope.mode,
         functions: scope.functions,
         calls: scope.calls,
+        settings: scope.settings,
     }, extra);
 
     /** Which env slot a binding made in `scope` writes to. Both arrows ask the same
@@ -535,6 +539,11 @@ if(typeof require === 'function' && typeof module === 'object') {
                 },
             });
 
+            const header = node.body.find(statement => NodeType.PluginHeader === statement.type);
+
+            for(const setting of (header?.settings ?? []))
+                scope.settings.set(setting.name, setting);
+
             const body = compileAll(node.body, scope);
 
             // Every call must name a `define` somewhere in the script — checked once
@@ -580,11 +589,34 @@ if(typeof require === 'function' && typeof module === 'object') {
                     mode: 'global',
                     functions: scope.functions,
                     calls: scope.calls,
+                    settings: scope.settings,
                 });
 
             scope.functions.set(node.name, { name: node.name, params: node.params, permissions, body, loc: node.loc });
 
             return async() => {};
+        },
+
+        /** Metadata only: `TTV_DSL.inspect` reads it, and running it does nothing. */
+        [NodeType.PluginHeader]() {
+            return async() => {};
+        },
+
+        /** `setting.name` — what the host stored, else the declared default. Read-only: there
+         * is no way to write one, because the viewer owns it. */
+        [NodeType.SettingRead](node, scope) {
+            const declared = scope.settings.get(node.name);
+
+            if(!declared)
+                throw new DSLRuntimeError(`No setting named \`${ node.name }\`; ${ scope.settings.size ? `the \`plugin\` header declares ${ [...scope.settings.keys()].map(name => `\`${ name }\``).join(', ') }` : 'this script has no `plugin` header declaring settings' }`, node.loc);
+
+            const fallback = declared.default;
+
+            return async(context) => {
+                const stored = context.runtime.settings[node.name];
+
+                return (void null === stored ? fallback : stored);
+            };
         },
 
         [NodeType.ReturnStatement](node, scope) {

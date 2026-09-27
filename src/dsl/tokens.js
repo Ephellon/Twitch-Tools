@@ -55,6 +55,10 @@ globalThis.TTV_DSL ??= {};
         FALSE: 'FALSE',
         /** `when` — both the switch head and the `if`-chain continuation. */
         WHEN: 'WHEN',
+        /** `plugin <id> [-- "Name"]` + header block — the script's plugin metadata. */
+        PLUGIN: 'PLUGIN',
+        /** `setting` — declares a setting in a `plugin` header; reads one as `setting.name`. */
+        SETTING: 'SETTING',
         /** `define name(params) [with +perm ...]` — a function. */
         DEFINE: 'DEFINE',
         /** `return [<value>]` — only inside a `define`. */
@@ -196,6 +200,8 @@ globalThis.TTV_DSL ??= {};
         false: TokenType.FALSE,
         when: TokenType.WHEN,
         after: TokenType.AFTER,
+        plugin: TokenType.PLUGIN,
+        setting: TokenType.SETTING,
         define: TokenType.DEFINE,
         return: TokenType.RETURN,
         for: TokenType.FOR,
@@ -345,6 +351,7 @@ globalThis.TTV_DSL ??= {};
         TokenType.GOTO,
         TokenType.WHEN,
         TokenType.AFTER,
+        TokenType.PLUGIN,
         TokenType.DEFINE,
         TokenType.RETURN,
         TokenType.FOR,

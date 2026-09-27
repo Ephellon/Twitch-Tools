@@ -36,6 +36,11 @@ globalThis.TTV_DSL ??= {};
         AwaitStatement: 'AwaitStatement',
         /** `using <subject> [<subject> ...]` + optional body. */
         UsingStatement: 'UsingStatement',
+        /** `plugin <id>` + header block: `{ id, name, description, frames, settings }`.
+         * Metadata, not behaviour — the first statement of a script, or absent. */
+        PluginHeader: 'PluginHeader',
+        /** `setting.name` — a plugin setting's value, read-only. */
+        SettingRead: 'SettingRead',
         /** `define name(params) [with +perm ...]` + body. Top level only. */
         DefineStatement: 'DefineStatement',
         /** `return [<value>]`. */
@@ -157,6 +162,8 @@ globalThis.TTV_DSL ??= {};
 
         [NodeType.AwaitStatement]: ['subject', 'filter', 'body'],
         [NodeType.AfterStatement]: ['subject', 'filter', 'body'],
+        [NodeType.PluginHeader]: [],
+        [NodeType.SettingRead]: [],
         [NodeType.DefineStatement]: ['body'],
         [NodeType.ReturnStatement]: ['argument'],
         [NodeType.ForStatement]: ['start', 'stop', 'step', 'list', 'body'],
@@ -239,6 +246,20 @@ globalThis.TTV_DSL ??= {};
          * @param {Object} loc
          */
         afterStatement: (subject, filter, body, loc) => node(NodeType.AfterStatement, { subject, filter, body }, loc),
+
+        /**
+         * @param {Object} fields - `{ id, name, description, frames, settings }`; `settings` is
+         *   an array of `{ name, type, default, label, min?, max?, step?, unit?, placeholder?,
+         *   options?, loc }`
+         * @param {Object} loc
+         */
+        pluginHeader: (fields, loc) => node(NodeType.PluginHeader, fields, loc),
+
+        /**
+         * @param {String} name
+         * @param {Object} loc
+         */
+        settingRead: (name, loc) => node(NodeType.SettingRead, { name }, loc),
 
         /**
          * @param {String} name

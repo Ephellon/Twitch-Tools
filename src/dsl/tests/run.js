@@ -42,6 +42,7 @@ const TESTS = [
     'realistic.test.js',
     'host.test.js',
     'functions.test.js',
+    'plugin.test.js',
 ];
 
 for(const name of MODULES)
