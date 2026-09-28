@@ -1,0 +1,40 @@
+plugin dice_games -- "Dice & Games"
+    about "!roll (or !roll 3 for up to 10 dice), !coin and !8ball."
+
+// Answers for !8ball, kept in a list so they're easy to extend
+(`Yes.`, `No.`, `Ask again later.`, `Without a doubt.`, `Very doubtful.`) -> answers
+
+// A function is a verb you define. This one rolls one die with `sides` faces
+define ROLL(sides)
+    return any from (1 ... sides)
+
+// Adding up the dice needs arithmetic
+using +eval:calc -- "Adds up dice rolls"
+    await (.command is SOMETHING)
+        when .command is
+            "roll":
+                // `!roll 3` rolls three dice; no number rolls one; at most ten
+                if .argument is or above 1
+                    .argument -> dice_count
+                else
+                    1 -> dice_count
+
+                if dice_count is above 10
+                    10 -> dice_count
+
+                0 -> total
+                "" -> faces
+
+                // `for 0; dice_count` counts from 0 up to, but not including, dice_count
+                for 0; dice_count
+                    ROLL 6 -> face
+                    calc(total + face) -> total
+                    `${ faces } 🎲${ face }` -> faces
+
+                REPLY `You rolled${ faces } = ${ total }`
+
+            "coin":
+                REPLY any from (`Heads!`, `Tails!`)
+
+            "8ball":
+                REPLY `🎱 ${ any from answers }`

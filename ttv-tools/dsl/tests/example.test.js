@@ -13,7 +13,7 @@
     let source = null;
 
     if (typeof require === 'function' && typeof __dirname !== 'undefined')
-        source = require('fs').readFileSync(require('path').join(__dirname, 'fixtures', 'hello-bot.ttv'), 'utf8');
+        source = require('fs').readFileSync(require('path').join(__dirname, '..', 'examples', 'hello-bot.ttv'), 'utf8');
 
     describe('example / hello-bot.ttv', () => {
         if (null === source)
