@@ -223,7 +223,7 @@ export function createAdapter(env) {
          */
         attach(runtime) {
             // `Chat` keys hooks by function name and has no removal API, so each hook gets a unique name
-            const named = (suffix, callback) => ({ [`${ hookName }_${ suffix }`]: callback })[`${ hookName }_${ suffix }`];
+            const named = (suffix, callback) => Object.defineProperty(callback, 'name', { value: `${ hookName }_${ suffix }` });
             const onMessage = named('message', message => runtime.dispatch(toMessageEvent(message)));
             const onWhisper = named('whisper', whisper => runtime.dispatch(toWhisperEvent(whisper)));
             const onBullet = named('bullet', bullet => {

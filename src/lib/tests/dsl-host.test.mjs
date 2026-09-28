@@ -1,5 +1,5 @@
 /*** /lib/tests/dsl-host.test.mjs
- * The extension-specific parts of the DSL host adapter: raids, the viewer's badges, `goto`.
+ * The extension-specific parts of the DSL host adapter: raids, the viewer's badges, `goto`, hook names.
  */
 
 import { test } from 'node:test';
@@ -36,4 +36,32 @@ test('goto navigates where allowed and warns elsewhere', () => {
 
     assert.deepEqual(went, ['other']);
     assert.equal(warned.length, 1);
+});
+
+test('each attach adds its own named hooks, and detach removes them', () => {
+    // Like src/lib/chat.js: hooks are keyed by name (else by source text), and a taken key is ignored
+    const hooks = kind => Object.defineProperty({}, kind, {
+        set(callback) {
+            const key = callback.name || String(callback);
+
+            if(!this[`__${ kind }__`].has(key))
+                this[`__${ kind }__`].set(key, callback);
+        },
+    });
+    const RealChat = { send() {}, reply() {}, __onmessage__: new Map, __onwhisper__: new Map, __onbullet__: new Map };
+
+    for(const kind of ['onmessage', 'onwhisper', 'onbullet'])
+        Object.defineProperties(RealChat, Object.getOwnPropertyDescriptors(hooks(kind)));
+
+    const runtime = { dispatch() {} };
+    const detachA = createAdapter({ Chat: RealChat, STREAMER, USERNAME: 'me' }).attach(runtime);
+    const detachB = createAdapter({ Chat: RealChat, STREAMER, USERNAME: 'me' }).attach(runtime);
+
+    assert.equal(RealChat.__onmessage__.size, 2, 'a second script still hears chat');
+    assert.ok([...RealChat.__onmessage__.keys()].every(key => key.startsWith('TTV_DSL_')));
+
+    detachA();
+    detachB();
+
+    assert.equal(RealChat.__onmessage__.size + RealChat.__onwhisper__.size + RealChat.__onbullet__.size, 0);
 });
