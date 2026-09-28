@@ -36,6 +36,21 @@
 
 ## Release History
 
+### Version 6.\* (pre-release)
+- `6.0` (pre-release): the revamp.
+    - **User Scripts:** chat automation written in the TTV DSL (v2.1), with an editor, per-script settings and a permission approval step.
+    - **Settings:**
+        - Declared defaults for every option.
+        - The Settings page is generated from each feature's own declaration.
+    - **Firefox:** an experimental build.
+    - **Fixes:** #26, #42, #44, #48, #50, #52, #55, #56, plus the offline-channel reload loop, the start-up memory leak and the Parse Commands crash.
+    - **Removed:** Prevent Hosting.
+    - **Internal:**
+        - Features are now plugins.
+        - House style guide and linting.
+        - Design tokens.
+        - New docs in `docs/`.
+
 ### Version 5.35.\*
 - [`5.35.3.3`](https://github.com/Ephellon/Twitch-Tools/releases/tag/5.35.3.3) — Fixed #58 (added JSON export/restore).
 - [`5.35.3.2`](https://github.com/Ephellon/Twitch-Tools/releases/tag/5.35.3.2) — Added outline for `TTV` language.
