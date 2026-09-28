@@ -19,7 +19,7 @@
 
 globalThis.TTV_DSL ??= {};
 
-if (typeof require === 'function' && typeof module === 'object') {
+if(typeof require === 'function' && typeof module === 'object') {
     require('./errors.js');
     require('./tokens.js');
     require('./tokenizer.js');
@@ -70,14 +70,14 @@ if (typeof require === 'function' && typeof module === 'object') {
      * @param {Number} to
      * @param {Array<Object>} spans
      */
-    let gap = (source, from, to, spans) => {
+    const gap = (source, from, to, spans) => {
         let at = from;
 
-        while (at < to) {
-            let rest = source.slice(at, to),
-                match = (/^\s+/.exec(rest) ?? /^\/\/[^\n]*/.exec(rest) ?? /^\/\*[\s\S]*?(?:\*\/|$)/.exec(rest)),
-                type = (match? (/^\s/.test(match[0])? 'whitespace': 'comment'): 'invalid'),
-                text = (match? match[0]: rest[0]);
+        while(at < to) {
+            const rest = source.slice(at, to)
+                , match = (/^\s+/.exec(rest) ?? /^\/\/[^\n]*/.exec(rest) ?? /^\/\*[\s\S]*?(?:\*\/|$)/.exec(rest))
+                , type = (match ? (/^\s/.test(match[0]) ? 'whitespace' : 'comment') : 'invalid')
+                , text = (match ? match[0] : rest[0]);
 
             push(spans, type, source, at, at + text.length);
             at += text.length;
@@ -85,13 +85,13 @@ if (typeof require === 'function' && typeof module === 'object') {
     };
 
     /** Appends a span, merging it into the previous one when the type repeats. */
-    let push = (spans, type, source, start, end) => {
-        if (end <= start)
+    const push = (spans, type, source, start, end) => {
+        if(end <= start)
             return;
 
-        let last = spans[spans.length - 1];
+        const last = spans[spans.length - 1];
 
-        if (last && last.type === type && last.end === start) {
+        if(last && last.type === type && last.end === start) {
             last.end = end;
             last.text = source.slice(last.start, end);
 
@@ -102,51 +102,59 @@ if (typeof require === 'function' && typeof module === 'object') {
     };
 
     /** The span type for a plain (non-template, non-sigil) token. */
-    let typeOf = (token, verbs, lineStart) => {
-        if (KEYWORD_TYPES.has(token.type) && /^[a-z]/.test(token.lexeme ?? ''))
+    const typeOf = (token, verbs, lineStart) => {
+        if(KEYWORD_TYPES.has(token.type) && /^[a-z]/.test(token.lexeme ?? ''))
             return 'keyword';
 
-        switch (token.type) {
-            case TokenType.STRING:
+        switch(token.type) {
+            case TokenType.STRING: {
                 return 'string';
+            }
 
             case TokenType.NUMBER:
-            case TokenType.ORDINAL:
+            case TokenType.ORDINAL: {
                 return 'number';
+            }
 
-            case TokenType.DURATION:
+            case TokenType.DURATION: {
                 return 'duration';
+            }
 
-            case TokenType.WILDCARD:
+            case TokenType.WILDCARD: {
                 return 'keyword';
+            }
 
             case TokenType.COUNTER:
-            case TokenType.SELECTOR_SELF:
+            case TokenType.SELECTOR_SELF: {
                 return 'sigil';
+            }
 
             case TokenType.SELECTOR_REALM:
-            case TokenType.SELECTOR_BADGE:
+            case TokenType.SELECTOR_BADGE: {
                 return 'selector';
+            }
 
-            case TokenType.IDENT:
-                if (token.value in PRESENCE_WORDS || THIS_ALIASES.has(token.value))
+            case TokenType.IDENT: {
+                if(token.value in PRESENCE_WORDS || THIS_ALIASES.has(token.value))
                     return 'keyword';
 
                 // An ALL-CAPS word is a verb where it starts a line, and anywhere when the
                 // script `define`s it; elsewhere it is a host constant, read like a name.
-                if (token.isUpper && (lineStart || verbs.has(token.value)))
+                if(token.isUpper && (lineStart || verbs.has(token.value)))
                     return 'verb';
 
                 return 'identifier';
+            }
 
-            default:
+            default: {
                 break;
-        }
+            }
+        } // switch token.type
 
-        if (OPERATORS.has(token.type))
+        if(OPERATORS.has(token.type))
             return 'operator';
 
-        if (PUNCTUATION.has(token.type))
+        if(PUNCTUATION.has(token.type))
             return 'punctuation';
 
         return 'invalid';
@@ -161,25 +169,25 @@ if (typeof require === 'function' && typeof module === 'object') {
      * @param {Array<Object>} spans
      * @param {Boolean} [lineStart = true] - false inside `${ }`, which starts mid-line
      */
-    let scan = (source, from, to, verbs, spans, lineStart = true) => {
-        let text = source.slice(from, to),
-            tokens = tokenizeLeniently(text),
-            fault = (tokens instanceof Error? tokens: null);
+    const scan = (source, from, to, verbs, spans, lineStart = true) => {
+        const text = source.slice(from, to)
+            , tokens = tokenizeLeniently(text)
+            , fault = (tokens instanceof Error ? tokens : null);
 
-        if (fault) {
-            let at = from + Math.max(0, Math.min(fault.loc?.start ?? 0, text.length)),
-                lineEnd = source.indexOf('\n', at),
-                stop = Math.min(to, (lineEnd < 0? to: lineEnd));
+        if(fault) {
+            const at = from + Math.max(0, Math.min(fault.loc?.start ?? 0, text.length))
+                , lineEnd = source.indexOf('\n', at)
+                , stop = Math.min(to, (lineEnd < 0 ? to : lineEnd));
 
             // What scanned before the fault is still good.
-            if (at > from)
+            if(at > from)
                 scan(source, from, at, verbs, spans, lineStart);
 
-            let bad = Math.min(to, Math.max(stop, at + 1));
+            const bad = Math.min(to, Math.max(stop, at + 1));
 
             push(spans, 'invalid', source, at, bad);
 
-            if (bad < to)
+            if(bad < to)
                 scan(source, bad, to, verbs, spans, true);
 
             return;
@@ -187,26 +195,27 @@ if (typeof require === 'function' && typeof module === 'object') {
 
         let at = from;
 
-        for (let token of tokens) {
-            if (STRUCTURAL.has(token.type)) {
-                if (TokenType.NEWLINE === token.type)
+        for(const token of tokens) {
+            if(STRUCTURAL.has(token.type)) {
+                if(TokenType.NEWLINE === token.type)
                     lineStart = true;
 
                 continue;
             }
 
-            let start = from + token.loc.start,
-                end = from + token.loc.end;
+            const start = from + token.loc.start
+                , end = from + token.loc.end;
 
             gap(source, at, start, spans);
 
-            if (TokenType.TEMPLATE === token.type)
-                template(source, start, end, token, verbs, spans);
-            else if (token.type in SIGIL_LENGTH) {
+            if(TokenType.TEMPLATE === token.type) {
+                template(source, start, end, token, verbs, spans)
+            } else if(token.type in SIGIL_LENGTH) {
                 push(spans, 'sigil', source, start, start + SIGIL_LENGTH[token.type]);
                 push(spans, 'selector', source, start + SIGIL_LENGTH[token.type], end);
-            } else
-                push(spans, typeOf(token, verbs, lineStart), source, start, end);
+            } else {
+                push(spans, typeOf(token, verbs, lineStart), source, start, end)
+            }
 
             lineStart = false;
             at = end;
@@ -226,33 +235,33 @@ if (typeof require === 'function' && typeof module === 'object') {
      * @param {String} text
      * @return {Array<Object>|Error} the tokens, or the fault that stopped them
      */
-    let tokenizeLeniently = (text) => {
+    const tokenizeLeniently = (text) => {
         let suffix = '';
 
-        for (let attempt = 0; attempt <= MAX_BORROWED_PARENS; ++attempt) {
+        for(let attempt = 0; attempt <= MAX_BORROWED_PARENS; ++attempt) {
             try {
                 return new Tokenizer(text + suffix, { fragment: true }).tokenize()
                     .filter(token => token.loc.start < text.length || STRUCTURAL.has(token.type))
-                    .map(token => (token.loc.end > text.length? Object.assign({}, token, { loc: Object.assign({}, token.loc, { end: text.length }) }): token));
-            } catch (error) {
-                if (!/^Unclosed "\("/.test(error?.message ?? '') || (error.loc?.start ?? 0) < text.length)
+                    .map(token => (token.loc.end > text.length ? Object.assign({}, token, { loc: Object.assign({}, token.loc, { end: text.length }) }) : token));
+            } catch(error) {
+                if(!/^Unclosed "\("/.test(error?.message ?? '') || (error.loc?.start ?? 0) < text.length)
                     return error;
 
                 suffix += ')';
             }
         }
 
-        return new Error('too many open brackets');
+        return new Error("too many open brackets");
     };
 
     /** A template: its text as `template`, each `${ }` as punctuation around code. */
-    let template = (source, start, end, token, verbs, spans) => {
-        let at = start,
-            offset = start - token.loc.start;
+    const template = (source, start, end, token, verbs, spans) => {
+        let at = start
+            , offset = start - token.loc.start;
 
-        for (let { source: inner, offset: open } of token.value.expressions) {
-            let codeStart = offset + open,
-                codeEnd = codeStart + inner.length;
+        for(const { source: inner, offset: open } of token.value.expressions) {
+            const codeStart = offset + open
+                , codeEnd = codeStart + inner.length;
 
             push(spans, 'template', source, at, codeStart - 2);
             push(spans, 'punctuation', source, codeStart - 2, codeStart);
@@ -270,17 +279,17 @@ if (typeof require === 'function' && typeof module === 'object') {
      * @return {Array<{ type: String, text: String, start: Number, end: Number }>} contiguous,
      *   in order, covering every character; `start`/`end` are 0-based offsets, `end` exclusive
      */
-    let highlight = (source) => {
-        let text = String(source ?? ''),
-            spans = [],
-            verbs = new Set([...text.matchAll(/\bdefine\s+([A-Z][A-Z0-9_]*)/g)].map(match => match[1]));
+    const highlight = (source) => {
+        let text = String(source ?? '')
+            , spans = []
+            , verbs = new Set([...text.matchAll(/\bdefine\s+([A-Z][A-Z0-9_]*)/g)].map(match => match[1]));
 
         try {
             scan(text, 0, text.length, verbs, spans);
         } catch {
             // A bug here must never reach an editor as an exception: fall back to one plain
             // span, still covering everything.
-            spans = (text.length? [{ type: 'invalid', text, start: 0, end: text.length }]: []);
+            spans = (text.length ? [{ type: 'invalid', text, start: 0, end: text.length }] : []);
         }
 
         return spans;
@@ -289,5 +298,5 @@ if (typeof require === 'function' && typeof module === 'object') {
     globalThis.TTV_DSL.highlighter = { highlight, HIGHLIGHT_TYPES };
 })();
 
-if (typeof module === 'object' && module?.exports)
+if(typeof module === 'object' && module?.exports)
     module.exports = globalThis.TTV_DSL;

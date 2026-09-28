@@ -1,13 +1,10 @@
 {
     "manifest_version": 3,
-
     "name": "TTV Tools",
     "description": "Adds extra features to Twitch",
-
-    "version": "5.35.3.3",
+    "version": "6.0",
     "minimum_chrome_version": "88",
     "homepage_url": "https://github.com/ephellon/twitch-tools",
-
     "icons": {
         "16": "16.png",
         "32": "32.png",
@@ -16,13 +13,11 @@
         "128": "128.png",
         "256": "256.png"
     },
-
     "content_scripts": [
         {
             "matches": [
                 "https://clips.twitch.tv/*"
             ],
-
             "all_frames": true,
             "run_at": "document_end",
             "js": [
@@ -31,15 +26,14 @@
                 "ext/resemble.js",
                 "ext/glyphs.js",
                 "core.js",
+                "clips-plugins.js",
                 "clips.js"
             ]
         },
-
         {
             "matches": [
                 "https://player.twitch.tv/*"
             ],
-
             "all_frames": true,
             "run_at": "document_end",
             "js": [
@@ -48,15 +42,14 @@
                 "ext/resemble.js",
                 "ext/glyphs.js",
                 "core.js",
+                "player-plugins.js",
                 "player.js"
             ]
         },
-
         {
             "matches": [
                 "https://www.twitch.tv/popout/*"
             ],
-
             "all_frames": true,
             "run_at": "document_end",
             "js": [
@@ -67,15 +60,23 @@
                 "ext/glyphs.js",
                 "ext/irc.js",
                 "core.js",
+                "dsl/errors.js",
+                "dsl/tokens.js",
+                "dsl/tokenizer.js",
+                "dsl/ast.js",
+                "dsl/parser.js",
+                "dsl/runtime.js",
+                "dsl/compiler.js",
+                "dsl/highlight.js",
+                "dsl/index.js",
+                "chat-plugins.js",
                 "chat.js"
             ]
         },
-
         {
             "matches": [
                 "https://www.twitch.tv/*"
             ],
-
             "all_frames": true,
             "run_at": "document_end",
             "js": [
@@ -86,7 +87,18 @@
                 "ext/glyphs.js",
                 "ext/irc.js",
                 "core.js",
+                "lib.js",
                 "tools.js",
+                "dsl/errors.js",
+                "dsl/tokens.js",
+                "dsl/tokenizer.js",
+                "dsl/ast.js",
+                "dsl/parser.js",
+                "dsl/runtime.js",
+                "dsl/compiler.js",
+                "dsl/highlight.js",
+                "dsl/index.js",
+                "chat-plugins.js",
                 "chat.js",
                 "ext/tracking.js",
                 "ext/face.js",
@@ -94,23 +106,21 @@
                 "ext/mouth.js"
             ],
             "css": [
+                "tokens.css",
                 "core.css",
                 "extras.css"
             ]
         }
     ],
-
-	"background": {
-		"service_worker": "background.js",
+    "background": {
+        "service_worker": "background.js",
         "type": "module"
-	},
-
+    },
     "options_page": "settings.html",
     "options_ui": {
         "page": "settings.html",
         "open_in_tab": true
     },
-
     "action": {
         "default_icon": {
             "16": "16.png",
@@ -121,27 +131,33 @@
         "default_title": "TTV Tools",
         "default_popup": "settings.html?popup=1"
     },
-
     "host_permissions": [
         "https://player.twitch.tv/*",
         "https://www.twitch.tv/*",
         "https://twitch.tv/*"
     ],
-
     "permissions": [
         "storage",
         "alarms",
         "tabs"
     ],
-
-    "web_accessible_resources": [{
-        "resources": ["*.png", "*.svg", "aud/*.*", "ext/*.*", "font/*.*", "*.css"],
-        "matches": [
-            "https://player.twitch.tv/*",
-            "https://clips.twitch.tv/*",
-            "https://www.twitch.tv/*",
-            "https://twitch.tv/*"
-        ],
-        "use_dynamic_url": false
-    }]
+    "web_accessible_resources": [
+        {
+            "resources": [
+                "*.png",
+                "*.svg",
+                "aud/*.*",
+                "ext/*.*",
+                "font/*.*",
+                "*.css"
+            ],
+            "matches": [
+                "https://player.twitch.tv/*",
+                "https://clips.twitch.tv/*",
+                "https://www.twitch.tv/*",
+                "https://twitch.tv/*"
+            ],
+            "use_dynamic_url": false
+        }
+    ]
 }

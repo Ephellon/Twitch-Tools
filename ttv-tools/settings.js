@@ -24,7 +24,7 @@
  * @return {string<URL>}        The modified URL to the resource
  */
 function getURL(path = '') {
-    let url = parseURL(top.location);
+    const url = parseURL(top.location);
 
     return url.origin + path.replace(/^(?!\/)/, '/');
 }
@@ -33,12 +33,13 @@ function getURL(path = '') {
 (async function(version) {
     // Handle storage change
     if(compareVersions(`${ version } ≥ 5.32.4`)) {
-        let v5_32_4 = await Storage.get('v5_32_4');
+        const v5_32_4 = await Storage.get('v5_32_4');
+
         Storage_change: if(parseBool(v5_32_4) == false)
             await alert.silent(`There is a new storage system in place, please press OK to proceed. All settings will be transferred.`).then(async() => {
-                let sync = await Container.storage.sync.get();
+                const sync = await Container.storage.sync.get();
 
-                for(let key in sync)
+                for(const key in sync)
                     Container.storage.local.set({ [key]: sync[key] });
                 Storage.set({ v5_32_4: true });
             });
@@ -46,17 +47,17 @@ function getURL(path = '') {
 
     // Convert settings
     if(compareVersions(`${ version } = 5.32.5`)) {
-        let opt = 'auto_chat__vip';
-        let val = (await Storage.get(opt))?.[opt];
+        const opt = 'auto_chat__vip';
+        const val = (await Storage.get(opt))?.[opt];
 
-        Storage.set({ [opt]: val === true? 'vip': val === false? null: val });
+        Storage.set({ [opt]: val === true ? 'vip' : val === false ? null : val });
     }
 
     // Convert "Lurking Message" to "Lurking Rules"
     if(compareVersions(`${ version } ≥ 5.32.10`)) {
-        let opt = 'auto_chat__lurking_message';
-        let nxt = 'lurking_rules';
-        let val = (await Storage.get(nxt))?.[nxt] ?? (await Storage.get(opt))?.[opt];
+        const opt = 'auto_chat__lurking_message';
+        const nxt = 'lurking_rules';
+        const val = (await Storage.get(nxt))?.[nxt] ?? (await Storage.get(opt))?.[opt];
 
         Storage.set({ [nxt]: val });
     }
@@ -68,242 +69,8 @@ const PRIVATE_OBJECT_CONFIGURATION = Object.freeze({
     configurable: false,
 });
 
-let // These are option names. Anything else will be removed
-    usable_settings = [
-        /* Automation */
-        // Away Mode
-        'away_mode',
-            'away_mode__hide_chat',
-            'away_mode__volume_control',
-            'away_mode__volume',
-            'away_mode_schedule',
-        // Auto-claim Bonuses
-        'auto_claim_bonuses',
-        // Claim Drops
-        'claim_drops',
-            'claim_drops__interval',
-        // Auto-Follow
-        'auto_follow_none',
-        'auto_follow_raids',
-        'auto_follow_time',
-            'auto_follow_time_minutes',
-        'auto_follow_all',
-        'live_reminders',
-        'keep_live_reminders',
-        // Keep Watching
-        'stay_live',
-            'stay_live__ignore_channel_reruns',
-            // Up Next Preference
-            'next_channel_preference',
-        // First in Line
-        'first_in_line_none',
-        'first_in_line',
-            'first_in_line_time_minutes',
-        'first_in_line_plus',
-            'first_in_line_plus_time_minutes',
-        'first_in_line_all',
-            'first_in_line_all_time_minutes',
-        'first_in_line_now',
-        'up_next__one_instance',
-        // Greedy Raiding
-        'greedy_raiding',
-            'greedy_raiding_leave_before',
-        // Parse Commands
-        'parse_commands',
-            'parse_commands__create_links',
-        // Prevent Raiding
-        'prevent_raiding',
-        // Prevent Hosting
-        'prevent_hosting',
-        // Prime Loot
-        'claim_loot',
-        // Prime Subscription
-        'claim_prime',
-            'claim_prime__max_claims',
-        // Kill Extensions
-        'kill_extensions',
-        // Auto Accept Mature Content
-        'auto_accept_mature',
-        // Auto-Focus*
-        'auto_focus',
-            'auto_focus_detection_threshold',
-            'auto_focus_poll_interval',
-            'auto_focus_poll_image_type',
-        // Time Zones
-            'time_zones',
-        // View Mode
-        'view_mode',
-
-        /* Chat & Messaging */
-        // Highlight Mentions
-        'highlight_mentions',
-            // Extra
-            'highlight_mentions_extra',
-        // Show Pop-ups
-        'highlight_mentions_popup',
-        // Highlight phrases
-        'highlight_phrases',
-            // phrase Rules
-            'phrase_rules',
-        // Filter Messages
-        'filter_messages',
-            'filter_rules',
-            'filter_messages__bullets_coin',
-            'filter_messages__bullets_raid',
-            'filter_messages__bullets_subs',
-            'filter_messages__bullets_note',
-            'filter_messages__bullets_paid',
-        // BetterTTV Emotes
-        'bttv_emotes',
-            'auto_load_bttv_emotes',
-            'bttv_emotes_maximum',
-            'bttv_emotes_location',
-            'bttv_emotes_channel',
-            'bttv_emotes_extras',
-        // TODO: Chat Commands
-        // 'chat_commands',
-        //     'commands',
-        // Convert Emotes*
-        'convert_emotes',
-        // Link Maker (chat)
-        'link_maker__chat',
-        // Auto-Chat (VIP)
-        'auto_chat__vip',
-            'auto_chat__mentions',
-            'auto_chat__lurking_message',   // ↓ Replaced: v5.32.10
-            'lurking_rules',                // ↑
-            'auto_chat__wait_time',
-        // Native Twitch Replies
-        'native_twitch_reply',
-        // Notification Sounds
-        'mention_audio',
-        'phrase_audio',
-        'whisper_audio',
-        'whisper_audio_sound',
-        // Prevent spam
-        'prevent_spam',
-            'prevent_spam_look_back',
-            'prevent_spam_minimum_length',
-            'prevent_spam_ignore_under',
-        // Accessibility
-            // Chat
-            'simplify_chat',
-                'simplify_chat_monotone_usernames',
-                'simplify_chat_font',
-                'simplify_page_font',
-                // 'simplify_chat_reverse_emotes',
-            // Display
-            'simplify_look_auto_marquee',
-            'simplify_look_normalize_text',
-        // Recover chat
-        'recover_chat',
-        // Recover messages
-        'recover_messages',
-        // Soft Unban
-        'soft_unban',
-            'soft_unban_keep_bots',
-            'soft_unban_prevent_clipping',
-            'soft_unban_fade_old_messages',
-
-        /* Currencies */
-        // Convert Bits
-        'convert_bits',
-        // Channel Points Receipt
-        'channelpoints_receipt_display',
-        // Rewards Calculator
-        'rewards_calculator',
-
-        /* Customization */
-        // Away Mode Button Placement
-        'away_mode_placement',
-        // Block Banners
-        'block_banners',
-        // Context Menu Override
-        'context_menu_override',
-        // Hide Blank Ads
-        'hide_blank_ads',
-        // Watch Time Text Placement
-        'watch_time_placement',
-        // Points Collected Text Placement
-        'points_receipt_placement',
-        // Point Watcher Text placement
-        'point_watcher_placement',
-        // Stream Preview
-        'stream_preview',
-            'stream_preview_scale',
-            'stream_preview_sound',
-            'stream_preview_position',
-        // Accent Color
-        'accent_color',
-
-        /* Data-Collection Features */
-        // Fine Details
-        'fine_details',
-
-        // Store integration
-        'store_integration',
-            'store_integration__steam',
-            'store_integration__playstation',
-            'store_integration__xbox',
-            'store_integration__nintendo',
-            'store_integration__epic',
-
-        // DVR Settings
-        'video_clips__file_type',
-        'video_clips__quality',
-        'video_clips__length',
-        'video_clips__dvr',
-        'video_clips__trophy',
-            'video_clips__trophy_length',
-        'record_foreign_rewards',
-
-        /* Error Recovery */
-        // Recover Video
-        'recover_video',
-        // Recover Stream
-        'recover_stream',
-        // RAM Alarms
-        'ram_onhigh',
-        'ram_onmedium',
-        'ram_onlow',
-        'ram_timescale',
-        // Recover Ads
-        'recover_ads',
-        // Recover Frames
-        'recover_frames',
-            'recover_frames__allow_embed',
-        // Recover Page
-        'recover_pages',
-        // Keep Pop-out
-        'keep_popout',
-
-        /* Developer Options */
-        // Log messages
-        'display_in_console',
-            'display_in_console__log',
-            'display_in_console__warn',
-            'display_in_console__error',
-            'display_in_console__remark',
-            'display_in_console__notice',
-            'display_in_console__ignore',
-        // Display stats
-        'show_stats',
-        // Enable emperimental features
-        'experimental_mode',
-        // Extra Keyboard Shortcuts
-        'extra_keyboard_shortcuts',
-        // Low Data Mode
-        'low_data_mode',
-        // User Defined Settings
-        'user_language_preference',
-        // Automatic Tab Reloads
-        'auto_tab_reloads',
-
-        /* "Hidden" options */
-        'sync-token',
-        'clientID',
-        'oauthToken',
-    ];
+// The saved settings, declared with each plugin (src/settings/layout.js). Anything else will be removed
+let usable_settings = SETTINGS_IDS;
 
 /**
  * An over-arching date-picker schema.
@@ -335,67 +102,73 @@ class DatePicker {
      * @return {PickedDate}                             A promised array containing the user's preferred schedule options
      */
     constructor(defaultDate, defaultStatus = false, defaultTime = null, defaultDuration = 1) {
-        let date = +new Date(defaultDate ?? +new Date),
-            h = 60 * 60 * 1000,
-            d = 24 * h,
-            f = furnish;
+        const date = +new Date(defaultDate ?? +new Date)
+            , h = 60 * 60 * 1000
+            , d = 24 * h
+            , f = furnish;
 
-        let locale = SETTINGS?.user_language_preference ?? 'en';
-        let preExisting = defined(defaultDate) && (defined(defaultTime) || defaultDuration > 1);
+        const locale = SETTINGS?.user_language_preference ?? 'en';
+        const preExisting = defined(defaultDate) && (defined(defaultTime) || defaultDuration > 1);
 
-        let now = new Date(date.floorToNearest(h)),
-            timezone = (now + '').replace(/[^]+\(([^]+?)\)[^]*/, '$1').replace(/(?<=^|\s)(.)[^\s]*/g, '$1').replace(/\s+/g, ''),
-            timeOptions = new Array(24).fill(0).map((v, i, a) => +now + (i * h)).map(d => new Date(d).getHours()),
-            [timeDefault] = [defaultTime, ...timeOptions].filter(defined),
-            [AM, PM] = [11, 23].map(h => new Date(`1970-01-01T${ h }:00:00Z`).toLocaleTimeString(locale).toLocaleUpperCase().replace(/(?:.+?)(\D*)$/, '$1').trim()),
-            startingHour = now.getHours(),
-            meridiem = (startingHour < 12? AM: PM);
+        const now = new Date(date.floorToNearest(h))
+            , timezone = (now + '').replace(/[^]+\(([^]+?)\)[^]*/, '$1').replace(/(?<=^|\s)(.)[^\s]*/g, '$1').replace(/\s+/g, '')
+            , timeOptions = new Array(24).fill(0).map((v, i, a) => +now + (i * h)).map(d => new Date(d).getHours())
+            , [timeDefault] = [defaultTime, ...timeOptions].filter(defined)
+            , [AM, PM] = [11, 23].map(h => new Date(`1970-01-01T${ h }:00:00Z`).toLocaleTimeString(locale).toLocaleUpperCase().replace(/(?:.+?)(\D*)$/, '$1').trim())
+            , startingHour = now.getHours()
+            , meridiem = (startingHour < 12 ? AM : PM);
 
         let durationOptions = new Array(23).fill(0).map((v, i, a) => i + 1);
 
         durationOptions = [...durationOptions, ...new Array(7).fill(0).map((v, i, a) => 24 * (i + 1))];
 
-        let dayOptions = new Array(7).fill(0).map((v, i, a) => i),
-            dayDefault = now.getDay();
+        const dayOptions = new Array(7).fill(0).map((v, i, a) => i)
+            , dayDefault = now.getDay();
 
-        let statusOptions = new Array(2).fill(0).map((v, i, a) => !!i);
+        const statusOptions = new Array(2).fill(0).map((v, i, a) => !!i);
 
-        let to12H = (time, symbols = [AM, PM]) => [(time == 0? 12: time > 12? time - 12: time), symbols[+(time > 11)]].join(' ');
+        /**
+         * Converts a 24-hour time value to a 12-hour format string.
+         * @param {number} time - The hour in 24-hour format.
+         * @param {string[]} [symbols=[AM, PM]] - The symbols used for AM and PM.
+         * @returns {string} The formatted 12-hour time.
+         */
+        const to12H = (time, symbols = [AM, PM]) => [(time == 0 ? 12 : time > 12 ? time - 12 : time), symbols[+(time > 11)]].join(' ');
 
-        let daySelect = f(`select.edit`, { type: 'days', value: dayDefault, multiple: true, selected: 1, onchange: ({ currentTarget }) => currentTarget.setAttribute('selected', currentTarget.selectedOptions.length) },
-                ...dayOptions.map(value => f(`option${ (value == dayDefault? '[selected]': '') }`, { value, 'tr-id': 'day-of-week' }, DatePicker.weekdays[value]))
-            ),
+        const daySelect = f(`select.edit`, { type: 'days', value: dayDefault, multiple: true, selected: 1, onchange: ({ currentTarget }) => currentTarget.setAttribute('selected', currentTarget.selectedOptions.length) },
+                ...dayOptions.map(value => f(`option${ (value == dayDefault ? '[selected]' : '') }`, { value, 'tr-id': 'day-of-week' }, DatePicker.weekdays[value]))
+            )
 
-            statusSelect = f(`select.edit`, { type: 'status', value: defaultStatus, 'tr-id': 'toggle' },
-                ...statusOptions.map(value => f(`option${ (value == defaultStatus? '[selected]': '') }`, { value }, 'off on'.split(' ')[+value]))
-            ),
+            , statusSelect = f(`select.edit`, { type: 'status', value: defaultStatus, 'tr-id': 'toggle' },
+                ...statusOptions.map(value => f(`option${ (value == defaultStatus ? '[selected]' : '') }`, { value }, 'off on'.split(' ')[+value]))
+            )
 
-            timeSelect = f(`select.edit`, { type: 'time', value: timeDefault },
+            , timeSelect = f(`select.edit`, { type: 'time', value: timeDefault },
                 ...timeOptions.map(value =>
-                    f(`option${ (value == timeDefault? '[selected]': '') }`, { value },
+                    f(`option${ (value == timeDefault ? '[selected]' : '') }`, { value },
                         (
-                            AM.length && PM.length?
+                            AM.length && PM.length
                                 // Uses meridiem indicators
-                                to12H(value, (value % 12? [AM, PM]: [' \u{1f31a}', ' \u{1f31e}'])):
-                            // Uses 24H format only
-                            value + (value % 12? '': [' \u{1f31a}', ' \u{1f31e}'][+(value > 11)])
+                                ? to12H(value, (value % 12 ? [AM, PM] : [' \u{1f31a}', ' \u{1f31e}']))
+                                // Uses 24H format only
+                                : value + (value % 12 ? '' : [' \u{1f31a}', ' \u{1f31e}'][+(value > 11)])
                         )
                     )
                 )
-            ),
+            )
 
-            durationSelect = f(`select.edit`, { type: 'duration', value: defaultDuration },
+            , durationSelect = f(`select.edit`, { type: 'duration', value: defaultDuration },
                 ...durationOptions.map(value => {
-                    let timeString = toTimeString(value * h),
-                        timeType = timeString.replace(/[^a-z]|s$/ig, '').replace(/ie$/i, 'y');
+                    const timeString = toTimeString(value * h)
+                        , timeType = timeString.replace(/[^a-z]|s$/ig, '').replace(/ie$/i, 'y');
 
-                    return f(`option${ (value == defaultDuration? '[selected]': '') }`, { value, 'tr-id': timeType }, timeString);
+                    return f(`option${ (value == defaultDuration ? '[selected]' : '') }`, { value, 'tr-id': timeType }, timeString);
                 })
             );
 
         daySelect.value = dayDefault;
 
-        let container =
+        const container =
             f(`.tt-modal-wrapper.context-root`).with(
                 f(`.tt-modal-body`).with(
                     f(`.tt-modal-container`).with(
@@ -450,20 +223,21 @@ class DatePicker {
                                         'tr-id': 'ok',
 
                                         onmousedown: event => {
-                                            let { currentTarget } = event;
+                                            const { currentTarget } = event;
 
-                                            let values = $.all('select[type]', currentTarget.closest('.context-body')).map(select => [select.getAttribute('type'), (select.multiple? [...select.selectedOptions].map(option => option.value): select.value)]);
+                                            const values = $.all('select[type]', currentTarget.closest('.context-body')).map(select => [select.getAttribute('type'), (select.multiple ? [...select.selectedOptions].map(option => option.value) : select.value)]);
 
-                                            let object = {};
-                                            for(let [key, value] of values)
+                                            const object = {};
+
+                                            for(const [key, value] of values)
                                                 object[key] = value;
 
                                             DatePicker.values.push(object);
                                         },
 
                                         onmouseup: event => {
-                                            let { currentTarget } = event,
-                                                addNew = $('.add-more', currentTarget.closest(':not(button)')).checked;
+                                            let { currentTarget } = event
+                                                , addNew = $('.add-more', currentTarget.closest(':not(button)')).checked;
 
                                             if(addNew)
                                                 new DatePicker();
@@ -481,7 +255,7 @@ class DatePicker {
                                         onmousedown: event => DatePicker.values.push(null),
 
                                         onmouseup: event => {
-                                            let { currentTarget } = event;
+                                            const { currentTarget } = event;
 
                                             $('#date-picker-value').value = JSON.stringify(DatePicker.values.filter(defined));
 
@@ -502,7 +276,10 @@ class DatePicker {
 
         document.body.append(container);
 
-        return when.defined(() => JSON.parse($('#date-picker-value')?.value || 'null')).then(values => { DatePicker.values = []; return values });
+        return when.defined(() => JSON.parse($('#date-picker-value')?.value || 'null')).then(values => {
+            DatePicker.values = [];
+            return values;
+        });
     }
 }
 
@@ -537,11 +314,11 @@ class CommandMaker {
      * @property {number} admin         <strong>1000</strong> &rarr; <em>Administrator</em>, <em>Super Moderator</em>
      * @property {number} owner         <strong>1500</strong> &rarr; <em>Broadcaster</em>, <em>Owner</em>
      */
-    static levels = [['Everyone',100],['Follower',250],['Subscriber',300],['VIP',400],['Moderator',500],['Administrator',1000],['Owner',1500]].map(([who, authority]) => [new String(who), authority]).map(([who, authority]) =>
+    static levels = [['Everyone', 100], ['Follower', 250], ['Subscriber', 300], ['VIP', 400], ['Moderator', 500], ['Administrator', 1000], ['Owner', 1500]].map(([who, authority]) => [new String(who), authority]).map(([who, authority]) =>
         CommandMaker[who.toLowerCase()] = Object.defineProperties(who, {
             find: {
                 value(value) {
-                    let levels = {
+                    const levels = {
                         owner: 1500,
                         broadcaster: 1500,
                         administrator: 1000,
@@ -554,7 +331,7 @@ class CommandMaker {
                         anyone: 100,
                     };
 
-                    for(let level in levels)
+                    for(const level in levels)
                         if(level.startsWith(value?.toLowerCase?.()))
                             return levels[level];
 
@@ -587,21 +364,21 @@ class CommandMaker {
      * @return {Promise<array~Command>}                                                     A promised array containing commands
      */
     constructor(defaultName, defaultStatus = true, defaultLevel = CommandMaker.everyone, defaultCooldown = { user: 10, global: 3 }, defaultType = 'reply') {
-        let f = furnish;
-        let locale = SETTINGS?.user_language_preference ?? 'en';
-        let preExisting = defaultName?.length > 0;
+        const f = furnish;
+        const locale = SETTINGS?.user_language_preference ?? 'en';
+        const preExisting = defaultName?.length > 0;
 
-        let who = f('select.edit#authority', {
-            value: defaultLevel,
-            style: `background-image:url("${ CommandMaker.badges.everyone }")`,
+        const who = f('select.edit#authority', {
+                value: defaultLevel,
+                style: `background-image:url("${ CommandMaker.badges.everyone }")`,
 
-            onchange({ target }) {
-                let [selected] = target.selectedOptions,
-                    who = selected.getAttribute('name');
+                onchange({ target }) {
+                    const [selected] = target.selectedOptions
+                        , who = selected.getAttribute('name');
 
-                target.modStyle(`background-image:url("${ CommandMaker.badges[who] }")`);
-            },
-        }).with(
+                    target.modStyle(`background-image:url("${ CommandMaker.badges[who] }")`);
+                },
+            }).with(
             ...CommandMaker.levels.map(who =>
                 f(`option[value=${ who.level }][name=${ who.toLowerCase() }]`).with(
                     who.replace(/[^aeiou]$/i, '$&s')
@@ -609,24 +386,24 @@ class CommandMaker {
                         .replace(/^(owner)s$/i, 'Only you ($1)')
                 )
             )
-        ),
-            type = f('select.edit#type', {
+            )
+            , type = f('select.edit#type', {
                 value: defaultType,
 
                 onchange({ target }) {
-                    let [selected] = target.selectedOptions,
-                        type = selected.value;
+                    const [selected] = target.selectedOptions
+                        , type = selected.value;
                 },
             }).with(
                 f('option[value=reply]').with('Individual reply'), // An individual response
                 f('option[value=announcement]').with('General reply (announcement)'), // A general response
                 f('option[value=recurring]').with('A recurring announcement'), // A recurring-notice
-            ),
-            each = f('span[fix-unit=sec]').with(f(`input#cooldown.edit`, { type: 'number', min: 0, max: 2_592_000, value: 10 }));
+            )
+            , each = f('span[fix-unit=sec]').with(f(`input#cooldown.edit`, { type: 'number', min: 0, max: 2_592_000, value: 10 }));
 
-        let conversionTable = [3600, 28800, 86400, 6048001, 2592000].map(s => `${ toTimeString(s * 1000) } = ${ comify(s) }`).join(' • ');
+        const conversionTable = [3600, 28800, 86400, 6048001, 2592000].map(s => `${ toTimeString(s * 1000) } = ${ comify(s) }`).join(' • ');
 
-        let container =
+        const container =
             f(`.tt-modal-wrapper.context-root`).with(
                 f(`.tt-modal-body`).with(
                     f(`.tt-modal-container`).with(
@@ -643,7 +420,7 @@ class CommandMaker {
                                     f('.title').with('Metadata'),
                                     f('.summary').with(
                                         f.h4('Name'),
-                                        f('span[pre-unit=!]').with(f(`input#command`, { placeholder: 'Command name(s)', pattern: '.{1,100}' })),
+                                        f('span[pre-unit=!]').with(f(`input#command`, { placeholder: "Command name(s)", pattern: '.{1,100}' })),
                                         f('.subtitle', {
                                             style: 'margin-bottom: .5rem',
                                             innerHTML: `This is what users type into chat to activate the command. Use a comma (<code>,</code>) to separate names.`
@@ -657,7 +434,7 @@ class CommandMaker {
                                         }),
 
                                         f.h4('Response'),
-                                        f(`input#reply`, { placeholder: 'Reply...', type: 'text' }),
+                                        f(`input#reply`, { placeholder: "Reply...", type: 'text' }),
                                         f('.subtitle', {
                                             style: 'margin-bottom: .5rem',
                                             innerHTML: `This is what will be replied to chat.`
@@ -702,20 +479,21 @@ class CommandMaker {
                                         'tr-id': 'ok',
 
                                         onmousedown: event => {
-                                            let { currentTarget } = event;
+                                            const { currentTarget } = event;
 
-                                            let values = $.all('[id]', currentTarget.closest('.context-body')).map(element => [element.getAttribute('id'), (element.multiple? [...element.selectedOptions].map(option => option.value): element.value)]);
+                                            const values = $.all('[id]', currentTarget.closest('.context-body')).map(element => [element.getAttribute('id'), (element.multiple ? [...element.selectedOptions].map(option => option.value) : element.value)]);
 
-                                            let object = {};
-                                            for(let [key, value] of values)
+                                            const object = {};
+
+                                            for(const [key, value] of values)
                                                 object[key] = value;
 
                                             CommandMaker.values.push(object);
                                         },
 
                                         onmouseup: event => {
-                                            let { currentTarget } = event,
-                                                addNew = $('.add-more', currentTarget.closest(':not(button)')).checked;
+                                            let { currentTarget } = event
+                                                , addNew = $('.add-more', currentTarget.closest(':not(button)')).checked;
 
                                             // TODO - handle multiple names (,) delimeted
                                             if(addNew)
@@ -734,7 +512,7 @@ class CommandMaker {
                                         onmousedown: event => CommandMaker.values.push(null),
 
                                         onmouseup: event => {
-                                            let { currentTarget } = event;
+                                            const { currentTarget } = event;
 
                                             $('.command-maker-value').value = JSON.stringify(CommandMaker.values.filter(defined));
 
@@ -755,7 +533,10 @@ class CommandMaker {
 
         document.body.append(container);
 
-        return when.defined(() => JSON.parse($('.command-maker-value')?.value || 'null')).then(values => { CommandMaker.values = []; return values });
+        return when.defined(() => JSON.parse($('.command-maker-value')?.value || 'null')).then(values => {
+            CommandMaker.values = [];
+            return values;
+        });
     }
 }
 
@@ -776,11 +557,19 @@ let Glyphs = {
     chrome: '<svg width="100%" height="100%" version="1.1" viewbox="0 0 190 190" x="0px" y="0px"><circle fill="#FFF" cx="85.314" cy="85.713" r="83.805"/><path fill-opacity=".1" d="M138.644 100.95c0-29.454-23.877-53.331-53.33-53.331-29.454 0-53.331 23.877-53.331 53.331H47.22c0-21.039 17.055-38.094 38.093-38.094s38.093 17.055 38.093 38.094"/><circle fill-opacity=".1" cx="89.123" cy="96.379" r="28.951"/><linearGradient id="a" gradientUnits="userSpaceOnUse" x1="-149.309" y1="-72.211" x2="-149.309" y2="-71.45" gradientTransform="matrix(82 0 0 82 12328.615 5975.868)"><stop offset="0" stop-color="#81b4e0"/><stop offset="1" stop-color="#0c5a94"/></linearGradient><circle fill="url(#a)" cx="85.314" cy="85.712" r="31.236"/><linearGradient id="b" gradientUnits="userSpaceOnUse" x1="-114.66" y1="591.553" x2="-114.66" y2="660.884" gradientTransform="translate(202.64 -591.17)"><stop offset="0" stop-color="#f06b59"/><stop offset="1" stop-color="#df2227"/></linearGradient><path fill="url(#b)" d="M161.5 47.619C140.525 5.419 89.312-11.788 47.111 9.186a85.315 85.315 0 0 0-32.65 28.529l34.284 59.426c-6.313-20.068 4.837-41.456 24.905-47.77a38.128 38.128 0 0 1 10.902-1.752"/><linearGradient id="c" gradientUnits="userSpaceOnUse" x1="-181.879" y1="737.534" x2="-146.834" y2="679.634" gradientTransform="translate(202.64 -591.17)"><stop offset="0" stop-color="#388b41"/><stop offset="1" stop-color="#4cb749"/></linearGradient><path fill="url(#c)" d="M14.461 37.716c-26.24 39.145-15.78 92.148 23.363 118.39a85.33 85.33 0 0 0 40.633 14.175l35.809-60.948c-13.39 16.229-37.397 18.529-53.625 5.141a38.096 38.096 0 0 1-11.896-17.33"/><linearGradient id="d" gradientUnits="userSpaceOnUse" x1="-64.479" y1="743.693" x2="-101.81" y2="653.794" gradientTransform="translate(202.64 -591.17)"><stop offset="0" stop-color="#e4b022"/><stop offset=".3" stop-color="#fcd209"/></linearGradient><path fill="url(#d)" d="M78.457 170.28c46.991 3.552 87.965-31.662 91.519-78.653a85.312 85.312 0 0 0-8.477-44.007H84.552c21.036.097 38.014 17.23 37.917 38.269a38.099 38.099 0 0 1-8.205 23.443"/><linearGradient id="e" gradientUnits="userSpaceOnUse" x1="-170.276" y1="686.026" x2="-170.276" y2="625.078" gradientTransform="translate(202.64 -591.17)"><stop offset="0" stop-opacity=".15"/><stop offset=".3" stop-opacity=".06"/><stop offset="1" stop-opacity=".03"/></linearGradient><path fill="url(#e)" d="M14.461 37.716l34.284 59.426a38.093 38.093 0 0 1 1.523-25.904L15.984 35.43"/><linearGradient id="f" gradientUnits="userSpaceOnUse" x1="-86.149" y1="705.707" x2="-128.05" y2="748.37" gradientTransform="translate(202.64 -591.17)"><stop offset="0" stop-opacity=".15"/><stop offset=".3" stop-opacity=".06"/><stop offset="1" stop-opacity=".03"/></linearGradient><path fill="url(#f)" d="M78.457 170.28l35.809-60.948a38.105 38.105 0 0 1-22.095 12.951L76.933 170.28"/><linearGradient id="chrome-logo-gradient" gradientUnits="userSpaceOnUse" x1="-86.757" y1="717.981" x2="-80.662" y2="657.797" gradientTransform="translate(202.64 -591.17)"><stop offset="0" stop-opacity=".15"/><stop offset=".3" stop-opacity=".06"/><stop offset="1" stop-opacity=".03"/></linearGradient><path fill="url(#chrome-logo-gradient)" d="M161.5 47.619H84.552a38.094 38.094 0 0 1 29.712 14.476l48.759-12.189"/></svg>',
 };
 
-let SETTINGS,
-    TRANSLATED = false,
-    INITIAL_LOAD = true;
-let SUPPORTED_LANGUAGES = ["bg","cs","da","de","el","es","fi","fr","hu","it","ja","ko","nl","no","pl","ro","ru","sk","sv","th","tr","vi"];
+let SETTINGS
+    , TRANSLATED = false
+    , INITIAL_LOAD = true;
 
+let SUPPORTED_LANGUAGES = ['bg', 'cs', 'da', 'de', 'el', 'es', 'fi', 'fr', 'hu', 'it', 'ja', 'ko', 'nl', 'no', 'pl', 'ro', 'ru', 'sk', 'sv', 'th', 'tr', 'vi'];
+
+/**
+ * Regenerates the UI elements for a set of filtering or phrase rules.
+ * @param {string} rules - A delimited string of rules.
+ * @param {string} ruleType - The category of the rules.
+ * @param {string} [delimeter=','] - The character used to separate rules.
+ * @param {string} [scopes='all'] - The allowed scopes for rule identification.
+ */
 function RedoRuleElements(rules, ruleType, delimeter, scopes) {
     if(nullish(rules))
         return;
@@ -794,29 +583,29 @@ function RedoRuleElements(rules, ruleType, delimeter, scopes) {
         scopes = 'channel user badge emote text regexp';
     scopes = scopes.split(' ');
 
-    for(let rule of rules) {
+    for(const rule of rules) {
         if(!rule?.length)
             continue;
 
-        let E = document.createElement('button'),
-            R = document.createElement('button');
+        const E = document.createElement('button')
+            , R = document.createElement('button');
 
-        let ruleID = UUID.from(rule).value;
+        const ruleID = UUID.from(rule).value;
 
         let itemType;
 
         if(scopes.contains('channel') && /^\/[\w+\-]+/.test(rule)) {
-            itemType = 'channel';
+            itemType = 'channel'
         } else if(scopes.contains('user') && /^@[\w+\-]+/.test(rule)) {
-            itemType = 'user';
+            itemType = 'user'
         } else if(scopes.contains('badge') && /^<[^>]+>/.test(rule)) {
-            itemType = 'badge';
+            itemType = 'badge'
         } else if(scopes.contains('emote') && /^:[\w\-]+:$/.test(rule)) {
-            itemType = 'emote';
+            itemType = 'emote'
         } else if(scopes.contains('text') && /^[\w]+$/.test(rule)) {
-            itemType = 'text';
+            itemType = 'text'
         } else if(scopes.contains('regexp')) {
-            itemType ??= 'regexp';
+            itemType ??= 'regexp'
         }
 
         itemType ??= 'text';
@@ -830,14 +619,15 @@ function RedoRuleElements(rules, ruleType, delimeter, scopes) {
         E.setAttribute(`${ ruleType }-id`, ruleID);
 
         E.onclick = event => {
-            let { currentTarget } = event,
-                { textContent } = currentTarget,
-                input = $(`#${ ruleType }_rules-input`);
+            let { currentTarget } = event
+                , { textContent } = currentTarget
+                , input = $(`#${ ruleType }_rules-input`);
 
             input.value = [...input.value.split(delimeter), textContent].filter(v => v?.trim()?.length).join(delimeter);
 
             currentTarget.remove();
         };
+
         E.setAttribute('up-tooltip', `Edit rule`);
         E.setAttribute('tr-skip', true);
         E.append(R);
@@ -848,33 +638,44 @@ function RedoRuleElements(rules, ruleType, delimeter, scopes) {
         R.classList.add('remove');
 
         R.onclick = event => {
-            let { currentTarget } = event,
-                { id } = currentTarget;
+            let { currentTarget } = event
+                , { id } = currentTarget;
 
             $(`[${ ruleType }-id="${ id }"]`)?.remove();
 
             event.stopPropagation();
         };
+
         R.setAttribute('up-tooltip', `Remove rule`);
 
         $(`#${ ruleType }_rules [${ ruleType }-type="${ itemType }"i]`).setAttribute('not-empty', true);
         $(`#${ ruleType }_rules [${ ruleType }-type="${ itemType }"i]`)?.append(E);
-        $(`#${ ruleType }_rules-input`).value = "";
+        $(`#${ ruleType }_rules-input`).value = '';
     }
 }
 
+/**
+ * Regenerates the UI elements for a set of scheduled times.
+ * @param {string} schedules - A JSON string containing schedule data.
+ * @param {string} scheduleType - The category of the schedule.
+ */
 function RedoTimeElements(schedules, scheduleType) {
     if(!schedules?.length)
         return;
 
     schedules = JSON.parse(schedules);
 
-    for(let schedule of schedules) {
-        let { days, time, duration, status } = schedule;
+    for(const schedule of schedules) {
+        const { days, time, duration, status } = schedule;
 
         // Add buttons per day
         if(defined(days))
-            for(let day of days)
+            for(const day of days)
+                /**
+                 * Creates and appends a UI element for a single scheduled time slot.
+                 * @param {Object} self - The schedule details containing day, time, duration, and status.
+                 * @param {string} scheduleType - The category of the schedule.
+                 */
                 CreateTimeElement(({ day, time, duration, status }), scheduleType);
         else
             CreateTimeElement(schedule, scheduleType);
@@ -882,44 +683,45 @@ function RedoTimeElements(schedules, scheduleType) {
 }
 
 function CreateTimeElement(self, scheduleType) {
-    let { day, time, duration, status } = self,
-        scheduleID = UUID.from(self).value;
+    let { day, time, duration, status } = self
+        , scheduleID = UUID.from(self).value;
 
     if($.defined(`#${ scheduleType }_schedule [day="${ day }"][time="${ time }"]`))
         return;
 
-    let E = document.createElement('button'),
-        R = document.createElement('button');
+    const E = document.createElement('button')
+        , R = document.createElement('button');
 
     // "Edit" button
-    E.innerHTML = `<code fill>${ encodeHTML(`${ ['\u{1f534}','\u{1f7e2}'][+parseBool(status)] } ${ time }:00 + ${ toTimeString(duration * 3_600_000, '?hours_h') }`) }</code>`;
+    E.innerHTML = `<code fill>${ encodeHTML(`${ ['\u{1f534}', '\u{1f7e2}'][+parseBool(status)] } ${ time }:00 + ${ toTimeString(duration * 3_600_000, '?hours_h') }`) }</code>`;
     E.classList.add('edit');
     E.setAttribute(`${ scheduleType }-id`, scheduleID);
 
-    for(let key in self)
+    for(const key in self)
         E.setAttribute(key, self[key]);
 
     E.onclick = event => {
-        let { currentTarget } = event;
+        const { currentTarget } = event;
 
-        let day = parseInt(currentTarget.getAttribute('day')),
-            time = parseInt(currentTarget.getAttribute('time')),
-            duration = parseInt(currentTarget.getAttribute('duration')),
-            status = parseBool(currentTarget.getAttribute('status'));
+        const day = parseInt(currentTarget.getAttribute('day'))
+            , time = parseInt(currentTarget.getAttribute('time'))
+            , duration = parseInt(currentTarget.getAttribute('duration'))
+            , status = parseBool(currentTarget.getAttribute('status'));
 
-        let date = new Date,
-            dayOffset = (date.getDate() - (date.getDay() - day));
+        let date = new Date
+            , dayOffset = (date.getDate() - (date.getDay() - day));
 
-        dayOffset = (dayOffset > 0)?
-            dayOffset:
-        dayOffset + 7;
+        dayOffset = (dayOffset > 0)
+            ? dayOffset
+            : dayOffset + 7;
 
-        let offset = new Date([DatePicker.months[date.getMonth()], dayOffset, date.getFullYear(), time].join(' '));
+        const offset = new Date([DatePicker.months[date.getMonth()], dayOffset, date.getFullYear(), time].join(' '));
 
         new DatePicker(offset, status, time, duration).then(schedules => RedoTimeElements(JSON.stringify(schedules), scheduleType));
 
         currentTarget.remove();
     };
+
     E.setAttribute('up-tooltip', `Edit schedule`);
     E.setAttribute('tr-skip', true);
     E.append(R);
@@ -930,13 +732,14 @@ function CreateTimeElement(self, scheduleType) {
     R.classList.add('remove');
 
     R.onclick = event => {
-        let { currentTarget } = event,
-            { id } = currentTarget;
+        let { currentTarget } = event
+            , { id } = currentTarget;
 
         $(`[${ scheduleType }-id="${ id }"]`)?.remove();
 
         event.stopPropagation();
     };
+
     R.setAttribute('up-tooltip', `Remove schedule`);
 
     // Add to parent container
@@ -944,23 +747,27 @@ function CreateTimeElement(self, scheduleType) {
     $(`#${ scheduleType }_schedule [day-of-week="${ day }"i]`)?.append(E);
 }
 
+/**
+ * Collects values from the settings UI and saves them to the global settings object.
+ * @returns {Promise<void>}
+ */
 async function SaveSettings() {
-    let { extractValue } = SaveSettings;
+    const { extractValue } = SaveSettings;
 
-    let elements = $.all(usable_settings.map(name => '#' + name + ':not(:invalid)').join(', ')),
-        using = elements.map(element => element.id);
+    const elements = $.all(usable_settings.map(name => '#' + name + ':not(:invalid)').join(', '))
+        , using = elements.map(element => element.id);
 
     // Edit settings before exporting them (if needed)
-    for(let id of using)
+    for(const id of using)
         switch(id) {
             case 'filter_rules': {
-                let rules = [],
-                    input = extractValue($('#filter_rules-input'));
+                let rules = []
+                    , input = extractValue($('#filter_rules-input'));
 
                 if(parseBool(input))
                     rules = input.split(',');
 
-                for(let rule of $.all('#filter_rules code'))
+                for(const rule of $.all('#filter_rules code'))
                     rules.push(rule.textContent);
                 rules = rules.isolate().filter(rule => rule.length);
 
@@ -970,13 +777,13 @@ async function SaveSettings() {
             } break;
 
             case 'phrase_rules': {
-                let rules = [],
-                    input = extractValue($('#phrase_rules-input'));
+                let rules = []
+                    , input = extractValue($('#phrase_rules-input'));
 
                 if(parseBool(input))
                     rules = input.split(',');
 
-                for(let rule of $.all('#phrase_rules code'))
+                for(const rule of $.all('#phrase_rules code'))
                     rules.push(rule.textContent);
                 rules = rules.isolate().filter(rule => rule.length);
 
@@ -986,13 +793,13 @@ async function SaveSettings() {
             } break;
 
             case 'lurking_rules': {
-                let rules = [],
-                    input = extractValue($('#lurking_rules-input'));
+                let rules = []
+                    , input = extractValue($('#lurking_rules-input'));
 
                 if(parseBool(input))
                     rules = input.split(';');
 
-                for(let rule of $.all('#lurking_rules code'))
+                for(const rule of $.all('#lurking_rules code'))
                     rules.push(rule.textContent);
                 rules = rules.isolate().filter(rule => rule.length);
 
@@ -1002,19 +809,21 @@ async function SaveSettings() {
             } break;
 
             case 'away_mode_schedule': {
-                let times = [];
-                for(let button of $.all('#away_mode_schedule button[duration]')) {
-                    let day = parseInt(button.getAttribute('day')),
-                        time = parseInt(button.getAttribute('time')),
-                        duration = parseInt(button.getAttribute('duration')),
-                        status = parseBool(button.getAttribute('status'));
+                const times = [];
+
+                for(const button of $.all('#away_mode_schedule button[duration]')) {
+                    const day = parseInt(button.getAttribute('day'))
+                        , time = parseInt(button.getAttribute('time'))
+                        , duration = parseInt(button.getAttribute('duration'))
+                        , status = parseBool(button.getAttribute('status'));
 
                     times.push({ day, time, duration, status });
                 }
 
-                let validTimes = [];
-                for(let object of times) {
-                    let { day, time, duration } = object;
+                const validTimes = [];
+
+                for(const object of times) {
+                    const { day, time, duration } = object;
 
                     if(false
                         || (day < 0 || day > 6)
@@ -1032,13 +841,13 @@ async function SaveSettings() {
             } break;
 
             case 'away_mode__volume': {
-                let volume = extractValue($('#away_mode__volume'));
+                const volume = extractValue($('#away_mode__volume'));
 
                 SETTINGS.away_mode__volume = parseFloat(volume) / 100;
             } break;
 
             case 'user_language_preference': {
-                let preferred = extractValue($('#user_language_preference'));
+                const preferred = extractValue($('#user_language_preference'));
 
                 SETTINGS.user_language_preference = preferred.toLowerCase();
             } break;
@@ -1046,7 +855,7 @@ async function SaveSettings() {
             default:{
                 SETTINGS[id] = extractValue($(`#${ id }`));
             } break;
-        }
+        } // switch id
 
     return await Storage.set(SETTINGS);
 }
@@ -1056,7 +865,7 @@ Object.defineProperties(SaveSettings, {
         value: element => {
             return element[{
                 'date': 'value',
-                'text': 'value',
+                'text': "value",
                 'time': 'value',
                 'radio': 'checked',
                 'number': 'value',
@@ -1069,59 +878,66 @@ Object.defineProperties(SaveSettings, {
     },
 });
 
+/**
+ * Retrieves saved settings from storage and populates the settings UI.
+ * @param {Object|null} [OVER_RIDE_SETTINGS=null] - Optional settings to use instead of stored ones.
+ * @returns {Promise<void>}
+ */
 async function LoadSettings(OVER_RIDE_SETTINGS = null) {
     const assignValue = LoadSettings.assignValue;
 
-    let elements = $.all(usable_settings.map(name => '#' + name).join(', ')),
-        using = elements.map(element => element.id);
+    const elements = $.all(usable_settings.map(name => '#' + name).join(', '))
+        , using = elements.map(element => element.id);
 
     return await Storage.get(null, settings => {
-        SETTINGS = OVER_RIDE_SETTINGS ?? settings;
+        // Anything never saved starts at its declared default
+        SETTINGS = OVER_RIDE_SETTINGS ?? { ...SETTINGS_DEFAULTS, ...settings };
 
         loading:
-        for(let id of using) {
-            let element = $(`#${ id }`);
+        for(const id of using) {
+            const element = $(`#${ id }`);
 
             switch(id) {
                 case 'filter_rules': {
-                    let rules = SETTINGS[id];
+                    const rules = SETTINGS[id];
 
                     RedoRuleElements(rules, 'filter');
                 } break;
 
                 case 'phrase_rules': {
-                    let rules = SETTINGS[id];
+                    const rules = SETTINGS[id];
 
                     RedoRuleElements(rules, 'phrase');
                 } break;
 
                 case 'lurking_rules': {
-                    let rules = SETTINGS[id];
+                    const rules = SETTINGS[id];
 
                     RedoRuleElements(rules, 'lurking', ';', 'channel badge text');
                 } break;
 
                 case 'away_mode_schedule': {
-                    let times = SETTINGS[id];
+                    const times = SETTINGS[id];
 
                     RedoTimeElements(times, 'away_mode');
                 } break;
 
                 case 'away_mode__volume': {
-                    let volume = SETTINGS[id];
+                    const volume = SETTINGS[id];
 
                     assignValue(element, volume * 100);
                 } break;
 
                 case 'user_language_preference': {
-                    let preferred = (null
+                    const preferred = (null
                         ?? SETTINGS[id]
                         ?? (top.navigator?.userLanguage ?? top.navigator?.language ?? 'en').toLowerCase().split('-').reverse().pop()
                     );
 
                     assignValue(element, preferred);
 
-                    if(TRANSLATED) continue loading;
+                    if(TRANSLATED)
+                        continue loading;
 
                     // Translate(document.documentElement.lang = preferred.toLowerCase());
                 } break;
@@ -1133,15 +949,15 @@ async function LoadSettings(OVER_RIDE_SETTINGS = null) {
                 } break;
 
                 default: {
-                    let selected = $('[selected]', element);
+                    const selected = $('[selected]', element);
 
                     if(defined(selected))
                         selected.removeAttribute('selected');
 
                     assignValue(element, SETTINGS[id]);
                 } break;
-            }
-        }
+            } // :loading | switch id
+        } // :loading
     });
 }
 
@@ -1153,7 +969,7 @@ Object.defineProperties(LoadSettings, {
 
             return element[{
                 'date': 'value',
-                'text': 'value',
+                'text': "value",
                 'time': 'value',
                 'radio': 'checked',
                 'number': 'value',
@@ -1166,17 +982,22 @@ Object.defineProperties(LoadSettings, {
     },
 });
 
+/**
+ * Formats a snake_case string into a human-readable name.
+ * @param {string} string - The string to format.
+ * @returns {string} The formatted string.
+ */
 function depadName(string) {
-    return string.replace(/(^|_)([a-z])/g, ($0, $1, $2, $$, $_) => ['',' '][+!!$1] + $2.toUpperCase()).replace(/_+/g, ' -');
+    return string.replace(/(^|_)([a-z])/g, ($0, $1, $2, $$, $_) => ['', ' '][+!!$1] + $2.toUpperCase()).replace(/_+/g, ' -');
 }
 
 /* Auto-making tooltips */
 setInterval(() => {
     $.all('input[type="number"i]:is([min], [max]):not([tooled])')
         .map(input => {
-            let parent = input.closest(':not(input)'),
-                min = input.getAttribute('min') || input.getAttribute('value') || '0',
-                max = input.getAttribute('max') || '&infin;';
+            const parent = input.closest(':not(input)')
+                , min = input.getAttribute('min') || input.getAttribute('value') || '0'
+                , max = input.getAttribute('max') || '&infin;';
 
             return ({ parent, min, max });
         })
@@ -1188,18 +1009,19 @@ setInterval(() => {
 $.all('#whisper_audio_sound').map(element => element.onchange = async event => wait(100).then(() => $('#whisper_audio_sound-test')?.click()));
 
 $.all('#whisper_audio_sound-test').map(button => button.onclick = async event => {
-    let [selected] = $('#whisper_audio_sound').selectedOptions;
-    let pathname = (/\b(568)$/.test(selected.value)? '/message-tones/': '/notification-sounds/') + selected.value;
+    const [selected] = $('#whisper_audio_sound').selectedOptions;
+    const pathname = (/\b(568)$/.test(selected.value) ? '/message-tones/' : '/notification-sounds/') + selected.value;
 
     $('#sound-href').href = parseURL($('#sound-href').href).origin + pathname;
 
-    let test_sound = furnish('audio#tt-test-sound', {
+    const test_sound = furnish('audio#tt-test-sound', {
         style: 'display:none',
 
         innerHTML: ['mp3', 'ogg']
             .map(type => {
-                let types = { mp3: 'mpeg' },
-                    src = `${ location.origin }/aud/${ selected.value }.${ type }`;
+                const types = { mp3: 'mpeg' }
+                    , src = `${ location.origin }/aud/${ selected.value }.${ type }`;
+
                 type = `audio/${ types[type] ?? type }`;
 
                 return furnish('source', { src, type }).outerHTML;
@@ -1211,23 +1033,23 @@ $.all('#whisper_audio_sound-test').map(button => button.onclick = async event =>
 });
 
 $.all('#user_language_preference').map(select => {
-    let languages = SUPPORTED_LANGUAGES;
+    const languages = SUPPORTED_LANGUAGES;
 
     listing:
-    for(let language of languages) {
-        let ISO = top.ISO_639_1[language];
+    for(const language of languages) {
+        const ISO = top.ISO_639_1[language];
 
         if(nullish(ISO))
             continue listing;
 
-        let { name, code, dialect } = ISO,
-            [latin, native, regional] = unescape(name).split('/', 3);
+        let { name, code, dialect } = ISO
+            , [latin, native, regional] = unescape(name).split('/', 3);
 
         select.append(furnish('option', { value: code, innerHTML: `${ native } (${ regional }) &mdash; ${ latin }`.replace(/\s*\(\s*(?:undefined|null)?\s*\)/i, '') }));
     }
 
-    Storage.get({ user_language_preference }, ({ user_language_preference }) => {
-        let lang = user_language_preference?.toLowerCase?.();
+    Storage.get({ user_language_preference: '' }, ({ user_language_preference }) => {
+        const lang = user_language_preference?.toLowerCase?.();
 
         $('option[selected]', select)?.removeAttribute?.('selected');
         $(`option[value="${ (select.value = lang) }"i]`, select)?.setAttribute('selected', true);
@@ -1235,8 +1057,8 @@ $.all('#user_language_preference').map(select => {
 });
 
 $.all('#user_language_preference').map(select => select.onchange = async event => {
-    let { currentTarget } = event,
-        preferred = currentTarget.value;
+    let { currentTarget } = event
+        , preferred = currentTarget.value;
 
     // Translate(document.documentElement.lang = preferred.toLowerCase());
 
@@ -1244,18 +1066,18 @@ $.all('#user_language_preference').map(select => select.onchange = async event =
 });
 
 $.all('#save, .save').map(element => element.onclick = async event => {
-    let { currentTarget } = event;
+    const { currentTarget } = event;
 
     currentTarget.classList.add('spin');
 
     when.defined(() => {
-        let invalid = $(usable_settings.map(name => '#' + name + ':invalid').join(', '));
+        const invalid = $(usable_settings.map(name => '#' + name + ':invalid').join(', '));
 
         if(nullish(invalid))
             return true;
 
-        let { top, left } = getOffset(invalid),
-            valid = invalid.checkValidity();
+        const { top, left } = getOffset(invalid)
+            , valid = invalid.checkValidity();
 
         invalid.scrollTo({ top, left });
 
@@ -1279,12 +1101,18 @@ $.all('#help, .help').map(element => element.onclick = async event => {
     $('#accessibility').scrollIntoView();
 });
 
+/**
+ * Displays a temporary synchronization status message in the UI.
+ * @param {string} [message='\u00A0'] - The message to display.
+ * @param {string} [type='alert'] - The style type of the message.
+ */
 function PostSyncStatus(message = '\u00A0', type = 'alert') {
     clearTimeout(clearSyncStatus.clearID);
 
     const syncStatus = $('#sync-status');
+
     syncStatus.setAttribute('style', $('#sync-status').getAttribute('style').replace(/;;[^]*$/, ';; opacity: 1'));
-    syncStatus.textContent = '';
+    syncStatus.textContent = "";
     syncStatus.append(
         furnish('span', { [`${ type }-text`]: '', textContent: message })
     );
@@ -1299,6 +1127,9 @@ Object.defineProperties(PostSyncStatus, {
     warning: { value: message => PostSyncStatus(message, 'warning'), ...PRIVATE_OBJECT_CONFIGURATION },
 });
 
+/**
+ * Hides the synchronization status message from the UI.
+ */
 function clearSyncStatus() {
     $('#sync-status').setAttribute('style', $('#sync-status').getAttribute('style').replace(/;;[^]*$/, ';; opacity: 0'));
 }
@@ -1307,23 +1138,28 @@ clearSyncStatus.clearID = -1;
 
 wait(1000).then(clearSyncStatus);
 
+/**
+ * Converts a string into a short capitalized abbreviation.
+ * @param {string} [string=''] - The string to abbreviate.
+ * @returns {string} The abbreviated string.
+ */
 function Sym(string = '') {
-    return string.replace(/([a-z\-]+)?_+([a-z\-]+)/gi, ($0, $1 = '', $2, $$, $_) => ($1[0]??'')+$2[0].toUpperCase());
+    return string.replace(/([a-z\-]+)?_+([a-z\-]+)/gi, ($0, $1 = '', $2, $$, $_) => ($1[0] ?? '') + $2[0].toUpperCase());
 }
 
 $('#sync-settings--upload').onmouseup = async event => {
     const extractValue = SaveSettings.extractValue;
-    let syncToken = $('#sync-token'),
-        { currentTarget } = event;
+    const syncToken = $('#sync-token')
+        , { currentTarget } = event;
 
     await SaveSettings()
         .then(async() => {
             PostSyncStatus('Uploading...');
             currentTarget.classList.add('spin');
 
-            let CloudExport = { ...SETTINGS };
+            const CloudExport = { ...SETTINGS };
 
-            for(let key in CloudExport)
+            for(const key in CloudExport)
                 if(usable_settings.missing(key))
                     delete CloudExport[key];
 
@@ -1332,7 +1168,7 @@ $('#sync-settings--upload').onmouseup = async event => {
             // Export to Sync servers
             chrome.storage.sync.set(CloudExport);
 
-            let id = parseURL(getURL('')).host;
+            const id = parseURL(getURL('')).host;
 
             if(compareVersions(`${ Manifest.version } < 5.32`)) {
                 await fetchURL(`https://tinyurl.com/app/api/create`, {
@@ -1354,7 +1190,7 @@ $('#sync-settings--upload').onmouseup = async event => {
                 })
                     .then(response => response.text())
                     .then(token => {
-                        let { pathname } = parseURL(token);
+                        const { pathname } = parseURL(token);
 
                         if(!pathname.length)
                             throw `Unable to upload`;
@@ -1364,9 +1200,10 @@ $('#sync-settings--upload').onmouseup = async event => {
                     .then(PostSyncStatus.success)
                     .then(SaveSettings)
                     .catch(PostSyncStatus.warning)
-                    .finally(() => currentTarget.classList.remove('spin'));
+                    .finally(() => currentTarget.classList.remove('spin'))
             } else {
-                let settings = new Map;
+                const settings = new Map;
+
                 for(let index = 0, value, place; index < usable_settings.length; ++index) {
                     let ID = usable_settings[index], element = $(`#${ ID }`);
 
@@ -1375,13 +1212,13 @@ $('#sync-settings--upload').onmouseup = async event => {
 
                     switch(ID) {
                         case 'filter_rules': {
-                            let rules = [],
-                                input = extractValue($('#filter_rules-input'));
+                            let rules = []
+                                , input = extractValue($('#filter_rules-input'));
 
                             if(parseBool(input))
                                 rules = input.split(',');
 
-                            for(let rule of $.all('#filter_rules code'))
+                            for(const rule of $.all('#filter_rules code'))
                                 rules.push(rule.textContent);
                             rules = rules.isolate().filter(rule => rule.length);
 
@@ -1389,13 +1226,13 @@ $('#sync-settings--upload').onmouseup = async event => {
                         } break;
 
                         case 'phrase_rules': {
-                            let rules = [],
-                                input = extractValue($('#phrase_rules-input'));
+                            let rules = []
+                                , input = extractValue($('#phrase_rules-input'));
 
                             if(parseBool(input))
                                 rules = input.split(',');
 
-                            for(let rule of $.all('#phrase_rules code'))
+                            for(const rule of $.all('#phrase_rules code'))
                                 rules.push(rule.textContent);
                             rules = rules.isolate().filter(rule => rule.length);
 
@@ -1403,13 +1240,13 @@ $('#sync-settings--upload').onmouseup = async event => {
                         } break;
 
                         case 'lurking_rules': {
-                            let rules = [],
-                                input = extractValue($('#lurking_rules-input'));
+                            let rules = []
+                                , input = extractValue($('#lurking_rules-input'));
 
                             if(parseBool(input))
                                 rules = input.split(';');
 
-                            for(let rule of $.all('#lurking_rules code'))
+                            for(const rule of $.all('#lurking_rules code'))
                                 rules.push(rule.textContent);
                             rules = rules.isolate().filter(rule => rule.length);
 
@@ -1417,19 +1254,21 @@ $('#sync-settings--upload').onmouseup = async event => {
                         } break;
 
                         case 'away_mode_schedule': {
-                            let times = [];
-                            for(let button of $.all('#away_mode_schedule button[duration]')) {
-                                let day = parseInt(button.getAttribute('day')),
-                                    time = parseInt(button.getAttribute('time')),
-                                    duration = parseInt(button.getAttribute('duration')),
-                                    status = parseBool(button.getAttribute('status'));
+                            const times = [];
+
+                            for(const button of $.all('#away_mode_schedule button[duration]')) {
+                                const day = parseInt(button.getAttribute('day'))
+                                    , time = parseInt(button.getAttribute('time'))
+                                    , duration = parseInt(button.getAttribute('duration'))
+                                    , status = parseBool(button.getAttribute('status'));
 
                                 times.push({ day, time, duration, status });
                             }
 
-                            let validTimes = [];
-                            for(let object of times) {
-                                let { day, time, duration } = object;
+                            const validTimes = [];
+
+                            for(const object of times) {
+                                const { day, time, duration } = object;
 
                                 if(false
                                     || (day < 0 || day > 6)
@@ -1445,13 +1284,13 @@ $('#sync-settings--upload').onmouseup = async event => {
                         } break;
 
                         case 'away_mode__volume': {
-                            let volume = extractValue($('#away_mode__volume'));
+                            const volume = extractValue($('#away_mode__volume'));
 
                             value = parseFloat(volume) / 100;
                         } break;
 
                         case 'user_language_preference': {
-                            let preferred = extractValue($('#user_language_preference'));
+                            const preferred = extractValue($('#user_language_preference'));
 
                             value = preferred.toLowerCase();
                         } break;
@@ -1459,15 +1298,17 @@ $('#sync-settings--upload').onmouseup = async event => {
                         default: {
                             if(nullish(element)) {
                                 settings.set(ID, 'X');
+
                                 continue;
                             }
 
                             value = SaveSettings.extractValue(element);
                             place = element.options?.selectedIndex;
                         } break;
-                    }
+                    } // switch ID
 
-                    let [...id] = ID;
+                    const [...id] = ID;
+
                     ID = Sym(ID);
 
                     while(settings.has(ID))
@@ -1477,23 +1318,23 @@ $('#sync-settings--upload').onmouseup = async event => {
                         settings.set(ID, `!${ place }`);
                     else
                         settings.set(ID,
-                            (nullish(value))?
-                                '_':
-                            (value === false)?
-                                'F':
-                            (value === true)?
-                                'T':
-                            (+value == value)?
-                                value:
-                            (value.length)?
-                                `**${ value }**`:
-                            'X'
+                            (nullish(value))
+                                ? '_'
+                                : (value === false)
+                                    ? 'F'
+                                    : (value === true)
+                                        ? 'T'
+                                        : (+value == value)
+                                            ? value
+                                            : (value.length)
+                                                ? `**${ value }**`
+                                                : 'X'
                         );
                 }
 
-                let json = encodeURIComponent([...settings].map(([key, value]) => `${ key }(${ value }`).join(')') + ')');
+                const json = encodeURIComponent([...settings].map(([key, value]) => `${ key }(${ value }`).join(')') + ')');
 
-                let url = parseURL(`https://is.gd/create.php`)
+                const url = parseURL(`https://is.gd/create.php`)
                     .addSearch({
                         format: 'json',
                         url: encodeURIComponent(
@@ -1522,8 +1363,8 @@ $('#sync-settings--upload').onmouseup = async event => {
 
 $('#sync-settings--download').onmouseup = async event => {
     const assignValue = LoadSettings.assignValue;
-    let syncToken = $('#sync-token').value,
-        { currentTarget } = event;
+    const syncToken = $('#sync-token').value
+        , { currentTarget } = event;
 
     if((syncToken?.replace(/\W+/g, '')?.length | 0) < 6)
         return PostSyncStatus.warning('Please use a valid Upload ID');
@@ -1533,7 +1374,7 @@ $('#sync-settings--download').onmouseup = async event => {
 
     try {
         if(compareVersions(`${ Manifest.version } < 5.32`))
-            throw 'ID-v2 not supported';
+            throw "ID-v2 not supported";
 
         await fetchURL(`https://is.gd/forward.php?format=json&shorturl=${ syncToken }`)
             .then(response => response.json())
@@ -1541,23 +1382,25 @@ $('#sync-settings--download').onmouseup = async event => {
             .then(({ url, errorcode, errormessage }) => {
                 if(!url?.length) {
                     if(errorcode == 1)
-                        throw '';
+                        throw "";
                     if(errorcode > 1)
                         throw `Invalid Upload ID "${ syncToken }"`;
                 }
 
-                let data = new Map;
+                const data = new Map;
+
                 try {
-                    let raw = decodeURIComponent(parseURL(url).searchParameters.json);
+                    const raw = decodeURIComponent(parseURL(url).searchParameters.json);
                     let mode = 'get-key', key = '', val = '', thread = '';
 
-                    parsing: for(let char of raw)
+                    parsing: for(const char of raw)
                         switch(mode) {
                             case 'get-key': {
                                 if(char == '(') {
                                     mode = 'get-val';
 
                                     thread = '';
+
                                     continue parsing;
                                 }
 
@@ -1565,21 +1408,24 @@ $('#sync-settings--download').onmouseup = async event => {
                             } break;
 
                             case 'get-val': {
-                                if(char == '*') thread += char;
+                                if(char == '*')
+                                    thread += char;
 
                                 if(thread == '**') {
                                     mode = 'get-str';
 
                                     thread = '';
+
                                     continue parsing;
                                 } else if(thread.length > 2) {
-                                    thread = thread.substr(1, 2);
+                                    thread = thread.substr(1, 2)
                                 }
 
                                 if(char == ')') {
                                     mode = 'get-key';
 
-                                    let [...k] = key;
+                                    const [...k] = key;
+
                                     while(data.has(key))
                                         key += k.shift();
 
@@ -1588,6 +1434,7 @@ $('#sync-settings--download').onmouseup = async event => {
                                     key = '';
                                     val = '';
                                     thread = '';
+
                                     continue parsing;
                                 }
 
@@ -1595,14 +1442,18 @@ $('#sync-settings--download').onmouseup = async event => {
                             } break;
 
                             case 'get-str': {
-                                if(thread == '*' && ['*', ')'].missing(char)) thread = '';
-                                if(char == '*') thread += char;
-                                if(char == ')') thread += char;
+                                if(thread == '*' && ['*', ')'].missing(char))
+                                    thread = '';
+                                if(char == '*')
+                                    thread += char;
+                                if(char == ')')
+                                    thread += char;
 
                                 if(thread == '**)') {
                                     mode = 'get-key';
 
-                                    let [...k] = key;
+                                    const [...k] = key;
+
                                     while(data.has(key))
                                         key += k.shift();
 
@@ -1611,23 +1462,25 @@ $('#sync-settings--download').onmouseup = async event => {
                                     key = '';
                                     val = '';
                                     thread = '';
+
                                     continue parsing;
                                 } else if(thread.length > 3) {
-                                    thread = thread.substr(1, 3);
+                                    thread = thread.substr(1, 3)
                                 }
 
                                 val += char;
                             } break;
-                        };
+                        } // :parsing
+                    ;
 
                     // $log('Raw data:', { url, raw, data });
 
-                    let parsed = {};
+                    const parsed = {};
 
                     loading: for(let index = 0; index < usable_settings.length; ++index) {
-                        let id = usable_settings[index],
-                            ID = Sym(id),
-                            element = $(`#${ id }:not([data-rest-id])`);
+                        const id = usable_settings[index]
+                            , ID = Sym(id)
+                            , element = $(`#${ id }:not([data-rest-id])`);
 
                         if(nullish(element) || !data.has(ID))
                             continue;
@@ -1663,7 +1516,8 @@ $('#sync-settings--download').onmouseup = async event => {
 
                                 assignValue(element, value);
 
-                                if(TRANSLATED) continue loading;
+                                if(TRANSLATED)
+                                    continue loading;
 
                                 // Translate(document.documentElement.lang = value.toLowerCase());
                             } break;
@@ -1676,19 +1530,19 @@ $('#sync-settings--download').onmouseup = async event => {
 
                             default: {
                                 if(/^!(\d+)/.test(value) && element.options?.length) {
-                                    let selected = value.replace('!', '');
+                                    const selected = value.replace('!', '');
 
                                     assignValue(element, element.options[selected].value);
                                 } else if('TF_X'.contains(value) && value?.length) {
-                                    let library = { T: true, F: false, _: null, X: '' };
+                                    const library = { T: true, F: false, _: null, X: '' };
 
                                     assignValue(element, library[value]);
                                 } else {
-                                    assignValue(element, value);
+                                    assignValue(element, value)
                                 }
                             } break;
-                        }
-                    }
+                        } // :loading | switch id
+                    } // :loading
 
                     $.all('[data-rest-id]').map(e => { delete e.dataset.restId });
 
@@ -1702,13 +1556,13 @@ $('#sync-settings--download').onmouseup = async event => {
             .then(async settings => {
                 await LoadSettings({ ...settings, 'sync-token': syncToken })
                     .then(() => {
-                        let messages = ['Downloaded. Ready to save'],
-                            uploadAge = +new Date() - +new Date(settings.syncDate);
+                        const messages = ['Downloaded. Ready to save']
+                            , uploadAge = +new Date() - +new Date(settings.syncDate);
 
                         if(uploadAge > 30 * 24 * 60 * 60 * 1000) {
                             messages.push(`This upload is ${ toTimeString(uploadAge, '~days days') } old`);
 
-                            $log('These settings were uploaded at', new Date(settings.syncDate), settings);
+                            $log("These settings were uploaded at", new Date(settings.syncDate), settings);
                         }
 
                         PostSyncStatus.success(messages.join('. '));
@@ -1717,7 +1571,7 @@ $('#sync-settings--download').onmouseup = async event => {
             })
             .catch(error => {
                 if(error.length < 1)
-                    throw 'Non-existent';
+                    throw "Non-existent";
                 PostSyncStatus.warning(error);
             });
     } catch(error) {
@@ -1725,14 +1579,14 @@ $('#sync-settings--download').onmouseup = async event => {
             .then(response => response.text())
             .catch(PostSyncStatus.warning)
             .then(html => {
-                let parser = new DOMParser;
-                let doc = parser.parseFromString(html, 'text/html');
+                const parser = new DOMParser;
+                const doc = parser.parseFromString(html, 'text/html');
 
                 return doc?.documentElement?.getElementByText('json://');
             })
             .then(element => {
-                let url = element?.textContent,
-                    data;
+                let url = element?.textContent
+                    , data;
 
                 if(!url?.length)
                     throw `Invalid Upload ID "${ syncToken.toUpperCase() }"`;
@@ -1748,13 +1602,13 @@ $('#sync-settings--download').onmouseup = async event => {
             .then(async settings => {
                 await LoadSettings({ ...settings, 'sync-token': syncToken })
                     .then(() => {
-                        let messages = ['Downloaded. Ready to save'],
-                            uploadAge = +new Date() - +new Date(settings.syncDate);
+                        const messages = ['Downloaded. Ready to save']
+                            , uploadAge = +new Date() - +new Date(settings.syncDate);
 
                         if(uploadAge > 30 * 24 * 60 * 60 * 1000) {
                             messages.push(`This upload is ${ toTimeString(uploadAge, '~days days') } old`);
 
-                            $log('These settings were uploaded at', new Date(settings.syncDate), settings);
+                            $log("These settings were uploaded at", new Date(settings.syncDate), settings);
                         }
 
                         PostSyncStatus.success(messages.join('. '));
@@ -1768,8 +1622,8 @@ $('#sync-settings--download').onmouseup = async event => {
 };
 
 $('#sync-settings--share').onmousedown = async event => {
-    let syncToken = $('#sync-token').value,
-        { currentTarget } = event;
+    const syncToken = $('#sync-token').value
+        , { currentTarget } = event;
 
     if(!syncToken?.length)
         return PostSyncStatus.warning('Nothing to copy');
@@ -1792,12 +1646,12 @@ $('#sync-settings--upload-json-input').onchange = async event => {
 
     const [file] = files;
 
-    file.text().then(json => {
+    file.text().then(async json => {
         const data = JSON.parse(json);
 
         reading: for(let index = 0; index < usable_settings.length; ++index) {
-            let ID = usable_settings[index],
-                element = $(`#${ ID }:not([data-rest-id])`);
+            const ID = usable_settings[index]
+                , element = $(`#${ ID }:not([data-rest-id])`);
 
             if(nullish(element))
                 continue;
@@ -1805,7 +1659,7 @@ $('#sync-settings--upload-json-input').onchange = async event => {
 
             let value = data[ID];
 
-            switch(id) {
+            switch(ID) {
                 case 'filter_rules': {
                     RedoRuleElements(value, 'filter');
                 } break;
@@ -1831,39 +1685,46 @@ $('#sync-settings--upload-json-input').onchange = async event => {
 
                     assignValue(element, value);
 
-                    if(TRANSLATED) continue reading;
+                    if(TRANSLATED)
+                        continue reading;
 
                     // Translate(document.documentElement.lang = value.toLowerCase());
                 } break;
 
                 case 'simplify_chat_font': {
-                    $(`#${ id }`).setAttribute('style', `font-family:${ value } !important`);
+                    $(`#${ ID }`).setAttribute('style', `font-family:${ value } !important`);
 
                     assignValue(element, value);
                 } break;
 
                 default: {
                     if(/^!(\d+)/.test(value) && element.options?.length) {
-                        let selected = value.replace('!', '');
+                        const selected = value.replace('!', '');
 
                         assignValue(element, element.options[selected].value);
                     } else if('TF_X'.contains(value) && value?.length) {
-                        let library = { T: true, F: false, _: null, X: '' };
+                        const library = { T: true, F: false, _: null, X: '' };
 
                         assignValue(element, library[value]);
                     } else {
-                        assignValue(element, value);
+                        assignValue(element, value)
                     }
                 } break;
-            }
-        }
+            } // :reading | switch ID
+        } // :reading
 
         $.all('[data-rest-id]').map(e => { delete e.dataset.restId });
+
+        // SaveSettings() skips fields whose value fails the field's own checks (range, step, pattern)
+        const skipped = Object.keys(data).filter(id => $(`#${ id }:invalid`)).map(depadName);
+
+        await SaveSettings();
+
+        PostSyncStatus(`Restored and saved "${ file.name }".${ skipped.length ? ` Not saved (invalid values): ${ skipped.join(', ') }.` : '' }`);
     }).catch(e => {
         $warn(e);
-        PostSyncStatus(`Failed to parse JSON file. See the console for more information.`);
+        PostSyncStatus(`Failed to restore "${ file.name }": ${ e?.message ?? e }`);
     }).finally(() => {
-        // SaveSettings();
         currentTarget.nextElementSibling.classList.remove('spin');
     });
 };
@@ -1875,22 +1736,23 @@ $('#sync-settings--download-json').onmouseup = async event => {
     PostSyncStatus('Capturing settings...');
     currentTarget.classList.add('spin');
 
-    let settings = {};
+    const settings = {};
+
     for(let index = 0, value, place; index < usable_settings.length; ++index) {
-        let ID = usable_settings[index], element = $(`#${ ID }`);
+        const ID = usable_settings[index], element = $(`#${ ID }`);
 
         if(nullish(element))
             continue;
 
         switch(ID) {
             case 'filter_rules': {
-                let rules = [],
-                    input = extractValue($('#filter_rules-input'));
+                let rules = []
+                    , input = extractValue($('#filter_rules-input'));
 
                 if(parseBool(input))
                     rules = input.split(',');
 
-                for(let rule of $.all('#filter_rules code'))
+                for(const rule of $.all('#filter_rules code'))
                     rules.push(rule.textContent);
                 rules = rules.isolate().filter(rule => rule.length);
 
@@ -1898,13 +1760,13 @@ $('#sync-settings--download-json').onmouseup = async event => {
             } break;
 
             case 'phrase_rules': {
-                let rules = [],
-                    input = extractValue($('#phrase_rules-input'));
+                let rules = []
+                    , input = extractValue($('#phrase_rules-input'));
 
                 if(parseBool(input))
                     rules = input.split(',');
 
-                for(let rule of $.all('#phrase_rules code'))
+                for(const rule of $.all('#phrase_rules code'))
                     rules.push(rule.textContent);
                 rules = rules.isolate().filter(rule => rule.length);
 
@@ -1912,13 +1774,13 @@ $('#sync-settings--download-json').onmouseup = async event => {
             } break;
 
             case 'lurking_rules': {
-                let rules = [],
-                    input = extractValue($('#lurking_rules-input'));
+                let rules = []
+                    , input = extractValue($('#lurking_rules-input'));
 
                 if(parseBool(input))
                     rules = input.split(';');
 
-                for(let rule of $.all('#lurking_rules code'))
+                for(const rule of $.all('#lurking_rules code'))
                     rules.push(rule.textContent);
                 rules = rules.isolate().filter(rule => rule.length);
 
@@ -1926,19 +1788,21 @@ $('#sync-settings--download-json').onmouseup = async event => {
             } break;
 
             case 'away_mode_schedule': {
-                let times = [];
-                for(let button of $.all('#away_mode_schedule button[duration]')) {
-                    let day = parseInt(button.getAttribute('day')),
-                        time = parseInt(button.getAttribute('time')),
-                        duration = parseInt(button.getAttribute('duration')),
-                        status = parseBool(button.getAttribute('status'));
+                const times = [];
+
+                for(const button of $.all('#away_mode_schedule button[duration]')) {
+                    const day = parseInt(button.getAttribute('day'))
+                        , time = parseInt(button.getAttribute('time'))
+                        , duration = parseInt(button.getAttribute('duration'))
+                        , status = parseBool(button.getAttribute('status'));
 
                     times.push({ day, time, duration, status });
                 }
 
-                let validTimes = [];
-                for(let object of times) {
-                    let { day, time, duration } = object;
+                const validTimes = [];
+
+                for(const object of times) {
+                    const { day, time, duration } = object;
 
                     if(false
                         || (day < 0 || day > 6)
@@ -1954,27 +1818,28 @@ $('#sync-settings--download-json').onmouseup = async event => {
             } break;
 
             case 'away_mode__volume': {
-                let volume = extractValue($('#away_mode__volume'));
+                const volume = extractValue($('#away_mode__volume'));
 
                 value = parseFloat(volume) / 100;
             } break;
 
             case 'user_language_preference': {
-                let preferred = extractValue($('#user_language_preference'));
+                const preferred = extractValue($('#user_language_preference'));
 
                 value = preferred.toLowerCase();
             } break;
 
             default: {
                 if(nullish(element)) {
-                    settings.set(ID, 'X');
+                    settings[ID] = 'X';
+
                     continue;
                 }
 
                 value = SaveSettings.extractValue(element);
                 place = element.options?.selectedIndex;
             } break;
-        }
+        } // switch ID
 
         settings[ID] = value;
     }
@@ -2025,7 +1890,7 @@ $.all('[glyph]').map(element => {
 let FETCHED_DATA = { wasFetched: false };
 
 (async function(installedFromWebstore) {
-    let properties = {
+    const properties = {
         context: {
             id: UUID.from(Manifest.version, true)
                 .toStamp()
@@ -2054,12 +1919,12 @@ let FETCHED_DATA = { wasFetched: false };
         // The data has expired →
         __FetchingUpdates__:
         if((FETCHED_DATA.wasFetched === false) && (versionRetrivalDate + 3_600_000) < +new Date) {
-            let githubURL = 'https://api.github.com/repos/ephellon/twitch-tools/releases/latest';
+            const githubURL = 'https://api.github.com/repos/ephellon/twitch-tools/releases/latest';
 
             await fetchURL(githubURL)
                 .then(response => {
                     if(FETCHED_DATA.wasFetched)
-                        throw 'Data was already fetched';
+                        throw "Data was already fetched";
 
                     return response.json();
                 })
@@ -2076,7 +1941,7 @@ let FETCHED_DATA = { wasFetched: false };
                     });
                 })
                 .finally(() => {
-                    let githubUpdateAvailable = compareVersions(`${ properties.version.installed } < ${ properties.version.github }`);
+                    const githubUpdateAvailable = compareVersions(`${ properties.version.installed } < ${ properties.version.github }`);
 
                     FETCHED_DATA = { ...FETCHED_DATA, ...properties };
                     Storage.set({ githubUpdateAvailable });
@@ -2109,7 +1974,7 @@ let FETCHED_DATA = { wasFetched: false };
             build |= 0;
 
             if(build > 0) {
-                properties.version.installed += (compareVersions(`${ properties.version.installed } > ${ properties.version.github }`)? ` build ${ build }`: '');
+                properties.version.installed += (compareVersions(`${ properties.version.installed } > ${ properties.version.github }`) ? ` build ${ build }` : '');
                 properties.context.id = UUID.from(properties.version.installed, true)
                     .toStamp()
                     .split(/(.{4})/)
@@ -2124,20 +1989,20 @@ let FETCHED_DATA = { wasFetched: false };
             properties.this = Object.fromEntries([...element.attributes, { name: 'innerHTML', value: element.innerHTML }, { name: 'innerText', value: element.innerText }, { name: 'textContent', value: element.textContent }].map(({ name, value }) => [name, value]));
 
             // Continue with the data...
-            let expressions = element.getAttribute('set').split(/(?<!&#?\w+);/);
-            let directProperties = ['innerHTML', 'innerText', 'textContent'];
+            const expressions = element.getAttribute('set').split(/(?<!&#?\w+);/);
+            const directProperties = ['innerHTML', 'innerText', 'textContent'];
 
-            for(let expression of expressions) {
+            for(const expression of expressions) {
                 // Literal (x=y) - Sets attribute to right-hand
                 if(/^([\w\-]+)=/.test(expression)) {
-                    let [attribute, property] = expression.split('=', 2),
-                        value;
+                    let [attribute, property] = expression.split('=', 2)
+                        , value;
 
                     property = property.split('.');
 
                     // Traverse the property path...
                     for(value = properties; property.length;) {
-                        let [key] = property.splice(0, 1);
+                        const [key] = property.splice(0, 1);
 
                         value = value[key];
                     }
@@ -2149,14 +2014,14 @@ let FETCHED_DATA = { wasFetched: false };
                 }
                 // Metaphorical (x:y) - Sets attribute to parsed right-hand
                 else if(/^([\w\-]+):/.test(expression)) {
-                    let [attribute, property] = expression.split(':', 2),
-                        value = property.replace(/(\w+\.\w+(?:[\.\w])?)/g, ($0, $1, $$, $_) => {
-                            let prop = $1.split('.'),
-                                val;
+                    const [attribute, property] = expression.split(':', 2)
+                        , value = property.replace(/(\w+\.\w+(?:[\.\w])?)/g, ($0, $1, $$, $_) => {
+                            let prop = $1.split('.')
+                                , val;
 
                             // Traverse the property path...
                             for(val = properties; prop.length;) {
-                                let [key] = prop.splice(0, 1);
+                                const [key] = prop.splice(0, 1);
 
                                 val = val[key];
                             }
@@ -2164,23 +2029,23 @@ let FETCHED_DATA = { wasFetched: false };
                             return val;
                         });
 
-                        if(directProperties.contains(attribute))
-                            element[attribute] = value;
-                        else
-                            element.setAttribute(attribute, value);
+                    if(directProperties.contains(attribute))
+                        element[attribute] = value;
+                    else
+                        element.setAttribute(attribute, value);
                 }
                 // Symbolic (x→y) - Sets attribute to parsed, unescaped right-hand
                 else if(/^([\w\-]+)(?:->|→)/.test(expression)) {
-                    let [attribute, property] = expression.split(/(?:->|→)/, 2),
+                    const [attribute, property] = expression.split(/(?:->|→)/, 2)
                         // \object.property::type@base?pad
                         // \object.property::type@parse-base:stringify-base?pad
-                        value = property.replace(/\\(\w+\.\w+(?:[\.\w]+)?)(?:::(\w+)(?:@(\w+))?(?::(\w+))?(?:\?(\d+)))?/g, ($0, $1, $2, $3, $4, $5, $$, $_) => {
-                            let prop = $1.split('.'),
-                                val;
+                        , value = property.replace(/\\(\w+\.\w+(?:[\.\w]+)?)(?:::(\w+)(?:@(\w+))?(?::(\w+))?(?:\?(\d+)))?/g, ($0, $1, $2, $3, $4, $5, $$, $_) => {
+                            let prop = $1.split('.')
+                                , val;
 
                             // Traverse the property path...
                             for(val = properties; prop.length;) {
-                                let [key] = prop.splice(0, 1);
+                                const [key] = prop.splice(0, 1);
 
                                 val = val[key];
                             }
@@ -2199,57 +2064,58 @@ let FETCHED_DATA = { wasFetched: false };
                                 case 'udouble':
                                 case 'number':
                                 case 'bigint':
-                                {
-                                    let u = $2.startsWith('u'),
-                                        r = parseInt($3 || 10),
-                                        R = parseInt($4 || r),
-                                        t = parseInt($5 || 1);
-                                    val = parseFloat(val.replace(/[^a-z\d\.]+/ig, '').split('.').map(n => parseInt(n, r)).join('.'));
+                                    {
+                                        const u = $2.startsWith('u')
+                                            , r = parseInt($3 || 10)
+                                            , R = parseInt($4 || r)
+                                            , t = parseInt($5 || 1);
 
-                                    // 16b
-                                    if($2.endsWith('short'))
-                                        val = val.clamp(-(2**(15* +!u)), 2**(15+ +!u)).ceil();
+                                        val = parseFloat(val.replace(/[^a-z\d\.]+/ig, '').split('.').map(n => parseInt(n, r)).join('.'));
 
-                                    // 32b
-                                    if($2.endsWith('int'))
-                                        if($2.startsWith('big'))
-                                            val = BigInt(val.ceil());
-                                        else
-                                            val = val.clamp(-(2**(31* +!u)), 2**(31+ +!u)).ceil();
-                                    if($2.endsWith('float'))
-                                        val = val.clamp(-(2**(31* +!u)), 2**(31+ +!u));
+                                        // 16b
+                                        if($2.endsWith('short'))
+                                            val = val.clamp(-(2 ** (15 * +!u)), 2 ** (15 + +!u)).ceil();
 
-                                    // 64b
-                                    if($2.endsWith('long'))
-                                        val = val.clamp(-(2**(63* +!u)), 2**(63+ +!u)).ceil();
-                                    if($2.endsWith('double'))
-                                        val = val.clamp(-(2**(63* +!u)), 2**(63+ +!u));
+                                        // 32b
+                                        if($2.endsWith('int'))
+                                            if($2.startsWith('big'))
+                                                val = BigInt(val.ceil());
+                                            else
+                                                val = val.clamp(-(2 ** (31 * +!u)), 2 ** (31 + +!u)).ceil();
+                                        if($2.endsWith('float'))
+                                            val = val.clamp(-(2 ** (31 * +!u)), 2 ** (31 + +!u));
 
-                                    val = val.toString(R).padStart(t, '0');
-                                } break;
-                            }
+                                        // 64b
+                                        if($2.endsWith('long'))
+                                            val = val.clamp(-(2 ** (63 * +!u)), 2 ** (63 + +!u)).ceil();
+                                        if($2.endsWith('double'))
+                                            val = val.clamp(-(2 ** (63 * +!u)), 2 ** (63 + +!u));
+
+                                        val = val.toString(R).padStart(t, '0');
+                                    } break;
+                            } // switch $2 = $2?.toLowerCase()
 
                             return val;
                         });
 
-                        if(directProperties.contains(attribute))
-                            element[attribute] = value;
-                        else
-                            element.setAttribute(attribute, value);
+                    if(directProperties.contains(attribute))
+                        element[attribute] = value;
+                    else
+                        element.setAttribute(attribute, value);
                 }
             }
         });
     });
-})(location.host.equals("fcfodihfdbiiogppbnhabkigcdhkhdjd"));
+})(location.host.equals('fcfodihfdbiiogppbnhabkigcdhkhdjd'));
 
 // All anchors with the [continue-search] attribute
 $.all('a[continue-search]').map(a => {
-    let parameters = [];
+    const parameters = [];
 
-    for(let target of [top.location, a]) {
-        let { searchParameters } = parseURL(target.href);
+    for(const target of [top.location, a]) {
+        const { searchParameters } = parseURL(target.href);
 
-        for(let parameter in searchParameters)
+        for(const parameter in searchParameters)
             parameters.push(`${ parameter }=${ searchParameters[parameter] }`);
     }
 
@@ -2264,12 +2130,12 @@ $.all('a:not([target])').map(a => a.target = '_blank');
 
 // All "new" features for this version
 Cache.load(['ignoreNew'], ({ ignoreNew }) => {
-    let { version } = Manifest;
-    let brandNewFragments = [];
+    const { version } = Manifest;
+    const brandNewFragments = [];
 
     $.all('[new]').map(element => {
-        let conception = element.getAttribute('new');
-        let title = $('.title', element)?.textContent?.trim();
+        const conception = element.getAttribute('new');
+        const title = $('.title', element)?.textContent?.trim();
 
         if(compareVersions(`${ ignoreNew } ≥ ${ conception }`))
             element.removeAttribute('new');
@@ -2281,9 +2147,10 @@ Cache.load(['ignoreNew'], ({ ignoreNew }) => {
             );
     });
 
-    let { length } = brandNewFragments;
+    const { length } = brandNewFragments;
+
     if(length > 0)
-        alert.silent(`<div visible controller title="There ${ length > 1? 'are': 'is' } ${ length } new ${ 'feature'.pluralSuffix(length) }!">${ brandNewFragments.join('<br>') }</div>`)
+        alert.silent(`<div visible controller title="There ${ length > 1 ? "are" : "is" } ${ length } new ${ 'feature'.pluralSuffix(length) }!">${ brandNewFragments.join('<br>') }</div>`)
             .then(ok => Cache.save({ ignoreNew: version }));
 });
 
@@ -2296,7 +2163,7 @@ $.all('#video_clips__file_type option').filter(o => !MediaRecorder.isTypeSupport
 // Handle any fixable units
 setInterval(() => {
     $.all('[fix-unit]').map(element => {
-        let type = element.attr.fixUnit;
+        const type = element.attr.fixUnit;
         let onchange;
 
         switch(type[0].toLowerCase()) {
@@ -2305,35 +2172,35 @@ setInterval(() => {
             case 'm':
             case 's': {
                 onchange = function(event) {
-                    let self = event.currentTarget;
-                    let [days, hours, minutes, seconds] = toTimeString(parseTime(self.value, type), '~days|~hour|~minute|~second').split('|').map(parseFloat);
+                    const self = event.currentTarget;
+                    const [days, hours, minutes, seconds] = toTimeString(parseTime(self.value, type), '~days|~hour|~minute|~second').split('|').map(parseFloat);
 
                     if(days > 0) {
-                        self.closest('[fix-unit]').attr.fixedValue = `${ days }d`;
+                        self.closest('[fix-unit]').attr.fixedValue = `${ days }d`
                     } else if(hours > 0) {
-                        self.closest('[fix-unit]').attr.fixedValue = `${ hours }hr`;
+                        self.closest('[fix-unit]').attr.fixedValue = `${ hours }hr`
                     } else if(minutes > 0) {
-                        self.closest('[fix-unit]').attr.fixedValue = `${ minutes }min`;
+                        self.closest('[fix-unit]').attr.fixedValue = `${ minutes }min`
                     } else if(seconds > 0) {
-                        self.closest('[fix-unit]').attr.fixedValue = `${ seconds }sec`;
+                        self.closest('[fix-unit]').attr.fixedValue = `${ seconds }sec`
                     }
                 };
             } break;
 
             default: {
                 onchange = function(event) {
-                    let self = event.currentTarget;
+                    const self = event.currentTarget;
                     let value = self.value;
 
                     if(!isNaN(parseInt(value)))
                         value = parseInt(value).suffix('', 1);
-                    else if(!isNaN(parseValue(value)))
-                        value = parseValue(value).suffix('', 1);
+                    else if(!isNaN(parseFloat(value)))
+                        value = parseFloat(value).suffix('', 1);
 
                     self.closest('[fix-unit]').attr.fixedValue = value;
                 };
             } break;
-        }
+        } // switch type[0].toLowerCase()
 
         $.all('input', element).map(input => {
             input.addEventListener('keyup', onchange);
@@ -2348,7 +2215,7 @@ $.body.onkeydown = event => {
     if(!event.altKey && event.ctrlKey && !event.metaKey && event.key.equals('f')) {
         event.preventDefault();
 
-        let y = $.body.scrollTop;
+        const y = $.body.scrollTop;
 
         $('#search').focus();
 
@@ -2371,12 +2238,12 @@ $.all('#search').map(input => {
     };
 
     input.onkeydown = async event => {
-        let { currentTarget, key, altKey, ctrlKey, metaKey, shiftKey } = event;
+        const { currentTarget, key, altKey, ctrlKey, metaKey, shiftKey } = event;
 
         if(altKey || ctrlKey || metaKey)
             return;
 
-        let ignoredKeys = 'alt control meta opt+ shift +lock tab f+ arrow+ +menu ins+ page+ home end media+ audio+'.split(' ').map(AsteriskFn);
+        const ignoredKeys = 'alt control meta opt+ shift +lock tab f+ arrow+ +menu ins+ page+ home end media+ audio+'.split(' ').map(AsteriskFn);
 
         if(ignoredKeys.find(regexp => regexp.test(key)))
             return;
@@ -2411,7 +2278,7 @@ $.all('#search').map(input => {
             } break;
 
             case 'enter': {
-                $('#search-results [data-result="true"i]').dispatchEvent(new MouseEvent('mouseup'));
+                $('#search-results [data-result="true"i]')?.dispatchEvent(new MouseEvent('mouseup'));
             } break;
 
             default: {
@@ -2421,19 +2288,19 @@ $.all('#search').map(input => {
 
                 currentTarget.selectionStart = currentTarget.selectionEnd = ++selectionStart;
             }
-        }
+        } // switch key.toLowerCase()
 
-        let query = currentTarget.value || '',
-            last = currentTarget.dataset.last = query || '',
-            output = $('#search-results');
+        const query = currentTarget.value || ''
+            , last = currentTarget.dataset.last = query || ''
+            , output = $('#search-results');
 
-        output.innerHTML = '';
+        output.innerHTML = "";
 
         if(output.dataset.empty = query.length < 3)
             return;
 
-        let exact = $.body.getAllElementsByText(query).slice(0, 10).map(result => result.closest('section, [opt]')?.querySelector('.title'));
-        let partial = $.body.getAllElementsByText(RegExp(
+        const exact = $.body.getAllElementsByText(query).slice(0, 10).map(result => result.closest('section, [opt]')?.querySelector('.title'));
+        const partial = $.body.getAllElementsByText(RegExp(
             query.replace(/(\W)/g, '\\$1').replace(/[a-z]/g, ($0, $$, $_) => ({
                 'q': '[12qwas]',
                 'w': '[123qweasd]',
@@ -2462,28 +2329,30 @@ $.all('#search').map(input => {
                 'n': '[ghjbnm ]',
                 'm': '[hjknm, ]',
             })[$0.toLowerCase().normalize('NFKD')])
-        , 'i')).slice(0, 10).map(result => result.closest('section, [opt]')?.querySelector('.title'));
-        let synonymous = $.all('article')
+            , 'i')).slice(0, 10).map(result => result.closest('section, [opt]')?.querySelector('.title'));
+
+        const synonymous = $.all('article')
             .map(element => [...element.childNodes].filter(node => node.nodeName.equals('#comment')))
             .flat()
             .filter(comment => comment.textContent.toLowerCase().contains(query.toLowerCase()))
             .filter(defined)
             .map(comment => comment.nextElementSibling);
-        let attributions = (
-            /^[\w-]{3,}$/.test(query)?
-                $.all(`[${ query }]`).map(e => ($('[tr-id]', e) ?? e)?.closest('[tr-id]')).filter(defined):
-            []
+
+        const attributions = (
+            /^[\w-]{3,}$/.test(query)
+                ? $.all(`[${ query }]`).map(e => ($('[tr-id]', e) ?? e)?.closest('[tr-id]')).filter(defined)
+                : []
         );
 
-        let results = [...exact, ...partial, ...synonymous, ...attributions]
+        const results = [...exact, ...partial, ...synonymous, ...attributions]
             .filter(defined)
             .filter(element => !element.hasAttribute('save'))
             .isolate();
 
-        for(let result of results)
+        for(const result of results)
             output.innerHTML += result.outerHTML;
 
-        for(let child of output.children) {
+        for(const child of output.children) {
             'beta dead new soon'.split(' ').map(attr => child.removeAttribute(attr));
 
             $.all('[id]', child).map(e => (e.dataset.id = e.id) && e.removeAttribute('id'));
@@ -2500,13 +2369,13 @@ $.all('#search').map(input => {
                     $('#search-container').dataset.focus = false;
                 };
             else
-                for(let fauxSetting of $.all(`[data-id]`, child)) {
+                for(const fauxSetting of $.all(`[data-id]`, child)) {
                     LoadSettings.assignValue(fauxSetting, SETTINGS[fauxSetting.dataset.id]);
 
                     fauxSetting.disabled = true;
                     fauxSetting.setAttribute('visible', true);
 
-                    let section = $(`#search-results :is([data-id="${ fauxSetting.dataset.id }"i], [tr-id="${ fauxSetting.getAttribute('tr-id') }"i])`).closest('section');
+                    const section = $(`#search-results :is([data-id="${ fauxSetting.dataset.id }"i], [tr-id="${ fauxSetting.getAttribute('tr-id') }"i])`).closest('section');
 
                     section.dataset.id = fauxSetting.dataset.id;
 
@@ -2528,24 +2397,25 @@ $.all('#search').map(input => {
 when.defined(() => SETTINGS)
     .then(() => {
         Storage.getBytesInUse(async BYTES_IN_USE => {
-            let ESTIMATE = await navigator?.storage?.estimate?.();
-            let MAX_BYTES = (Storage.QUOTA_BYTES || ESTIMATE?.quota),
-                PERC_IN_USE = (100 * ((BYTES_IN_USE || ESTIMATE?.usage) / MAX_BYTES)).toFixed(1);
+            const ESTIMATE = await navigator?.storage?.estimate?.();
+            const MAX_BYTES = (Storage.QUOTA_BYTES || ESTIMATE?.quota)
+                , PERC_IN_USE = (100 * ((BYTES_IN_USE || ESTIMATE?.usage) / MAX_BYTES)).toFixed(1);
 
             $.all('[id*="data-usage"i][id*="browser-storage"i][type="number"i]').map(input => {
-                let [amount, unit] = BYTES_IN_USE.suffix('B', false).split(/(\d+)(\D+)/).filter(s => s.length);
+                const [amount, unit] = BYTES_IN_USE.suffix('B', false).split(/(\d+)(\D+)/).filter(s => s.length);
 
                 input.value = amount;
                 input.closest('[unit]')?.setAttribute('unit', unit);
             });
-            $.all('[id*="data-usage"i][id*="browser-storage"i][id*="itemized"i]').map(table => {
-                let settBytes = 0,
-                    miscBytes = 0,
-                    liveBytes = 0,
-                    dvrBytes = 0,
-                    total = 0, size;
 
-                for(let key in SETTINGS) {
+            $.all('[id*="data-usage"i][id*="browser-storage"i][id*="itemized"i]').map(table => {
+                let settBytes = 0
+                    , miscBytes = 0
+                    , liveBytes = 0
+                    , dvrBytes = 0
+                    , total = 0, size;
+
+                for(const key in SETTINGS) {
                     size = JSON.stringify({ [key]: SETTINGS[key] }).length;
                     total += size;
 
@@ -2559,9 +2429,10 @@ when.defined(() => SETTINGS)
                         miscBytes += size;
                 }
 
-                let f = furnish,
-                    dD = /\.0+([kMG]?B)/;
-                let tbody = f.tbody(
+                const f = furnish
+                    , dD = /\.0+([kMG]?B)/;
+
+                const tbody = f.tbody(
                     f.tr(
                         f.td(`Settings`),
                         f.td(settBytes.suffix('B', 2).replace(dD, '$1')),
@@ -2591,13 +2462,13 @@ when.defined(() => SETTINGS)
 
                 table.append(tbody);
 
-                let current = [settBytes, liveBytes, dvrBytes, miscBytes].map(B => PERC_IN_USE * (B / total)),
-                    add = (a, b) => (a + b),
-                    colors = 'baby-blue live-red baby-gold purple igor-pink'
+                const current = [settBytes, liveBytes, dvrBytes, miscBytes].map(B => PERC_IN_USE * (B / total))
+                    , add = (a, b) => (a + b)
+                    , colors = 'baby-blue live-red baby-gold purple igor-pink'
                         .split(' ')
                         .slice(0, current.length)
                         .map((color, index) => {
-                            let td = $(`tr:nth-child(${ ++index }) td`, tbody);
+                            const td = $(`tr:nth-child(${ ++index }) td`, tbody);
 
                             td.modStyle(`text-decoration:2px underline var(--${ color })`);
                             td.insertAdjacentElement('afterbegin', f(`span[style="color:var(--${ color })"]`).with('@'));
@@ -2617,12 +2488,12 @@ when.defined(() => SETTINGS)
                     `);
 
                     element.addEventListener('mouseup', event => {
-                        let { currentTarget } = event;
+                        const { currentTarget } = event;
 
                         currentTarget.dataset.zoomed = currentTarget.dataset.zoomed.equals('false');
 
-                        let current = [settBytes, liveBytes, dvrBytes, miscBytes].map(B => (parseBool(currentTarget.dataset.zoomed)? 100: PERC_IN_USE) * (B / total));
-                        let colors = 'baby-blue live-red baby-gold purple igor-pink'
+                        const current = [settBytes, liveBytes, dvrBytes, miscBytes].map(B => (parseBool(currentTarget.dataset.zoomed) ? 100 : PERC_IN_USE) * (B / total));
+                        const colors = 'baby-blue live-red baby-gold purple igor-pink'
                             .split(' ')
                             .slice(0, current.length)
                             .map((color, index) => `var(--${ color }) 0 ${ current.slice(0, ++index).reduce(add, 0).toFixed(3) }%`)
@@ -2643,6 +2514,12 @@ when.defined(() => SETTINGS)
     });
 
 // Deprecated: v5.32.14.3
+/**
+ * Fetches translation files for a specific language and applies them to elements with `tr-id` attributes.
+ * @param {string} [language='en'] - The language code to use for translation
+ * @param {Document|Element} [container=document] - The DOM element to search for translatable text
+ * @returns {Promise<void>}
+ */
 async function Translate(language = 'en', container = document) {
     await fetch(`/_locales/${ language }/settings.json`)
         .catch(error => {
@@ -2653,14 +2530,22 @@ async function Translate(language = 'en', container = document) {
         .then(text => text.json?.())
         .then(json => {
             if(json?.LANG_PACK_READY !== true) {
-                let ISO = ISO_639_1[language];
-                let errMsg = json?.['[[ERROR]]'];
+                const ISO = ISO_639_1[language];
+                const errMsg = json?.['[[ERROR]]'];
 
                 if(nullish(ISO) || nullish(errMsg))
                     return;
 
-                let [latin] = ISO.name.split('/');
-                let link = ($0, $1 = 'GitHub', $$, $_) => `<strong><a target="_blank" href="https://github.com/Ephellon/Twitch-Tools/issues/new?assignees=Ephellon&labels=enhancement%2C+help-wanted%2C+wiki&template=lang_help.md&title=Translations%3A+${ encodeURIComponent(latin) }">${ $1 }</a></strong>`;
+                const [latin] = ISO.name.split('/');
+                /**
+                 * Generates an HTML anchor link to a GitHub issue template for translation help.
+                 * @param {*} $0 - Unused
+                 * @param {string} [$1='GitHub'] - The display text for the link
+                 * @param {*} $$ - Unused
+                 * @param {*} $_ - Unused
+                 * @returns {string} HTML string for the link
+                 */
+                const link = ($0, $1 = 'GitHub', $$, $_) => `<strong><a target="_blank" href="https://github.com/Ephellon/Twitch-Tools/issues/new?assignees=Ephellon&labels=enhancement%2C+help-wanted%2C+wiki&template=lang_help.md&title=Translations%3A+${ encodeURIComponent(latin) }">${ $1 }</a></strong>`;
 
                 alert.silent(`
                     <div style=color:yellow!important>
@@ -2675,15 +2560,15 @@ async function Translate(language = 'en', container = document) {
                 `, document.body.classList.contains('popup'));
             }
 
-            let lastTrID,
-                placement = {};
+            let lastTrID
+                , placement = {};
 
-            let { ELEMENT_NODE, TEXT_NODE } = document,
-                PREV_NODE, SEND_BACK = 0;
+            let { ELEMENT_NODE, TEXT_NODE } = document
+                , PREV_NODE, SEND_BACK = 0;
 
-            for(let element of $.all('[tr-id]', container)) {
-                let translation_id = (element.getAttribute('tr-id') || lastTrID),
-                    translations = (null
+            for(const element of $.all('[tr-id]', container)) {
+                const translation_id = (element.getAttribute('tr-id') || lastTrID)
+                    , translations = (null
                         ?? json['?']?.[translation_id]
                         ?? json[translation_id]
                         ?? []
@@ -2694,11 +2579,11 @@ async function Translate(language = 'en', container = document) {
                 if(!translations?.length)
                     continue;
 
-                let nodes = [...element.childNodes]
+                const nodes = [...element.childNodes]
                     .filter(node => [ELEMENT_NODE, TEXT_NODE].contains(node.nodeType))
-                    .filter(node => /^[^\s\.\!\?]/i.test((node.textContent ?? "").trim()))
+                    .filter(node => /^[^\s\.\!\?]/i.test((node.textContent ?? '').trim()))
                     .map(node => {
-                        let { attributes, nodeType } = node;
+                        const { attributes, nodeType } = node;
 
                         if([TEXT_NODE].contains(nodeType))
                             return node;
@@ -2710,22 +2595,32 @@ async function Translate(language = 'en', container = document) {
                     })
                     .filter(defined);
 
-                for(let node of nodes) {
-                    let translation = translations[placement[translation_id] |= 0];
-                    let padding = {
+                for(const node of nodes) {
+                    const translation = translations[placement[translation_id] |= 0];
+                    const padding = {
                         start: node.textContent.replace(/^([\s\.!:?,]*)[^]*?$/, '$1'),
                         stop: node.textContent.replace(/^[^]*?((?:&#?[\w\-]+?;)?[\s\.!:?,]*)$/, '$1'),
                     };
 
                     let number;
-                    let pad = (string = '') =>
+                    /**
+                     * Formats a translation string by applying padding and replacing numeric placeholders.
+                     * @param {string} [string=''] - The translation string to format
+                     * @returns {string} The formatted string
+                     */
+                    const pad = (string = '') =>
                         padding.start
                         + string
                             .replace(/%d\b/g, number = node.textContent.replace(/[^]*?(\d+)[^]*/, '$1'))
-                            .replace(/%([^>]*)>([^\s]*)/g, parseInt(number) > 1? '$2': '$1')
-                        + padding.stop;
+                            .replace(/%([^>]*)>([^\s]*)/g, parseInt(number) > 1 ? '$2' : '$1')
+                            + padding.stop;
 
-                    let slim = (string = '') => string
+                    /**
+                     * Removes unnecessary whitespace and characters from a string to make it more compact.
+                     * @param {string} [string=''] - The string to minify
+                     * @returns {string} The slimmed string
+                     */
+                    const slim = (string = '') => string
                         .replace(/\([\s]+/g, '(')
                         .replace(/[\s,:;]+\)/g, ')')
                         .replace(/\s+(-\w)/g, '$1');
@@ -2749,9 +2644,9 @@ async function Translate(language = 'en', container = document) {
 
                     node.textContent = slim(node.textContent);
 
-                    placement[translation_id] = (placement[translation_id] + 1 < translations.length)?
-                        placement[translation_id] + 1:
-                    0;
+                    placement[translation_id] = (placement[translation_id] + 1 < translations.length)
+                        ? placement[translation_id] + 1
+                        : 0;
 
                     if(SEND_BACK += +(/%</.test(translation ?? '')))
                         PREV_NODE = node.parentElement;
@@ -2763,42 +2658,46 @@ async function Translate(language = 'en', container = document) {
 }
 
 document.body.onload = async() => {
-    let url = parseURL(location.href),
-        search = url.searchParameters || {};
+    const url = parseURL(location.href)
+        , search = url.searchParameters || {};
 
     /* The extension was just installed (most likely the first run) */
-    await(async() => {
+    await (async() => {
         return 'en';
         // TODO: enable language settings... //
 
         if(nullish(search.installed))
             return;
 
-        let onmousedown = event => event.currentTarget.classList.add('chosen'),
-            onmouseup = event => event.currentTarget.closest('.language-select')?.remove();
+        /**
+         * Adds the 'chosen' class to the element that triggered the mouse down event.
+         * @param {Event} event - The mouse event
+         */
+        const onmousedown = event => event.currentTarget.classList.add('chosen')
+            , onmouseup = event => event.currentTarget.closest('.language-select')?.remove();
 
         let detectedLanguage = '';
 
-        Storage.get({ user_language_preference }, ({ user_language_preference = '' }) => {
+        Storage.get({ user_language_preference: '' }, ({ user_language_preference = '' }) => {
             // if(/^[A-Z]+$/.test(user_language_preference))
-                detectedLanguage = user_language_preference;
+            detectedLanguage = user_language_preference;
         });
 
         return when.defined(() => {
-            let languageOptions = $('.language-select');
+            const languageOptions = $('.language-select');
 
             if(nullish(languageOptions))
                 document.body.append(
                     furnish('.language-select').with(
                         furnish('button.language-option', { value: 'en', onmousedown, onmouseup }, `English (North American)`),
                         ...SUPPORTED_LANGUAGES.map(language => {
-                            let ISO = top.ISO_639_1[language];
+                            const ISO = top.ISO_639_1[language];
 
                             if(nullish(ISO))
                                 return;
 
-                            let { name, code, dialect } = ISO,
-                                [latin, native, regional] = unescape(name).split('/', 3);
+                            let { name, code, dialect } = ISO
+                                , [latin, native, regional] = unescape(name).split('/', 3);
 
                             return furnish('button.language-option', { value: code, onmousedown, onmouseup }, `${ native } (${ regional || latin })`);
                         }).filter(defined)
@@ -2812,13 +2711,13 @@ document.body.onload = async() => {
         });
     })()
 
-    /* Things needed before loading the page... */
+        /* Things needed before loading the page... */
         .then(async language => {
             if(defined(language))
                 await Storage.set({ user_language_preference: language.toLowerCase() });
 
             await Storage.get(['user_language_preference'], ({ user_language_preference = 'en' }) => {
-                let lang = document.documentElement.lang = user_language_preference.toLowerCase();
+                const lang = document.documentElement.lang = user_language_preference.toLowerCase();
 
                 // if(lang.unlike('en'))
                 //     Translate(lang);
@@ -2827,52 +2726,55 @@ document.body.onload = async() => {
             TRANSLATED = true;
         })
 
-    /* Continue loading/parsing the page */
+        /* Continue loading/parsing the page */
         .then(async() => {
             /* Continue loading the page after translations have been made/skipped */
 
             // Add classes to the body
-            for(let attribute in search)
+            for(const attribute in search)
                 $('body').classList.add(attribute);
+
+            // The viewer's scripts add their own settings (settings/user-scripts.js)
+            await window.SETTINGS_EXTRA;
 
             // Stop or continue loading settings
             if((search['show-defaults'] + '').unlike('true'))
                 await LoadSettings();
 
             // Overwrite settings defined in the search
-            for(let key in search)
+            for(const key in search)
                 if(usable_settings.contains(key) && $.defined(`#${ key }`))
                     LoadSettings.assignValue($(`#${ key }`), search[key]);
 
             // Adjust summaries
             $.all('.summary').map(element => {
-                let article = element.parentElement,
-                    summary = element,
-                    uuid = 'uuid-' + Math.random().toString(36).replace('.','');
+                const article = element.parentElement
+                    , summary = element
+                    , uuid = 'uuid-' + Math.random().toString(36).replace('.', '');
 
                 if(summary.children.length <= 2)
                     return;
 
-                let margin = ['.5rem'],
-                    getHeight = element => {
-                        let style = getComputedStyle(element),
-                            attributes = ['height'],
-                            height = 0;
+                const margin = ['.5rem']
+                    , getHeight = element => {
+                        let style = getComputedStyle(element)
+                            , attributes = ['height']
+                            , height = 0;
 
-                        for(let attribute of attributes)
+                        for(const attribute of attributes)
                             height += parseInt(style[attribute]);
 
                         return height;
                     };
 
                 // summary *
-                let not = [];
+                const not = [];
 
                 // Dynamically adjust the elements' heights
                 summary.id = uuid;
                 $.all('details, summary, input, img, div, h1, h2, h3, h4, h5, h6, ol, ul, p'.split(',').map(e=>`#${ uuid } > ${ e }${ not.map(n=>`:not(${ n })`).join('') }`).join(','), summary)
                     .map(element => {
-                        let height = getHeight(element);
+                        const height = getHeight(element);
 
                         if(height)
                             margin.push(height + 'px');
@@ -2887,22 +2789,22 @@ document.body.onload = async() => {
             wait(1000).then(() => {
                 // Adjust all audio URLs
                 $.all('#whisper_audio_sound').map(element => {
-                    let [selected] = element.selectedOptions;
-                    let pathname = (/\b(568)$/.test(selected.value)? '/message-tones/': '/notification-sounds/') + selected.value;
+                    const [selected] = element.selectedOptions;
+                    const pathname = (/\b(568)$/.test(selected.value) ? '/message-tones/' : '/notification-sounds/') + selected.value;
 
                     $('#sound-href').href = parseURL($('#sound-href').href).origin + pathname;
                 });
 
                 // All developer features
                 $.all('#est-data-usage').map(input => {
-                    let estimate = async({ currentTarget }) =>
+                    const estimate = async({ currentTarget }) =>
                         await Storage.get('LIVE_REMINDERS', ({ LIVE_REMINDERS }) => {
-                            let output = currentTarget.closest('summary, .summary').querySelector('#est-data-usage'),
-                                multiplier = currentTarget.closest('[class]').querySelector(':is([when-off], [when-on])'),
-                                off = multiplier.getAttribute('when-off'),
-                                on = multiplier.getAttribute('when-on');
+                            const output = currentTarget.closest('summary, .summary').querySelector('#est-data-usage')
+                                , multiplier = currentTarget.closest('[class]').querySelector(':is([when-off], [when-on])')
+                                , off = multiplier.getAttribute('when-off')
+                                , on = multiplier.getAttribute('when-on');
 
-                            let [value, unit] = ((LIVE_REMINDERS?.length | 0) * (60 / parseFloat(multiplier.checked? on: off)) * 2**20).suffix('B/h', false).split(/(\D+)/).filter(s => s.length);
+                            const [value, unit] = ((LIVE_REMINDERS?.length | 0) * (60 / parseFloat(multiplier.checked ? on : off)) * 2 ** 20).suffix('B/h', false).split(/(\D+)/).filter(s => s.length);
 
                             output.value = value;
                             output.parentElement.setAttribute('unit', unit);
@@ -2913,10 +2815,10 @@ document.body.onload = async() => {
 
                 setInterval(() => {
                     $.all([...['up', 'down', 'left', 'right', 'top', 'bottom'].map(dir => `[${ dir }-tooltip]`), '[tooltip]'].map(s => s + ':not([tooled])').join(',')).map(element => {
-                        let tooltip = [...element.attributes].map(attribute => attribute.name).find(attribute => /^(?:(up|top|down|bottom|left|right)-)?tooltip$/i.test(attribute)),
-                            direction = tooltip.replace(/-?tooltip$/, '');
+                        let tooltip = [...element.attributes].map(attribute => attribute.name).find(attribute => /^(?:(up|top|down|bottom|left|right)-)?tooltip$/i.test(attribute))
+                            , direction = tooltip.replace(/-?tooltip$/, '');
 
-                        direction = ({ top: 'up', bottom: 'down', })[direction] ?? direction;
+                        direction = ({ top: 'up', bottom: 'down' })[direction] ?? direction;
 
                         new Tooltip(element, element.getAttribute(tooltip), { direction });
 
@@ -2926,7 +2828,7 @@ document.body.onload = async() => {
 
                 // All experimental features - auto-enable "Experimental Features" if a feature is turned on
                 $.all('[id=":settings--experimental"i] section > .summary .toggle input').map(input => {
-                    let prerequisites = (input.getAttribute('requires') ?? '').split(',').filter(string => string.length);
+                    const prerequisites = (input.getAttribute('requires') ?? '').split(',').filter(string => string.length);
 
                     prerequisites.push('#experimental_mode');
 
@@ -2957,22 +2859,22 @@ document.body.onload = async() => {
                 // );
 
                 $.all('[requires]').map(dependent => {
-                    let providers = $.all(dependent.getAttribute('requires'));
+                    const providers = $.all(dependent.getAttribute('requires'));
 
                     Observing:
-                    for(let provider of providers) {
+                    for(const provider of providers) {
                         // Apply the false status to `dependent` when the `provider` is set to false
                             // when(provider.checked === false) → dependent.checked = false
                         // Also apply the changes to `provider` in the opposing manner when `dependent` is set to true
                             // when(dependent.checked === true) → provider.checked = true
-                        let dependents = (provider.getAttribute('dependents') ?? '').split(',');
+                        const dependents = (provider.getAttribute('dependents') ?? '').split(',');
 
                         provider.setAttribute('dependents', [...dependents, `#${ dependent.id }`].filter(string => string.length).join(','));
 
                         provider.addEventListener('change', event => {
-                            let { currentTarget } = event,
-                                { checked } = currentTarget,
-                                dependents = currentTarget.getAttribute('dependents');
+                            let { currentTarget } = event
+                                , { checked } = currentTarget
+                                , dependents = currentTarget.getAttribute('dependents');
 
                             if(!checked)
                                 $.all(dependents).filter(dependent => dependent.checked).map(dependent => dependent.click());
@@ -2981,15 +2883,15 @@ document.body.onload = async() => {
 
                     // Add "requires" event listeners
                     dependent.addEventListener('change', event => {
-                        let { currentTarget } = event,
-                            { checked } = currentTarget,
-                            providers = currentTarget.getAttribute('requires');
+                        let { currentTarget } = event
+                            , { checked } = currentTarget
+                            , providers = currentTarget.getAttribute('requires');
 
                         if(checked)
                             $.all(providers).filter(provider => !provider.checked).map(provider => provider.click());
                     });
 
-                    let tooltipContainer = dependent.closest(':not(input)');
+                    const tooltipContainer = dependent.closest(':not(input)');
 
                     tooltipContainer.setAttribute('right-tooltip', new Tooltip(tooltipContainer, `Requires ${ providers.map(provider => depadName(provider.id)).join(', ') }`, { direction: 'right' }).textContent);
                 });
@@ -3007,8 +2909,16 @@ document.body.onload = async() => {
             });
         })
 
-    /* Things needed after loading the page... */
+        /* Things needed after loading the page... */
         .then(() => {
             INITIAL_LOAD = false;
+
+            // A fresh install has nothing stored, so the pages would read every option as unset
+            // (not as its default); store the form's values whenever any option is missing
+            Storage.get(null, stored => {
+                // (values kept without a control, like the user scripts list, are written by their own code)
+                if(usable_settings.some(id => !(id in stored) && $.defined(`#${ id }`)))
+                    SaveSettings();
+            });
         });
 };

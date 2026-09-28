@@ -35,13 +35,13 @@
  * Symbol(id)   // Symbol(eabd8ed0-8aa6-43cd-88ec-dfd663b5f308)
  */
 class UUID {
-    static #BWT_SEED = new UUID()
+    static #BWT_SEED = new UUID();
 
     /** @constructor
      * @return {object<string>} A UUID object
      */
     constructor() {
-        let native = ([1e7]+-1e3+-4e3+-8e3+-1e11).replace(/[018]/g, x => (x ^ window.crypto.getRandomValues(new Uint8Array(1))[0] & 15 >> x / 4).toString(16));
+        const native = ([1e7] + -1e3 + -4e3 + -8e3 + -1e11).replace(/[018]/g, (x, $$, $_) => (x ^ window.crypto.getRandomValues(new Uint8Array(1))[0] & 15 >> x / 4).toString(16));
 
         return Object.assign(this, new String(native), {
             native,
@@ -49,23 +49,26 @@ class UUID {
 
             [Symbol.toPrimitive](type) {
                 switch(type) {
-                    case 'boolean':
+                    case 'boolean': {
                         return true;
+                    }
 
                     case 'bigint':
-                    case 'number':
+                    case 'number': {
                         return NaN;
+                    }
 
                     case 'default':
                     case 'object':
                     case 'string':
                     case 'symbol':
-                    default:
+                    default: {
                         return this.native;
-                }
+                    }
+                } // switch type
             },
         });
-	}
+    }
 
     /**
      * Returns a "normalized" (32 character string) version of the UUID.
@@ -99,14 +102,14 @@ class UUID {
         if(/^[\x32]*$/.test(string))
             return '';
 
-    	let _a = `\u0001${string}`;
-    	let _b = `\u0001${string}\u0001${string}`;
-    	let _p = [];
+        const _a = `\u0001${ string }`;
+        const _b = `\u0001${ string }\u0001${ string }`;
+        const _p = [];
 
-    	for(let n = 0; n < _a.length; n++)
-    		_p.push(_b.slice(n, _a.length + n));
+        for(let n = 0; n < _a.length; n++)
+            _p.push(_b.slice(n, _a.length + n));
 
-    	return _p.sort().map(c => c.slice(-1)[0]).join('');
+        return _p.sort().map(c => c.slice(-1)[0]).join('');
     }
 
     /**
@@ -119,25 +122,39 @@ class UUID {
         if(/^[\x32]*$/.test(string))
             return '';
 
-        let _a = string.split('');
+        const _a = string.split('');
 
-        let _b = q => {
+        /**
+         * Counts how many elements in the internal array are less than a given value.
+         * @param {number} q - The value to compare against
+         * @returns {number} The count of elements smaller than q
+         */
+        const _b = q => {
             let c = 0;
+
             for(let n = 0; n < _a.length; n++)
                 if(_a[n] < q)
-                    c++;
+                    ++c;
             return c;
-        }
+        };
 
-        let _c = (i, q) => {
+        /**
+         * Counts occurrences of a specific value within the internal array up to a given index.
+         * @param {number} i - The index limit for the search
+         * @param {number} q - The value to search for
+         * @returns {number} The count of matching elements
+         */
+        const _c = (i, q) => {
             let c = 0;
+
             for(let n = 0; n < i; n++)
-                if (_a[n] === q)
-                    c++;
+                if(_a[n] === q)
+                    ++c;
             return c;
-        }
+        };
 
         let d = 0, e = '', z = _a.length + 1;
+
         while(_a[d] !== '\u0001' && z--) {
             e = _a[d] + e;
             d = _b(_a[d]) + _c(d, _a[d]);
@@ -155,8 +172,8 @@ class UUID {
      * @return {string}                     53-bit hash
      */
     static cyrb53(string, seed = 0) {
-        let H1 = 0xDEADBEEF ^ seed,
-            H2 = 0x41C6CE57 ^ seed;
+        let H1 = 0xDEADBEEF ^ seed
+            , H2 = 0x41C6CE57 ^ seed;
 
         for(let i = 0, char; i < string.length; ++i) {
             char = string.charCodeAt(i);
@@ -187,9 +204,9 @@ class UUID {
             || null
         );
 
-        let PRIVATE_KEY = (traceable? '': `private-key="${ UUID.#BWT_SEED }"`),
-            CONTENT_KEY = `content="${ encodeURIComponent(key) }"`,
-            PUBLIC_KEY = `public-key="${ Manifest.name }"`;
+        const PRIVATE_KEY = (traceable ? '' : `private-key="${ UUID.#BWT_SEED }"`)
+            , CONTENT_KEY = `content="${ encodeURIComponent(key) }"`
+            , PUBLIC_KEY = `public-key="${ Manifest.name }"`;
 
         let hash = Uint8Array.from(
                 btoa(
@@ -199,13 +216,13 @@ class UUID {
                 )
                     .split('')
                     .map(character => character.charCodeAt(0))
-            ),
-            l = hash.length,
-            i = 0;
+            )
+            , l = hash.length
+            , i = 0;
 
         hash = hash.map((n, i, a) => a[n & 255] ^ a[n | 170] ^ a[n ^ 85] ^ a[-~n] ^ n + i);
 
-        let native = ([1e7]+-1e3+-4e3+-8e3+-1e11).replace(/[018]/g, x => (x ^ hash[++i<l?i:i=0] & 15 >> x / 4).toString(16));
+        const native = ([1e7] + -1e3 + -4e3 + -8e3 + -1e11).replace(/[018]/g, (x, $$, $_) => (x ^ hash[++i < l ? i : i = 0] & 15 >> x / 4).toString(16));
 
         PrepareForGarbageCollection(hash);
 
@@ -227,9 +244,9 @@ class UUID {
         key = (key ?? '').toString();
 
         // Privatize (pre-hash) the message a bit
-        let PRIVATE_KEY = `private-key=${ UUID.#BWT_SEED }`,
-            CONTENT_KEY = `content="${ encodeURIComponent(key) }"`,
-            PUBLIC_KEY = `public-key=${ Manifest.version }`;
+        const PRIVATE_KEY = `private-key=${ UUID.#BWT_SEED }`
+            , CONTENT_KEY = `content="${ encodeURIComponent(key) }"`
+            , PUBLIC_KEY = `public-key=${ Manifest.version }`;
 
         key = btoa([PRIVATE_KEY, CONTENT_KEY, PUBLIC_KEY].map(UUID.BWT).join('~'));
 
@@ -240,9 +257,10 @@ class UUID {
         const hash =
             [...new Uint8Array(hashBuffer)]                                     // convert buffer to byte array
                 .map(B => B.toString(16).padStart(2, '0'));                     // convert each byte into a hex-string
+
         const native = hash
-                .join('')                                                       // convert bytes to hex string
-                .replace(/(.{16})(.{8})(.{8})(.{8})/, '$1-$2-$3-$4-');          // format the string into a large UUID string
+            .join('')                                                       // convert bytes to hex string
+            .replace(/(.{16})(.{8})(.{8})(.{8})/, '$1-$2-$3-$4-');          // format the string into a large UUID string
 
         PrepareForGarbageCollection(hash);
 
@@ -271,7 +289,7 @@ class nanoid {
         // `2^31 - 1` number, which exceeds the alphabet size.
         // For example, the bitmask for the alphabet size 30 is 31 (00011111).
         // `Math.clz32` is not used, because it is not available in browsers.
-        let mask = (2 << (Math.log(alphabet.length - 1) / Math.LN2)) - 1;
+        const mask = (2 << (Math.log(alphabet.length - 1) / Math.LN2)) - 1;
         // Though, the bitmask solution is not perfect since the bytes exceeding
         // the alphabet size are refused. Therefore, to reliably generate the ID,
         // the random bytes redundancy has to be satisfied.
@@ -287,22 +305,24 @@ class nanoid {
 
         // `-~f => Math.ceil(f)` if f is a float
         // `-~i => i + 1` if i is an integer
-        let step = -~((1.6 * mask * defaultSize) / alphabet.length);
+        const step = -~((1.6 * mask * defaultSize) / alphabet.length);
 
         return (size = defaultSize) => {
             let id = '';
 
             while(true) {
-                let bytes = getRandom(step);
+                const bytes = getRandom(step);
                 // A compact alternative for `for (let i = 0; i < step; i++)`.
                 let i = step;
+
                 while(i--) {
                     // Adding `|| ''` refuses a random byte that exceeds the alphabet size.
                     id += alphabet[bytes[i] & mask] || '';
-                    if(id.length === size) return id;
+                    if(id.length === size)
+                        return id;
                 }
             }
-        }
+        };
     }
 
     static #customAlphabet(alphabet, size = 21) {
@@ -310,21 +330,21 @@ class nanoid {
     }
 
     // https://github.com/CyberAP/nanoid-dictionary
-    static #scopedUrlAlphabet = "useandom-26T198340PX75pxJACKVERYMINDBUSHWOLF_GQZbfghjklqvwyzrict";
+    static #scopedUrlAlphabet = 'useandom-26T198340PX75pxJACKVERYMINDBUSHWOLF_GQZbfghjklqvwyzrict';
 
-    static NUMBERS = "0123456789";
-    static HEXADECIMAL_LOWERCASE = "0123456789abcdef";
-    static HEXADECIMAL_UPPERCASE = "0123456789ABCDEF";
-    static LOWERCASE = "abcdefghijklmnopqrstuvwxyz";
-    static LOWERCASE_SAFE = "bcdfghjklmnpqrstvwxz";
-    static UPPERCASE = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
-    static UPPERCASE_SAFE = "BCDFGHJKLMNPQRSTVWXZ";
-    static ALPHANUMERIC = "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ";
-    static ALPHANUMERIC_SAFE = "2456789bcdfghjklmnpqrstvwxzBCDFGHJKLMNPQRSTVWXZ";
-    static NO_LOOK_ALIKES = "346789ABCDEFGHJKLMNPQRTUVWXYabcdefghijkmnpqrtwxyz";
-    static NO_LOOK_ALIKES_SAFE = "6789BCDFGHJKLMNPQRTWbcdfghjkmnpqrtwz";
-    static BASE64 = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/=";
-    static CRX = "abcdefghijklmnop";
+    static NUMBERS = '0123456789';
+    static HEXADECIMAL_LOWERCASE = '0123456789abcdef';
+    static HEXADECIMAL_UPPERCASE = '0123456789ABCDEF';
+    static LOWERCASE = 'abcdefghijklmnopqrstuvwxyz';
+    static LOWERCASE_SAFE = 'bcdfghjklmnpqrstvwxz';
+    static UPPERCASE = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+    static UPPERCASE_SAFE = 'BCDFGHJKLMNPQRSTVWXZ';
+    static ALPHANUMERIC = '0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ';
+    static ALPHANUMERIC_SAFE = '2456789bcdfghjklmnpqrstvwxzBCDFGHJKLMNPQRSTVWXZ';
+    static NO_LOOK_ALIKES = '346789ABCDEFGHJKLMNPQRTUVWXYabcdefghijkmnpqrtwxyz';
+    static NO_LOOK_ALIKES_SAFE = '6789BCDFGHJKLMNPQRTWbcdfghjkmnpqrtwz';
+    static BASE64 = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/=';
+    static CRX = 'abcdefghijklmnop';
 
     /** @constructor
      *
@@ -334,44 +354,50 @@ class nanoid {
      */
     constructor(size = 21, alphabet) {
         let id = '';
-        let bytes = nanoid.#random(size);
+        const bytes = nanoid.#random(size);
 
         if(alphabet?.length)
             id = nanoid.#customAlphabet(alphabet)(size);
-        else while(size--)
-            // Using the bitwise AND operator to "cap" the value of
-            // the random byte from 255 to 63, in that way we can make sure
-            // that the value will be a valid index for the "chars" string.
-            id += nanoid.#scopedUrlAlphabet[bytes[size] & 63];
+        else
+            while(size--)
+                // Using the bitwise AND operator to "cap" the value of
+                // the random byte from 255 to 63, in that way we can make sure
+                // that the value will be a valid index for the "chars" string.
+                id += nanoid.#scopedUrlAlphabet[bytes[size] & 63];
 
         return Object.assign(this, new String(id), {
             value: id,
 
             [Symbol.toPrimitive](type) {
                 switch(type) {
-                    case 'boolean':
+                    case 'boolean': {
                         return (bytes.reduce((_, v, i, a) => _ + v, 0) % 2) > 0;
+                    }
 
-                    case 'bigint':
-                        let B = BigInt;
-                        let b = parseInt(id, 36);
+                    case 'bigint': {
+                        const B = BigInt;
+                        const b = parseInt(id, 36);
 
-                        return (Number.isFinite(b) && !Number.isNaN(b)? B(b): bytes.reduce((_, v, i, a) => _ + B(v), 0n));
+                        return (Number.isFinite(b) && !Number.isNaN(b) ? B(b) : bytes.reduce((_, v, i, a) => _ + B(v), 0n));
+                    }
 
-                    case 'number':
-                        let n = parseInt(id, 36);
+                    case 'number': {
+                        const n = parseInt(id, 36);
 
-                        return (Number.isFinite(n) && !Number.isNaN(n)? n: bytes.reduce((_, v, i, a) => _ + v, 0));
+                        return (Number.isFinite(n) && !Number.isNaN(n) ? n : bytes.reduce((_, v, i, a) => _ + v, 0));
+                    }
 
-                    case 'symbol':
+                    case 'symbol': {
                         return Symbol(id);
+                    }
 
                     case 'object':
                     case 'string':
                     case 'default':
-                    default:
+                    default: {
                         return id;
-                }
+                    }
+                } // switch type
             },
         });
     }
@@ -391,7 +417,7 @@ class nanoid {
  * let codec = new LZW("hello" × 30) // → LZW { get decoded: "hellohello…", get encoded: "oBAlBAsBAs…", value: "hellohello…" }
  */
 class LZW {
-    static B64 = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
+    static B64 = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/';
 
     /** @constructor
      * @return {object<string>} An LZW object
@@ -432,8 +458,8 @@ class LZW {
         let output = '';
 
         for(let char, index = 0, { length } = input; index < length; ++index) {
-            let a = input.charCodeAt(index) | 0,
-                b = salt.charCodeAt(index % salt.length) | 0;
+            const a = input.charCodeAt(index) | 0
+                , b = salt.charCodeAt(index % salt.length) | 0;
 
             output += String.fromCharCode(a ^ b);
         }
@@ -454,21 +480,25 @@ class LZW {
 
         string = unescape(encodeURIComponent(string)).split('');
 
-        let dictionary = new Map,
-            [word] = string,
-            index = 256,
-            output = [],
-            key;
+        let dictionary = new Map
+            , [word] = string
+            , index = 256
+            , output = []
+            , key;
 
+        /**
+         * Pushes a word's dictionary mapping or its character code to the output buffer.
+         * @param {string} word - The word to process
+         */
         function push(word) {
-            output.push(word.length > 1? dictionary.get(word): word.charCodeAt(0));
+            output.push(word.length > 1 ? dictionary.get(word) : word.charCodeAt(0));
         }
 
         for(let i = 1; i < string.length; ++i) {
-            let char = string[i];
+            const char = string[i];
 
             if(dictionary.has(word + char)) {
-                word += char;
+                word += char
             } else {
                 dictionary.set(word + char, index++);
 
@@ -491,21 +521,21 @@ class LZW {
      * @return {string}
      */
     static decode(string = '') {
-        let dictionary = new Map,
-            [word] = string,
-            index = 256,
-            output = [word],
-            last = word;
+        let dictionary = new Map
+            , [word] = string
+            , index = 256
+            , output = [word]
+            , last = word;
 
         for(let i = 1; i < string.length; ++i) {
-            let key = string.charCodeAt(i);
+            const key = string.charCodeAt(i);
 
             word = (
-                key < 256?
-                    String.fromCharCode(key):
-                dictionary.has(key)?
-                    dictionary.get(key):
-                word + word.charAt(0)
+                key < 256
+                    ? String.fromCharCode(key)
+                    : dictionary.has(key)
+                        ? dictionary.get(key)
+                        : word + word.charAt(0)
             );
 
             output.push(word);
@@ -527,17 +557,21 @@ class LZW {
 
         string = unescape(encodeURIComponent(string)).split('');
 
-        let { B64 } = LZW;
-        let dictionary = new Map,
-            [word] = string,
-            index = 256,
-            output = [],
-            key;
+        const { B64 } = LZW;
+        let dictionary = new Map
+            , [word] = string
+            , index = 256
+            , output = []
+            , key;
 
+        /**
+         * Pushes a Base64 encoded representation of a word's mapping or character code to the output buffer.
+         * @param {string} word - The word to process
+         */
         function push(word) {
-            let k = 63;
+            const k = 63;
 
-            key = word.length > 1? dictionary.get(word): word.charCodeAt(0);
+            key = word.length > 1 ? dictionary.get(word) : word.charCodeAt(0);
 
             output.push(B64[key & k]);
             output.push(B64[(key >> 6) & k]);
@@ -545,10 +579,10 @@ class LZW {
         }
 
         for(let i = 1; i < string.length; ++i) {
-            let char = string[i];
+            const char = string[i];
 
             if(dictionary.has(word + char)) {
-                word += char;
+                word += char
             } else {
                 dictionary.set(word + char, index++);
 
@@ -575,28 +609,29 @@ class LZW {
      * @return {string}
      */
     static decode64(string = '') {
-        let { B64 } = LZW,
-            D64 = {};
+        let { B64 } = LZW
+            , D64 = {};
 
         let chardex = 0;
-        for(let char of B64)
+
+        for(const char of B64)
             D64[char] = chardex++;
 
-        let dictionary = new Map,
-            word = String.fromCharCode((D64[string[0]]) + (D64[string[1]] << 6) + (D64[string[2]] << 12)),
-            index = 256,
-            output = [word],
-            last = word;
+        let dictionary = new Map
+            , word = String.fromCharCode((D64[string[0]]) + (D64[string[1]] << 6) + (D64[string[2]] << 12))
+            , index = 256
+            , output = [word]
+            , last = word;
 
         for(let i = 3; i < string.length; i += 3) {
-            let key = ((D64[string[i + 0]]) + (D64[string[i + 1]] << 6) + (D64[string[i + 2]] << 12));
+            const key = ((D64[string[i + 0]]) + (D64[string[i + 1]] << 6) + (D64[string[i + 2]] << 12));
 
             word = (
-                key < 256?
-                    String.fromCharCode(key):
-                dictionary.has(key)?
-                    dictionary.get(key):
-                word + word.charAt(0)
+                key < 256
+                    ? String.fromCharCode(key)
+                    : dictionary.has(key)
+                        ? dictionary.get(key)
+                        : word + word.charAt(0)
             );
 
             output.push(word);
@@ -610,7 +645,8 @@ class LZW {
 
         return decodeURIComponent(escape(output.join('')));
     }
-};
+}
+;
 
 /**
  * An over-arching adjustment schema.
@@ -632,8 +668,8 @@ class LZW {
  * @simply new Tooltip(parent:Element, text:string?, fineTuning:object?<{ left:number<integer>, top:number<integer>, from:string<"up" | "right" | "down" | "left">, lean:string<"center" | "right" | "left">, fit:boolean?, style:string? }>) → Element<Tooltip>
  */
 class Tooltip {
-    static #TOOLTIPS = new Map()
-    static #CLEANER = setInterval(() => $.all('[tt-remove-me="true"i]').map(tooltip => tooltip.closest('.tooltip-layer').remove()), 100)
+    static #TOOLTIPS = new Map();
+    static #CLEANER = setInterval(() => $.all('[tt-remove-me="true"i]').map(tooltip => tooltip.closest('.tooltip-layer').remove()), 100);
 
     /** @constructor
      *
@@ -644,13 +680,13 @@ class Tooltip {
      * @return {Element}                                Returns the new tooltip element (attached to the parent)
      */
     constructor(parent, text = '', fineTuning = {}) {
-        let existing = Tooltip.#TOOLTIPS.get(parent);
+        const existing = Tooltip.#TOOLTIPS.get(parent);
 
         fineTuning.top |= 0;
         fineTuning.left |= 0;
 
         fineTuning.from ??= '';
-        fineTuning.from = ({ top: 'up', bottom: 'down', above: 'up', below: 'down' })[fineTuning.from] ?? fineTuning.from
+        fineTuning.from = ({ top: 'up', bottom: 'down', above: 'up', below: 'down' })[fineTuning.from] ?? fineTuning.from;
 
         parent.setAttribute('fine-tuning', JSON.stringify(fineTuning));
 
@@ -661,10 +697,11 @@ class Tooltip {
         }
 
         let uuid;
-        let tooltip = furnish(`.tt-tooltip.tt-tooltip--align-${ fineTuning.lean || 'center' }.tt-tooltip--${ fineTuning.from || 'down' }`, { role: 'tooltip', innerHTML: text });
+        const tooltip = furnish(`.tt-tooltip.tt-tooltip--align-${ fineTuning.lean || 'center' }.tt-tooltip--${ fineTuning.from || 'down' }`, { role: 'tooltip', innerHTML: text });
 
-        let upper = parent.closest('[tt-tooltip-id]')?.getAttribute('tt-tooltip-id') ?? '';
-        let values = [parent.getAttribute('tt-tooltip-id'), parent.getAttribute('id'), UUID.from(parent.getPath(getDOMPath.ANCHORED)).value];
+        const upper = parent.closest('[tt-tooltip-id]')?.getAttribute('tt-tooltip-id') ?? '';
+        const values = [parent.getAttribute('tt-tooltip-id'), parent.getAttribute('id'), UUID.from(parent.getPath(getDOMPath.ANCHORED)).value];
+
         for(let value, index = 0; nullish(value) && index < values.length; ++index) {
             value = values[index];
             uuid = [upper, value, (['', 'tooltip'][index] ?? '')].filter(_ => _?.length).join(':');
@@ -673,40 +710,19 @@ class Tooltip {
         parent.setAttribute('tt-tooltip-id', tooltip.id = uuid);
 
         parent.addEventListener('mouseenter', (function(event) {
-            let { currentTarget } = event,
-                offset = getOffset(currentTarget),
-                screen = getOffset(document.body),
-                fineTuning = JSON.parse(currentTarget.getAttribute('fine-tuning')),
-                [groupID] = currentTarget.getAttribute('tt-tooltip-id').split(':');
-
-            let from = fineTuning.from.replace(/^[^]+--(up|down|left|right)$/i, '$1').toLowerCase();
+            const { currentTarget } = event
+                , offset = getOffset(currentTarget)
+                , fineTuning = JSON.parse(currentTarget.getAttribute('fine-tuning'))
+                , [groupID] = currentTarget.getAttribute('tt-tooltip-id').split(':');
 
             let container;
+
             $.queryBy('#root > *, body').first.append(
                 container = furnish(`.tt-tooltip-layer.tooltip-layer[for="${ groupID }"]`,
                     {
-                        style: (() => {
-                            let style = 'animation:.3s fade-in 1;';
-
-                            switch(from) {
-                                // case 'up':
-                                //     style += `transform: translate(${ offset.left + fineTuning.left }px, ${ offset.top + fineTuning.top }px); width: ${ offset.width }px; height: ${ offset.height }px; z-index: 99999;`;
-
-                                case 'down':
-                                    style += `transform: translate(${ offset.left + fineTuning.left }px, ${ (offset.bottom - screen.height - offset.height) + fineTuning.top }px); width: ${ offset.width }px; height: ${ 0 & offset.height }px; z-index: 99999;`;
-
-                                // case 'left':
-                                //     style += `transform: translate(${ offset.left + offset.width + fineTuning.left }px, ${ offset.top + fineTuning.top }px); width: ${ offset.width }px; height: ${ offset.height }px; z-index: 99999;`;
-
-                                // case 'right':
-                                //     style += `transform: translate(${ (offset.right - screen.width - offset.width) + fineTuning.left }px, ${ offset.top + fineTuning.top }px); width: ${ offset.width }px; height: ${ offset.height }px; z-index: 99999;`;
-
-                                default:
-                                    style += `transform: translate(${ offset.left + fineTuning.left }px, ${ offset.top + fineTuning.top }px); width: ${ offset.width }px; height: ${ 0 & offset.height }px; z-index: 99999;`;
-                            }
-
-                            return style;
-                        })()
+                        // One placement for every direction: the layer sits over the parent, and the
+                        // `.tt-tooltip--{from}` class positions the tooltip around it (see extras.css)
+                        style: `animation:.3s fade-in 1; transform: translate(${ offset.left + fineTuning.left }px, ${ offset.top + fineTuning.top }px); width: ${ offset.width }px; height: 0px; z-index: 99999;`
                     },
                     furnish('.tt-inline-flex.tt-relative.tt-tooltip-wrapper', { 'aria-describedby': groupID, 'show': true },
                         furnish('div', { style: `width: ${ offset.width }px; height: ${ offset.height }px;` }),
@@ -715,7 +731,7 @@ class Tooltip {
                 )
             );
 
-            let correct = getOffset(this);
+            const correct = getOffset(this);
 
             if(parseBool(fineTuning.fit))
                 this.setAttribute('style', `max-width:${ offset.width }px`);
@@ -729,8 +745,8 @@ class Tooltip {
         }).bind(tooltip));
 
         parent.addEventListener('mouseleave', ({ currentTarget }) => {
-            let tipID = currentTarget.getAttribute('tt-tooltip-id');
-            let tooltip = $(`[id="${ tipID }"i]`)?.closest('[show]');
+            const tipID = currentTarget.getAttribute('tt-tooltip-id');
+            const tooltip = $(`[id="${ tipID }"i]`)?.closest('[show]');
 
             tooltip?.setAttribute('show', false);
             tooltip?.setAttribute('tt-remove-me', true);
@@ -738,7 +754,7 @@ class Tooltip {
             RemoveCustomCSSBlock(`tooltip#${ tipID }`);
         });
 
-        when(id => ($.nullish(`[tt-tooltip-id="${ id }"i]`)? id: false), 30, uuid)
+        when(id => ($.nullish(`[tt-tooltip-id="${ id }"i]`) ? id : false), 30, uuid)
             .then(id => {
                 $.all(`.tooltip-layer[for^="${ id }"i]`).map(e => e.remove());
             });
@@ -764,8 +780,8 @@ class Tooltip {
      * @return {boolean}    If the operation was successful.
      */
     remove() {
-        let tooltipID = this.closest('[tt-tooltip-id]').getAttribute('tt-tooltip-id');
-        let container = this.closest('[show]');
+        const tooltipID = this.closest('[tt-tooltip-id]').getAttribute('tt-tooltip-id');
+        const container = this.closest('[show]');
 
         try {
             container.setAttribute('show', false);
@@ -778,7 +794,8 @@ class Tooltip {
             return false;
         }
     }
-};
+}
+;
 
 /** @typedef {string} CSSSelector
  * See {@link https://developer.mozilla.org/en-US/docs/Web/CSS/CSS_selectors CSS selectors}
@@ -815,9 +832,9 @@ class Tooltip {
  * @return {?(Element|Array<?Element>)}
  */
 function $(selector, container = document, multiple = false) {
-    return multiple?
-        [...(container?.querySelectorAll(selector) ?? [])]:
-    (container?.querySelector(selector) ?? null);
+    return multiple
+        ? [...(container?.querySelectorAll(selector) ?? [])]
+        : (container?.querySelector(selector) ?? null);
 }
 
 Object.defineProperties($, {
@@ -880,7 +897,7 @@ Object.defineProperties($, {
     },
 
     defined: {
-        value: (selector, container = document, multiple = false) => multiple? $(selector, container, true).length > 0: defined($(selector, container)),
+        value: (selector, container = document, multiple = false) => multiple ? $(selector, container, true).length > 0 : defined($(selector, container)),
 
         writable: false,
         enumerable: false,
@@ -888,7 +905,7 @@ Object.defineProperties($, {
     },
 
     nullish: {
-        value: (selector, container = document, multiple = false) => multiple? $(selector, container, true).length < 1: nullish($(selector, container)),
+        value: (selector, container = document, multiple = false) => multiple ? $(selector, container, true).length < 1 : nullish($(selector, container)),
 
         writable: false,
         enumerable: false,
@@ -937,7 +954,7 @@ function nullish(value) {
  * @return {boolean}    Returns <i>true</i> if the value is <i>null</i> or <i>undefined</i>
  */
 nullish.literal = function(value) {
-	return (value === null) || (value === void null);
+    return (value === null) || (value === void null);
 };
 
 /**
@@ -959,7 +976,7 @@ function defined(value) {
  * @return {boolean}    Returns <i>true</i> if the value is <strong>not</strong> <i>null</i> or <i>undefined</i>
  */
 defined.literal = function(value) {
-	return !nullish.literal(value);
+    return !nullish.literal(value);
 };
 
 /**
@@ -969,15 +986,15 @@ defined.literal = function(value) {
  * @return {boolean}        Whether the object is empty or not
  */
 function empty(iterable) {
-	let itr = iterable ?? [];
+    const itr = iterable ?? [];
 
-	if(itr instanceof Map || itr instanceof Set)
-		return itr.size < 1;
+    if(itr instanceof Map || itr instanceof Set)
+        return itr.size < 1;
 
-	if(itr.constructor === Object)
-		return empty(Object.keys(itr));
+    if(itr.constructor === Object)
+        return empty(Object.keys(itr));
 
-	return (itr.length | 0) < 1;
+    return (itr.length | 0) < 1;
 }
 
 /**
@@ -987,7 +1004,7 @@ function empty(iterable) {
  * @return {boolean}        Whether the object is empty or not
  */
 function sated(iterable) {
-	return !empty(iterable);
+    return !empty(iterable);
 }
 
 /**
@@ -1014,7 +1031,7 @@ function PrepareForGarbageCollection(...objects) {
         for(object of objects) {
             if(object === void null || object === null)
                 continue;
-            if(!!~["number", "bigint", "string", "boolean", "symbol"].indexOf(typeof object))
+            if(~['number', 'bigint', 'string', 'boolean', 'symbol'].indexOf(typeof object))
                 continue;
             if(LEDGER.has(object))
                 continue;
@@ -1034,7 +1051,7 @@ function PrepareForGarbageCollection(...objects) {
             } else if([Array, Uint8Array, Uint8ClampedArray, Uint16Array, Uint32Array, Int8Array, Int16Array, Int32Array, Float32Array, Float64Array, BigInt64Array, BigUint64Array].find(constructor => object instanceof constructor)) {
                 const HAS_ONLY_PRIMITIVES = (false
                     || (object.constructor !== Array)
-                    || (!~object.findIndex(_ => _ !== null && _ !== void null && !~["number", "bigint", "string", "boolean", "symbol"].indexOf(typeof _)))
+                    || (!~object.findIndex(_ => _ !== null && _ !== void null && !~['number', 'bigint', 'string', 'boolean', 'symbol'].indexOf(typeof _)))
                 );
 
                 // Deliberately create Sparse Arrays
@@ -1065,6 +1082,10 @@ function PrepareForGarbageCollection(...objects) {
         if(ok)
             LEDGER.clear();
     });
+
+    // Every nested call ran synchronously above; the next call is top-most again
+    if(locale === LOCALE)
+        delete PrepareForGarbageCollection.__GARBAGE_COLLECTION_LOCATION__;
 }
 
 /**
@@ -1081,9 +1102,9 @@ PrepareForGarbageCollection.Indiscriminately = function Indiscriminately(...obje
             if(object.startsWith('blob:'))
                 URL.revokeObjectURL(object);
         } else if(object instanceof Element) {
-            object.remove();
+            object.remove()
         } else {
-            PrepareForGarbageCollection(object);
+            PrepareForGarbageCollection(object)
         }
     }
 };
@@ -1164,17 +1185,17 @@ PrepareForGarbageCollection.Indiscriminately = function Indiscriminately(...obje
  */
 async function when(condition, ms = 30, ...args) {
     return new Promise((resolve, reject) => {
-        let interval = setInterval(async args => {
-            let value = await condition.apply(null, args);
+        const interval = setInterval(async args => {
+            const value = await condition.apply(null, args);
 
             if(parseBool(value) !== false) {
                 clearInterval(interval);
                 resolve(
-                    (value === when.false)?
-                        false:
-                    (value === when.true)?
-                        true:
-                    value
+                    (value === when.false)
+                        ? false
+                        : (value === when.true)
+                            ? true
+                            : value
                 );
             }
         }, ms, [].concat(args));
@@ -1187,8 +1208,8 @@ try {
         "true": { value: Symbol(true) },
 
         "null": { value: Symbol(null) },
-        "void": { value: Symbol(void undefined) },
-        "undefined": { value: Symbol(undefined) },
+        "void": { value: Symbol(void null) },
+        "undefined": { value: Symbol(void null) },
 
         "all": {
             value:
@@ -1197,9 +1218,9 @@ try {
             async function(...conditions) {
                 conditions = [].concat(conditions);
 
-                let promises = [];
+                const promises = [];
 
-                for(let condition of conditions)
+                for(const condition of conditions)
                     promises.push(new Promise((resolve, reject) => when(condition).then(resolve)));
 
                 return Promise.all(promises);
@@ -1213,9 +1234,9 @@ try {
             async function(...conditions) {
                 conditions = [].concat(conditions);
 
-                let promises = [];
+                const promises = [];
 
-                for(let condition of conditions)
+                for(const condition of conditions)
                     promises.push(new Promise((resolve, reject) => when(condition).then(resolve)));
 
                 return Promise.any(promises);
@@ -1230,7 +1251,7 @@ try {
                 args = [].concat(args);
 
                 return new Promise((resolve, reject) => {
-                    return when(condition, ms, ...args).then(resolve.call(null, args));
+                    return when(condition, ms, ...args).then(() => resolve(args));
                 });
             },
         },
@@ -1243,7 +1264,7 @@ try {
                 args = [].concat(args);
 
                 return new Promise((resolve, reject) => {
-                    return when(condition, ms).then(resolve.call(null, args));
+                    return when(condition, ms).then(() => resolve(args));
                 });
             },
         },
@@ -1254,19 +1275,19 @@ try {
                 // when.defined(condition:function<any>, ms:number?<integer>) → Promise~any
             async function(condition, ms = 100, ...args) {
                 return new Promise((resolve, reject) => {
-                    let interval = setInterval(async args => {
-                        let value = await condition.apply(null, args);
+                    const interval = setInterval(async args => {
+                        const value = await condition.apply(null, args);
 
                         if(defined(value)) {
                             clearInterval(interval);
                             resolve(
-                                (value === when.null)?
-                                    null:
-                                (value === when.void)?
-                                    void undefined:
-                                (value === when.undefined)?
-                                    undefined:
-                                value
+                                (value === when.null)
+                                    ? null
+                                    : (value === when.void)
+                                        ? void null
+                                        : (value === when.undefined)
+                                            ? void null
+                                            : value
                             );
                         }
                     }, ms, [].concat(args));
@@ -1280,8 +1301,8 @@ try {
                 // when.nullish(condition:function<any>, ms:number?<integer>) → Promise~any
             async function(condition, ms = 100, ...args) {
                 return new Promise((resolve, reject) => {
-                    let interval = setInterval(async args => {
-                        let value = await condition.apply(null, args);
+                    const interval = setInterval(async args => {
+                        const value = await condition.apply(null, args);
 
                         if(nullish(value)) {
                             clearInterval(interval);
@@ -1298,8 +1319,8 @@ try {
                 // when.empty(condition:function<@@iterable>, ms:number?<integer>) → Promise~any
             async function(condition, ms = 100, ...args) {
                 return new Promise((resolve, reject) => {
-                    let interval = setInterval(async args => {
-                        let array = await condition.apply(null, args);
+                    const interval = setInterval(async args => {
+                        const array = await condition.apply(null, args);
 
                         if(array?.length < 1) {
                             clearInterval(interval);
@@ -1316,8 +1337,8 @@ try {
                 // when.sated(condition:function<@@iterable>, ms:number?<integer>) → Promise~any
             async function(condition, ms = 100, ...args) {
                 return new Promise((resolve, reject) => {
-                    let interval = setInterval(async args => {
-                        let array = await condition.apply(null, args);
+                    const interval = setInterval(async args => {
+                        const array = await condition.apply(null, args);
 
                         if(array?.length > 0) {
                             clearInterval(interval);
@@ -1337,9 +1358,9 @@ try {
             async function(...conditions) {
                 conditions = [].concat(conditions);
 
-                let promises = [];
+                const promises = [];
 
-                for(let condition of conditions)
+                for(const condition of conditions)
                     promises.push(new Promise((resolve, reject) => when.defined(condition).then(resolve)));
 
                 return Promise.all(promises);
@@ -1352,9 +1373,9 @@ try {
             async function(...conditions) {
                 conditions = [].concat(conditions);
 
-                let promises = [];
+                const promises = [];
 
-                for(let condition of conditions)
+                for(const condition of conditions)
                     promises.push(new Promise((resolve, reject) => when.nullish(condition).then(resolve)));
 
                 return Promise.all(promises);
@@ -1367,9 +1388,9 @@ try {
             async function(...conditions) {
                 conditions = [].concat(conditions);
 
-                let promises = [];
+                const promises = [];
 
-                for(let condition of conditions)
+                for(const condition of conditions)
                     promises.push(new Promise((resolve, reject) => when.empty(condition).then(resolve)));
 
                 return Promise.all(promises);
@@ -1382,9 +1403,9 @@ try {
             async function(...conditions) {
                 conditions = [].concat(conditions);
 
-                let promises = [];
+                const promises = [];
 
-                for(let condition of conditions)
+                for(const condition of conditions)
                     promises.push(new Promise((resolve, reject) => when.sated(condition).then(resolve)));
 
                 return Promise.all(promises);
@@ -1400,9 +1421,9 @@ try {
             async function(...conditions) {
                 conditions = [].concat(conditions);
 
-                let promises = [];
+                const promises = [];
 
-                for(let condition of conditions)
+                for(const condition of conditions)
                     promises.push(new Promise((resolve, reject) => when.defined(condition).then(resolve)));
 
                 return Promise.any(promises);
@@ -1415,9 +1436,9 @@ try {
             async function(...conditions) {
                 conditions = [].concat(conditions);
 
-                let promises = [];
+                const promises = [];
 
-                for(let condition of conditions)
+                for(const condition of conditions)
                     promises.push(new Promise((resolve, reject) => when.nullish(condition).then(resolve)));
 
                 return Promise.any(promises);
@@ -1430,9 +1451,9 @@ try {
             async function(...conditions) {
                 conditions = [].concat(conditions);
 
-                let promises = [];
+                const promises = [];
 
-                for(let condition of conditions)
+                for(const condition of conditions)
                     promises.push(new Promise((resolve, reject) => when.empty(condition).then(resolve)));
 
                 return Promise.any(promises);
@@ -1445,9 +1466,9 @@ try {
             async function(...conditions) {
                 conditions = [].concat(conditions);
 
-                let promises = [];
+                const promises = [];
 
-                for(let condition of conditions)
+                for(const condition of conditions)
                     promises.push(new Promise((resolve, reject) => when.sated(condition).then(resolve)));
 
                 return Promise.any(promises);
@@ -1464,7 +1485,7 @@ try {
                 args = [].concat(args);
 
                 return new Promise((resolve, reject) => {
-                    when.defined(condition, ms, ...args).then(resolve.call(null, args));
+                    when.defined(condition, ms, ...args).then(() => resolve(args));
                 });
             },
         },
@@ -1477,7 +1498,7 @@ try {
                 args = [].concat(args);
 
                 return new Promise((resolve, reject) => {
-                    when.defined(condition, ms).then(resolve.call(null, args));
+                    when.defined(condition, ms).then(() => resolve(args));
                 });
             },
         },
@@ -1492,7 +1513,7 @@ try {
                 args = [].concat(args);
 
                 return new Promise((resolve, reject) => {
-                    when.nullish(condition, ms, ...args).then(resolve.call(null, args));
+                    when.nullish(condition, ms, ...args).then(() => resolve(args));
                 });
             },
         },
@@ -1505,7 +1526,7 @@ try {
                 args = [].concat(args);
 
                 return new Promise((resolve, reject) => {
-                    when.nullish(condition, ms).then(resolve.call(null, args));
+                    when.nullish(condition, ms).then(() => resolve(args));
                 });
             },
         },
@@ -1520,7 +1541,7 @@ try {
                 args = [].concat(args);
 
                 return new Promise((resolve, reject) => {
-                    when.empty(condition, ms, ...args).then(resolve.call(null, args));
+                    when.empty(condition, ms, ...args).then(() => resolve(args));
                 });
             },
         },
@@ -1533,7 +1554,7 @@ try {
                 args = [].concat(args);
 
                 return new Promise((resolve, reject) => {
-                    when.empty(condition, ms).then(resolve.call(null, args));
+                    when.empty(condition, ms).then(() => resolve(args));
                 });
             },
         },
@@ -1548,7 +1569,7 @@ try {
                 args = [].concat(args);
 
                 return new Promise((resolve, reject) => {
-                    when.sated(condition, ms, ...args).then(resolve.call(null, args));
+                    when.sated(condition, ms, ...args).then(() => resolve(args));
                 });
             },
         },
@@ -1561,7 +1582,7 @@ try {
                 args = [].concat(args);
 
                 return new Promise((resolve, reject) => {
-                    when.sated(condition, ms).then(resolve.call(null, args));
+                    when.sated(condition, ms).then(() => resolve(args));
                 });
             },
         },
@@ -1600,10 +1621,11 @@ function wait(delay = 1, ...values) {
  */
 function delay(executor, ms = 0, ...args) {
     let timer = -1;
+
     return function(...argz) {
         clearTimeout(timer);
         timer = setTimeout(executor.bind(this, ...[].concat(args, argz)), ms);
-    }
+    };
 }
 
 /**
@@ -1638,8 +1660,8 @@ function delay(executor, ms = 0, ...args) {
  * let natv = fetchURL('x-moz://example.com/', { native: true }).then(r => r.text()); // text/HTML
  */
 function fetchURL(url, options = {}) {
-    let empty = Promise.resolve({});
-    let { timeout = 0, native = false, foster = (fetchURL?.origins?.BEST ?? fetchURL?.origins?.CORSFIX ?? Symbol(null)), as = 'text' } = options;
+    const empty = Promise.resolve({});
+    const { timeout = 0, native = false, foster = (fetchURL?.origins?.BEST ?? fetchURL?.origins?.CORSFIX ?? Symbol(null)), as = 'text' } = options;
 
     if(!url?.length)
         return empty;
@@ -1653,13 +1675,13 @@ function fetchURL(url, options = {}) {
     // <https://www.site.com/path/to/file> | //file → https://www.site.com/file
     url = url.replace(/^\/\//, location.protocol + '//');
 
-    let unknown = Symbol('UNKNOWN');
+    const unknown = Symbol('UNKNOWN');
     let { href, domainPath = [], host, protocol, pathname } = parseURL(url);
-    let [domain = unknown, site = unknown, ...subDomain] = domainPath;
+    const [domain = unknown, site = unknown, ...subDomain] = domainPath;
 
-    let allowedHosts = 'static-cdn.jtvnw.net'.split(' '),
-        allowedSites = 'betterttv blerp githubusercontent nightbot streamelements streamloots twitch twitchinsights twitchtokengenerator'.split(' '),
-        allowedDomains = 'gd'.split(' ');
+    const allowedHosts = 'static-cdn.jtvnw.net'.split(' ')
+        , allowedSites = 'betterttv blerp githubusercontent nightbot streamelements streamloots twitch twitchinsights twitchtokengenerator'.split(' ')
+        , allowedDomains = 'gd'.split(' ');
 
     // No CORS required
     if(false
@@ -1670,12 +1692,14 @@ function fetchURL(url, options = {}) {
         || allowedDomains.contains(domain?.toLowerCase?.())
         || allowedSites.contains(site?.toLowerCase?.())
         || allowedHosts.contains(host?.toLowerCase?.())
-    )
-        /* Do nothing... */;
+    ) {
+        ;
+    }
 
     // The URL is malformed
-    else if([domain, site].contains(unknown))
-        return empty;
+    else if([domain, site].contains(unknown)) {
+        return empty
+    }
 
     // CORS required
     else {
@@ -1704,7 +1728,7 @@ function fetchURL(url, options = {}) {
 
             // https://alloworigin.com/get?url={ URL }
             case fetchURL.origins.ALLOW_ORIGIN: {
-                href = `https://alloworigin.com/get?url=${ href }`;
+                href = `https://alloworigin.com/get?url=${ encodeURIComponent(href) }`;
             } break;
 
             // POST@https://cors-proxy.taskcluster.net/request
@@ -1714,6 +1738,7 @@ function fetchURL(url, options = {}) {
                     headers: { 'content-type': 'application/json' },
                     body: JSON.stringify({ url: href }),
                 });
+
                 href = `https://cors-proxy.taskcluster.net/request`;
             } break;
 
@@ -1726,17 +1751,17 @@ function fetchURL(url, options = {}) {
             case fetchURL.origins.CORSFIX:
             default: {
                 href = `https://proxy.corsfix.com/?${ encodeURI(href) }`;
-                Object.assign(options.headers ?? {}, { Origin: location.origin, 'X-CORSFIX-KEY': "cfx_89e67fa7264d2a5cce550a731c934d67", 'X-CORSFIX-CACHE': "4h" });
+                Object.assign(options.headers ?? {}, { Origin: location.origin, 'X-CORSFIX-KEY': 'cfx_89e67fa7264d2a5cce550a731c934d67', 'X-CORSFIX-CACHE': '4h' });
             } break;
-        }
+        } // switch foster
     }
 
     if(protocol.startsWith('get'))
         href = Runtime.getURL(href.replace(protocol, ''));
 
     if(timeout > 0) {
-        let controller = new AbortController();
-        let timeoutID = setTimeout(() => controller.abort(`The fetch has timed out (${ (timeout / 1e3).suffix('s') })`), timeout);
+        const controller = new AbortController();
+        const timeoutID = setTimeout(() => controller.abort(`The fetch has timed out (${ (timeout / 1e3).suffix('s') })`), timeout);
 
         // Convert to TEXT/HTML
         if(true
@@ -1807,7 +1832,7 @@ function fetchURL(url, options = {}) {
         && as.equals('json')
     )
         return fetch(href, options).then(async response => {
-            let contents = await response.text();
+            const contents = await response.text();
 
             return new Response(new Blob([contents], { type: 'text/plain' }));
         });
@@ -1820,7 +1845,7 @@ function fetchURL(url, options = {}) {
         )
     )
         return fetch(href, options).then(async response => {
-            let json = await response.json();
+            const json = await response.json();
 
             return new Response(new Blob([JSON.stringify(json)], { type: 'application/json' }));
         });
@@ -1853,8 +1878,8 @@ Object.defineProperties(fetchURL, {
             fetchURL.frozenURLs ??= new Map;
 
             if(fetchURL.frozenURLs.has(parseURL(url).origin)) {
-                let { origin } = parseURL(url);
-                let thawsAt = new Date(fetchURL.frozenURLs.get(origin));
+                const { origin } = parseURL(url);
+                const thawsAt = new Date(fetchURL.frozenURLs.get(origin));
 
                 if(+new Date >= thawsAt)
                     fetchURL.frozenURLs.delete(origin);
@@ -1862,18 +1887,18 @@ Object.defineProperties(fetchURL, {
                     throw new Error(`The origin [${ origin }] is currently frozen until ${ thawsAt }`);
             }
 
-            let DB_KEY = 'persistent-cache@fetchURL';
-            let hoursUntilEntryExpires = options?.hoursUntilEntryExpires ?? 24;
-            let keepDefectiveEntry = options?.keepDefectiveEntry ?? false;
+            const DB_KEY = 'persistent-cache@fetchURL';
+            const hoursUntilEntryExpires = options?.hoursUntilEntryExpires ?? 24;
+            const keepDefectiveEntry = options?.keepDefectiveEntry ?? false;
 
-            for(let key of ['hoursUntilEntryExpires', 'keepDefectiveEntry'])
+            for(const key of ['hoursUntilEntryExpires', 'keepDefectiveEntry'])
                 delete options?.[key];
 
             if(nullish(fetchURL.persistentCache)) {
                 Object.defineProperty(fetchURL, 'persistentCache', { value: new Map });
 
                 Cache.large.load(DB_KEY, cache => {
-                    for(let [org, map] of (cache?.[DB_KEY] ?? []))
+                    for(const [org, map] of (cache?.[DB_KEY] ?? []))
                         fetchURL.persistentCache.set(org, map);
                 });
 
@@ -1881,10 +1906,10 @@ Object.defineProperties(fetchURL, {
                 setInterval(DB => {
                     let changed = false;
 
-                    for(let [origin, db] of DB)
-                        for(let [fullpath, data] of db) {
+                    for(const [origin, db] of DB)
+                        for(const [fullpath, data] of db) {
                             if(data instanceof Array) {
-                                let [text, date] = data;
+                                const [text, date] = data;
 
                                 if((+new Date) >= +date) {
                                     changed = true;
@@ -1902,13 +1927,13 @@ Object.defineProperties(fetchURL, {
                 }, 3_600_000, fetchURL.persistentCache);
             }
 
-            let { origin, pathname, search } = parseURL(url.trim()),
-                fullpath = pathname + search;
+            const { origin, pathname, search } = parseURL(url.trim())
+                , fullpath = pathname + search;
 
             if(fetchURL.persistentCache.get(origin)?.has(fullpath))
                 return new Promise((r, R) => {
-                    let _ = fetchURL.persistentCache.get(origin).get(fullpath),
-                        t, d;
+                    let _ = fetchURL.persistentCache.get(origin).get(fullpath)
+                        , t, d;
 
                     if(_ instanceof Array)
                         [t, d] = _;
@@ -1922,7 +1947,7 @@ Object.defineProperties(fetchURL, {
 
                         r(fetchURL.fromDisk(url, options));
                     } else {
-                        r(new Response(t));
+                        r(new Response(t))
                     }
                 });
 
@@ -1940,7 +1965,7 @@ Object.defineProperties(fetchURL, {
                 fetchURL.persistentCache.get(origin).set(fullpath, data ?? text);
                 Cache.large.save({ [DB_KEY]: fetchURL.persistentCache });
 
-                let request = new Promise((r, R) => r(new Response(text)));
+                const request = new Promise((r, R) => r(new Response(text)));
 
                 fetchURL.requests.set(url, [request, new Date]);
 
@@ -1963,7 +1988,7 @@ Object.defineProperties(fetchURL, {
                     else
                         fetchURL.errURLs.set(origin, ++errs);
                 } else {
-                    fetchURL.errURLs.set(origin, 0);
+                    fetchURL.errURLs.set(origin, 0)
                 }
 
                 throw error;
@@ -1986,83 +2011,91 @@ Object.defineProperties(fetchURL, {
 });
 
 prevent_fetch_dragging: if(top == window) {
-    Object.defineProperties(fetchURL.origins, {
-        BEST: {
-            value: Promise.any([
-                fetchURL.origins.CORSFIX
-                , fetchURL.origins.CORS_PROXY
-                , fetchURL.origins.CORS_ANYWHERE
-                , fetchURL.origins.ALL_ORIGINS
-                , fetchURL.origins.ALLOW_ORIGIN
-                , fetchURL.origins.TASK_CLUSTER
-                , fetchURL.origins.CODE_TABS
-            ].map(foster =>
-                fetchURL.idempotent('https://example.org/', { foster, as: 'native', timeout: 3_000 })
-                    .then(async r =>
-                        r.ok && (r.status >= 100 && r.status < 300) && /\bexample\b/i.test(await r.text())?
-                            foster:
-                        Promise.reject(`Bad request @${ foster.toString() }`)
-                    )
-                )
-            ).catch($ignore)
+    // Each probe hits several third-party CORS proxies, so only run one when something reads it
+    /**
+     * Creates a lazy-loading property descriptor that executes a function once upon first access.
+     * @param {string} name - The name of the property
+     * @param {function} run - The function to execute to determine the property value
+     * @returns {Object} The property descriptor
+     */
+    const probe = (name, run) => ({
+        configurable: true,
+        get() {
+            Object.defineProperty(this, name, { value: run() });
+
+            return this[name];
         },
     });
 
     Object.defineProperties(fetchURL.origins, {
-        JSON_BEST: {
-            value: Promise.any([
-                fetchURL.origins.WHATEVER_ORIGIN,
-            ].map(foster =>
-                fetchURL.idempotent('https://example.org/', { foster, as: 'json', timeout: 1_000 })
-                    .then(async r =>
-                        r.ok && (r.status >= 100 && r.status < 300) && /\bexample\b/i.test(await r.text())?
-                            foster:
-                        Promise.reject(`Bad JSON request @${ foster.toString() }`)
-                    )
+        BEST: probe('BEST', () => Promise.any([
+            fetchURL.origins.CORSFIX
+            , fetchURL.origins.CORS_PROXY
+            , fetchURL.origins.CORS_ANYWHERE
+            , fetchURL.origins.ALL_ORIGINS
+            , fetchURL.origins.ALLOW_ORIGIN
+            , fetchURL.origins.TASK_CLUSTER
+            , fetchURL.origins.CODE_TABS
+        ].map(foster =>
+            fetchURL.idempotent('https://example.org/', { foster, as: 'native', timeout: 3_000 })
+                .then(async r =>
+                    r.ok && (r.status >= 100 && r.status < 300) && /\bexample\b/i.test(await r.text())
+                        ? foster
+                        : Promise.reject(`Bad request @${ foster.toString() }`)
                 )
-            ).catch($ignore)
-        },
-
-        HTML_BEST: {
-            value: Promise.any([
-                fetchURL.origins.CORSFIX
-                , fetchURL.origins.CORS_PROXY
-                , fetchURL.origins.CORS_ANYWHERE
-                , fetchURL.origins.ALL_ORIGINS
-                , fetchURL.origins.ALLOW_ORIGIN
-                , fetchURL.origins.TASK_CLUSTER
-                , fetchURL.origins.CODE_TABS
-            ].map(foster =>
-                fetchURL.idempotent('https://example.org/', { foster, as: 'html', timeout: 1_000 })
-                    .then(async r =>
-                        r.ok && (r.status >= 100 && r.status < 300) && /\bexample\b/i.test(await r.text())?
-                            foster:
-                        Promise.reject(`Bad HTML request @${ foster.toString() }`)
-                    )
-                )
-            ).catch($ignore)
-        },
-
-        TEXT_BEST: {
-            value: Promise.any([
-                fetchURL.origins.TEXT,
-                fetchURL.origins.TEXT_2,
-                fetchURL.origins.TEXT_3,
-                fetchURL.origins.TEXT_4,
-                fetchURL.origins.TEXT_5,
-                // fetchURL.origins.TEXT_6,
-            ].map(foster =>
-                fetchURL.idempotent('https://example.org/', { foster, as: 'text', timeout: 1_000 })
-                    .then(async r =>
-                        r.ok && (r.status >= 100 && r.status < 300) && /\bexample\b/i.test(await r.text())?
-                            foster:
-                        Promise.reject(`Bad text request @${ foster.toString() }`)
-                    )
-                )
-            ).catch($ignore)
-        },
+        )
+        ).catch($ignore)),
     });
-}
+
+    Object.defineProperties(fetchURL.origins, {
+        JSON_BEST: probe('JSON_BEST', () => Promise.any([
+            fetchURL.origins.WHATEVER_ORIGIN,
+        ].map(foster =>
+            fetchURL.idempotent('https://example.org/', { foster, as: 'json', timeout: 1_000 })
+                .then(async r =>
+                    r.ok && (r.status >= 100 && r.status < 300) && /\bexample\b/i.test(await r.text())
+                        ? foster
+                        : Promise.reject(`Bad JSON request @${ foster.toString() }`)
+                )
+        )
+        ).catch($ignore)),
+
+        HTML_BEST: probe('HTML_BEST', () => Promise.any([
+            fetchURL.origins.CORSFIX
+            , fetchURL.origins.CORS_PROXY
+            , fetchURL.origins.CORS_ANYWHERE
+            , fetchURL.origins.ALL_ORIGINS
+            , fetchURL.origins.ALLOW_ORIGIN
+            , fetchURL.origins.TASK_CLUSTER
+            , fetchURL.origins.CODE_TABS
+        ].map(foster =>
+            fetchURL.idempotent('https://example.org/', { foster, as: 'html', timeout: 1_000 })
+                .then(async r =>
+                    r.ok && (r.status >= 100 && r.status < 300) && /\bexample\b/i.test(await r.text())
+                        ? foster
+                        : Promise.reject(`Bad HTML request @${ foster.toString() }`)
+                )
+        )
+        ).catch($ignore)),
+
+        TEXT_BEST: probe('TEXT_BEST', () => Promise.any([
+            fetchURL.origins.TEXT,
+            fetchURL.origins.TEXT_2,
+            fetchURL.origins.TEXT_3,
+            fetchURL.origins.TEXT_4,
+            fetchURL.origins.TEXT_5,
+            // fetchURL.origins.TEXT_6,
+        ].map(foster =>
+            fetchURL.idempotent('https://example.org/', { foster, as: 'text', timeout: 1_000 })
+                .then(async r =>
+                    r.ok && (r.status >= 100 && r.status < 300) && /\bexample\b/i.test(await r.text())
+                        ? foster
+                        : Promise.reject(`Bad text request @${ foster.toString() }`)
+                )
+        )
+        ).catch($ignore)),
+    });
+} // :prevent_fetch_dragging
 
 /**
  * Facilitates communication and storage between extension contexts (background vs. content).
@@ -2087,35 +2120,47 @@ prevent_fetch_dragging: if(top == window) {
 let Settings = window.Settings = {
     get(properties = null) {
         return new Promise((resolve, reject) => {
+            /**
+             * Maps provided settings values to the global Settings object.
+             * @param {Object} settings - The settings to parse
+             */
             function ParseSettings(settings) {
-                for(let setting in settings)
+                for(const setting in settings)
                     Settings[setting] = settings[setting] ?? null;
+
+                // Settings that were never saved (new installs, settings added by an update) read as declared
+                const defaults = window.SETTINGS_DEFAULTS ?? {}
+                    , wanted = properties == null ? Object.keys(defaults) : [].concat(properties).filter(key => typeof key == 'string');
+
+                for(const setting of wanted)
+                    if(!(setting in settings) && setting in defaults)
+                        Settings[setting] = defaults[setting];
 
                 resolve(Settings);
             }
 
             window.Storage.get(properties, settings =>
-                window.Runtime.lastError?
-                    window.Storage.get(null, ParseSettings):
-                ParseSettings(settings)
+                window.Runtime.lastError
+                    ? window.Storage.get(null, ParseSettings)
+                    : ParseSettings(settings)
             );
         });
     },
 
     set(properties = {}) {
-        for(let key in properties)
+        for(const key in properties)
             Settings[key] = properties[key];
 
         return Storage.set(properties);
     },
 
     remove(properties = []) {
-        let removed = {};
+        const removed = {};
 
-        if(properties instanceof String)
+        if(typeof properties == 'string' || properties instanceof String)
             properties = [properties];
 
-        for(let key of properties)
+        for(const key of properties)
             removed[key] = Settings[key];
 
         return Storage.remove(properties);
@@ -2160,9 +2205,14 @@ let Settings = window.Settings = {
  */
 let Cache = window.Cache = {
     async save(properties = {}, callback = null) {
-        let set = (key, value) => CacheStorageArea.setItem(`ext.twitch-tools/${ encodeURI(key) }`, value);
+        /**
+         * Stores a value in the extension's cache storage.
+         * @param {string} key - The storage key
+         * @param {string} value - The value to store
+         */
+        const set = (key, value) => CacheStorageArea.setItem(`ext.twitch-tools/${ encodeURI(key) }`, value);
 
-        for(let key in properties)
+        for(const key in properties)
             set(key, JSON.stringify(properties[key]));
 
         if(typeof callback == 'function')
@@ -2170,40 +2220,45 @@ let Cache = window.Cache = {
     },
 
     async load(properties = null, callback = null) {
-        let results = {};
-        let get = key => {
-                let value =
-                    // New save name
-                    CacheStorageArea.getItem(`ext.twitch-tools/${ encodeURI(key) }`);
-                    // Old save name
-                    // if (value === undefined)
-                    //     value = CacheStorageArea.getItem(key);
+        const results = {};
+        /**
+         * Retrieves a value from the cache storage and parses it as JSON.
+         * @param {string} key - The cache key to look up
+         * @returns {*} The parsed value, or the raw value if parsing fails
+         */
+        const get = key => {
+            let value =
+                // New save name
+                CacheStorageArea.getItem(`ext.twitch-tools/${ encodeURI(key) }`);
+            // Old save name
+            // if (value === undefined)
+            //     value = CacheStorageArea.getItem(key);
 
-                try {
-                    value = JSON.parse(value);
-                } catch(error) {
-                    // Suppress
-                }
+            try {
+                value = JSON.parse(value);
+            } catch(error) {
+                // Suppress
+            }
 
-                return value;
-            };
+            return value;
+        };
 
         properties ??= await Cache.keys();
 
         switch(properties.constructor) {
-            case String:
+            case String: {
                 results[properties] = get(properties);
-                break;
+            } break;
 
-            case Array:
-                for(let key of properties)
+            case Array: {
+                for(const key of properties)
                     results[key] = get(key);
-                break;
+            } break;
 
-            case Object:
-                for(let key in properties)
+            case Object: {
+                for(const key in properties)
                     results[key] = get(key) ?? properties[key];
-                break;
+            } break;
         }
 
         if(typeof callback == 'function')
@@ -2218,10 +2273,14 @@ let Cache = window.Cache = {
         });
     },
 
+    /**
+     * Removes a specific item from the extension's cache storage.
+     * @param {string} key - The storage key to remove
+     */
     async remove(properties, callback = null) {
-        let results = {};
-        let remove = key => CacheStorageArea.removeItem(`ext.twitch-tools/${ encodeURI(key) }`),
-            get = key => {
+        const results = {};
+        const remove = key => CacheStorageArea.removeItem(`ext.twitch-tools/${ encodeURI(key) }`)
+            , get = key => {
                 let value = CacheStorageArea.getItem(`ext.twitch-tools/${ encodeURI(key) }`);
 
                 try {
@@ -2237,24 +2296,24 @@ let Cache = window.Cache = {
             return;
 
         switch(properties.constructor) {
-            case String:
+            case String: {
                 results[properties] = get(properties);
                 remove(properties);
-                break;
+            } break;
 
-            case Array:
-                for(let key of properties) {
+            case Array: {
+                for(const key of properties) {
                     results[key] = get(key);
                     remove(key);
                 }
-                break;
+            } break;
 
-            case Object:
-                for(let key in properties) {
+            case Object: {
+                for(const key in properties) {
                     results[key] = get(key);
                     remove(key);
                 }
-                break;
+            } break;
         }
 
         if(typeof callback == 'function')
@@ -2269,41 +2328,46 @@ let Cache = window.Cache = {
         });
     },
 
-    async getBytesInUse(properties) {
+    async getBytesInUse(properties, callback = null) {
         let bytesUsed = 0;
-        let size = key => {
-                let value =
-                    // New save name
-                    CacheStorageArea.getItem(`ext.twitch-tools/${ encodeURI(key) }`);
-                    // Old save name
-                    // if (value === undefined)
-                    //     value = CacheStorageArea.getItem(key);
+        /**
+         * Calculates the approximate storage size of a cache item.
+         * @param {string} key - The cache key to measure
+         * @returns {number} The total size in bytes
+         */
+        const size = key => {
+            let value =
+                // New save name
+                CacheStorageArea.getItem(`ext.twitch-tools/${ encodeURI(key) }`);
+            // Old save name
+            // if (value === undefined)
+            //     value = CacheStorageArea.getItem(key);
 
-                try {
-                    value = JSON.parse(value);
-                } catch(error) {
-                    // Suppress
-                }
+            try {
+                value = JSON.parse(value);
+            } catch(error) {
+                // Suppress
+            }
 
-                return (key?.length | 0) + (JSON.stringify(value)?.length | 0);
-            };
+            return (key?.length | 0) + (JSON.stringify(value)?.length | 0);
+        };
 
         properties ??= await Cache.keys();
 
         switch(properties.constructor) {
-            case String:
+            case String: {
                 bytesUsed += size(properties);
-                break;
+            } break;
 
-            case Array:
-                for(let key of properties)
+            case Array: {
+                for(const key of properties)
                     bytesUsed += size(key);
-                break;
+            } break;
 
-            case Object:
-                for(let key in properties)
+            case Object: {
+                for(const key in properties)
                     bytesUsed += size(key) ?? ((key?.length | 0) + (JSON.stringify(properties[key])?.length | 0));
-                break;
+            } break;
         }
 
         if(typeof callback == 'function')
@@ -2324,9 +2388,14 @@ let Cache = window.Cache = {
 
     large: {
         async save(keys = {}, callback = null) {
-            let set = (key, value) => LargeCacheStorageArea.setItem(key, value);
+            /**
+             * Stores a value in the large cache storage area.
+             * @param {string} key - The key to store the value under
+             * @param {*} value - The value to store
+             */
+            const set = (key, value) => LargeCacheStorageArea.setItem(key, value);
 
-            for(let key in keys)
+            for(const key in keys)
                 set(key, keys[key]);
 
             if(typeof callback == 'function')
@@ -2334,25 +2403,30 @@ let Cache = window.Cache = {
         },
 
         async load(keys = null, callback = null) {
-            let results = {};
-            let get = key => LargeCacheStorageArea.getItem(key);
+            const results = {};
+            /**
+             * Retrieves a value from the large cache storage area.
+             * @param {string} key - The key to look up
+             * @returns {Promise<*>} The stored value
+             */
+            const get = key => LargeCacheStorageArea.getItem(key);
 
             keys ??= await Cache.large.keys();
 
             switch(keys.constructor) {
-                case String:
+                case String: {
                     results[keys] = await get(keys);
-                    break;
+                } break;
 
-                case Array:
-                    for(let key of keys)
+                case Array: {
+                    for(const key of keys)
                         results[key] = await get(key);
-                    break;
+                } break;
 
-                case Object:
-                    for(let key in keys)
+                case Object: {
+                    for(const key in keys)
                         results[key] = await get(key) ?? keys[key];
-                    break;
+                } break;
             }
 
             if(typeof callback == 'function')
@@ -2367,33 +2441,37 @@ let Cache = window.Cache = {
             });
         },
 
+        /**
+         * Removes an item from the large cache storage area.
+         * @param {string} key - The key of the item to remove
+         */
         async remove(keys, callback = null) {
-            let results = {};
-            let remove = key => LargeCacheStorageArea.removeItem(key),
-                get = key => LargeCacheStorageArea.getItem(key);
+            const results = {};
+            const remove = key => LargeCacheStorageArea.removeItem(key)
+                , get = key => LargeCacheStorageArea.getItem(key);
 
             if(nullish(keys))
                 return;
 
             switch(keys.constructor) {
-                case String:
+                case String: {
                     results[keys] = await get(keys);
                     remove(keys);
-                    break;
+                } break;
 
-                case Array:
-                    for(let key of keys) {
+                case Array: {
+                    for(const key of keys) {
                         results[key] = await get(key);
                         remove(key);
                     }
-                    break;
+                } break;
 
-                case Object:
-                    for(let key in keys) {
+                case Object: {
+                    for(const key in keys) {
                         results[key] = await get(key);
                         remove(key);
                     }
-                    break;
+                } break;
             }
 
             if(typeof callback == 'function')
@@ -2408,26 +2486,31 @@ let Cache = window.Cache = {
             });
         },
 
-        async getBytesInUse(keys) {
+        async getBytesInUse(keys, callback = null) {
             let bytesUsed = 0;
-            let size = async key => (key?.length | 0) + (JSON.stringify(await LargeCacheStorageArea.getItem(key))?.length | 0);
+            /**
+             * Calculates the approximate storage size of an item in the large cache.
+             * @param {string} key - The cache key to measure
+             * @returns {Promise<number>} The total size in bytes
+             */
+            const size = async key => (key?.length | 0) + (JSON.stringify(await LargeCacheStorageArea.getItem(key))?.length | 0);
 
             keys ??= await Cache.large.keys();
 
             switch(keys.constructor) {
-                case String:
+                case String: {
                     bytesUsed += await size(keys);
-                    break;
+                } break;
 
-                case Array:
-                    for(let key of keys)
+                case Array: {
+                    for(const key of keys)
                         bytesUsed += await size(key);
-                    break;
+                } break;
 
-                case Object:
-                    for(let key in keys)
+                case Object: {
+                    for(const key in keys)
                         bytesUsed += await size(key);
-                    break;
+                } break;
             }
 
             if(typeof callback == 'function')
@@ -2494,12 +2577,13 @@ function AsteriskFn(feature) {
  * @desc These belong to the current window (occasionally a sub-frame).
  */
 __STATIC__: {
-    let browser, Storage, Runtime, Manifest, Extension, Container, BrowserNamespace;
+    let Storage, Runtime, Manifest, Extension, Container, BrowserNamespace;
 
-    if(defined(browser?.runtime))
-        BrowserNamespace = 'browser';
-    else if(defined(chrome?.extension))
+    // Prefer `chrome`: Firefox provides it too, and only it takes the callbacks this code passes
+    if(defined(globalThis.chrome?.runtime))
         BrowserNamespace = 'chrome';
+    else if(defined(globalThis.browser?.runtime))
+        BrowserNamespace = 'browser';
 
     Container = window[BrowserNamespace];
 
@@ -2554,7 +2638,7 @@ __STATIC__: {
     */
     window.Manifest = Manifest;
 
-    let { CHROME_UPDATE, INSTALL, SHARED_MODULE_UPDATE, UPDATE } = Runtime.OnInstalledReason;
+    const { CHROME_UPDATE, INSTALL, SHARED_MODULE_UPDATE, UPDATE } = Runtime.OnInstalledReason;
 
     window.CHROME_UPDATE = CHROME_UPDATE;
     window.INSTALL = INSTALL;
@@ -2565,7 +2649,7 @@ __STATIC__: {
     * @prop {object<StorageArea>} CacheStorageArea - The extension's "small" (&le; 5MiB) storage area
     * @see https://developer.chrome.com/docs/extensions/reference/storage/
     */
-    let CacheStorageArea = localStorage ?? sessionStorage;
+    const CacheStorageArea = localStorage ?? sessionStorage;
 
     window.CacheStorageArea = CacheStorageArea;
 
@@ -2573,7 +2657,7 @@ __STATIC__: {
     * @prop {object<(IndexedDB|StorageArea)>} LargeCacheStorageArea - The extension's "large" (&gt; 5MiB) storage area
     * @see https://github.com/localForage/localForage#readme
     */
-    let LargeCacheStorageArea = localforage;
+    const LargeCacheStorageArea = localforage;
 
     LargeCacheStorageArea.config({
         name: Manifest.name,
@@ -2590,27 +2674,27 @@ __STATIC__: {
     /** @memberof window
     * @prop {object} Jobs - All running or ran jobs
     */
-    let Jobs = {};
+    const Jobs = {};
 
     /** @memberof window
     * @prop {object} Timers - All running or ran timers (with a corresponding job). A <b>positive</b> (&ge; 0) value creates an interval. A <b>negative</b> (&lt; 0) value creates a time-out
     */
-    let Timers = {};
+    const Timers = {};
 
     /** @memberof window
     * @prop {object} Handlers - All handlers (functions) that may be run
     */
-    let Handlers = { __reasons__: new Map() };
+    const Handlers = { __reasons__: new Map() };
 
     /** @memberof window
     * @prop {object} Unhandlers - All unhandlers (destructing functions) that may be run
     */
-    let Unhandlers = { __reasons__: new Map() };
+    const Unhandlers = { __reasons__: new Map() };
 
     /** @memberof window
     * @prop {Map} Limbo - All previously unhandled (destructed) jobs that will be re-handled
     */
-    let Limbo = new Map;
+    const Limbo = new Map;
 
     window.Jobs = Jobs;
     window.Timers = Timers;
@@ -2632,9 +2716,9 @@ __STATIC__: {
         if(JobReason?.unlike('default'))
             console.log(`Registering job (${ JobName }): ${ JobReason }`);
 
-        return Jobs[JobName] ??= Timers[JobName] > 0?
-            setInterval(Handlers[JobName], Timers[JobName]):
-        -setTimeout(Handlers[JobName], -Timers[JobName]);
+        return Jobs[JobName] ??= Timers[JobName] > 0
+            ? setInterval(Handlers[JobName], Timers[JobName])
+            : -setTimeout(Handlers[JobName], -Timers[JobName]);
     }
     Handlers.__reasons__.set('RegisterJob', UUID.from(RegisterJob).value);
 
@@ -2670,7 +2754,7 @@ __STATIC__: {
         if(JobReason?.unlike('default'))
             console.log(`Unregistering job (${ JobName }): ${ JobReason }`);
 
-        let CurrentJob = Jobs[JobName];
+        const CurrentJob = Jobs[JobName];
 
         if(CurrentJob < 0)
             clearTimeout(-CurrentJob);
@@ -2718,4 +2802,5 @@ __STATIC__: {
     }
     Handlers.__reasons__.set('RestartJob', UUID.from(RestartJob).value);
     Unhandlers.__reasons__.set('RestartJob', UUID.from(RestartJob).value);
-};
+} // :__STATIC__
+;

@@ -27,7 +27,7 @@
 
 globalThis.TTV_DSL ??= {};
 
-if (typeof require === 'function' && typeof module === 'object')
+if(typeof require === 'function' && typeof module === 'object')
     require('./errors.js');
 
 (() => {
@@ -67,30 +67,30 @@ if (typeof require === 'function' && typeof module === 'object')
      * @return {Number} milliseconds
      * @throws {DSLRuntimeError}
      */
-    let parseDuration = (value) => {
-        if (typeof value === 'number' && Number.isFinite(value))
+    const parseDuration = (value) => {
+        if(typeof value === 'number' && Number.isFinite(value))
             return value;
 
-        let text = String(value).trim(),
-            clock = DURATION_CLOCK.exec(text);
+        const text = String(value).trim()
+            , clock = DURATION_CLOCK.exec(text);
 
-        if (clock) {
-            let [, first, second, third] = clock;
+        if(clock) {
+            const [, first, second, third] = clock;
 
-            return (undefined === third
+            return (void null === third
                 ? (Number(first) * MS_PER_MINUTE) + (Number(second) * MS_PER_SECOND)
                 : (Number(first) * MS_PER_HOUR) + (Number(second) * MS_PER_MINUTE) + (Number(third) * MS_PER_SECOND));
         }
 
-        let suffix = DURATION_SUFFIX.exec(text);
+        const suffix = DURATION_SUFFIX.exec(text);
 
-        if (suffix)
+        if(suffix)
             return Number(suffix[1]) * SUFFIX_SCALE[suffix[2].toLowerCase()];
 
-        if (typeof globalThis.parseTime === 'function') {
-            let delegated = globalThis.parseTime(text);
+        if(typeof globalThis.parseTime === 'function') {
+            const delegated = globalThis.parseTime(text);
 
-            if (Number.isFinite(delegated))
+            if(Number.isFinite(delegated))
                 return delegated;
         }
 
@@ -174,11 +174,11 @@ if (typeof require === 'function' && typeof module === 'object')
      * @param {String} name
      * @return {?String}
      */
-    let wildcardFor = (name) => {
-        let colon = name.indexOf(':'),
-            dot = name.lastIndexOf('.');
+    const wildcardFor = (name) => {
+        const colon = name.indexOf(':')
+            , dot = name.lastIndexOf('.');
 
-        return (dot > colon && colon > -1? `${ name.slice(0, dot) }.*`: null);
+        return (dot > colon && colon > -1 ? `${ name.slice(0, dot) }.*` : null);
     };
 
     /** The permission the built-in JavaScript surface requires. */
@@ -199,10 +199,10 @@ if (typeof require === 'function' && typeof module === 'object')
     const BLOCKED_STATICS = Object.freeze(new Set(['prototype', 'constructor', 'length', 'name', 'caller', 'arguments']));
 
     /** How big an array-building call's input may be. */
-    let checkArraySize = (label, value) => {
-        let size = (null == value? 0: (typeof value === 'string'? value.length: Number(value.length ?? value.size ?? 0)));
+    const checkArraySize = (label, value) => {
+        const size = (null == value ? 0 : (typeof value === 'string' ? value.length : Number(value.length ?? value.size ?? 0)));
 
-        if (!(size <= MAX_ARRAY_FROM))
+        if(!(size <= MAX_ARRAY_FROM))
             throw new DSLRuntimeError(`\`&${ label }\` builds at most ${ MAX_ARRAY_FROM } items`);
     };
 
@@ -219,19 +219,19 @@ if (typeof require === 'function' && typeof module === 'object')
      * @param {Object} owner
      * @return {Object}
      */
-    let expose = (label, owner) => {
+    const expose = (label, owner) => {
         // No prototype: `toString`, `valueOf`, `__lookupGetter__` and the rest of
         // `Object.prototype` must not be reachable through a built-in table.
-        let table = Object.create(null);
+        const table = Object.create(null);
 
-        for (let name of Object.getOwnPropertyNames(owner)) {
-            if (BLOCKED_STATICS.has(name))
+        for(const name of Object.getOwnPropertyNames(owner)) {
+            if(BLOCKED_STATICS.has(name))
                 continue;
 
-            let value = owner[name],
-                guarded = GUARDED_STATICS[`${ label }.${ name }`];
+            const value = owner[name]
+                , guarded = GUARDED_STATICS[`${ label }.${ name }`];
 
-            table[name] = (guarded ?? (typeof value === 'function'? (...args) => value.apply(owner, args): value));
+            table[name] = (guarded ?? (typeof value === 'function' ? (...args) => value.apply(owner, args) : value));
         }
 
         return Object.freeze(table);
@@ -250,7 +250,7 @@ if (typeof require === 'function' && typeof module === 'object')
     });
 
     /** @param {Object} object @param {String} key @return {Boolean} an own property only */
-    let owns = (object, key) => Object.prototype.hasOwnProperty.call(object, key);
+    const owns = (object, key) => Object.prototype.hasOwnProperty.call(object, key);
 
     /** Property names a host path may never traverse. Not a substitute for the host simply
      * not registering dangerous objects — but walking into `constructor` is the one mistake
@@ -276,25 +276,25 @@ if (typeof require === 'function' && typeof module === 'object')
      * @param {String} replacement
      * @return {String}
      */
-    let percent = (value, letters, replacement, loc) => {
+    const percent = (value, letters, replacement, loc) => {
         // A list has nothing to replace *within*; joining is the only sensible reading, and
         // it is what makes `.links % ', '` a formatting operator as well as a cleaning one.
-        if (Array.isArray(value))
+        if(Array.isArray(value))
             return value.join(replacement);
 
         // `%c` is a flag, not a class. It is stripped here rather than rejected so that the
         // spelling stays legal even though the trim it asks for is already unconditional.
-        let run = (letters ?? []).filter(letter => 'c' !== letter);
+        const run = (letters ?? []).filter(letter => 'c' !== letter);
 
-        let source = (run.length? '': PERCENT_DEFAULT);
+        let source = (run.length ? '' : PERCENT_DEFAULT);
 
-        for (let letter of run) {
-            let piece = PERCENT_CLASS_SOURCE[letter];
+        for(const letter of run) {
+            const piece = PERCENT_CLASS_SOURCE[letter];
 
-            if (undefined === piece)
+            if(void null === piece)
                 throw new DSLRuntimeError(`Unknown \`%\` sequence "%${ letter }"`, loc);
 
-            source += (PERCENT_ZERO_WIDTH.has(letter)? piece: `${ piece }+`);
+            source += (PERCENT_ZERO_WIDTH.has(letter) ? piece : `${ piece }+`);
         }
 
         return String(value).trim().replace(new RegExp(source, 'g'), replacement);
@@ -323,21 +323,21 @@ if (typeof require === 'function' && typeof module === 'object')
      * @param {String} pattern
      * @return {String}
      */
-    let format = (value, pattern) => {
-        if (!Number.isFinite(value))
+    const format = (value, pattern) => {
+        if(!Number.isFinite(value))
             return '';
 
-        let sign = (value < 0? '-': ''),
-            remaining = Math.floor(Math.abs(value) / MS_PER_SECOND) * MS_PER_SECOND,
-            pieces = [],
-            last = 0;
+        let sign = (value < 0 ? '-' : '')
+            , remaining = Math.floor(Math.abs(value) / MS_PER_SECOND) * MS_PER_SECOND
+            , pieces = []
+            , last = 0;
 
         // Split the pattern into literal text and unit tokens, in order.
-        for (let match of pattern.matchAll(FORMAT_PIECE)) {
-            if (match.index > last)
+        for(const match of pattern.matchAll(FORMAT_PIECE)) {
+            if(match.index > last)
                 pieces.push({ text: pattern.slice(last, match.index) });
 
-            if (undefined !== match[1])
+            if(void null !== match[1])
                 pieces.push({ text: match[1] });
             else
                 pieces.push({ unit: match[2], optional: !!match[3] });
@@ -345,16 +345,16 @@ if (typeof require === 'function' && typeof module === 'object')
             last = match.index + match[0].length;
         }
 
-        if (last < pattern.length)
+        if(last < pattern.length)
             pieces.push({ text: pattern.slice(last) });
 
-        let output = '',
-            leading = true,
-            skipText = false;
+        let output = ''
+            , leading = true
+            , skipText = false;
 
-        for (let piece of pieces) {
-            if (undefined !== piece.text) {
-                if (!skipText)
+        for(const piece of pieces) {
+            if(void null !== piece.text) {
+                if(!skipText)
                     output += piece.text;
 
                 skipText = false;
@@ -362,19 +362,19 @@ if (typeof require === 'function' && typeof module === 'object')
                 continue;
             }
 
-            let scale = FORMAT_SCALE[piece.unit[0]],
-                amount = Math.floor(remaining / scale);
+            const scale = FORMAT_SCALE[piece.unit[0]]
+                , amount = Math.floor(remaining / scale);
 
             remaining -= amount * scale;
 
-            if (piece.optional && leading && 0 === amount) {
+            if(piece.optional && leading && 0 === amount) {
                 skipText = true;
 
                 continue;
             }
 
             leading = false;
-            output += (2 === piece.unit.length? String(amount).padStart(2, '0'): String(amount));
+            output += (2 === piece.unit.length ? String(amount).padStart(2, '0') : String(amount));
         }
 
         return sign + output;
@@ -385,7 +385,7 @@ if (typeof require === 'function' && typeof module === 'object')
      * @param {Number} [seed = 1]
      * @return {function(): Number} values in `[0, 1)`
      */
-    let createSeededRandom = (seed = 1) => {
+    const createSeededRandom = (seed = 1) => {
         let state = (seed >>> 0) || 1;
 
         return () => {
@@ -401,15 +401,15 @@ if (typeof require === 'function' && typeof module === 'object')
     };
 
     /** The real clock. */
-    let createSystemClock = () => ({
+    const createSystemClock = () => ({
         now: () => Date.now(),
         setTimeout: (body, delay) => setTimeout(body, delay),
         clearTimeout: (handle) => clearTimeout(handle),
     });
 
     /** Yields to the microtask queue a few times, so chained `await`s settle. */
-    let flush = async () => {
-        for (let turn = 0; turn < 8; ++turn)
+    const flush = async() => {
+        for(let turn = 0; turn < 8; ++turn)
             await new Promise(resolve => queueMicrotask(resolve));
     };
 
@@ -417,16 +417,16 @@ if (typeof require === 'function' && typeof module === 'object')
      * @param {Number} [start = 0]
      * @return {Object} a clock with an extra `advance(ms)` and `pending` count
      */
-    let createFakeClock = (start = 0) => {
-        let time = start,
-            sequence = 0,
-            timers = new Map();
+    const createFakeClock = (start = 0) => {
+        let time = start
+            , sequence = 0
+            , timers = new Map();
 
         return {
             now: () => time,
 
             setTimeout(body, delay) {
-                let handle = ++sequence;
+                const handle = ++sequence;
 
                 timers.set(handle, { at: time + Math.max(0, delay | 0), body });
 
@@ -445,17 +445,17 @@ if (typeof require === 'function' && typeof module === 'object')
              * @param {Number} span - milliseconds to advance
              */
             async advance(span) {
-                let target = time + span;
+                const target = time + span;
 
-                while (true) {
-                    let due = [...timers.entries()]
+                while(true) {
+                    const due = [...timers.entries()]
                         .filter(([, timer]) => timer.at <= target)
                         .sort((left, right) => left[1].at - right[1].at);
 
-                    if (!due.length)
+                    if(!due.length)
                         break;
 
-                    let [handle, timer] = due[0];
+                    const [handle, timer] = due[0];
 
                     timers.delete(handle);
                     time = timer.at;
@@ -480,8 +480,8 @@ if (typeof require === 'function' && typeof module === 'object')
      * @param {String} [options.current] - the channel `#` refers to
      * @return {Object}
      */
-    let createTwitchRealm = ({ channels = {}, current = null } = {}) => {
-        let records = new Map(Object.entries(channels).map(([name, record]) => [name.toLowerCase(), Object.assign({ name, live: false }, record)]));
+    const createTwitchRealm = ({ channels = {}, current = null } = {}) => {
+        const records = new Map(Object.entries(channels).map(([name, record]) => [name.toLowerCase(), Object.assign({ name, live: false }, record)]));
 
         return {
             name: 'TWITCH',
@@ -493,7 +493,7 @@ if (typeof require === 'function' && typeof module === 'object')
 
             /** The channel `#` resolves to when nothing narrower is in scope. */
             get current() {
-                return (null == current? null: this.channel(current));
+                return (null == current ? null : this.channel(current));
             },
 
             set current(name) {
@@ -502,7 +502,7 @@ if (typeof require === 'function' && typeof module === 'object')
 
             /** @param {String} name @param {Object} record @return {Object} */
             define(name, record) {
-                let entry = Object.assign({ name, live: false }, record);
+                const entry = Object.assign({ name, live: false }, record);
 
                 records.set(name.toLowerCase(), entry);
 
@@ -516,14 +516,14 @@ if (typeof require === 'function' && typeof module === 'object')
 
             /** `[badge]` — does the subject carry this badge? */
             badge(name, subject) {
-                let badges = (subject?.badges ?? []);
+                const badges = (subject?.badges ?? []);
 
-                return (badges.includes(name)? name: null);
+                return (badges.includes(name) ? name : null);
             },
 
             /** `@user` */
             user(name, subject) {
-                let users = (subject?.users ?? {});
+                const users = (subject?.users ?? {});
 
                 return (users[name] ?? { name });
             },
@@ -534,7 +534,7 @@ if (typeof require === 'function' && typeof module === 'object')
             goto(target) {
                 this.visited.push(target);
 
-                if (null != target && typeof target === 'object' && 'name' in target)
+                if(null != target && typeof target === 'object' && 'name' in target)
                     current = target.name;
             },
         };
@@ -544,7 +544,7 @@ if (typeof require === 'function' && typeof module === 'object')
      * @param {Array<Object>} sink
      * @return {Object<String, Function>}
      */
-    let createDefaultVerbs = (sink) => ({
+    const createDefaultVerbs = (sink) => ({
         /** Sends a message to the channel in scope. */
         POST(context, value) {
             return deliver(sink, 'POST', context, value, null);
@@ -562,10 +562,10 @@ if (typeof require === 'function' && typeof module === 'object')
      * pattern, and Twitch would reject it anyway.
      * @return {Boolean} whether anything was sent
      */
-    let deliver = (sink, verb, context, value, to) => {
-        let text = (null == value? '': String(value));
+    const deliver = (sink, verb, context, value, to) => {
+        const text = (null == value ? '' : String(value));
 
-        if (/^\s*$/.test(text)) {
+        if(/^\s*$/.test(text)) {
             context.runtime.logger.warn(`${ verb } skipped: the message was empty`);
 
             return false;
@@ -596,7 +596,7 @@ if (typeof require === 'function' && typeof module === 'object')
      *   to {@link DEFAULT_PERMISSIONS}
      * @return {Object}
      */
-    let createRuntime = ({
+    const createRuntime = ({
         realms = {},
         verbs = {},
         constants = {},
@@ -610,51 +610,51 @@ if (typeof require === 'function' && typeof module === 'object')
         permissions: extraPermissions = [],
         settings = {},
     } = {}) => {
-        let catalog = Object.freeze(new Set([...DEFAULT_PERMISSIONS, ...extraPermissions]));
+        const catalog = Object.freeze(new Set([...DEFAULT_PERMISSIONS, ...extraPermissions]));
 
         // Host mistakes are refused at start-up rather than at the first call: a path
         // mapped to a permission nobody can grant, a binding that shadows a built-in, and a
         // bound function with no permission at all.
-        for (let [path, needed] of Object.entries(jsPermissions)) {
-            if (!catalog.has(needed))
+        for(const [path, needed] of Object.entries(jsPermissions)) {
+            if(!catalog.has(needed))
                 throw new DSLRuntimeError(`\`&${ path }\` is mapped to \`${ needed }\`, which is not on the permission list`);
 
-            if (owns(JS_BUILTINS, path.split('.')[0]))
+            if(owns(JS_BUILTINS, path.split('.')[0]))
                 throw new DSLRuntimeError(`\`&${ path }\` is a built-in; it always needs \`eval:js\` and cannot be remapped`);
         }
 
-        for (let name of Object.keys(jsBindings))
-            if (owns(JS_BUILTINS, name))
+        for(const name of Object.keys(jsBindings))
+            if(owns(JS_BUILTINS, name))
                 throw new DSLRuntimeError(`A host binding may not be called \`${ name }\`; \`&${ name }.*\` is the built-in`);
 
-        let unmapped = [],
-            collect = (value, path, depth) => {
-                if (typeof value === 'function') {
-                    if (!owns(jsPermissions, path))
+        const unmapped = []
+            , collect = (value, path, depth) => {
+                if(typeof value === 'function') {
+                    if(!owns(jsPermissions, path))
                         unmapped.push(path);
 
                     return;
                 }
 
-                if (null != value && typeof value === 'object' && depth < 4)
-                    for (let key of Object.keys(value))
-                        collect(value[key], (path? `${ path }.${ key }`: key), depth + 1);
+                if(null != value && typeof value === 'object' && depth < 4)
+                    for(const key of Object.keys(value))
+                        collect(value[key], (path ? `${ path }.${ key }` : key), depth + 1);
             };
 
         collect(jsBindings, '', 0);
 
-        if (unmapped.length)
+        if(unmapped.length)
             throw new DSLRuntimeError(`Every host call needs a permission; map these in \`jsPermissions\`: ${ unmapped.map(path => `&${ path }`).join(', ') }`);
 
-        let sink = [],
-            budget = Object.assign({}, DEFAULT_LIMITS, limits),
-            listeners = new Set(),
-            steps = 0,
-            startedAt = wallClock();
+        let sink = []
+            , budget = Object.assign({}, DEFAULT_LIMITS, limits)
+            , listeners = new Set()
+            , steps = 0
+            , startedAt = wallClock();
 
-        let registry = Object.assign({ TWITCH: createTwitchRealm() }, realms);
+        const registry = Object.assign({ TWITCH: createTwitchRealm() }, realms);
 
-        let runtime = {
+        const runtime = {
             sink,
             limits: budget,
             logger,
@@ -685,10 +685,10 @@ if (typeof require === 'function' && typeof module === 'object')
              * @throws {DSLLimitError}
              */
             step(loc) {
-                if (++steps > budget.steps)
+                if(++steps > budget.steps)
                     throw new DSLLimitError(`Script exceeded its budget of ${ budget.steps } steps in a single turn`, loc);
 
-                if ((wallClock() - startedAt) > budget.wallMs)
+                if((wallClock() - startedAt) > budget.wallMs)
                     throw new DSLLimitError(`A single turn ran longer than ${ budget.wallMs }ms`, loc);
             },
 
@@ -706,9 +706,9 @@ if (typeof require === 'function' && typeof module === 'object')
 
             /** @param {String} name @return {Object} @throws {DSLRuntimeError} */
             realm(name, loc) {
-                let found = registry[name];
+                const found = registry[name];
 
-                if (!found)
+                if(!found)
                     throw new DSLRuntimeError(`Unknown realm ${ JSON.stringify(name) }. Registered realms: ${ Object.keys(registry).join(', ') || 'none' }`, loc);
 
                 return found;
@@ -729,15 +729,15 @@ if (typeof require === 'function' && typeof module === 'object')
              */
             sleep(milliseconds, signal) {
                 return new Promise(resolve => {
-                    if (signal?.aborted)
+                    if(signal?.aborted)
                         return resolve(false);
 
-                    let handle = clock.setTimeout(() => {
+                    const handle = clock.setTimeout(() => {
                         signal?.forget(cancel);
                         resolve(!signal?.aborted);
                     }, milliseconds);
 
-                    let cancel = () => {
+                    const cancel = () => {
                         clock.clearTimeout(handle);
                         resolve(false);
                     };
@@ -748,7 +748,7 @@ if (typeof require === 'function' && typeof module === 'object')
 
             /** @param {Array} items @return {*} one item, chosen with the injected source */
             pick(items, loc) {
-                if (!Array.isArray(items) || !items.length)
+                if(!Array.isArray(items) || !items.length)
                     throw new DSLRuntimeError('`any from` was given nothing to choose from', loc);
 
                 return items[Math.floor(random() * items.length) % items.length];
@@ -764,17 +764,17 @@ if (typeof require === 'function' && typeof module === 'object')
              * @return {Array<Number>}
              */
             range(from, to, inclusive, loc) {
-                let start = Number(from),
-                    end = Number(to);
+                const start = Number(from)
+                    , end = Number(to);
 
-                if (!Number.isFinite(start) || !Number.isFinite(end))
+                if(!Number.isFinite(start) || !Number.isFinite(end))
                     throw new DSLRuntimeError('A range needs two numbers', loc);
 
-                let step = (end < start? -1: 1),
-                    last = (inclusive? end: end - step),
-                    values = [];
+                const step = (end < start ? -1 : 1)
+                    , last = (inclusive ? end : end - step)
+                    , values = [];
 
-                for (let value = start; (step > 0? value <= last: value >= last); value += step) {
+                for(let value = start; (step > 0 ? value <= last : value >= last); value += step) {
                     this.step(loc);
                     values.push(value);
                 }
@@ -797,7 +797,7 @@ if (typeof require === 'function' && typeof module === 'object')
              * @return {Promise<void>}
              */
             async dispatch(event) {
-                for (let handler of [...listeners])
+                for(const handler of [...listeners])
                     await handler(event);
             },
 
@@ -814,9 +814,9 @@ if (typeof require === 'function' && typeof module === 'object')
              * @return {Promise<*>}
              */
             async invokeVerb(name, context, value, loc) {
-                let verb = runtime.verbs[name];
+                const verb = runtime.verbs[name];
 
-                if (typeof verb !== 'function')
+                if(typeof verb !== 'function')
                     throw new DSLRuntimeError(`Unknown verb ${ JSON.stringify(name) }. Registered verbs: ${ Object.keys(runtime.verbs).join(', ') }`, loc);
 
                 return verb(context, value, loc);
@@ -824,9 +824,9 @@ if (typeof require === 'function' && typeof module === 'object')
 
             /** Navigates. Delegates to the realm that owns the target. */
             goto(target, context, loc) {
-                let realm = (context.realm ?? runtime.defaultRealm);
+                const realm = (context.realm ?? runtime.defaultRealm);
 
-                if (typeof realm?.goto !== 'function')
+                if(typeof realm?.goto !== 'function')
                     throw new DSLRuntimeError('The realm in scope cannot handle `goto`', loc);
 
                 return realm.goto(target);
@@ -849,15 +849,15 @@ if (typeof require === 'function' && typeof module === 'object')
              * @throws {DSLPermissionError}
              */
             requirePermission(name, context, loc) {
-                let granted = context?.permissions,
-                    wildcard = wildcardFor(name);
+                const granted = context?.permissions
+                    , wildcard = wildcardFor(name);
 
                 // Exact, or one explicit `.*` one level up — and nothing else. `+eval` does not
                 // grant `eval:calc`, and `+read:html.*` does not reach `read:html.a.b`.
-                if (granted?.has(name) || (null !== wildcard && granted?.has(wildcard)))
+                if(granted?.has(name) || (null !== wildcard && granted?.has(wildcard)))
                     return true;
 
-                let held = [...(context?.permissions ?? [])].sort();
+                const held = [...(context?.permissions ?? [])].sort();
 
                 throw new DSLPermissionError(`This block was not granted \`+${ name }\`. Add it to the enclosing \`using\` header. Granted here: ${ held.map(entry => `+${ entry }`).join(' ') || 'nothing' }`, loc);
             },
@@ -872,17 +872,17 @@ if (typeof require === 'function' && typeof module === 'object')
              * @throws {DSLPermissionError}
              */
             checkGrant(grant, loc) {
-                if (grant.endsWith('.*')) {
-                    let prefix = grant.slice(0, -1);
+                if(grant.endsWith('.*')) {
+                    const prefix = grant.slice(0, -1);
 
-                    for (let entry of catalog)
-                        if (entry.startsWith(prefix) && !entry.slice(prefix.length).includes('.'))
+                    for(const entry of catalog)
+                        if(entry.startsWith(prefix) && !entry.slice(prefix.length).includes('.'))
                             return true;
 
                     throw new DSLPermissionError(`\`+${ grant }\` matches nothing on the permission list. Known: ${ [...catalog].map(entry => `+${ entry }`).join(' ') }`, loc);
                 }
 
-                if (catalog.has(grant))
+                if(catalog.has(grant))
                     return true;
 
                 throw new DSLPermissionError(`Unknown permission \`+${ grant }\`. Known: ${ [...catalog].map(entry => `+${ entry }`).join(' ') }`, loc);
@@ -901,32 +901,32 @@ if (typeof require === 'function' && typeof module === 'object')
              * @return {*}
              */
             invokeJS(path, args, context, loc) {
-                let key = path.join('.'),
-                    builtin = owns(JS_BUILTINS, path[0]),
-                    reading = (null == args);
+                const key = path.join('.')
+                    , builtin = owns(JS_BUILTINS, path[0])
+                    , reading = (null == args);
 
-                if (builtin) {
-                    if (2 !== path.length || !owns(JS_BUILTINS[path[0]], path[1]))
+                if(builtin) {
+                    if(2 !== path.length || !owns(JS_BUILTINS[path[0]], path[1]))
                         throw new DSLRuntimeError(`\`&${ key }\` is not part of the built-in set. Available: ${ Object.keys(JS_BUILTINS[path[0]]).map(name => `&${ path[0] }.${ name }`).join(', ') }`, loc);
 
                     runtime.requirePermission(BUILTIN_JS_PERMISSION, context, loc);
                 } else {
-                    if (!owns(jsPermissions, key))
+                    if(!owns(jsPermissions, key))
                         throw new DSLRuntimeError(`No host binding for \`&${ key }\`. Registered: ${ Object.keys(jsPermissions).map(name => `&${ name }`).join(', ') || 'none' }`, loc);
 
                     runtime.requirePermission(jsPermissions[key], context, loc);
                 }
 
-                let holder = null,
-                    target = (builtin? JS_BUILTINS: jsBindings);
+                let holder = null
+                    , target = (builtin ? JS_BUILTINS : jsBindings);
 
-                for (let segment of path) {
-                    if (FORBIDDEN_SEGMENTS.has(segment))
+                for(const segment of path) {
+                    if(FORBIDDEN_SEGMENTS.has(segment))
                         throw new DSLRuntimeError(`\`&${ key }\` walks through ${ JSON.stringify(segment) }, which is never allowed`, loc);
 
-                    let container = (null != target && (typeof target === 'object' || typeof target === 'function'));
+                    const container = (null != target && (typeof target === 'object' || typeof target === 'function'));
 
-                    if (!container || !owns(target, segment))
+                    if(!container || !owns(target, segment))
                         throw new DSLRuntimeError(`No host binding for \`&${ key }\`. Registered: ${ Object.keys(jsPermissions).map(name => `&${ name }`).join(', ') || 'none' }`, loc);
 
                     holder = target;
@@ -935,17 +935,17 @@ if (typeof require === 'function' && typeof module === 'object')
 
                 // A method is only ever called and a constant only ever read, so no function
                 // value — and no live object — ever lands in a script.
-                if (reading) {
-                    if (typeof target === 'function')
+                if(reading) {
+                    if(typeof target === 'function')
                         throw new DSLRuntimeError(`\`&${ key }\` is a method; call it: \`&${ key }( ... )\``, loc);
 
-                    if (null != target && typeof target === 'object')
+                    if(null != target && typeof target === 'object')
                         throw new DSLRuntimeError(`\`&${ key }\` is not a constant`, loc);
 
                     return target;
                 }
 
-                if (typeof target !== 'function')
+                if(typeof target !== 'function')
                     throw new DSLRuntimeError(`\`&${ key }\` is a constant, not a method; read it without parentheses: \`&${ key }\``, loc);
 
                 return target.apply(holder, args);
@@ -962,9 +962,9 @@ if (typeof require === 'function' && typeof module === 'object')
 
     /** A cancellation token. Kept deliberately small — `AbortController` exists, but the
      * scripts here need `onAbort`/`forget` more than they need DOM events. */
-    let createSignal = () => {
-        let handlers = new Set(),
-            aborted = false;
+    const createSignal = () => {
+        let handlers = new Set()
+            , aborted = false;
 
         return {
             get aborted() {
@@ -972,7 +972,7 @@ if (typeof require === 'function' && typeof module === 'object')
             },
 
             onAbort(handler) {
-                if (aborted)
+                if(aborted)
                     handler();
                 else
                     handlers.add(handler);
@@ -983,12 +983,12 @@ if (typeof require === 'function' && typeof module === 'object')
             },
 
             abort() {
-                if (aborted)
+                if(aborted)
                     return;
 
                 aborted = true;
 
-                for (let handler of [...handlers])
+                for(const handler of [...handlers])
                     handler();
 
                 handlers.clear();
@@ -1013,10 +1013,10 @@ if (typeof require === 'function' && typeof module === 'object')
      * @param {Object} seed
      * @return {Object}
      */
-    let createContext = (runtime, { subject, channel, realm, permissions = [] }) => {
-        let signal = createSignal();
+    const createContext = (runtime, { subject, channel, realm, permissions = [] }) => {
+        const signal = createSignal();
 
-        let make = (subjects, envs, currentChannel, currentRealm, granted, hold, route, callDepth = 0) => ({
+        const make = (subjects, envs, currentChannel, currentRealm, granted, hold, route, callDepth = 0) => ({
             runtime,
             signal,
             subjects,
@@ -1049,12 +1049,12 @@ if (typeof require === 'function' && typeof module === 'object')
              * @return {Object}
              */
             child(value, { channel: nextChannel, realm: nextRealm, permissions: nextPermissions, hold: nextHold, route: nextRoute } = {}) {
-                let resolved = (nextChannel !== undefined
+                const resolved = (nextChannel !== void null
                     ? nextChannel
-                    : (isChannelLike(value)? value: (value?.channel ?? currentChannel)));
+                    : (isChannelLike(value) ? value : (value?.channel ?? currentChannel)));
 
                 return make(subjects.concat([value]), envs.concat([new Map()]), resolved, (nextRealm ?? currentRealm), (nextPermissions ?? granted),
-                    (nextHold !== undefined? nextHold: hold), (nextRoute ?? route), callDepth);
+                    (nextHold !== void null ? nextHold : hold), (nextRoute ?? route), callDepth);
             },
 
             /** A fresh frame for a function call: same subject, channel and signal, but none
@@ -1076,7 +1076,7 @@ if (typeof require === 'function' && typeof module === 'object')
     };
 
     /** @param {*} value @return {Boolean} true when the value looks like a channel record */
-    let isChannelLike = (value) => (null != value && typeof value === 'object' && typeof value.name === 'string' && 'live' in value);
+    const isChannelLike = (value) => (null != value && typeof value === 'object' && typeof value.name === 'string' && 'live' in value);
 
     globalThis.TTV_DSL.runtime = {
         createRuntime,
@@ -1107,5 +1107,5 @@ if (typeof require === 'function' && typeof module === 'object')
     globalThis.TTV_DSL.createRuntime = createRuntime;
 })();
 
-if (typeof module === 'object' && module?.exports)
+if(typeof module === 'object' && module?.exports)
     module.exports = globalThis.TTV_DSL;

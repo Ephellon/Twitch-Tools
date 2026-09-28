@@ -29,7 +29,7 @@
 
 globalThis.TTV_DSL ??= {};
 
-if (typeof require === 'function' && typeof module === 'object') {
+if(typeof require === 'function' && typeof module === 'object') {
     require('./errors.js');
     require('./tokens.js');
 }
@@ -119,21 +119,21 @@ if (typeof require === 'function' && typeof module === 'object') {
      * @param {String} source
      * @return {function(Number): { line: Number, column: Number }}
      */
-    let makeLocator = (source) => {
-        let starts = [0];
+    const makeLocator = (source) => {
+        const starts = [0];
 
-        for (let index = 0; index < source.length; ++index)
-            if (source[index] === '\n')
+        for(let index = 0; index < source.length; ++index)
+            if(source[index] === '\n')
                 starts.push(index + 1);
 
         return (offset) => {
-            let low = 0,
-                high = starts.length - 1;
+            let low = 0
+                , high = starts.length - 1;
 
-            while (low < high) {
-                let mid = (low + high + 1) >> 1;
+            while(low < high) {
+                const mid = (low + high + 1) >> 1;
 
-                if (starts[mid] <= offset)
+                if(starts[mid] <= offset)
                     low = mid;
                 else
                     high = mid - 1;
@@ -179,8 +179,8 @@ if (typeof require === 'function' && typeof module === 'object') {
             this.#length = this.#source.length;
 
             this.#fragment = !!fragment;
-            this.#originOffset = (origin? origin.offset | 0: 0);
-            this.#reportSource = (origin? origin.source: this.#source);
+            this.#originOffset = (origin ? origin.offset | 0 : 0);
+            this.#reportSource = (origin ? origin.source : this.#source);
             this.#locate = makeLocator(this.#reportSource);
         }
 
@@ -189,13 +189,13 @@ if (typeof require === 'function' && typeof module === 'object') {
          * @throws {DSLSyntaxError}
          */
         tokenize() {
-            while (this.#index < this.#length) {
+            while(this.#index < this.#length) {
                 // A skipped blank/comment line leaves the cursor at the head of the *next*
                 // line, whose indentation still has to be measured — hence the `continue`.
-                if (this.#atLineStart() && this.#scanLineStart())
+                if(this.#atLineStart() && this.#scanLineStart())
                     continue;
 
-                if (this.#index >= this.#length)
+                if(this.#index >= this.#length)
                     break;
 
                 this.#scanToken();
@@ -210,20 +210,20 @@ if (typeof require === 'function' && typeof module === 'object') {
 
         /** @return {Boolean} true when the cursor sits at the first column of a line */
         #atLineStart() {
-            if (0 === this.#index)
+            if(0 === this.#index)
                 return true;
 
-            let previous = this.#source[this.#index - 1];
+            const previous = this.#source[this.#index - 1];
 
             return ('\n' === previous);
         }
 
         /** @param {Number} offset @return {Object} an absolute, report-ready location */
         #locationAt(offset, end) {
-            let absolute = this.#originOffset + offset,
-                { line, column } = this.#locate(absolute);
+            const absolute = this.#originOffset + offset
+                , { line, column } = this.#locate(absolute);
 
-            return { line, column, start: absolute, end: this.#originOffset + (null == end? offset: end) };
+            return { line, column, start: absolute, end: this.#originOffset + (null == end ? offset : end) };
         }
 
         /** @param {String} message @param {Number} offset @param {Number} [end] */
@@ -233,9 +233,9 @@ if (typeof require === 'function' && typeof module === 'object') {
 
         /** @param {String} type @param {Number} start @param {Number} end @param {*} [value] @param {Object} [extra] */
         #emit(type, start, end, value, extra) {
-            let lexeme = this.#source.slice(start, end);
+            const lexeme = this.#source.slice(start, end);
 
-            this.#tokens.push(createToken(type, lexeme, (undefined === value? lexeme: value), this.#locationAt(start, end), extra));
+            this.#tokens.push(createToken(type, lexeme, (void null === value ? lexeme : value), this.#locationAt(start, end), extra));
             this.#lineHasToken = true;
         }
 
@@ -251,16 +251,16 @@ if (typeof require === 'function' && typeof module === 'object') {
          * @return {Boolean} true when the whole line was skipped as blank or comment-only
          */
         #scanLineStart() {
-            let start = this.#index,
-                spaces = 0,
-                tabs = 0;
+            let start = this.#index
+                , spaces = 0
+                , tabs = 0;
 
-            while (this.#index < this.#length) {
-                let character = this.#source[this.#index];
+            while(this.#index < this.#length) {
+                const character = this.#source[this.#index];
 
-                if (' ' === character)
+                if(' ' === character)
                     ++spaces;
-                else if ('\t' === character)
+                else if('\t' === character)
                     ++tabs;
                 else
                     break;
@@ -268,12 +268,12 @@ if (typeof require === 'function' && typeof module === 'object') {
                 ++this.#index;
             }
 
-            if (spaces > 0 && tabs > 0)
+            if(spaces > 0 && tabs > 0)
                 this.#fail('Indentation mixes tabs and spaces; pick one', start, this.#index);
 
             // A blank or comment-only line carries no structure. Consume it whole so it can
             // neither shift the indent stack nor emit a spurious NEWLINE.
-            if (this.#atInsignificantLine()) {
+            if(this.#atInsignificantLine()) {
                 this.#skipInsignificant();
 
                 return true;
@@ -281,25 +281,25 @@ if (typeof require === 'function' && typeof module === 'object') {
 
             // Inside brackets a continuation line may be indented however it likes, and a
             // fragment has no meaningful indentation at all.
-            if (this.#brackets > 0 || this.#fragment)
+            if(this.#brackets > 0 || this.#fragment)
                 return false;
 
-            let width = spaces + tabs,
-                top = this.#indents[this.#indents.length - 1];
+            const width = spaces + tabs
+                , top = this.#indents[this.#indents.length - 1];
 
-            if (width > top) {
+            if(width > top) {
                 this.#indents.push(width);
                 this.#emit(TokenType.INDENT, start, this.#index, width);
 
                 return false;
             }
 
-            while (width < this.#indents[this.#indents.length - 1]) {
+            while(width < this.#indents[this.#indents.length - 1]) {
                 this.#indents.pop();
                 this.#emit(TokenType.DEDENT, this.#index, this.#index, width);
             }
 
-            if (width !== this.#indents[this.#indents.length - 1])
+            if(width !== this.#indents[this.#indents.length - 1])
                 this.#fail(`Dedent to column ${ width + 1 } does not match any enclosing block`, start, this.#index);
 
             return false;
@@ -307,29 +307,29 @@ if (typeof require === 'function' && typeof module === 'object') {
 
         /** @return {Boolean} true when the remainder of the line is empty or a comment */
         #atInsignificantLine() {
-            if (this.#index >= this.#length)
+            if(this.#index >= this.#length)
                 return true;
 
-            let character = this.#source[this.#index];
+            const character = this.#source[this.#index];
 
-            if ('\n' === character || '\r' === character)
+            if('\n' === character || '\r' === character)
                 return true;
 
-            if ('/' === character && '/' === this.#source[this.#index + 1])
+            if('/' === character && '/' === this.#source[this.#index + 1])
                 return true;
 
             // A block comment only makes the *line* insignificant when nothing but
             // whitespace follows its close. `/* note */ POST \`hi\`` still has to measure
             // its indentation, so it must not take this path.
-            if ('/' === character && '*' === this.#source[this.#index + 1]) {
-                let close = this.#source.indexOf('*/', this.#index + 2);
+            if('/' === character && '*' === this.#source[this.#index + 1]) {
+                const close = this.#source.indexOf('*/', this.#index + 2);
 
-                if (close < 0)
+                if(close < 0)
                     return true;
 
                 let tail = close + 2;
 
-                while (tail < this.#length && (' ' === this.#source[tail] || '\t' === this.#source[tail] || '\r' === this.#source[tail]))
+                while(tail < this.#length && (' ' === this.#source[tail] || '\t' === this.#source[tail] || '\r' === this.#source[tail]))
                     ++tail;
 
                 return (tail >= this.#length || '\n' === this.#source[tail]);
@@ -342,22 +342,22 @@ if (typeof require === 'function' && typeof module === 'object') {
          * at the head of the next line. A `/* … *\/` may span lines, so this is not simply
          * "skip to the newline". */
         #skipInsignificant() {
-            while (this.#index < this.#length) {
-                let character = this.#source[this.#index];
+            while(this.#index < this.#length) {
+                const character = this.#source[this.#index];
 
-                if ('\n' === character) {
+                if('\n' === character) {
                     ++this.#index;
 
                     return;
                 }
 
-                if ('/' === character && '/' === this.#source[this.#index + 1]) {
+                if('/' === character && '/' === this.#source[this.#index + 1]) {
                     this.#skipToLineEnd();
 
                     continue;
                 }
 
-                if ('/' === character && '*' === this.#source[this.#index + 1]) {
+                if('/' === character && '*' === this.#source[this.#index + 1]) {
                     this.#skipBlockComment();
 
                     continue;
@@ -369,10 +369,10 @@ if (typeof require === 'function' && typeof module === 'object') {
 
         /** Steps over a `/* … *\/`, however many lines it covers. */
         #skipBlockComment() {
-            let start = this.#index,
-                close = this.#source.indexOf('*/', start + 2);
+            const start = this.#index
+                , close = this.#source.indexOf('*/', start + 2);
 
-            if (close < 0)
+            if(close < 0)
                 this.#fail('Unterminated "/*" comment', start, this.#length);
 
             this.#index = close + 2;
@@ -380,19 +380,19 @@ if (typeof require === 'function' && typeof module === 'object') {
 
         /** Advances the cursor to just before the next newline (or to the end of input). */
         #skipToLineEnd() {
-            while (this.#index < this.#length && '\n' !== this.#source[this.#index])
+            while(this.#index < this.#length && '\n' !== this.#source[this.#index])
                 ++this.#index;
         }
 
         /** Emits the trailing `NEWLINE`, unwinds the indent stack, and appends `EOF`. */
         #finish() {
-            if (this.#brackets > 0)
+            if(this.#brackets > 0)
                 this.#fail('Unclosed "(" at end of input', this.#length);
 
-            if (this.#lineHasToken)
+            if(this.#lineHasToken)
                 this.#emit(TokenType.NEWLINE, this.#length, this.#length, '\n');
 
-            while (this.#indents.length > 1) {
+            while(this.#indents.length > 1) {
                 this.#indents.pop();
                 this.#emit(TokenType.DEDENT, this.#length, this.#length, 0);
             }
@@ -405,26 +405,26 @@ if (typeof require === 'function' && typeof module === 'object') {
         /** Dispatches a single token. Branch order encodes the language's disambiguation
          * rules; see the per-branch comments. */
         #scanToken() {
-            let start = this.#index,
-                character = this.#source[start];
+            const start = this.#index
+                , character = this.#source[start];
 
             // Insignificant horizontal whitespace.
-            if (' ' === character || '\t' === character) {
+            if(' ' === character || '\t' === character) {
                 ++this.#index;
 
                 return;
             }
 
-            if ('\r' === character) {
+            if('\r' === character) {
                 ++this.#index;
 
                 return;
             }
 
-            if ('\n' === character) {
+            if('\n' === character) {
                 ++this.#index;
 
-                if (this.#lineHasToken) {
+                if(this.#lineHasToken) {
                     this.#emit(TokenType.NEWLINE, start, this.#index, '\n');
                     this.#lineHasToken = false;
                 }
@@ -433,12 +433,12 @@ if (typeof require === 'function' && typeof module === 'object') {
             }
 
             // `calc` arms arithmetic mode for the `(` straight after it, and only that.
-            if (this.#calcPending && '(' !== character)
+            if(this.#calcPending && '(' !== character)
                 this.#calcPending = false;
 
             // `//` must be tested BEFORE `/channel`, otherwise every comment scans as a
             // channel selector named after its first word.
-            if ('/' === character && '/' === this.#source[start + 1]) {
+            if('/' === character && '/' === this.#source[start + 1]) {
                 this.#skipToLineEnd();
 
                 return;
@@ -446,80 +446,80 @@ if (typeof require === 'function' && typeof module === 'object') {
 
             // A block comment reached mid-line. The whole-line case was already handled at
             // the line head, where it had to be, so that indentation is still measured.
-            if ('/' === character && '*' === this.#source[start + 1])
+            if('/' === character && '*' === this.#source[start + 1])
                 return this.#skipBlockComment();
 
             // Inside `calc( ... )`, the arithmetic characters are operators — and are
             // claimed here, before `+` can become a permission, `*` the wildcard, `%` a class
             // run, `/` a channel or `-` a badge marker.
-            if (this.#calcDepths.length && '+-*/%'.includes(character))
+            if(this.#calcDepths.length && '+-*/%'.includes(character))
                 return this.#scanArithmetic();
 
-            if ('`' === character)
+            if('`' === character)
                 return this.#scanTemplate();
 
             // `'` and `"` are the same literal with two spellings; the quote is a parameter
             // rather than a second scanner, so an escape fixed in one is fixed in both.
-            if ('"' === character || '\'' === character)
+            if('"' === character || '\'' === character)
                 return this.#scanString(character);
 
             // Digits: ordinal beats duration beats number, because `1st` and `15:00` both
             // begin with something a naive number scanner would happily eat.
-            if (character >= '0' && character <= '9')
+            if(character >= '0' && character <= '9')
                 return this.#scanNumeric();
 
             // `-` is a negative ordinal only when the ordinal suffix is actually present;
             // otherwise it is unary minus and the digits are scanned separately.
-            if ('-' === character && ORDINAL_PATTERN.test(this.#source.slice(start)))
+            if('-' === character && ORDINAL_PATTERN.test(this.#source.slice(start)))
                 return this.#scanNumeric();
 
             // `-- "..."` describes a `using` header. `--moderator`, glued, was briefly the
             // badge spelling. Both are caught before the punctuator table so `--` never
             // reads as two unary minuses.
-            if ('-' === character && '-' === this.#source[start + 1])
+            if('-' === character && '-' === this.#source[start + 1])
                 return this.#scanDoubleDash();
 
             // `[moderator]` / `[vip moderator]`.
-            if ('[' === character)
+            if('[' === character)
                 return this.#scanBadge();
 
-            if (':' === character)
+            if(':' === character)
                 return this.#scanColon();
 
             // `<` is the pipe operator, or nothing.
-            if ('<' === character)
+            if('<' === character)
                 return this.#scanAngle();
 
             // `.` is `...`, `..`, or `.prop` — longest first.
-            if ('.' === character)
+            if('.' === character)
                 return this.#scanDot();
 
-            if ('#' === character)
+            if('#' === character)
                 return this.#scanHash();
 
-            if ('/' === character)
+            if('/' === character)
                 return this.#scanSlash();
 
-            if ('@' === character)
+            if('@' === character)
                 return this.#scanUser();
 
             // `+` is never arithmetic. Claiming the whole `+name:sub` here is what keeps the
             // `:` out of the emote branch.
-            if ('+' === character)
+            if('+' === character)
                 return this.#scanPermission();
 
             // `&` is only ever the head of a host-binding path.
-            if ('&' === character)
+            if('&' === character)
                 return this.#scanJSPath();
 
             // `$` outside a template was the v2 host-call head. Named here so the error
             // says what to write instead.
             // `$` alone is the loop counter. `$:` was the v2 host-call head.
-            if ('$' === character) {
-                if (':' === this.#source[start + 1])
+            if('$' === character) {
+                if(':' === this.#source[start + 1])
                     this.#fail('Unexpected "$"; host calls are written "&datetime.now()"', start, start + 1);
 
-                if (/[A-Za-z0-9_]/.test(this.#source[start + 1] ?? ''))
+                if(/[A-Za-z0-9_]/.test(this.#source[start + 1] ?? ''))
                     this.#fail('`$` stands alone — it is the loop counter; name a loop with `for as name:` to read it by name', start, start + 2);
 
                 ++this.#index;
@@ -528,10 +528,10 @@ if (typeof require === 'function' && typeof module === 'object') {
                 return;
             }
 
-            if ('%' === character)
+            if('%' === character)
                 return this.#scanPercent();
 
-            if (IDENT_PATTERN.test(character))
+            if(IDENT_PATTERN.test(character))
                 return this.#scanWord();
 
             return this.#scanPunctuator();
@@ -539,27 +539,27 @@ if (typeof require === 'function' && typeof module === 'object') {
 
         /** `1st` / `-2nd` / `15:00` / `1:30:00` / `42` / `3.5`. */
         #scanNumeric() {
-            let start = this.#index,
-                ordinal = this.#match(ORDINAL_PATTERN);
+            const start = this.#index
+                , ordinal = this.#match(ORDINAL_PATTERN);
 
-            if (ordinal) {
+            if(ordinal) {
                 this.#index += ordinal[0].length;
 
-                let digits = parseInt(ordinal[0], 10);
+                const digits = parseInt(ordinal[0], 10);
 
                 // `1st` -> 0, `2nd` -> 1; `-1st` -> -1 (last), `-2nd` -> -2.
-                this.#emit(TokenType.ORDINAL, start, this.#index, (digits < 0? digits: digits - 1));
+                this.#emit(TokenType.ORDINAL, start, this.#index, (digits < 0 ? digits : digits - 1));
 
                 return;
             }
 
-            let duration = this.#match(DURATION_PATTERN);
+            const duration = this.#match(DURATION_PATTERN);
 
-            if (duration) {
+            if(duration) {
                 this.#index += duration[0].length;
 
-                let [, first, second, third] = duration,
-                    milliseconds = (undefined === third
+                let [, first, second, third] = duration
+                    , milliseconds = (void null === third
                         ? (Number(first) * MS_PER_MINUTE) + (Number(second) * MS_PER_SECOND)
                         : (Number(first) * MS_PER_HOUR) + (Number(second) * MS_PER_MINUTE) + (Number(third) * MS_PER_SECOND));
 
@@ -568,9 +568,9 @@ if (typeof require === 'function' && typeof module === 'object') {
                 return;
             }
 
-            let number = this.#match(NUMBER_PATTERN);
+            const number = this.#match(NUMBER_PATTERN);
 
-            if (!number)
+            if(!number)
                 this.#fail(`Malformed number near ${ JSON.stringify(this.#source.slice(start, start + 8)) }`, start);
 
             this.#index += number[0].length;
@@ -584,10 +584,10 @@ if (typeof require === 'function' && typeof module === 'object') {
          * is the retired `:kappa:` emote spelling, which is refused with a pointer at the
          * plain-text form. */
         #scanColon() {
-            let start = this.#index,
-                emote = this.#match(EMOTE_PATTERN);
+            const start = this.#index
+                , emote = this.#match(EMOTE_PATTERN);
 
-            if (emote)
+            if(emote)
                 this.#fail(`Emotes are plain text: write '${ emote[1] }', not ":${ emote[1] }:"`, start, start + emote[0].length);
 
             ++this.#index;
@@ -598,13 +598,13 @@ if (typeof require === 'function' && typeof module === 'object') {
          * is the parser's rule to enforce; the tokenizer's job is to refuse the *other*
          * readings of `+` outright, so nobody mistakes this language for one with sums. */
         #scanPermission() {
-            let start = this.#index,
-                grant = this.#match(PERMISSION_PATTERN);
+            const start = this.#index
+                , grant = this.#match(PERMISSION_PATTERN);
 
-            if (!grant)
+            if(!grant)
                 this.#fail('Unexpected "+"; TTV DSL has no arithmetic. `+name` grants a permission and is only legal in a `using` header.', start, start + 1);
 
-            if (PERMISSION_TAIL.test(this.#source.slice(start + grant[0].length)))
+            if(PERMISSION_TAIL.test(this.#source.slice(start + grant[0].length)))
                 this.#fail('Malformed permission; write `+action:resource`, with parts separated by "." and an optional final ".*" — e.g. "+read:html.*"', start, start + grant[0].length + 1);
 
             this.#index += grant[0].length;
@@ -614,10 +614,10 @@ if (typeof require === 'function' && typeof module === 'object') {
         /** `&datetime.now` — the path only. The argument list is grammar, so the parser reads
          * it; nothing here ever turns text into code. */
         #scanJSPath() {
-            let start = this.#index,
-                path = this.#match(JS_PATH_PATTERN);
+            const start = this.#index
+                , path = this.#match(JS_PATH_PATTERN);
 
-            if (!path)
+            if(!path)
                 this.#fail('Unexpected "&"; expected a host call like "&datetime.now()"', start, start + 1);
 
             this.#index += path[0].length;
@@ -626,30 +626,30 @@ if (typeof require === 'function' && typeof module === 'object') {
 
         /** `%`, `%n%s`, `%d%s`, … — one token carrying the whole class run. */
         #scanPercent() {
-            let start = this.#index,
-                run = this.#match(PERCENT_PATTERN);
+            const start = this.#index
+                , run = this.#match(PERCENT_PATTERN);
 
             this.#index += run[0].length;
 
             // `run[0]` is `%` followed by `X%Y%Z`; dropping the leading `%` and splitting on
             // the remaining ones leaves the letters, and leaves `[]` for a bare `%`.
-            let letters = run[0].slice(1).split('%').filter(entry => entry.length > 0);
+            const letters = run[0].slice(1).split('%').filter(entry => entry.length > 0);
 
             this.#emit(TokenType.PERCENT, start, this.#index, letters);
         }
 
         /** `<|` (pipe). */
         #scanAngle() {
-            let start = this.#index;
+            const start = this.#index;
 
-            if ('|' === this.#source[start + 1]) {
+            if('|' === this.#source[start + 1]) {
                 this.#index += 2;
                 this.#emit(TokenType.PIPE, start, this.#index);
 
                 return;
             }
 
-            if (this.#match(OLD_BADGE_PATTERN))
+            if(this.#match(OLD_BADGE_PATTERN))
                 return this.#failOldBadge();
 
             this.#fail('Unexpected "<"; expected the pipe operator "<|"', start);
@@ -657,10 +657,10 @@ if (typeof require === 'function' && typeof module === 'object') {
 
         /** `--` + whitespace is a description marker; anything glued to it is refused. */
         #scanDoubleDash() {
-            let start = this.#index,
-                next = this.#source[start + 2];
+            const start = this.#index
+                , next = this.#source[start + 2];
 
-            if (undefined === next || /\s/.test(next)) {
+            if(void null === next || /\s/.test(next)) {
                 this.#index += 2;
                 this.#emit(TokenType.DESCRIBE, start, this.#index);
 
@@ -672,13 +672,13 @@ if (typeof require === 'function' && typeof module === 'object') {
 
         /** Refuses a retired badge spelling, naming the current one. */
         #failOldBadge() {
-            let start = this.#index,
-                old = this.#match(OLD_BADGE_PATTERN);
+            const start = this.#index
+                , old = this.#match(OLD_BADGE_PATTERN);
 
-            if (!old)
+            if(!old)
                 this.#fail('Unexpected "--"; TTV DSL has no decrement', start, start + 2);
 
-            let name = (old[1] ?? old[2]);
+            const name = (old[1] ?? old[2]);
 
             this.#fail(`Badges are written "[${ name }]", not "${ old[0] }"`, start, start + old[0].length);
         }
@@ -686,19 +686,19 @@ if (typeof require === 'function' && typeof module === 'object') {
         /** `[moderator]` / `[vip moderator]` / `[vip, sub-gifter]` — one token whose value
          * is the list of names. Several names mean "any of these". */
         #scanBadge() {
-            let start = this.#index,
-                list = this.#match(BADGE_LIST_PATTERN);
+            const start = this.#index
+                , list = this.#match(BADGE_LIST_PATTERN);
 
-            if (!list)
+            if(!list)
                 this.#fail('Unclosed "["; a badge list is written "[moderator]" or "[vip moderator]" on one line', start, start + 1);
 
-            let names = list[1].split(/[\s,]+/).filter(entry => entry.length > 0);
+            const names = list[1].split(/[\s,]+/).filter(entry => entry.length > 0);
 
-            if (!names.length)
+            if(!names.length)
                 this.#fail('Empty badge list; write a badge name inside, e.g. "[moderator]"', start, start + list[0].length);
 
-            for (let name of names)
-                if (!BADGE_NAME_PATTERN.test(name))
+            for(const name of names)
+                if(!BADGE_NAME_PATTERN.test(name))
                     this.#fail(`${ JSON.stringify(name) } is not a badge name`, start, start + list[0].length);
 
             this.#index += list[0].length;
@@ -707,25 +707,25 @@ if (typeof require === 'function' && typeof module === 'object') {
 
         /** `...`, `..`, or `.prop`. */
         #scanDot() {
-            let start = this.#index;
+            const start = this.#index;
 
-            if ('.' === this.#source[start + 1] && '.' === this.#source[start + 2]) {
+            if('.' === this.#source[start + 1] && '.' === this.#source[start + 2]) {
                 this.#index += 3;
                 this.#emit(TokenType.RANGE_INCLUSIVE, start, this.#index);
 
                 return;
             }
 
-            if ('.' === this.#source[start + 1]) {
+            if('.' === this.#source[start + 1]) {
                 this.#index += 2;
                 this.#emit(TokenType.RANGE_EXCLUSIVE, start, this.#index);
 
                 return;
             }
 
-            let name = IDENT_PATTERN.exec(this.#source.slice(start + 1));
+            const name = IDENT_PATTERN.exec(this.#source.slice(start + 1));
 
-            if (!name)
+            if(!name)
                 this.#fail('Unexpected "."; expected a property name, ".." or "..."', start);
 
             this.#index += 1 + name[0].length;
@@ -734,10 +734,10 @@ if (typeof require === 'function' && typeof module === 'object') {
 
         /** `#` (this channel) or `#prop`. */
         #scanHash() {
-            let start = this.#index,
-                name = IDENT_PATTERN.exec(this.#source.slice(start + 1));
+            const start = this.#index
+                , name = IDENT_PATTERN.exec(this.#source.slice(start + 1));
 
-            if (!name) {
+            if(!name) {
                 ++this.#index;
                 this.#emit(TokenType.SELECTOR_SELF, start, this.#index, null);
 
@@ -750,10 +750,10 @@ if (typeof require === 'function' && typeof module === 'object') {
 
         /** `/` (this channel) or `/channel`. The `//` case was already taken by comments. */
         #scanSlash() {
-            let start = this.#index,
-                name = PATH_PATTERN.exec(this.#source.slice(start + 1));
+            const start = this.#index
+                , name = PATH_PATTERN.exec(this.#source.slice(start + 1));
 
-            if (!name) {
+            if(!name) {
                 ++this.#index;
                 this.#emit(TokenType.SELECTOR_SELF, start, this.#index, null);
 
@@ -766,10 +766,10 @@ if (typeof require === 'function' && typeof module === 'object') {
 
         /** `@user`. */
         #scanUser() {
-            let start = this.#index,
-                name = PATH_PATTERN.exec(this.#source.slice(start + 1));
+            const start = this.#index
+                , name = PATH_PATTERN.exec(this.#source.slice(start + 1));
 
-            if (!name)
+            if(!name)
                 this.#fail('Unexpected "@"; expected a user name like "@ephellon"', start);
 
             this.#index += 1 + name[0].length;
@@ -778,30 +778,30 @@ if (typeof require === 'function' && typeof module === 'object') {
 
         /** A keyword, a realm selector (`DISCORD/123`), or a bare identifier. */
         #scanWord() {
-            let start = this.#index,
-                word = this.#match(IDENT_PATTERN)[0];
+            const start = this.#index
+                , word = this.#match(IDENT_PATTERN)[0];
 
             this.#index += word.length;
 
-            let keyword = KEYWORDS[word];
+            const keyword = KEYWORDS[word];
 
-            if (undefined !== keyword) {
+            if(void null !== keyword) {
                 this.#emit(keyword, start, this.#index);
 
-                if (TokenType.CALC === keyword)
+                if(TokenType.CALC === keyword)
                     this.#calcPending = true;
 
                 return;
             }
 
-            let isUpper = UPPER_PATTERN.test(word);
+            const isUpper = UPPER_PATTERN.test(word);
 
             // `DISCORD/779741119520571456` — an all-caps word glued directly to a path is a
             // realm selector. The `//` guard keeps `TWITCH// note` reading as a comment.
-            if (isUpper && '/' === this.#source[this.#index] && '/' !== this.#source[this.#index + 1]) {
-                let path = PATH_PATTERN.exec(this.#source.slice(this.#index + 1));
+            if(isUpper && '/' === this.#source[this.#index] && '/' !== this.#source[this.#index + 1]) {
+                const path = PATH_PATTERN.exec(this.#source.slice(this.#index + 1));
 
-                if (path) {
+                if(path) {
                     this.#index += 1 + path[0].length;
                     this.#emit(TokenType.SELECTOR_REALM, start, this.#index, { realm: word, path: path[0] });
 
@@ -814,8 +814,8 @@ if (typeof require === 'function' && typeof module === 'object') {
 
         /** `+ - * / % **` inside `calc( ... )`. */
         #scanArithmetic() {
-            let start = this.#index,
-                operator = ('**' === this.#source.slice(start, start + 2)? '**': this.#source[start]);
+            const start = this.#index
+                , operator = ('**' === this.#source.slice(start, start + 2) ? '**' : this.#source[start]);
 
             this.#index += operator.length;
             this.#emit(TokenType.ARITH, start, this.#index, operator);
@@ -823,27 +823,27 @@ if (typeof require === 'function' && typeof module === 'object') {
 
         /** Any remaining fixed lexeme, matched longest-first out of {@link PUNCTUATORS}. */
         #scanPunctuator() {
-            let start = this.#index,
-                rest = this.#source.slice(start);
+            const start = this.#index
+                , rest = this.#source.slice(start);
 
-            for (let { lexeme, type } of PUNCTUATORS) {
-                if (!rest.startsWith(lexeme))
+            for(const { lexeme, type } of PUNCTUATORS) {
+                if(!rest.startsWith(lexeme))
                     continue;
 
                 this.#index += lexeme.length;
 
-                if (TokenType.LPAREN === type) {
+                if(TokenType.LPAREN === type) {
                     ++this.#brackets;
 
-                    if (this.#calcPending) {
+                    if(this.#calcPending) {
                         this.#calcPending = false;
                         this.#calcDepths.push(this.#brackets);
                     }
-                } else if (TokenType.RPAREN === type) {
-                    if (this.#calcDepths[this.#calcDepths.length - 1] === this.#brackets)
+                } else if(TokenType.RPAREN === type) {
+                    if(this.#calcDepths[this.#calcDepths.length - 1] === this.#brackets)
                         this.#calcDepths.pop();
 
-                    if (--this.#brackets < 0)
+                    if(--this.#brackets < 0)
                         this.#fail('Unmatched ")"', start, this.#index);
                 }
 
@@ -861,18 +861,18 @@ if (typeof require === 'function' && typeof module === 'object') {
          * @param {String} [quote = '"'] - the delimiter, `"` or `'`
          */
         #scanString(quote = '"') {
-            let start = this.#index,
-                text = '';
+            let start = this.#index
+                , text = '';
 
             ++this.#index;
 
-            while (true) {
-                if (this.#index >= this.#length || '\n' === this.#source[this.#index])
+            while(true) {
+                if(this.#index >= this.#length || '\n' === this.#source[this.#index])
                     this.#fail('Unterminated string', start, this.#index);
 
-                let character = this.#source[this.#index];
+                const character = this.#source[this.#index];
 
-                if ('\\' === character) {
+                if('\\' === character) {
                     text += this.#readEscape();
 
                     continue;
@@ -880,7 +880,7 @@ if (typeof require === 'function' && typeof module === 'object') {
 
                 ++this.#index;
 
-                if (character === quote)
+                if(character === quote)
                     break;
 
                 text += character;
@@ -898,34 +898,34 @@ if (typeof require === 'function' && typeof module === 'object') {
          * origin, so interpolated code reports real file positions. Re-lexing inline would
          * have meant threading template state through every branch above. */
         #scanTemplate() {
-            let start = this.#index,
-                quasis = [],
-                expressions = [],
-                chunk = '';
+            let start = this.#index
+                , quasis = []
+                , expressions = []
+                , chunk = '';
 
             ++this.#index;
 
-            while (true) {
-                if (this.#index >= this.#length)
+            while(true) {
+                if(this.#index >= this.#length)
                     this.#fail('Unterminated template literal', start, this.#length);
 
-                let character = this.#source[this.#index];
+                const character = this.#source[this.#index];
 
-                if ('\\' === character) {
+                if('\\' === character) {
                     chunk += this.#readEscape();
 
                     continue;
                 }
 
-                if ('`' === character) {
+                if('`' === character) {
                     ++this.#index;
 
                     break;
                 }
 
-                if ('$' === character && '{' === this.#source[this.#index + 1]) {
-                    let open = this.#index + 2,
-                        close = this.#skipInterpolation(open);
+                if('$' === character && '{' === this.#source[this.#index + 1]) {
+                    const open = this.#index + 2
+                        , close = this.#skipInterpolation(open);
 
                     // An unterminated `${` is literal text, not a fault — a chat message
                     // that mentions `${` is ordinary. Note that a *matched* `${ … }` stays
@@ -933,7 +933,7 @@ if (typeof require === 'function' && typeof module === 'object') {
                     // ungrammatical: degrading that to text would silently swallow real
                     // typos, and the escape idiom `${ "${x}" }` only means anything if the
                     // outer, matched pair is genuinely evaluated.
-                    if (close < 0) {
+                    if(close < 0) {
                         chunk += '${';
                         this.#index += 2;
 
@@ -970,19 +970,19 @@ if (typeof require === 'function' && typeof module === 'object') {
          * @return {Number} index of the closing `}`, or `-1` when there is none
          */
         #skipInterpolation(from) {
-            let index = from,
-                depth = 1;
+            let index = from
+                , depth = 1;
 
-            while (index < this.#length) {
-                let character = this.#source[index];
+            while(index < this.#length) {
+                const character = this.#source[index];
 
-                if ('"' === character || '\'' === character || '`' === character) {
-                    let past = this.#skipQuoted(index);
+                if('"' === character || '\'' === character || '`' === character) {
+                    const past = this.#skipQuoted(index);
 
                     // A quote that never closes means this `${` cannot be shown to have a
                     // matching `}` either, so it is text — `\`cost: ${ dollars\`` is an
                     // ordinary message, not a broken interpolation.
-                    if (past < 0)
+                    if(past < 0)
                         return -1;
 
                     index = past;
@@ -990,19 +990,19 @@ if (typeof require === 'function' && typeof module === 'object') {
                     continue;
                 }
 
-                if ('/' === character && '/' === this.#source[index + 1]) {
-                    while (index < this.#length && '\n' !== this.#source[index])
+                if('/' === character && '/' === this.#source[index + 1]) {
+                    while(index < this.#length && '\n' !== this.#source[index])
                         ++index;
 
                     continue;
                 }
 
-                if ('{' === character) {
-                    ++depth;
-                } else if ('}' === character) {
+                if('{' === character) {
+                    ++depth
+                } else if('}' === character) {
                     --depth;
 
-                    if (0 === depth)
+                    if(0 === depth)
                         return index;
                 }
 
@@ -1021,28 +1021,28 @@ if (typeof require === 'function' && typeof module === 'object') {
          * @return {Number} index just past the closing quote, or `-1` when there is none
          */
         #skipQuoted(from) {
-            let quote = this.#source[from],
-                index = from + 1;
+            let quote = this.#source[from]
+                , index = from + 1;
 
-            while (index < this.#length) {
-                let character = this.#source[index];
+            while(index < this.#length) {
+                const character = this.#source[index];
 
-                if ('\\' === character) {
+                if('\\' === character) {
                     index += 2;
 
                     continue;
                 }
 
-                if (character === quote)
+                if(character === quote)
                     return index + 1;
 
-                if ('`' === quote && '$' === character && '{' === this.#source[index + 1]) {
-                    let close = this.#skipInterpolation(index + 2);
+                if('`' === quote && '$' === character && '{' === this.#source[index + 1]) {
+                    const close = this.#skipInterpolation(index + 2);
 
                     // Same rule as `#scanTemplate`: no closing brace means those two
                     // characters were text, so step over them and keep looking for the
                     // backtick.
-                    index = (close < 0? index + 2: close + 1);
+                    index = (close < 0 ? index + 2 : close + 1);
 
                     continue;
                 }
@@ -1057,17 +1057,17 @@ if (typeof require === 'function' && typeof module === 'object') {
          * @return {String} the decoded character
          */
         #readEscape() {
-            let start = this.#index;
+            const start = this.#index;
 
-            if (start + 1 >= this.#length)
+            if(start + 1 >= this.#length)
                 this.#fail('Trailing "\\" at end of input', start);
 
-            let character = this.#source[start + 1];
+            const character = this.#source[start + 1];
 
             this.#index += 2;
 
             // `é` / `\u{1F49C}` — JavaScript's two Unicode spellings.
-            if ('u' === character)
+            if('u' === character)
                 return this.#readUnicodeEscape(start);
 
             return (ESCAPES[character] ?? character);
@@ -1078,14 +1078,14 @@ if (typeof require === 'function' && typeof module === 'object') {
          * @return {String}
          */
         #readUnicodeEscape(start) {
-            let braced = /^\{([0-9A-Fa-f]{1,6})\}/.exec(this.#source.slice(this.#index)),
-                plain = /^[0-9A-Fa-f]{4}/.exec(this.#source.slice(this.#index)),
-                hex = (braced? braced[1]: plain?.[0]);
+            const braced = /^\{([0-9A-Fa-f]{1,6})\}/.exec(this.#source.slice(this.#index))
+                , plain = /^[0-9A-Fa-f]{4}/.exec(this.#source.slice(this.#index))
+                , hex = (braced ? braced[1] : plain?.[0]);
 
-            if (!hex || parseInt(hex, 16) > 0x10FFFF)
+            if(!hex || parseInt(hex, 16) > 0x10FFFF)
                 this.#fail('Malformed Unicode escape; write "\\u00e9" (four hex digits) or "\\u{1F49C}"', start, this.#index + 1);
 
-            this.#index += (braced? braced[0]: plain[0]).length;
+            this.#index += (braced ? braced[0] : plain[0]).length;
 
             return String.fromCodePoint(parseInt(hex, 16));
         }
@@ -1097,11 +1097,11 @@ if (typeof require === 'function' && typeof module === 'object') {
      * @return {Array<Object>}
      * @throws {DSLSyntaxError}
      */
-    let tokenize = (source, options) => new Tokenizer(source, options).tokenize();
+    const tokenize = (source, options) => new Tokenizer(source, options).tokenize();
 
     globalThis.TTV_DSL.tokenizer = { Tokenizer, tokenize, makeLocator };
     globalThis.TTV_DSL.tokenize = tokenize;
 })();
 
-if (typeof module === 'object' && module?.exports)
+if(typeof module === 'object' && module?.exports)
     module.exports = globalThis.TTV_DSL;

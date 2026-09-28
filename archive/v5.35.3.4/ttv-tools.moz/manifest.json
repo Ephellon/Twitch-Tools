@@ -1,0 +1,123 @@
+{
+    "manifest_version": 2,
+
+    "name": "__MSG_name__",
+    "description": "__MSG_description__",
+    "default_locale": "en",
+
+    "version": "5.31.6",
+    "browser_specific_settings": {
+		"gecko": {
+			"id": "mink.cbos@gmail.com",
+			"strict_min_version": "80"
+		}
+	},
+    "homepage_url": "https://github.com/ephellon/twitch-tools",
+
+    "icons": {
+        "16": "16.png",
+        "32": "32.png",
+        "48": "48.png",
+        "96": "96.png",
+        "128": "128.png",
+        "256": "256.png"
+    },
+
+    "content_scripts": [
+        {
+            "matches": [
+                "https://player.twitch.tv/*",
+                "http://player.twitch.tv/*"
+            ],
+
+            "all_frames": true,
+            "run_at": "document_end",
+            "js": [
+                "ext/polyfill.js",
+                "ext/resemble.js",
+                "ext/glyphs.js",
+                "core.js",
+                "player.js"
+            ]
+        },
+
+        {
+            "matches": [
+                "https://www.twitch.tv/popout/*",
+                "http://www.twitch.tv/popout/*"
+            ],
+
+            "all_frames": true,
+            "run_at": "document_end",
+            "js": [
+                "ext/polyfill.js",
+                "ext/resemble.js",
+                "ext/sortable.js",
+                "ext/glyphs.js",
+                "ext/irc.js",
+                "core.js",
+                "chat.js"
+            ]
+        },
+
+        {
+            "matches": [
+                "https://www.twitch.tv/*",
+                "http://www.twitch.tv/*"
+            ],
+
+            "all_frames": true,
+            "run_at": "document_end",
+            "js": [
+                "ext/polyfill.js",
+                "ext/resemble.js",
+                "ext/sortable.js",
+                "ext/glyphs.js",
+                "ext/irc.js",
+                "core.js",
+                "tools.js",
+                "chat.js"
+            ],
+            "css": [
+                "core.css",
+                "extras.css"
+            ]
+        }
+    ],
+
+    "background": {
+		"scripts": ["background.js"],
+		"persistent": true
+	},
+
+    "options_page": "settings.html",
+    "options_ui": {
+        "page": "settings.html",
+        "open_in_tab": true
+    },
+
+    "browser_action": {
+        "default_icon": {
+            "16": "16.png",
+            "32": "32.png",
+            "48": "48.png",
+            "96": "96.png"
+        },
+        "default_title": "TTV Tools",
+        "default_popup": "settings.html?popup=1"
+    },
+
+    "host_permissions": [
+        "*://player.twitch.tv/*",
+        "*://www.twitch.tv/*",
+        "*://twitch.tv/*"
+    ],
+
+    "permissions": [
+        "tabs",
+		"storage",
+		"downloads",
+    ],
+
+    "web_accessible_resources": ["*.png", "*.svg", "aud/*.*", "ext/*.*", "_locales/*/translations.json"]
+}

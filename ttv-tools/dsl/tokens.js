@@ -411,16 +411,16 @@ globalThis.TTV_DSL ??= {};
      * @param {String} type
      * @return {?Object} `undefined` when the token is not a binary operator
      */
-    let getOperator = (type) => OPERATORS[type];
+    const getOperator = (type) => OPERATORS[type];
 
     /** @param {String} type @return {Boolean} */
-    let isBinaryOperator = (type) => type in OPERATORS;
+    const isBinaryOperator = (type) => type in OPERATORS;
 
     /** @param {String} type @return {Boolean} */
-    let isUnaryOperator = (type) => UNARY_OPERATORS.has(type);
+    const isUnaryOperator = (type) => UNARY_OPERATORS.has(type);
 
     /** @param {String} type @return {Boolean} */
-    let isSelector = (type) => type in SELECTOR_KINDS;
+    const isSelector = (type) => type in SELECTOR_KINDS;
 
     /** Builds a token. Kept here so every producer stamps the same shape.
      * @param {String} type - a {@link TokenType} member
@@ -430,7 +430,7 @@ globalThis.TTV_DSL ??= {};
      * @param {Object} [extra] - additional fields, e.g. `{ isUpper: true }`
      * @return {Object}
      */
-    let createToken = (type, lexeme, value, loc, extra) =>
+    const createToken = (type, lexeme, value, loc, extra) =>
         Object.assign({ type, lexeme, value, loc }, extra);
 
     globalThis.TTV_DSL.tokens = {
@@ -462,5 +462,5 @@ globalThis.TTV_DSL ??= {};
     globalThis.TTV_DSL.TokenType = TokenType;
 })();
 
-if (typeof module === 'object' && module?.exports)
+if(typeof module === 'object' && module?.exports)
     module.exports = globalThis.TTV_DSL;

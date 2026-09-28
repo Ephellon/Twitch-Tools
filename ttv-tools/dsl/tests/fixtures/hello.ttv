@@ -1,3 +1,0 @@
-// The smallest script that does something: greet the chat once a minute.
-await 1:00
-    POST `hello chat`

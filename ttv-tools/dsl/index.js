@@ -20,8 +20,8 @@
 
 globalThis.TTV_DSL ??= {};
 
-if (typeof require === 'function' && typeof module === 'object')
-    for (let name of ['./errors.js', './tokens.js', './tokenizer.js', './ast.js', './parser.js', './runtime.js', './compiler.js', './highlight.js', './fake-page.js'])
+if(typeof require === 'function' && typeof module === 'object')
+    for(const name of ['./errors.js', './tokens.js', './tokenizer.js', './ast.js', './parser.js', './runtime.js', './compiler.js', './highlight.js', './fake-page.js'])
         require(name);
 
 (() => {
@@ -73,13 +73,13 @@ if (typeof require === 'function' && typeof module === 'object')
      * @throws {DSLError} when the script does not parse
      */
     DSL.grants = (source) => {
-        let program = DSL.parse(source),
-            blocks = [],
-            calls = [];
+        const program = DSL.parse(source)
+            , blocks = []
+            , calls = [];
 
         DSL.walk(program, {
             [DSL.NodeType.UsingStatement](node) {
-                if (node.permissions.length || null !== node.description)
+                if(node.permissions.length || null !== node.description)
                     blocks.push({ permissions: node.permissions.slice(), description: node.description, line: node.loc?.line ?? null });
             },
 
@@ -92,11 +92,11 @@ if (typeof require === 'function' && typeof module === 'object')
     };
 
     /** One diagnostic, in the shape the editor relies on. */
-    let diagnostic = (error) => ({
+    const diagnostic = (error) => ({
         name: error.name,
         message: error.message,
         loc: error.loc,
-        frame: (error.codeFrame? error.codeFrame(): String(error.message)),
+        frame: (error.codeFrame ? error.codeFrame() : String(error.message)),
     });
 
     /** Finds a script's mistakes without running it — what the Settings editor underlines as
@@ -122,15 +122,15 @@ if (typeof require === 'function' && typeof module === 'object')
         let program;
 
         try {
-            let parsed = DSL.parseTolerant(source);
+            const parsed = DSL.parseTolerant(source);
 
-            if (parsed.errors.length)
+            if(parsed.errors.length)
                 return parsed.errors.map(diagnostic);
 
             program = parsed.program;
-        } catch (error) {
+        } catch(error) {
             // A lexical fault aborts the scan outright, so it arrives here instead.
-            if (!(error instanceof DSL.errors.DSLError))
+            if(!(error instanceof DSL.errors.DSLError))
                 throw error;
 
             return [diagnostic(error)];
@@ -138,13 +138,13 @@ if (typeof require === 'function' && typeof module === 'object')
 
         // Compiling applies budget grants to `limits`; checking must not raise the host's, so
         // it compiles against a view of the runtime with a `limits` of its own.
-        let base = (runtime ?? DSL.createRuntime({ logger: { log() {}, warn() {}, error() {} } })),
-            view = Object.create(base, { limits: { value: Object.assign({}, base.limits) } });
+        const base = (runtime ?? DSL.createRuntime({ logger: { log() {}, warn() {}, error() {} } }))
+            , view = Object.create(base, { limits: { value: Object.assign({}, base.limits) } });
 
         try {
             DSL.compile(program, view);
-        } catch (error) {
-            if (!(error instanceof DSL.errors.DSLError))
+        } catch(error) {
+            if(!(error instanceof DSL.errors.DSLError))
                 throw error;
 
             return [diagnostic(error)];
@@ -157,27 +157,27 @@ if (typeof require === 'function' && typeof module === 'object')
      * @param {String} [file] - e.g. `raid-shoutouts.ttv` or a full path
      * @return {String}
      */
-    let idFromFile = (file) => {
-        let base = String(file ?? 'script').split(/[\\/]/).pop().replace(/\.ttv$/i, ''),
-            id = base.toLowerCase().replace(/[^a-z0-9_]+/g, '_').replace(/^_+|_+$/g, '');
+    const idFromFile = (file) => {
+        const base = String(file ?? 'script').split(/[\\/]/).pop().replace(/\.ttv$/i, '')
+            , id = base.toLowerCase().replace(/[^a-z0-9_]+/g, '_').replace(/^_+|_+$/g, '');
 
-        return (/^[a-z]/.test(id)? id: `ttv_${ id || 'script' }`);
+        return (/^[a-z]/.test(id) ? id : `ttv_${ id || 'script' }`);
     };
 
     /** The `plugin` header of a script whose body does not scan, or null.
      * @param {String} source
      * @return {?Object}
      */
-    let readHeaderAlone = (source) => {
-        let rows = String(source).split(/\r?\n/),
-            start = rows.findIndex(row => /^plugin\b/.test(row));
+    const readHeaderAlone = (source) => {
+        const rows = String(source).split(/\r?\n/)
+            , start = rows.findIndex(row => /^plugin\b/.test(row));
 
-        if (start < 0)
+        if(start < 0)
             return null;
 
         let end = start + 1;
 
-        while (end < rows.length && (/^\s/.test(rows[end]) || /^\s*($|\/\/)/.test(rows[end])))
+        while(end < rows.length && (/^\s/.test(rows[end]) || /^\s*($|\/\/)/.test(rows[end])))
             ++end;
 
         try {
@@ -201,23 +201,23 @@ if (typeof require === 'function' && typeof module === 'object')
      * @return {{ meta: Object, diagnostics: Array<Object> }}
      */
     DSL.inspect = (source, { file } = {}) => {
-        let diagnostics = DSL.check(source),
-            header = null,
-            permissions = [];
+        let diagnostics = DSL.check(source)
+            , header = null
+            , permissions = [];
 
         try {
-            let { program } = DSL.parseTolerant(source);
+            const { program } = DSL.parseTolerant(source);
 
             header = program.body.find(statement => DSL.NodeType.PluginHeader === statement.type) ?? null;
 
             DSL.walk(program, {
                 [DSL.NodeType.UsingStatement](node) {
-                    if (node.permissions.length)
+                    if(node.permissions.length)
                         permissions.push({ permissions: node.permissions.slice(), description: node.description, line: node.loc?.line ?? null });
                 },
             });
-        } catch (error) {
-            if (!(error instanceof DSL.errors.DSLError))
+        } catch(error) {
+            if(!(error instanceof DSL.errors.DSLError))
                 throw error;
 
             // A lexical fault anywhere aborts the whole scan. The header is still worth
@@ -227,29 +227,29 @@ if (typeof require === 'function' && typeof module === 'object')
             header = readHeaderAlone(source);
         }
 
-        let id = (header?.id ?? idFromFile(file)),
-            name = (header?.name ?? String(file ?? id).split(/[\\/]/).pop().replace(/\.ttv$/i, '')),
-            description = (header?.description ?? null),
-            frames = (header?.frames ?? ['chat']),
-            settings = { [id]: { type: 'checkbox', default: false } },
-            rows = [{ toggle: id }];
+        const id = (header?.id ?? idFromFile(file))
+            , name = (header?.name ?? String(file ?? id).split(/[\\/]/).pop().replace(/\.ttv$/i, ''))
+            , description = (header?.description ?? null)
+            , frames = (header?.frames ?? ['chat'])
+            , settings = { [id]: { type: 'checkbox', default: false } }
+            , rows = [{ toggle: id }];
 
-        if (description)
+        if(description)
             rows.push({ text: description, tr: false });
 
-        for (let setting of (header?.settings ?? [])) {
-            let key = `${ id }__${ setting.name }`,
-                entry = { type: setting.type };
+        for(const setting of (header?.settings ?? [])) {
+            const key = `${ id }__${ setting.name }`
+                , entry = { type: setting.type };
 
             // A select marks its default on the option, as `SETTINGS.md` does; the others
             // carry `default` themselves.
-            if ('select' === setting.type)
-                entry.options = setting.options.map(option => Object.assign({ value: option.value, label: option.label }, option.value === setting.default? { default: true }: {}));
+            if('select' === setting.type)
+                entry.options = setting.options.map(option => Object.assign({ value: option.value, label: option.label }, option.value === setting.default ? { default: true } : {}));
             else
                 entry.default = setting.default;
 
-            for (let field of ['min', 'max', 'step', 'unit', 'placeholder'])
-                if (field in setting)
+            for(const field of ['min', 'max', 'step', 'unit', 'placeholder'])
+                if(field in setting)
                     entry[field] = setting[field];
 
             settings[key] = entry;
@@ -271,5 +271,5 @@ if (typeof require === 'function' && typeof module === 'object')
     };
 })();
 
-if (typeof module === 'object' && module?.exports)
+if(typeof module === 'object' && module?.exports)
     module.exports = globalThis.TTV_DSL;

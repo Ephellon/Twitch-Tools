@@ -24,7 +24,7 @@
 
 globalThis.TTV_DSL ??= {};
 
-if (typeof require === 'function' && typeof module === 'object') {
+if(typeof require === 'function' && typeof module === 'object') {
     require('./errors.js');
     require('./tokens.js');
     require('./ast.js');
@@ -89,27 +89,27 @@ if (typeof require === 'function' && typeof module === 'object') {
     }
 
     /** @param {*} value @return {Boolean} */
-    let isExact = (value) => (value instanceof Exact);
+    const isExact = (value) => (value instanceof Exact);
 
     /** @param {*} value @return {*} */
-    let unwrap = (value) => (isExact(value)? value.value: value);
+    const unwrap = (value) => (isExact(value) ? value.value : value);
 
     /** @param {*} value @return {Boolean} */
-    let isEmpty = (value) => (null == value || '' === value || (Array.isArray(value) && !value.length));
+    const isEmpty = (value) => (null == value || '' === value || (Array.isArray(value) && !value.length));
 
     /** @param {*} value @return {Boolean} */
-    let isPresence = (value) => (WILDCARD === value || SOMETHING === value || NOTHING === value);
+    const isPresence = (value) => (WILDCARD === value || SOMETHING === value || NOTHING === value);
 
     /** Answers a presence test against a value.
      * @param {Symbol} test - `WILDCARD`, `SOMETHING` or `NOTHING`
      * @param {*} value
      * @return {Boolean}
      */
-    let present = (test, value) => {
-        if (NOTHING === test)
+    const present = (test, value) => {
+        if(NOTHING === test)
             return isEmpty(value);
 
-        if (SOMETHING === test)
+        if(SOMETHING === test)
             return !isEmpty(value);
 
         // `ANYTHING` — any value at all, `""` and `[]` included; only absence fails.
@@ -121,11 +121,11 @@ if (typeof require === 'function' && typeof module === 'object') {
      * @param {*} value
      * @return {Boolean}
      */
-    let truthy = (value) => {
-        if (isPresence(value))
+    const truthy = (value) => {
+        if(isPresence(value))
             return (NOTHING !== value);
 
-        return (Array.isArray(value)? value.length > 0: !!value);
+        return (Array.isArray(value) ? value.length > 0 : !!value);
     };
 
     /** Reads a value as a number for `above` / `below`.
@@ -139,18 +139,18 @@ if (typeof require === 'function' && typeof module === 'object') {
      * @param {Object} runtime
      * @return {Number}
      */
-    let toNumber = (value, runtime) => {
+    const toNumber = (value, runtime) => {
         value = unwrap(value);
 
-        if (typeof value === 'number')
+        if(typeof value === 'number')
             return value;
 
-        if (typeof value !== 'string' || !value.trim().length)
+        if(typeof value !== 'string' || !value.trim().length)
             return NaN;
 
-        let number = Number(value.trim());
+        const number = Number(value.trim());
 
-        if (!Number.isNaN(number))
+        if(!Number.isNaN(number))
             return number;
 
         try {
@@ -184,26 +184,26 @@ if (typeof require === 'function' && typeof module === 'object') {
      * @param {*} value
      * @return {String}
      */
-    let stringify = (value) => {
-        if (isExact(value))
+    const stringify = (value) => {
+        if(isExact(value))
             return stringify(value.value);
 
-        if (null == value)
+        if(null == value)
             return '';
 
-        if (WILDCARD === value)
+        if(WILDCARD === value)
             return '*';
 
-        if (SOMETHING === value)
+        if(SOMETHING === value)
             return 'SOMETHING';
 
-        if (NOTHING === value)
+        if(NOTHING === value)
             return 'NOTHING';
 
-        if (Array.isArray(value))
+        if(Array.isArray(value))
             return value.map(stringify).join(', ');
 
-        if (typeof value === 'object')
+        if(typeof value === 'object')
             return String(value.name ?? value.text ?? value.href ?? JSON.stringify(value));
 
         return String(value);
@@ -218,38 +218,38 @@ if (typeof require === 'function' && typeof module === 'object') {
      * @param {*} right
      * @return {Boolean}
      */
-    let equals = (left, right) => {
+    const equals = (left, right) => {
         // `=` on *either* side makes the whole comparison exact. One side asking for it is
         // enough: `#name is =NAME_VAR` and `=#name is NAME_VAR` say the same thing.
-        if (isExact(left) || isExact(right)) {
-            let exactLeft = unwrap(left),
-                exactRight = unwrap(right);
+        if(isExact(left) || isExact(right)) {
+            const exactLeft = unwrap(left)
+                , exactRight = unwrap(right);
 
-            if (isPresence(exactRight))
+            if(isPresence(exactRight))
                 return present(exactRight, exactLeft);
 
-            if (isPresence(exactLeft))
+            if(isPresence(exactLeft))
                 return present(exactLeft, exactRight);
 
-            if (null == exactLeft || null == exactRight)
+            if(null == exactLeft || null == exactRight)
                 return (exactLeft === exactRight);
 
             return (stringify(exactLeft) === stringify(exactRight));
         }
 
-        if (isPresence(right))
+        if(isPresence(right))
             return present(right, left);
 
-        if (isPresence(left))
+        if(isPresence(left))
             return present(left, right);
 
-        if (typeof left === 'string' && typeof right === 'string')
+        if(typeof left === 'string' && typeof right === 'string')
             return (left.toLowerCase() === right.toLowerCase());
 
-        if (null != left && null != right && typeof left === 'object' && typeof right === 'object')
+        if(null != left && null != right && typeof left === 'object' && typeof right === 'object')
             return (left === right || (null != left.name && left.name === right.name));
 
-        if (typeof left === 'object' || typeof right === 'object')
+        if(typeof left === 'object' || typeof right === 'object')
             return equals(stringify(left), stringify(right));
 
         // eslint-disable-next-line eqeqeq
@@ -261,55 +261,55 @@ if (typeof require === 'function' && typeof module === 'object') {
      * @param {*} haystack
      * @return {Boolean}
      */
-    let contains = (needle, haystack) => {
-        if (isExact(needle) || isExact(haystack)) {
-            let exactNeedle = unwrap(needle),
-                exactHaystack = unwrap(haystack);
+    const contains = (needle, haystack) => {
+        if(isExact(needle) || isExact(haystack)) {
+            const exactNeedle = unwrap(needle)
+                , exactHaystack = unwrap(haystack);
 
-            if (isPresence(exactHaystack))
+            if(isPresence(exactHaystack))
                 return present(exactHaystack, exactNeedle);
 
-            if (null == exactHaystack)
+            if(null == exactHaystack)
                 return false;
 
-            if (typeof exactHaystack === 'string')
+            if(typeof exactHaystack === 'string')
                 return exactHaystack.includes(stringify(exactNeedle));
 
-            if (Array.isArray(exactHaystack))
+            if(Array.isArray(exactHaystack))
                 return exactHaystack.some(entry => equals(new Exact(entry), exactNeedle));
 
-            if (typeof exactHaystack === 'object')
+            if(typeof exactHaystack === 'object')
                 return (stringify(exactNeedle) in exactHaystack);
 
             return false;
         }
 
-        if (isPresence(haystack))
+        if(isPresence(haystack))
             return present(haystack, needle);
 
-        if (null == haystack)
+        if(null == haystack)
             return false;
 
-        if (typeof haystack === 'string')
+        if(typeof haystack === 'string')
             return haystack.toLowerCase().includes(stringify(needle).toLowerCase());
 
-        if (Array.isArray(haystack))
+        if(Array.isArray(haystack))
             return haystack.some(entry => equals(entry, needle));
 
-        if (typeof haystack === 'object')
+        if(typeof haystack === 'object')
             return (stringify(needle) in haystack);
 
         return false;
     };
 
     /** Coerces a value into something indexable. */
-    let toList = (value) => (Array.isArray(value)? value: (null == value? []: [value]));
+    const toList = (value) => (Array.isArray(value) ? value : (null == value ? [] : [value]));
 
     /** Applies a 0-based index, counting from the end when negative. */
-    let at = (list, index) => {
-        let items = toList(list);
+    const at = (list, index) => {
+        const items = toList(list);
 
-        return (index < 0? items[items.length + index]: items[index]);
+        return (index < 0 ? items[items.length + index] : items[index]);
     };
 
     /** Compiles an AST into a closure tree.
@@ -317,7 +317,7 @@ if (typeof require === 'function' && typeof module === 'object') {
      * @param {Object} runtime - from `createRuntime`
      * @return {Function} `async (context) => value`
      */
-    let compile = (node, runtime) => compileNode(node, {
+    const compile = (node, runtime) => compileNode(node, {
         runtime,
         depth: 0,
         parentDepth: null,
@@ -336,20 +336,20 @@ if (typeof require === 'function' && typeof module === 'object') {
     const EMPTY_PERMISSIONS = Object.freeze(new Set());
 
     /** @param {Object} node @param {Object} scope @return {Function} */
-    let compileNode = (node, scope) => {
-        if (null == node)
+    const compileNode = (node, scope) => {
+        if(null == node)
             return null;
 
-        let build = COMPILERS[node.type];
+        const build = COMPILERS[node.type];
 
-        if (!build)
+        if(!build)
             throw new DSLRuntimeError(`No compiler for node type ${ JSON.stringify(node.type) }`, node.loc);
 
         return build(node, scope);
     };
 
     /** Compiles a list of nodes at the same scope. */
-    let compileAll = (nodes, scope) => (nodes ?? []).map(entry => compileNode(entry, scope));
+    const compileAll = (nodes, scope) => (nodes ?? []).map(entry => compileNode(entry, scope));
 
     /** Opens a nested lexical scope — one deeper subject slot.
      *
@@ -360,7 +360,7 @@ if (typeof require === 'function' && typeof module === 'object') {
      * @param {Object} [extra] - fields to override, e.g. a widened permission set
      * @return {Object}
      */
-    let inner = (scope, extra) => Object.assign({
+    const inner = (scope, extra) => Object.assign({
         runtime: scope.runtime,
         depth: scope.depth + 1,
         parentDepth: scope.depth,
@@ -385,16 +385,19 @@ if (typeof require === 'function' && typeof module === 'object') {
      * @param {Object} scope
      * @return {Number}
      */
-    let bindingSlot = (scope) => {
-        switch (scope.mode) {
-            case 'local':
+    const bindingSlot = (scope) => {
+        switch(scope.mode) {
+            case 'local': {
                 return scope.depth;
+            }
 
-            case 'universal':
+            case 'universal': {
                 return 0;
+            }
 
-            default:
+            default: {
                 return (scope.parentDepth ?? scope.depth);
+            }
         }
     };
 
@@ -405,16 +408,16 @@ if (typeof require === 'function' && typeof module === 'object') {
      * my later siblings too" — the `+scope` modes differ only in which slot they write to.
      * @return {*} the bound value, or `UNBOUND`
      */
-    let readVariable = (context, depth, name) => {
-        let envs = context.envs;
+    const readVariable = (context, depth, name) => {
+        const envs = context.envs;
 
-        if (!envs || !envs.length)
+        if(!envs || !envs.length)
             return UNBOUND;
 
-        for (let level = Math.min(depth, envs.length - 1); level >= 0; --level) {
-            let env = envs[level];
+        for(let level = Math.min(depth, envs.length - 1); level >= 0; --level) {
+            const env = envs[level];
 
-            if (env && env.has(name))
+            if(env && env.has(name))
                 return env.get(name);
         }
 
@@ -428,10 +431,10 @@ if (typeof require === 'function' && typeof module === 'object') {
      * path, say — so the index is clamped rather than trusted. A binding always lands
      * somewhere real.
      */
-    let bindVariable = (context, slot, name, value) => {
-        let envs = context.envs;
+    const bindVariable = (context, slot, name, value) => {
+        const envs = context.envs;
 
-        if (!envs || !envs.length)
+        if(!envs || !envs.length)
             return value;
 
         envs[Math.min(slot, envs.length - 1)].set(name, value);
@@ -451,20 +454,20 @@ if (typeof require === 'function' && typeof module === 'object') {
      * @param {Object} context
      * @return {?Object} a fresh site `{ base }` to install on, or null when already installed
      */
-    let claimSite = (node, context) => {
-        let hold = context.hold;
+    const claimSite = (node, context) => {
+        const hold = context.hold;
 
-        if (!hold)
+        if(!hold)
             return { base: context };
 
         let routes = hold.sites.get(node);
 
-        if (!routes)
+        if(!routes)
             hold.sites.set(node, routes = new Map());
 
         let site = routes.get(context.route);
 
-        if (site) {
+        if(site) {
             site.base = context;
 
             return null;
@@ -488,11 +491,11 @@ if (typeof require === 'function' && typeof module === 'object') {
      * @param {Object} site - `{ base }`, whose `base` may be refreshed later
      * @return {Object}
      */
-    let installation = (parent, filter, site) => ({
+    const installation = (parent, filter, site) => ({
         sites: new Map(),
 
         async admits(event) {
-            if (parent && !(await parent.admits(event)))
+            if(parent && !(await parent.admits(event)))
                 return false;
 
             return (!filter || truthy(await filter(site.base.child(event))));
@@ -500,9 +503,9 @@ if (typeof require === 'function' && typeof module === 'object') {
     });
 
     /** Runs a list of statement closures in order, charging one step each. */
-    let sequence = (statements, runtime, loc) => async (context) => {
-        for (let statement of statements) {
-            if (context.signal.aborted)
+    const sequence = (statements, runtime, loc) => async(context) => {
+        for(const statement of statements) {
+            if(context.signal.aborted)
                 return;
 
             runtime.step(loc);
@@ -513,45 +516,45 @@ if (typeof require === 'function' && typeof module === 'object') {
 
     /** Wraps a detached loop or handler so a fault is reported once and the script stops
      * rather than surfacing as an unhandled rejection. */
-    let guard = (runtime, context, loc) => (error) => {
-        let failure = (error instanceof DSLError? error: new DSLRuntimeError(String(error?.message ?? error), loc));
+    const guard = (runtime, context, loc) => (error) => {
+        const failure = (error instanceof DSLError ? error : new DSLRuntimeError(String(error?.message ?? error), loc));
 
-        runtime.logger.error(failure.codeFrame? failure.codeFrame(): failure);
+        runtime.logger.error(failure.codeFrame ? failure.codeFrame() : failure);
 
-        if (failure instanceof DSLLimitError)
+        if(failure instanceof DSLLimitError)
             context.stop();
     };
 
     const COMPILERS = {
         [NodeType.Program](node, scope) {
-            let { runtime } = scope;
+            const { runtime } = scope;
 
             // A budget grant raises the per-turn step limit for the whole script — the
             // budget is global, so there is nothing narrower for it to apply to.
             globalThis.TTV_DSL.ast.walk(node, {
                 [NodeType.UsingStatement](using) {
-                    for (let grant of using.permissions)
-                        if (grant in BUDGET_GRANTS)
+                    for(const grant of using.permissions)
+                        if(grant in BUDGET_GRANTS)
                             runtime.limits.steps = Math.max(runtime.limits.steps, BUDGET_GRANTS[grant]);
                 },
             });
 
-            let header = node.body.find(statement => NodeType.PluginHeader === statement.type);
+            const header = node.body.find(statement => NodeType.PluginHeader === statement.type);
 
-            for (let setting of (header?.settings ?? []))
+            for(const setting of (header?.settings ?? []))
                 scope.settings.set(setting.name, setting);
 
-            let body = compileAll(node.body, scope);
+            const body = compileAll(node.body, scope);
 
             // Every call must name a `define` somewhere in the script — checked once
             // everything is compiled, so a function may be called before it is defined.
-            for (let call of scope.calls) {
-                let target = scope.functions.get(call.callee);
+            for(const call of scope.calls) {
+                const target = scope.functions.get(call.callee);
 
-                if (!target)
+                if(!target)
                     throw new DSLRuntimeError(`No function named \`${ call.callee }\`. Defined: ${ [...scope.functions.keys()].join(', ') || 'none' }`, call.loc);
 
-                if (call.arguments.length > target.params.length)
+                if(call.arguments.length > target.params.length)
                     throw new DSLRuntimeError(`\`${ call.callee }\` takes ${ target.params.length } argument(s), got ${ call.arguments.length }`, call.loc);
             }
 
@@ -565,20 +568,20 @@ if (typeof require === 'function' && typeof module === 'object') {
          * and the host's constants, and nothing else. Its grants are exactly the ones its
          * `with` lists, and a caller must hold all of them to call it. */
         [NodeType.DefineStatement](node, scope) {
-            let { runtime } = scope;
+            const { runtime } = scope;
 
-            if (scope.functions.has(node.name))
+            if(scope.functions.has(node.name))
                 throw new DSLRuntimeError(`\`${ node.name }\` is defined twice`, node.loc);
 
             // A function is spelled like a verb or a constant; it may not quietly replace one.
-            if (node.name in runtime.verbs || node.name in runtime.constants)
-                throw new DSLRuntimeError(`\`${ node.name }\` is already a ${ node.name in runtime.verbs? 'verb': 'constant' } the host provides; pick another name`, node.loc);
+            if(node.name in runtime.verbs || node.name in runtime.constants)
+                throw new DSLRuntimeError(`\`${ node.name }\` is already a ${ node.name in runtime.verbs ? 'verb' : 'constant' } the host provides; pick another name`, node.loc);
 
-            for (let grant of node.permissions)
+            for(const grant of node.permissions)
                 runtime.checkGrant(grant, node.loc);
 
-            let permissions = Object.freeze(new Set(node.permissions)),
-                body = compileNode(node.body, {
+            const permissions = Object.freeze(new Set(node.permissions))
+                , body = compileNode(node.body, {
                     runtime,
                     depth: 0,
                     parentDepth: null,
@@ -591,81 +594,81 @@ if (typeof require === 'function' && typeof module === 'object') {
 
             scope.functions.set(node.name, { name: node.name, params: node.params, permissions, body, loc: node.loc });
 
-            return async () => {};
+            return async() => {};
         },
 
         /** Metadata only: `TTV_DSL.inspect` reads it, and running it does nothing. */
         [NodeType.PluginHeader]() {
-            return async () => {};
+            return async() => {};
         },
 
         /** `setting.name` — what the host stored, else the declared default. Read-only: there
          * is no way to write one, because the viewer owns it. */
         [NodeType.SettingRead](node, scope) {
-            let declared = scope.settings.get(node.name);
+            const declared = scope.settings.get(node.name);
 
-            if (!declared)
-                throw new DSLRuntimeError(`No setting named \`${ node.name }\`; ${ scope.settings.size? `the \`plugin\` header declares ${ [...scope.settings.keys()].map(name => `\`${ name }\``).join(', ') }`: 'this script has no `plugin` header declaring settings' }`, node.loc);
+            if(!declared)
+                throw new DSLRuntimeError(`No setting named \`${ node.name }\`; ${ scope.settings.size ? `the \`plugin\` header declares ${ [...scope.settings.keys()].map(name => `\`${ name }\``).join(', ') }` : 'this script has no `plugin` header declaring settings' }`, node.loc);
 
-            let fallback = declared.default;
+            const fallback = declared.default;
 
-            return async (context) => {
-                let stored = context.runtime.settings[node.name];
+            return async(context) => {
+                const stored = context.runtime.settings[node.name];
 
-                return (undefined === stored? fallback: stored);
+                return (void null === stored ? fallback : stored);
             };
         },
 
         [NodeType.ReturnStatement](node, scope) {
-            let { runtime } = scope,
-                argument = compileNode(node.argument, scope);
+            let { runtime } = scope
+                , argument = compileNode(node.argument, scope);
 
-            return async (context) => {
+            return async(context) => {
                 runtime.step(node.loc);
 
-                throw new ReturnSignal(argument? await argument(context): undefined);
+                throw new ReturnSignal(argument ? await argument(context) : void null);
             };
         },
 
         /** `name( ... )`. The caller must already hold everything the function declared;
          * the function then runs holding exactly that, in a fresh frame. */
         [NodeType.CallExpression](node, scope) {
-            let { runtime } = scope,
-                args = compileAll(node.arguments, scope);
+            let { runtime } = scope
+                , args = compileAll(node.arguments, scope);
 
             scope.calls.push(node);
 
-            return async (context) => {
-                let target = scope.functions.get(node.callee);
+            return async(context) => {
+                const target = scope.functions.get(node.callee);
 
-                if (context.callDepth >= MAX_CALL_DEPTH)
+                if(context.callDepth >= MAX_CALL_DEPTH)
                     throw new DSLRuntimeError(`Calls nested more than ${ MAX_CALL_DEPTH } deep at \`${ node.callee }\` — runaway recursion?`, node.loc);
 
-                for (let needed of target.permissions)
+                for(const needed of target.permissions)
                     runtime.requirePermission(needed, context, node.loc);
 
                 runtime.step(node.loc);
 
-                let values = [];
+                const values = [];
 
-                for (let resolve of args)
+                for(const resolve of args)
                     values.push(await resolve(context));
 
-                let frame = context.frame(target.permissions),
-                    env = frame.envs[0];
+                const frame = context.frame(target.permissions)
+                    , env = frame.envs[0];
 
                 target.params.forEach((param, index) => env.set(param, values[index]));
 
                 try {
                     await target.body(frame);
-                } catch (signal) {
-                    if (signal instanceof ReturnSignal)
+                } catch(signal) {
+                    if(signal instanceof ReturnSignal)
                         return signal.value;
 
                     throw signal;
                 }
 
-                return undefined;
+                return void null;
             };
         },
 
@@ -673,30 +676,30 @@ if (typeof require === 'function' && typeof module === 'object') {
          * the label, when there is one — so `$` always means the innermost loop and an outer
          * loop's counter stays readable by name. */
         [NodeType.ForStatement](node, scope) {
-            let { runtime } = scope,
-                start = compileNode(node.start, scope),
-                stop = compileNode(node.stop, scope),
-                step = compileNode(node.step, scope),
-                list = compileNode(node.list, scope),
-                body = compileNode(node.body, inner(scope)),
-                { label } = node;
+            let { runtime } = scope
+                , start = compileNode(node.start, scope)
+                , stop = compileNode(node.stop, scope)
+                , step = compileNode(node.step, scope)
+                , list = compileNode(node.list, scope)
+                , body = compileNode(node.body, inner(scope))
+                , { label } = node;
 
             /** @return {Promise<Boolean>} false when the loop should stop */
-            let iterate = async (context, value, index) => {
+            const iterate = async(context, value, index) => {
                 runtime.step(node.loc);
 
-                let child = context.child(context.subject, { channel: context.channel, route: `${ context.route }/for${ index }` }),
-                    env = child.envs[child.envs.length - 1];
+                const child = context.child(context.subject, { channel: context.channel, route: `${ context.route }/for${ index }` })
+                    , env = child.envs[child.envs.length - 1];
 
                 env.set('$', value);
 
-                if (label)
+                if(label)
                     env.set(label, value);
 
                 try {
                     await body(child);
-                } catch (signal) {
-                    if (!(signal instanceof LoopSignal) || (null !== signal.label && signal.label !== label))
+                } catch(signal) {
+                    if(!(signal instanceof LoopSignal) || (null !== signal.label && signal.label !== label))
                         throw signal;
 
                     return ('renew' === signal.kind);
@@ -705,61 +708,61 @@ if (typeof require === 'function' && typeof module === 'object') {
                 return true;
             };
 
-            return async (context) => {
-                if (list) {
-                    let items = toList(await list(context));
+            return async(context) => {
+                if(list) {
+                    const items = toList(await list(context));
 
-                    for (let index = 0; index < items.length && !context.signal.aborted; ++index)
-                        if (!await iterate(context, items[index], index))
+                    for(let index = 0; index < items.length && !context.signal.aborted; ++index)
+                        if(!await iterate(context, items[index], index))
                             return;
 
                     return;
                 }
 
-                let from = toNumber(await start(context), runtime),
-                    to = toNumber(await stop(context), runtime),
-                    by = (step? toNumber(await step(context), runtime): 1);
+                const from = toNumber(await start(context), runtime)
+                    , to = toNumber(await stop(context), runtime)
+                    , by = (step ? toNumber(await step(context), runtime) : 1);
 
-                if (![from, to, by].every(Number.isFinite))
+                if(![from, to, by].every(Number.isFinite))
                     throw new DSLRuntimeError('`for` needs numbers (or durations) for its start, stop and step', node.loc);
 
-                if (0 === by)
+                if(0 === by)
                     throw new DSLRuntimeError('`for` cannot step by 0', node.loc);
 
-                if ((by > 0 && from > to) || (by < 0 && from < to))
+                if((by > 0 && from > to) || (by < 0 && from < to))
                     throw new DSLRuntimeError(`\`for ${ from }; ${ to }; ${ by }\` steps away from its stop; flip the sign of the step`, node.loc);
 
-                for (let value = from, index = 0; (by > 0? value < to: value > to) && !context.signal.aborted; value += by, ++index)
-                    if (!await iterate(context, value, index))
+                for(let value = from, index = 0; (by > 0 ? value < to : value > to) && !context.signal.aborted; value += by, ++index)
+                    if(!await iterate(context, value, index))
                         return;
             };
         },
 
         [NodeType.BreakStatement](node) {
-            return async () => {
+            return async() => {
                 throw new LoopSignal('break', node.label);
             };
         },
 
         [NodeType.RenewStatement](node) {
-            return async () => {
+            return async() => {
                 throw new LoopSignal('renew', node.label);
             };
         },
 
         /** `$` — found by the ordinary outward walk, so the innermost loop's wins. */
         [NodeType.Counter](node, scope) {
-            let depth = scope.depth;
+            const depth = scope.depth;
 
-            return async (context) => {
-                let value = readVariable(context, depth, '$');
+            return async(context) => {
+                const value = readVariable(context, depth, '$');
 
-                return (UNBOUND === value? undefined: value);
+                return (UNBOUND === value ? void null : value);
             };
         },
 
         [NodeType.Block](node, scope) {
-            let body = compileAll(node.body, scope);
+            const body = compileAll(node.body, scope);
 
             return sequence(body, scope.runtime, node.loc);
         },
@@ -768,42 +771,42 @@ if (typeof require === 'function' && typeof module === 'object') {
          * after it still get a chance to install theirs. A duration awaits the clock; an
          * expression awaits an event that satisfies it. */
         [NodeType.AwaitStatement](node, scope) {
-            let { runtime } = scope,
-                nested = inner(scope),
-                filter = compileNode(node.filter, nested),
-                body = compileNode(node.body, nested);
+            let { runtime } = scope
+                , nested = inner(scope)
+                , filter = compileNode(node.filter, nested)
+                , body = compileNode(node.body, nested);
 
             // The duration-vs-event decision is made *syntactically*, so an assignment
             // wrapped around the subject would silently turn `await (5:00 -> wait_time)`
             // into an event-await that never fires. Look through the binding, then bind the
             // name once at install time and carry on with the duration underneath.
-            let bare = node.subject,
-                binding = null;
+            let bare = node.subject
+                , binding = null;
 
-            if (NodeType.AssignmentExpression === bare.type) {
+            if(NodeType.AssignmentExpression === bare.type) {
                 binding = bare;
                 bare = bare.value;
             }
 
-            if (NodeType.Duration === bare.type) {
-                let milliseconds = bare.milliseconds,
-                    bind = (binding? compileNode(binding, scope): null);
+            if(NodeType.Duration === bare.type) {
+                const milliseconds = bare.milliseconds
+                    , bind = (binding ? compileNode(binding, scope) : null);
 
-                return async (context) => {
-                    let site = claimSite(node, context);
+                return async(context) => {
+                    const site = claimSite(node, context);
 
-                    if (!site)
+                    if(!site)
                         return;
 
-                    if (bind)
+                    if(bind)
                         await bind(context);
 
-                    let parent = context.hold,
-                        own = installation(parent, filter, site);
+                    const parent = context.hold
+                        , own = installation(parent, filter, site);
 
-                    let loop = async () => {
-                        while (!context.signal.aborted) {
-                            if (!await runtime.sleep(milliseconds, context.signal))
+                    const loop = async() => {
+                        while(!context.signal.aborted) {
+                            if(!await runtime.sleep(milliseconds, context.signal))
                                 return;
 
                             // Each tick is a fresh turn with a fresh budget; the minutes
@@ -811,18 +814,18 @@ if (typeof require === 'function' && typeof module === 'object') {
                             runtime.beginTurn();
                             runtime.step(node.loc);
 
-                            let tick = { at: runtime.now(), kind: 'tick' },
-                                base = site.base;
+                            const tick = { at: runtime.now(), kind: 'tick' }
+                                , base = site.base;
 
-                            if (parent && !(await parent.admits(tick)))
+                            if(parent && !(await parent.admits(tick)))
                                 continue;
 
-                            let child = base.child(tick, { channel: base.channel, hold: own, route: '' });
+                            const child = base.child(tick, { channel: base.channel, hold: own, route: '' });
 
-                            if (filter && !truthy(await filter(child)))
+                            if(filter && !truthy(await filter(child)))
                                 continue;
 
-                            if (body)
+                            if(body)
                                 await body(child);
                         }
                     };
@@ -831,19 +834,19 @@ if (typeof require === 'function' && typeof module === 'object') {
                 };
             }
 
-            let condition = compileNode(node.subject, nested);
+            const condition = compileNode(node.subject, nested);
 
-            return async (context) => {
-                let site = claimSite(node, context);
+            return async(context) => {
+                const site = claimSite(node, context);
 
-                if (!site)
+                if(!site)
                     return;
 
-                let parent = context.hold,
-                    own = installation(parent, filter, site);
+                const parent = context.hold
+                    , own = installation(parent, filter, site);
 
-                let off = runtime.subscribe(async (event) => {
-                    if (context.signal.aborted)
+                const off = runtime.subscribe(async(event) => {
+                    if(context.signal.aborted)
                         return;
 
                     try {
@@ -851,20 +854,20 @@ if (typeof require === 'function' && typeof module === 'object') {
                         runtime.beginTurn();
                         runtime.step(node.loc);
 
-                        if (parent && !(await parent.admits(event)))
+                        if(parent && !(await parent.admits(event)))
                             return;
 
-                        let child = site.base.child(event, { hold: own, route: '' });
+                        const child = site.base.child(event, { hold: own, route: '' });
 
-                        if (!truthy(await condition(child)))
+                        if(!truthy(await condition(child)))
                             return;
 
-                        if (filter && !truthy(await filter(child)))
+                        if(filter && !truthy(await filter(child)))
                             return;
 
-                        if (body)
+                        if(body)
                             await body(child);
-                    } catch (error) {
+                    } catch(error) {
                         guard(runtime, context, node.loc)(error);
                     }
                 });
@@ -880,40 +883,40 @@ if (typeof require === 'function' && typeof module === 'object') {
          * and is done. The body shares the enclosing `await`'s installation, so an `await`
          * nested in it still installs once. */
         [NodeType.AfterStatement](node, scope) {
-            let { runtime } = scope,
-                nested = inner(scope),
-                delay = compileNode(node.subject, scope),
-                filter = compileNode(node.filter, nested),
-                body = compileNode(node.body, nested);
+            let { runtime } = scope
+                , nested = inner(scope)
+                , delay = compileNode(node.subject, scope)
+                , filter = compileNode(node.filter, nested)
+                , body = compileNode(node.body, nested);
 
-            return async (context) => {
-                let raw = await delay(context),
-                    milliseconds = toNumber(raw, runtime);
+            return async(context) => {
+                const raw = await delay(context)
+                    , milliseconds = toNumber(raw, runtime);
 
-                if (!Number.isFinite(milliseconds) || milliseconds < 0)
+                if(!Number.isFinite(milliseconds) || milliseconds < 0)
                     throw new DSLRuntimeError(`\`after\` needs a duration, like \`after 5:00\`; got ${ JSON.stringify(stringify(raw)) }`, node.loc);
 
-                let parent = context.hold,
-                    route = `${ context.route }/after`;
+                const parent = context.hold
+                    , route = `${ context.route }/after`;
 
-                let wait = async () => {
-                    if (!await runtime.sleep(milliseconds, context.signal))
+                const wait = async() => {
+                    if(!await runtime.sleep(milliseconds, context.signal))
                         return;
 
                     runtime.beginTurn();
                     runtime.step(node.loc);
 
-                    let tick = { at: runtime.now(), kind: 'tick' };
+                    const tick = { at: runtime.now(), kind: 'tick' };
 
-                    if (parent && !(await parent.admits(tick)))
+                    if(parent && !(await parent.admits(tick)))
                         return;
 
-                    let child = context.child(tick, { channel: context.channel, route });
+                    const child = context.child(tick, { channel: context.channel, route });
 
-                    if (filter && !truthy(await filter(child)))
+                    if(filter && !truthy(await filter(child)))
                         return;
 
-                    if (body)
+                    if(body)
                         await body(child);
                 };
 
@@ -926,64 +929,64 @@ if (typeof require === 'function' && typeof module === 'object') {
          * With no subject at all — `using +read:datetime`, `using +scope:local` — the body
          * runs once under the subject already in force. */
         [NodeType.UsingStatement](node, scope) {
-            let { runtime } = scope,
-                subjects = compileAll(node.subjects, scope),
-                keep = !subjects.length;
+            let { runtime } = scope
+                , subjects = compileAll(node.subjects, scope)
+                , keep = !subjects.length;
 
             // Grants accumulate strictly downward: a block sees its own plus every
             // ancestor's, and never a sibling's. The union is computed once, here, and
             // frozen — a `Set` the runtime can only ask `has` of.
-            let own = (node.permissions ?? []),
-                granted = (own.length? Object.freeze(new Set([...scope.permissions, ...own])): scope.permissions);
+            const own = (node.permissions ?? [])
+                , granted = (own.length ? Object.freeze(new Set([...scope.permissions, ...own])) : scope.permissions);
 
             // Against the fixed list, at compile time: a mistyped grant stops the script
             // before anything runs, instead of silently granting nothing.
-            for (let grant of own)
+            for(const grant of own)
                 runtime.checkGrant(grant, node.loc);
 
-            let nested = inner(scope, { permissions: granted, mode: (node.scopeMode ?? scope.mode) }),
-                body = compileNode(node.body, nested);
+            const nested = inner(scope, { permissions: granted, mode: (node.scopeMode ?? scope.mode) })
+                , body = compileNode(node.body, nested);
 
             // A badge is a *gate*, not a subject. `using [moderator]` asks "does the sender
             // hold this?" and, if so, runs the body under the subject already in force — so
             // `.command` inside it still reads the message. Rebinding the subject to the
             // badge name instead would make every `.prop` inside read off a string.
-            let gates = node.subjects.map(entry => (NodeType.Selector === entry.type && 'badge' === entry.kind));
+            const gates = node.subjects.map(entry => (NodeType.Selector === entry.type && 'badge' === entry.kind));
 
-            return async (context) => {
-                if (keep) {
+            return async(context) => {
+                if(keep) {
                     runtime.step(node.loc);
 
-                    if (body)
+                    if(body)
                         await body(context.child(context.subject, { channel: context.channel, permissions: granted }));
 
                     return;
                 }
 
-                for (let index = 0; index < subjects.length; ++index) {
-                    if (context.signal.aborted)
+                for(let index = 0; index < subjects.length; ++index) {
+                    if(context.signal.aborted)
                         return;
 
                     runtime.step(node.loc);
 
-                    let value = await subjects[index](context),
-                        route = `${ context.route }/${ index }`;
+                    let value = await subjects[index](context)
+                        , route = `${ context.route }/${ index }`;
 
                     // A badge the viewer does not hold, or a channel that does not exist,
                     // simply contributes no iteration.
-                    if (null == value)
+                    if(null == value)
                         continue;
 
-                    if (!body)
+                    if(!body)
                         continue;
 
-                    if (gates[index]) {
+                    if(gates[index]) {
                         await body(context.child(context.subject, { channel: context.channel, permissions: granted, route }));
 
                         continue;
                     }
 
-                    if (WILDCARD === value)
+                    if(WILDCARD === value)
                         value = (context.subject ?? context.channel);
 
                     await body(context.child(value, { permissions: granted, route }));
@@ -993,22 +996,22 @@ if (typeof require === 'function' && typeof module === 'object') {
 
         [NodeType.IfStatement](node, scope) {
             // `if` does not rebind the subject, so it shares its parent's scope depth.
-            let { runtime } = scope,
-                test = compileNode(node.test, scope),
-                body = compileNode(node.body, scope),
-                alternate = compileNode(node.alternate, scope);
+            let { runtime } = scope
+                , test = compileNode(node.test, scope)
+                , body = compileNode(node.body, scope)
+                , alternate = compileNode(node.alternate, scope);
 
-            return async (context) => {
+            return async(context) => {
                 runtime.step(node.loc);
 
-                if (truthy(await test(context))) {
-                    if (body)
+                if(truthy(await test(context))) {
+                    if(body)
                         await body(context);
 
                     return;
                 }
 
-                if (alternate)
+                if(alternate)
                     await alternate(context);
             };
         },
@@ -1016,56 +1019,56 @@ if (typeof require === 'function' && typeof module === 'object') {
         /** Both forms of `when`. Neither rebinds the subject, so both stay at their parent's
          * depth — a case body reads the same `.prop` the head compared. */
         [NodeType.WhenStatement](node, scope) {
-            let { runtime } = scope,
-                alternate = compileNode(node.alternate, scope);
+            let { runtime } = scope
+                , alternate = compileNode(node.alternate, scope);
 
             // Chain form: this is somebody's `alternate`, and behaves as an `if`.
-            if (null === node.operator) {
-                let test = compileNode(node.discriminant, scope),
-                    body = compileNode(node.body, scope);
+            if(null === node.operator) {
+                const test = compileNode(node.discriminant, scope)
+                    , body = compileNode(node.body, scope);
 
-                return async (context) => {
+                return async(context) => {
                     runtime.step(node.loc);
 
-                    if (truthy(await test(context))) {
-                        if (body)
+                    if(truthy(await test(context))) {
+                        if(body)
                             await body(context);
 
                         return;
                     }
 
-                    if (alternate)
+                    if(alternate)
                         await alternate(context);
                 };
             }
 
-            let discriminant = compileNode(node.discriminant, scope),
-                matches = ('in' === node.operator? contains: equals),
-                cases = node.cases.map(entry => ({
+            const discriminant = compileNode(node.discriminant, scope)
+                , matches = ('in' === node.operator ? contains : equals)
+                , cases = node.cases.map(entry => ({
                     test: compileNode(entry.test, scope),
                     body: compileNode(entry.body, scope),
                 }));
 
-            return async (context) => {
+            return async(context) => {
                 runtime.step(node.loc);
 
-                let value = await discriminant(context);
+                const value = await discriminant(context);
 
-                for (let entry of cases) {
+                for(const entry of cases) {
                     runtime.step(node.loc);
 
                     // A `*` label needs no special case: `equals(x, WILDCARD)` already
                     // means "x is present", which is precisely what a default should ask.
-                    if (!matches(value, await entry.test(context)))
+                    if(!matches(value, await entry.test(context)))
                         continue;
 
-                    if (entry.body)
+                    if(entry.body)
                         await entry.body(context);
 
                     return;
                 }
 
-                if (alternate)
+                if(alternate)
                     await alternate(context);
             };
         },
@@ -1080,29 +1083,29 @@ if (typeof require === 'function' && typeof module === 'object') {
          * Branching on the *result* rather than on the syntax is why one statement can mean
          * both without the script having to say which. */
         [NodeType.WithStatement](node, scope) {
-            let { runtime } = scope,
-                filter = compileNode(node.filter, scope),
-                body = compileNode(node.body, inner(scope));
+            let { runtime } = scope
+                , filter = compileNode(node.filter, scope)
+                , body = compileNode(node.body, inner(scope));
 
-            return async (context) => {
+            return async(context) => {
                 runtime.step(node.loc);
 
-                let value = await filter(context);
+                const value = await filter(context);
 
-                if (!body)
+                if(!body)
                     return;
 
-                if (typeof value === 'boolean' || WILDCARD === value) {
-                    if (truthy(value))
+                if(typeof value === 'boolean' || WILDCARD === value) {
+                    if(truthy(value))
                         await body(context.child(context.subject));
 
                     return;
                 }
 
-                let items = toList(value);
+                const items = toList(value);
 
-                for (let index = 0; index < items.length; ++index) {
-                    if (context.signal.aborted)
+                for(let index = 0; index < items.length; ++index) {
+                    if(context.signal.aborted)
                         return;
 
                     runtime.step(node.loc);
@@ -1116,19 +1119,19 @@ if (typeof require === 'function' && typeof module === 'object') {
 
         /** `else` — reached only as some chain's final `alternate`, so it has no test. */
         [NodeType.ElseClause](node, scope) {
-            let body = compileNode(node.body, scope);
+            const body = compileNode(node.body, scope);
 
-            return async (context) => {
-                if (body)
+            return async(context) => {
+                if(body)
                     await body(context);
             };
         },
 
         [NodeType.ExpressionStatement](node, scope) {
-            let { runtime } = scope,
-                expression = compileNode(node.expression, scope);
+            let { runtime } = scope
+                , expression = compileNode(node.expression, scope);
 
-            return async (context) => {
+            return async(context) => {
                 runtime.step(node.loc);
 
                 await expression(context);
@@ -1136,10 +1139,10 @@ if (typeof require === 'function' && typeof module === 'object') {
         },
 
         [NodeType.GotoStatement](node, scope) {
-            let { runtime } = scope,
-                target = compileNode(node.target, scope);
+            let { runtime } = scope
+                , target = compileNode(node.target, scope);
 
-            return async (context) => {
+            return async(context) => {
                 runtime.step(node.loc);
 
                 return runtime.goto(await target(context), context, node.loc);
@@ -1147,62 +1150,67 @@ if (typeof require === 'function' && typeof module === 'object') {
         },
 
         [NodeType.VerbStatement](node, scope) {
-            let { runtime } = scope,
-                argument = compileNode(node.argument, scope);
+            let { runtime } = scope
+                , argument = compileNode(node.argument, scope);
 
-            return async (context) => {
+            return async(context) => {
                 runtime.step(node.loc);
 
-                let value = (argument? await argument(context): null);
+                const value = (argument ? await argument(context) : null);
 
                 return runtime.invokeVerb(node.verb, context, value, node.loc);
             };
         },
 
         [NodeType.BinaryExpression](node, scope) {
-            let left = compileNode(node.left, scope),
-                right = compileNode(node.right, scope);
+            const left = compileNode(node.left, scope)
+                , right = compileNode(node.right, scope);
 
-            switch (node.operator) {
-                case 'or':
-                    return async (context) => (truthy(await left(context)) || truthy(await right(context)));
+            switch(node.operator) {
+                case 'or': {
+                    return async(context) => (truthy(await left(context)) || truthy(await right(context)));
+                }
 
-                case 'and':
-                    return async (context) => (truthy(await left(context)) && truthy(await right(context)));
+                case 'and': {
+                    return async(context) => (truthy(await left(context)) && truthy(await right(context)));
+                }
 
-                case 'is':
-                    return async (context) => equals(await left(context), await right(context));
+                case 'is': {
+                    return async(context) => equals(await left(context), await right(context));
+                }
 
-                case 'in':
-                    return async (context) => contains(await left(context), await right(context));
+                case 'in': {
+                    return async(context) => contains(await left(context), await right(context));
+                }
 
                 case 'above':
                 case 'below':
                 case 'or above':
                 case 'or below': {
-                    let { runtime } = scope,
-                        compare = COMPARISONS[node.operator];
+                    let { runtime } = scope
+                        , compare = COMPARISONS[node.operator];
 
                     // `NaN` on either side answers every comparison `false`, which is the
                     // whole of the missing-value rule.
-                    return async (context) => compare(toNumber(await left(context), runtime), toNumber(await right(context), runtime));
+                    return async(context) => compare(toNumber(await left(context), runtime), toNumber(await right(context), runtime));
                 }
 
-                default:
+                default: {
                     throw new DSLRuntimeError(`Unsupported operator ${ JSON.stringify(node.operator) }`, node.loc);
-            }
+                }
+            } // switch node.operator
         },
 
         [NodeType.UnaryExpression](node, scope) {
-            let argument = compileNode(node.argument, scope);
+            const argument = compileNode(node.argument, scope);
 
-            if ('not' === node.operator)
-                return async (context) => !truthy(await argument(context));
+            if('not' === node.operator)
+                return async(context) => !truthy(await argument(context));
 
-            if ('=' === node.operator)
-                return async (context) => new Exact(await argument(context));
+            if('=' === node.operator)
+                return async(context) => new Exact(await argument(context));
 
-            return async (context) => -Number(await argument(context));
+            return async(context) => -Number(await argument(context));
         },
 
         /** `<value> -> name` / `<value> => name` — synonyms. Where the name lands is the
@@ -1211,12 +1219,12 @@ if (typeof require === 'function' && typeof module === 'object') {
          * Evaluates to the value it bound, which is the whole reason this is an expression:
          * `await (5:00 -> wait_time)` has to hand the duration on after recording it. */
         [NodeType.AssignmentExpression](node, scope) {
-            let value = compileNode(node.value, scope),
-                slot = bindingSlot(scope),
-                { name } = node;
+            const value = compileNode(node.value, scope)
+                , slot = bindingSlot(scope)
+                , { name } = node;
 
-            return async (context) => {
-                let result = await value(context);
+            return async(context) => {
+                const result = await value(context);
 
                 bindVariable(context, slot, name, result);
 
@@ -1227,27 +1235,27 @@ if (typeof require === 'function' && typeof module === 'object') {
         /** `_` / `__this__` / `__self__` / `__me__` — the subject slot itself, with the
          * depth baked in at compile time exactly as `.prop` does. */
         [NodeType.This](node, scope) {
-            let depth = scope.depth;
+            const depth = scope.depth;
 
-            return async (context) => context.subjects[depth];
+            return async(context) => context.subjects[depth];
         },
 
         /** `&Path.fn( ... )`. The path is data all the way down: the runtime walks a host
          * binding table and calls what it finds. No text ever becomes code. */
         [NodeType.JSInvokeExpression](node, scope) {
-            let { runtime } = scope,
-                { path } = node;
+            let { runtime } = scope
+                , { path } = node;
 
             // No argument list at all: a constant read, `&Math.PI`.
-            if (null == node.arguments)
-                return async (context) => runtime.invokeJS(path, null, context, node.loc);
+            if(null == node.arguments)
+                return async(context) => runtime.invokeJS(path, null, context, node.loc);
 
-            let args = compileAll(node.arguments, scope);
+            const args = compileAll(node.arguments, scope);
 
-            return async (context) => {
-                let values = [];
+            return async(context) => {
+                const values = [];
 
-                for (let resolve of args)
+                for(const resolve of args)
                     values.push(unwrap(await resolve(context)));
 
                 return runtime.invokeJS(path, values, context, node.loc);
@@ -1257,16 +1265,16 @@ if (typeof require === 'function' && typeof module === 'object') {
         /** `<subject> %… <replacement>`. A list joins; anything else is trimmed and has its
          * matching runs replaced. */
         [NodeType.PercentExpression](node, scope) {
-            let { runtime } = scope,
-                subject = compileNode(node.subject, scope),
-                replacement = compileNode(node.replacement, scope),
-                { letters } = node;
+            let { runtime } = scope
+                , subject = compileNode(node.subject, scope)
+                , replacement = compileNode(node.replacement, scope)
+                , { letters } = node;
 
-            return async (context) => {
-                let value = await subject(context),
-                    text = stringify(await replacement(context));
+            return async(context) => {
+                const value = await subject(context)
+                    , text = stringify(await replacement(context));
 
-                return runtime.percent((Array.isArray(value)? value.map(stringify): stringify(value)), letters, text, node.loc);
+                return runtime.percent((Array.isArray(value) ? value.map(stringify) : stringify(value)), letters, text, node.loc);
             };
         },
 
@@ -1274,17 +1282,17 @@ if (typeof require === 'function' && typeof module === 'object') {
          * link anywhere in the chain reads as empty, exactly as `.prop` on a null subject
          * does. */
         [NodeType.MemberExpression](node, scope) {
-            let object = compileNode(node.object, scope),
-                { property } = node;
+            const object = compileNode(node.object, scope)
+                , { property } = node;
 
-            if (FORBIDDEN_MEMBERS.has(property))
+            if(FORBIDDEN_MEMBERS.has(property))
                 throw new DSLRuntimeError(`\`.${ property }\` may never be read`, node.loc);
 
-            return async (context) => {
-                let value = unwrap(await object(context));
+            return async(context) => {
+                const value = unwrap(await object(context));
 
-                if (null == value || typeof value !== 'object')
-                    return undefined;
+                if(null == value || typeof value !== 'object')
+                    return void null;
 
                 return value[property];
             };
@@ -1292,11 +1300,11 @@ if (typeof require === 'function' && typeof module === 'object') {
 
         /** `<value> ~ <pattern>` — renders the value through a pattern (§5.14). */
         [NodeType.FormatExpression](node, scope) {
-            let { runtime } = scope,
-                subject = compileNode(node.subject, scope),
-                pattern = compileNode(node.pattern, scope);
+            let { runtime } = scope
+                , subject = compileNode(node.subject, scope)
+                , pattern = compileNode(node.pattern, scope);
 
-            return async (context) => runtime.format(toNumber(await subject(context), runtime), stringify(await pattern(context)), node.loc);
+            return async(context) => runtime.format(toNumber(await subject(context), runtime), stringify(await pattern(context)), node.loc);
         },
 
         /** `calc( ... )`. Needs `eval:calc`, checked each time it is evaluated, like any
@@ -1304,10 +1312,10 @@ if (typeof require === 'function' && typeof module === 'object') {
          * the operators are JavaScript's, so `1 / 0` is `Infinity` and anything with an
          * unreadable operand is `NaN`. */
         [NodeType.CalcExpression](node, scope) {
-            let { runtime } = scope,
-                expression = compileNode(node.expression, scope);
+            let { runtime } = scope
+                , expression = compileNode(node.expression, scope);
 
-            return async (context) => {
+            return async(context) => {
                 runtime.requirePermission('eval:calc', context, node.loc);
 
                 return expression(context);
@@ -1315,29 +1323,29 @@ if (typeof require === 'function' && typeof module === 'object') {
         },
 
         [NodeType.ArithmeticExpression](node, scope) {
-            let { runtime } = scope,
-                left = compileNode(node.left, scope),
-                right = compileNode(node.right, scope),
-                apply = ARITHMETIC[(left? '': 'unary ') + node.operator];
+            let { runtime } = scope
+                , left = compileNode(node.left, scope)
+                , right = compileNode(node.right, scope)
+                , apply = ARITHMETIC[(left ? '' : 'unary ') + node.operator];
 
-            if (!left)
-                return async (context) => apply(toNumber(await right(context), runtime));
+            if(!left)
+                return async(context) => apply(toNumber(await right(context), runtime));
 
-            return async (context) => apply(toNumber(await left(context), runtime), toNumber(await right(context), runtime));
+            return async(context) => apply(toNumber(await left(context), runtime), toNumber(await right(context), runtime));
         },
 
         /** `( a, b, c )` — a list. A range item contributes its members, exactly as it does
          * in `any from`, so `(1 .. 3, 9)` is `[1, 2, 3, 9]`. */
         [NodeType.ListExpression](node, scope) {
-            let items = compileAll(node.items, scope);
+            const items = compileAll(node.items, scope);
 
-            return async (context) => {
-                let list = [];
+            return async(context) => {
+                const list = [];
 
-                for (let resolve of items) {
-                    let value = await resolve(context);
+                for(const resolve of items) {
+                    const value = await resolve(context);
 
-                    if (Array.isArray(value))
+                    if(Array.isArray(value))
                         list.push(...value);
                     else
                         list.push(value);
@@ -1350,18 +1358,18 @@ if (typeof require === 'function' && typeof module === 'object') {
         /** `<subject> where (<filter>)` — the filter runs once per item, one scope deeper,
          * so `.href` inside it means the item's property. */
         [NodeType.WhereExpression](node, scope) {
-            let { runtime } = scope,
-                subject = compileNode(node.subject, scope),
-                filter = compileNode(node.filter, inner(scope));
+            let { runtime } = scope
+                , subject = compileNode(node.subject, scope)
+                , filter = compileNode(node.filter, inner(scope));
 
-            return async (context) => {
-                let items = toList(await subject(context)),
-                    kept = [];
+            return async(context) => {
+                const items = toList(await subject(context))
+                    , kept = [];
 
-                for (let item of items) {
+                for(const item of items) {
                     runtime.step(node.loc);
 
-                    if (truthy(await filter(context.child(item))))
+                    if(truthy(await filter(context.child(item))))
                         kept.push(item);
                 }
 
@@ -1372,40 +1380,40 @@ if (typeof require === 'function' && typeof module === 'object') {
         /** `<accessor> <| <collection>`. An ordinal on the left indexes the collection;
          * anything else is evaluated with the collection as its subject. */
         [NodeType.PipeExpression](node, scope) {
-            let right = compileNode(node.right, scope);
+            const right = compileNode(node.right, scope);
 
-            if (NodeType.OrdinalIndex === node.left.type) {
-                let index = node.left.index;
+            if(NodeType.OrdinalIndex === node.left.type) {
+                const index = node.left.index;
 
-                return async (context) => at(await right(context), index);
+                return async(context) => at(await right(context), index);
             }
 
-            let left = compileNode(node.left, inner(scope));
+            const left = compileNode(node.left, inner(scope));
 
-            return async (context) => left(context.child(await right(context)));
+            return async(context) => left(context.child(await right(context)));
         },
 
         [NodeType.RangeExpression](node, scope) {
-            let { runtime } = scope,
-                start = compileNode(node.start, scope),
-                end = compileNode(node.end, scope);
+            let { runtime } = scope
+                , start = compileNode(node.start, scope)
+                , end = compileNode(node.end, scope);
 
-            return async (context) => runtime.range(await start(context), await end(context), node.inclusive, node.loc);
+            return async(context) => runtime.range(await start(context), await end(context), node.inclusive, node.loc);
         },
 
         /** `any from ( ... )`. A range item contributes all of its members to the pool, so
          * `any from (1 .. 10)` chooses a number rather than choosing the list. */
         [NodeType.AnyFromExpression](node, scope) {
-            let { runtime } = scope,
-                items = compileAll(node.items, scope);
+            let { runtime } = scope
+                , items = compileAll(node.items, scope);
 
-            return async (context) => {
-                let pool = [];
+            return async(context) => {
+                const pool = [];
 
-                for (let resolve of items) {
-                    let value = await resolve(context);
+                for(const resolve of items) {
+                    const value = await resolve(context);
 
-                    if (Array.isArray(value))
+                    if(Array.isArray(value))
                         pool.push(...value);
                     else
                         pool.push(value);
@@ -1416,9 +1424,9 @@ if (typeof require === 'function' && typeof module === 'object') {
         },
 
         [NodeType.OrdinalIndex](node) {
-            let { index } = node;
+            const { index } = node;
 
-            return async () => index;
+            return async() => index;
         },
 
         [NodeType.Selector](node, scope) {
@@ -1426,13 +1434,13 @@ if (typeof require === 'function' && typeof module === 'object') {
         },
 
         [NodeType.TemplateLiteral](node, scope) {
-            let { quasis } = node,
-                expressions = compileAll(node.expressions, scope);
+            let { quasis } = node
+                , expressions = compileAll(node.expressions, scope);
 
-            return async (context) => {
+            return async(context) => {
                 let text = quasis[0];
 
-                for (let index = 0; index < expressions.length; ++index)
+                for(let index = 0; index < expressions.length; ++index)
                     text += stringify(await expressions[index](context)) + quasis[index + 1];
 
                 return text;
@@ -1440,9 +1448,9 @@ if (typeof require === 'function' && typeof module === 'object') {
         },
 
         [NodeType.Literal](node) {
-            let { value } = node;
+            const { value } = node;
 
-            return async () => value;
+            return async() => value;
         },
 
         /** A bare word: a variable, or a host constant.
@@ -1455,40 +1463,40 @@ if (typeof require === 'function' && typeof module === 'object') {
          * sibling can never observe what it bound. A name without one can only be a
          * constant, and an unknown constant still fails loudly. */
         [NodeType.Identifier](node, scope) {
-            let { name } = node,
-                depth = scope.depth,
-                variable = VARIABLE_PATTERN.test(name);  // a lower-case letter: the script's own
+            let { name } = node
+                , depth = scope.depth
+                , variable = VARIABLE_PATTERN.test(name);  // a lower-case letter: the script's own
 
-            return async (context) => {
-                if (variable) {
-                    let bound = readVariable(context, depth, name);
+            return async(context) => {
+                if(variable) {
+                    const bound = readVariable(context, depth, name);
 
-                    if (UNBOUND !== bound)
+                    if(UNBOUND !== bound)
                         return bound;
                 }
 
-                let table = context.runtime.constants;
+                const table = context.runtime.constants;
 
-                if (name in table)
+                if(name in table)
                     return table[name];
 
-                if (variable)
-                    return undefined;
+                if(variable)
+                    return void null;
 
                 throw new DSLRuntimeError(`Unknown name ${ JSON.stringify(name) }. Known names: ${ Object.keys(table).join(', ') || 'none' }`, node.loc);
             };
         },
 
         [NodeType.Wildcard](node) {
-            let value = (PRESENCE[node.kind] ?? WILDCARD);
+            const value = (PRESENCE[node.kind] ?? WILDCARD);
 
-            return async () => value;
+            return async() => value;
         },
 
         [NodeType.Duration](node) {
-            let { milliseconds } = node;
+            const { milliseconds } = node;
 
-            return async () => milliseconds;
+            return async() => milliseconds;
         },
     };
 
@@ -1502,9 +1510,9 @@ if (typeof require === 'function' && typeof module === 'object') {
      * @param {Object} context
      * @return {?Object}
      */
-    let badgeHolder = (context) => {
-        for (let candidate of [context.subject, context.channel, context.realm?.current])
-            if (null != candidate && Array.isArray(candidate.badges))
+    const badgeHolder = (context) => {
+        for(const candidate of [context.subject, context.channel, context.realm?.current])
+            if(null != candidate && Array.isArray(candidate.badges))
                 return candidate;
 
         return (context.subject ?? context.channel ?? context.realm?.current ?? null);
@@ -1518,37 +1526,40 @@ if (typeof require === 'function' && typeof module === 'object') {
      * @param {Object} scope
      * @return {Function}
      */
-    let compileSelector = (node, scope) => {
-        let { name, loc } = node,
-            depth = scope.depth;
+    const compileSelector = (node, scope) => {
+        let { name, loc } = node
+            , depth = scope.depth;
 
-        switch (node.kind) {
-            case 'context':
-                return async (context) => {
-                    let subject = context.subjects[depth];
+        switch(node.kind) {
+            case 'context': {
+                return async(context) => {
+                    const subject = context.subjects[depth];
 
-                    if (null == subject)
-                        return undefined;
+                    if(null == subject)
+                        return void null;
 
                     return subject[name];
                 };
+            }
 
-            case 'channel':
-                return async (context) => {
-                    if (null == name)
+            case 'channel': {
+                return async(context) => {
+                    if(null == name)
                         return (context.channel ?? context.realm?.current ?? null);
 
                     return (context.realm?.channel?.(name) ?? null);
                 };
+            }
 
-            case 'prop':
-                return async (context) => {
-                    let target = (null == node.channel
+            case 'prop': {
+                return async(context) => {
+                    const target = (null == node.channel
                         ? (context.channel ?? context.realm?.current ?? null)
                         : (context.realm?.channel?.(node.channel) ?? null));
 
-                    return (null == target? undefined: target[name]);
+                    return (null == target ? void null : target[name]);
                 };
+            }
 
             case 'realm': {
                 // An unregistered realm fails only the block that names it: it is reported
@@ -1557,22 +1568,22 @@ if (typeof require === 'function' && typeof module === 'object') {
                 // take the whole enclosing body down with it.
                 let reported = false;
 
-                return async (context) => {
-                    if (!context.runtime.hasRealm(node.realm)) {
-                        if (!reported) {
+                return async(context) => {
+                    if(!context.runtime.hasRealm(node.realm)) {
+                        if(!reported) {
                             reported = true;
 
-                            let error = new DSLRuntimeError(`Unknown realm ${ JSON.stringify(node.realm) }; this block is skipped`, loc);
+                            const error = new DSLRuntimeError(`Unknown realm ${ JSON.stringify(node.realm) }; this block is skipped`, loc);
 
-                            context.runtime.logger.error(error.codeFrame? error.codeFrame(): error);
+                            context.runtime.logger.error(error.codeFrame ? error.codeFrame() : error);
                         }
 
                         return null;
                     }
 
-                    let realm = context.runtime.realm(node.realm, loc);
+                    const realm = context.runtime.realm(node.realm, loc);
 
-                    return (realm.subject? realm.subject(node.path): null);
+                    return (realm.subject ? realm.subject(node.path) : null);
                 };
             }
 
@@ -1580,15 +1591,15 @@ if (typeof require === 'function' && typeof module === 'object') {
                 // `[vip moderator]` means "any of these": the first held badge answers, and
                 // the list as a whole resolves once — so a `using` over it runs its body
                 // once, not once per badge the viewer happens to hold.
-                let names = (node.names ?? [name]);
+                const names = (node.names ?? [name]);
 
-                return async (context) => {
-                    let holder = badgeHolder(context);
+                return async(context) => {
+                    const holder = badgeHolder(context);
 
-                    for (let entry of names) {
-                        let held = context.realm?.badge?.(entry, holder);
+                    for(const entry of names) {
+                        const held = context.realm?.badge?.(entry, holder);
 
-                        if (null != held)
+                        if(null != held)
                             return held;
                     }
 
@@ -1596,12 +1607,14 @@ if (typeof require === 'function' && typeof module === 'object') {
                 };
             }
 
-            case 'user':
-                return async (context) => (context.realm?.user?.(name, (context.channel ?? context.realm?.current)) ?? null);
+            case 'user': {
+                return async(context) => (context.realm?.user?.(name, (context.channel ?? context.realm?.current)) ?? null);
+            }
 
-            default:
+            default: {
                 throw new DSLRuntimeError(`Unknown selector kind ${ JSON.stringify(node.kind) }`, loc);
-        }
+            }
+        } // switch node.kind
     };
 
     /** Parses, compiles, and starts a script.
@@ -1610,10 +1623,10 @@ if (typeof require === 'function' && typeof module === 'object') {
      * @param {Object} [seed] - the root subject / channel / realm
      * @return {Promise<Object>} the root context; call `.stop()` to cancel everything
      */
-    let run = async (source, runtime, seed = {}) => {
-        let program = globalThis.TTV_DSL.parse(source),
-            compiled = compile(program, runtime),
-            context = runtime.createContext(seed);
+    const run = async(source, runtime, seed = {}) => {
+        const program = globalThis.TTV_DSL.parse(source)
+            , compiled = compile(program, runtime)
+            , context = runtime.createContext(seed);
 
         await compiled(context);
 
@@ -1625,5 +1638,5 @@ if (typeof require === 'function' && typeof module === 'object') {
     globalThis.TTV_DSL.run = run;
 })();
 
-if (typeof module === 'object' && module?.exports)
+if(typeof module === 'object' && module?.exports)
     module.exports = globalThis.TTV_DSL;

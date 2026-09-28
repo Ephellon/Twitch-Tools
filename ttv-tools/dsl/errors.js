@@ -28,23 +28,23 @@ globalThis.TTV_DSL ??= {};
      * @param {Number} high
      * @return {Number}
      */
-    let clamp = (value, low, high) => (value < low? low: value > high? high: value);
+    const clamp = (value, low, high) => (value < low ? low : value > high ? high : value);
 
     /** Normalizes a partial location object into a complete one.
      * @param {Object} [loc]
      * @return {{ line: Number, column: Number, start: Number, end: Number }}
      */
-    let normalizeLocation = (loc) => {
+    const normalizeLocation = (loc) => {
         loc ??= {};
 
-        let start = (loc.start | 0),
-            end = (null == loc.end? start: loc.end | 0);
+        const start = (loc.start | 0)
+            , end = (null == loc.end ? start : loc.end | 0);
 
         return {
             line: (loc.line | 0) || 1,
             column: (loc.column | 0) || 1,
             start,
-            end: (end < start? start: end),
+            end: (end < start ? start : end),
         };
     };
 
@@ -60,10 +60,10 @@ globalThis.TTV_DSL ??= {};
 
             this.name = new.target.name;
             this.loc = normalizeLocation(loc);
-            this.source = (null == source? '': String(source));
+            this.source = (null == source ? '' : String(source));
 
             // `Error` is not reliably subclassable across every engine this ships to.
-            if (typeof Error.captureStackTrace === 'function')
+            if(typeof Error.captureStackTrace === 'function')
                 Error.captureStackTrace(this, new.target);
         }
 
@@ -74,37 +74,37 @@ globalThis.TTV_DSL ??= {};
          * @return {String} a multi-line string, or just the header when no source is available
          */
         codeFrame({ context = CONTEXT_LINES, header = true } = {}) {
-            let head = `${ this.name }: ${ this.message } (${ this.loc.line }:${ this.loc.column })`;
+            const head = `${ this.name }: ${ this.message } (${ this.loc.line }:${ this.loc.column })`;
 
-            if (!this.source.length)
-                return (header? head: '');
+            if(!this.source.length)
+                return (header ? head : '');
 
-            let lines = this.source.split(/\r\n|\r|\n/),
-                target = clamp(this.loc.line, 1, lines.length),
-                first = clamp(target - context, 1, lines.length),
-                last = clamp(target + context, 1, lines.length),
-                gutter = String(last).length,
-                frame = [];
+            const lines = this.source.split(/\r\n|\r|\n/)
+                , target = clamp(this.loc.line, 1, lines.length)
+                , first = clamp(target - context, 1, lines.length)
+                , last = clamp(target + context, 1, lines.length)
+                , gutter = String(last).length
+                , frame = [];
 
-            for (let n = first; n <= last; ++n) {
-                let text = lines[n - 1],
-                    number = String(n).padStart(gutter, ' '),
-                    marker = (n === target? '>': ' ');
+            for(let n = first; n <= last; ++n) {
+                const text = lines[n - 1]
+                    , number = String(n).padStart(gutter, ' ')
+                    , marker = (n === target ? '>' : ' ');
 
                 frame.push(`${ marker } ${ number } | ${ text }`);
 
-                if (n !== target)
+                if(n !== target)
                     continue;
 
                 // The span may run past the end of the line (or be zero-width at EOF);
                 // always underline at least one column so the caret is visible.
-                let column = clamp(this.loc.column, 1, text.length + 1),
-                    width = clamp((this.loc.end - this.loc.start) || 1, 1, (text.length - column) + 2);
+                const column = clamp(this.loc.column, 1, text.length + 1)
+                    , width = clamp((this.loc.end - this.loc.start) || 1, 1, (text.length - column) + 2);
 
                 frame.push(`  ${ ' '.repeat(gutter) } | ${ ' '.repeat(column - 1) }${ '^'.repeat(width) }`);
             }
 
-            return (header? [head, ...frame]: frame).join('\n');
+            return (header ? [head, ...frame] : frame).join('\n');
         }
 
         /** A plain, structured-clone-safe view of the error, for `postMessage` and storage.
@@ -158,5 +158,5 @@ globalThis.TTV_DSL ??= {};
     };
 })();
 
-if (typeof module === 'object' && module?.exports)
+if(typeof module === 'object' && module?.exports)
     module.exports = globalThis.TTV_DSL;

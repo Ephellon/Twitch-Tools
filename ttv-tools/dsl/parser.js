@@ -25,7 +25,7 @@
 
 globalThis.TTV_DSL ??= {};
 
-if (typeof require === 'function' && typeof module === 'object') {
+if(typeof require === 'function' && typeof module === 'object') {
     require('./errors.js');
     require('./tokens.js');
     require('./tokenizer.js');
@@ -122,24 +122,24 @@ if (typeof require === 'function' && typeof module === 'object') {
 
     /** @param {Object} node @return {Boolean} true for an expression that can only be yes/no —
      * a comparison, `and`/`or`/`not`, or a `true`/`false` literal */
-    let isCondition = (node) => (false
+    const isCondition = (node) => (false
         || (NodeType.BinaryExpression === node?.type && CONDITION_OPERATORS.has(node.operator))
         || (NodeType.UnaryExpression === node?.type && 'not' === node.operator)
         || (NodeType.Literal === node?.type && typeof node.value === 'boolean'));
 
     /** @param {Object} node @return {Boolean} true for a template that still needs evaluating */
-    let isInterpolated = (node) => (NodeType.TemplateLiteral === node?.type && node.expressions.length > 0);
+    const isInterpolated = (node) => (NodeType.TemplateLiteral === node?.type && node.expressions.length > 0);
 
     /** @param {Object} node @return {Boolean} true for a statement that continues the chain
      * before it: the `when <test>` form, or `else` */
-    let isContinuation = (node) => ((NodeType.WhenStatement === node?.type && null === node.operator) || NodeType.ElseClause === node?.type);
+    const isContinuation = (node) => ((NodeType.WhenStatement === node?.type && null === node.operator) || NodeType.ElseClause === node?.type);
 
     /** Spans two locations into one.
      * @param {Object} from
      * @param {Object} to
      * @return {Object}
      */
-    let span = (from, to) => ({
+    const span = (from, to) => ({
         line: from.line,
         column: from.column,
         start: from.start,
@@ -203,16 +203,16 @@ if (typeof require === 'function' && typeof module === 'object') {
 
         /** @param {Number} [ahead = 0] @return {Object} */
         #peek(ahead = 0) {
-            let index = this.#index + ahead;
+            const index = this.#index + ahead;
 
-            return this.#tokens[index < this.#tokens.length? index: this.#tokens.length - 1];
+            return this.#tokens[index < this.#tokens.length ? index : this.#tokens.length - 1];
         }
 
         /** @return {Object} */
         #next() {
-            let token = this.#peek();
+            const token = this.#peek();
 
-            if (this.#index < this.#tokens.length - 1)
+            if(this.#index < this.#tokens.length - 1)
                 ++this.#index;
 
             return token;
@@ -228,7 +228,7 @@ if (typeof require === 'function' && typeof module === 'object') {
          * @return {?Object}
          */
         #accept(type) {
-            return (this.#at(type)? this.#next(): null);
+            return (this.#at(type) ? this.#next() : null);
         }
 
         /** Consumes the current token or fails.
@@ -237,7 +237,7 @@ if (typeof require === 'function' && typeof module === 'object') {
          * @return {Object}
          */
         #expect(type, what) {
-            if (this.#at(type))
+            if(this.#at(type))
                 return this.#next();
 
             return this.#fail(`Expected ${ what ?? type }, found ${ this.#describe(this.#peek()) }`);
@@ -245,22 +245,27 @@ if (typeof require === 'function' && typeof module === 'object') {
 
         /** @param {Object} token @return {String} */
         #describe(token) {
-            switch (token.type) {
-                case TokenType.EOF:
+            switch(token.type) {
+                case TokenType.EOF: {
                     return 'end of input';
+                }
 
-                case TokenType.NEWLINE:
+                case TokenType.NEWLINE: {
                     return 'end of line';
+                }
 
-                case TokenType.INDENT:
+                case TokenType.INDENT: {
                     return 'an indented block';
+                }
 
-                case TokenType.DEDENT:
+                case TokenType.DEDENT: {
                     return 'the end of a block';
+                }
 
-                default:
+                default: {
                     return JSON.stringify(token.lexeme);
-            }
+                }
+            } // switch token.type
         }
 
         /** Raises the tailored diagnostic for a poisoned reserved word. */
@@ -275,48 +280,48 @@ if (typeof require === 'function' && typeof module === 'object') {
 
         /** Skips insignificant tokens. */
         #skipNewlines() {
-            while (SKIPPABLE.has(this.#peek().type))
+            while(SKIPPABLE.has(this.#peek().type))
                 this.#next();
         }
 
         /** Skips item separators — newlines *and* commas. Used only inside a list context. */
         #skipSeparators() {
-            while (SEPARATORS.has(this.#peek().type))
+            while(SEPARATORS.has(this.#peek().type))
                 this.#next();
         }
 
         /** Panic-mode recovery: discard the rest of the broken line, and the block it
          * opened, so the next statement starts clean. */
         #synchronize() {
-            while (!this.#at(TokenType.NEWLINE, TokenType.EOF, TokenType.DEDENT))
+            while(!this.#at(TokenType.NEWLINE, TokenType.EOF, TokenType.DEDENT))
                 this.#next();
 
             this.#accept(TokenType.NEWLINE);
 
-            if (!this.#at(TokenType.INDENT))
+            if(!this.#at(TokenType.INDENT))
                 return;
 
             let depth = 0;
 
             do {
-                let type = this.#next().type;
+                const type = this.#next().type;
 
-                if (TokenType.INDENT === type)
+                if(TokenType.INDENT === type)
                     ++depth;
-                else if (TokenType.DEDENT === type)
+                else if(TokenType.DEDENT === type)
                     --depth;
-                else if (TokenType.EOF === type)
+                else if(TokenType.EOF === type)
                     return;
-            } while (depth > 0);
+            } while(depth > 0);
         }
 
         // -- program and blocks ------------------------------------------------
 
         /** @return {Object} a `Program` node */
         parseProgram() {
-            let start = this.#peek().loc,
-                body = this.#parseStatements(TokenType.EOF),
-                end = this.#peek().loc;
+            const start = this.#peek().loc
+                , body = this.#parseStatements(TokenType.EOF)
+                , end = this.#peek().loc;
 
             return AST.program(body, span(start, end));
         }
@@ -326,55 +331,55 @@ if (typeof require === 'function' && typeof module === 'object') {
          * @return {Array<Object>}
          */
         #parseStatements(terminator) {
-            let body = [];
+            const body = [];
 
-            while (true) {
+            while(true) {
                 this.#skipNewlines();
 
-                if (this.#at(terminator, TokenType.EOF))
+                if(this.#at(terminator, TokenType.EOF))
                     break;
 
                 // Only a fault can produce a stray INDENT here; a well-formed block was
                 // already consumed by whichever statement opened it.
-                if (this.#at(TokenType.INDENT)) {
+                if(this.#at(TokenType.INDENT)) {
                     this.#record(new DSLParseError('Unexpected indentation', this.#peek().loc, this.#source));
                     this.#synchronize();
 
                     continue;
                 }
 
-                let before = this.#index;
+                const before = this.#index;
 
                 try {
-                    let statement = this.#parseStatement();
+                    const statement = this.#parseStatement();
 
                     // The chain form of `when`, and `else`, are written as *siblings* of the
                     // `if` (or `when`) they continue, because that is how they read on the
                     // page. They are folded into that sibling's `alternate` here rather than
                     // being parsed as part of it, so the off-side rule stays uniform: every
                     // branch of a chain sits at the same indentation.
-                    if (isContinuation(statement) && this.#foldAlternate(body, statement))
+                    if(isContinuation(statement) && this.#foldAlternate(body, statement))
                         continue;
 
                     // The header describes the whole script, so it comes before anything the
                     // script does — and there is only one.
-                    if (NodeType.PluginHeader === statement.type && (body.length || this.#blockDepth > 0))
+                    if(NodeType.PluginHeader === statement.type && (body.length || this.#blockDepth > 0))
                         this.#fail('`plugin` must be the first statement of a script', { loc: statement.loc });
 
                     body.push(statement);
-                } catch (error) {
+                } catch(error) {
                     // A `DSLSyntaxError` can arrive here too: a template's `${ ... }` is
                     // tokenized lazily, by the parser, so a lexical fault inside one surfaces
                     // mid-parse. It is recorded and recovered from like any other fault on
                     // the line, rather than escaping a parse that promised to collect.
-                    if (!(error instanceof DSLParseError || error instanceof DSLSyntaxError))
+                    if(!(error instanceof DSLParseError || error instanceof DSLSyntaxError))
                         throw error;
 
                     this.#record(error);
                     this.#synchronize();
 
                     // A parser that fails without consuming anything would spin forever.
-                    if (this.#index === before)
+                    if(this.#index === before)
                         this.#next();
                 }
             }
@@ -389,10 +394,10 @@ if (typeof require === 'function' && typeof module === 'object') {
          * @return {Boolean} true when it was folded away; false leaves the caller to report
          */
         #foldAlternate(body, statement) {
-            let previous = body[body.length - 1],
-                spelling = (NodeType.ElseClause === statement.type? '`else`': '`when <test>`');
+            const previous = body[body.length - 1]
+                , spelling = (NodeType.ElseClause === statement.type ? '`else`' : '`when <test>`');
 
-            if (!previous || (NodeType.IfStatement !== previous.type && NodeType.WhenStatement !== previous.type)) {
+            if(!previous || (NodeType.IfStatement !== previous.type && NodeType.WhenStatement !== previous.type)) {
                 this.#record(new DSLParseError(`${ spelling } continues the \`if\` or \`when\` before it, but there is none here; either add one or use \`if\``, statement.loc, this.#source));
 
                 return false;
@@ -400,12 +405,12 @@ if (typeof require === 'function' && typeof module === 'object') {
 
             let target = previous;
 
-            while (target.alternate)
+            while(target.alternate)
                 target = target.alternate;
 
             // `else` closes the chain. A branch after it could never run, and silently
             // starting a fresh chain instead would hide that.
-            if (NodeType.ElseClause === target.type) {
+            if(NodeType.ElseClause === target.type) {
                 this.#record(new DSLParseError(`${ spelling } cannot follow \`else\`; \`else\` is always the last branch of a chain`, statement.loc, this.#source));
 
                 return true;
@@ -427,11 +432,11 @@ if (typeof require === 'function' && typeof module === 'object') {
         #parseBlock() {
             this.#expect(TokenType.NEWLINE, 'end of line');
 
-            if (!this.#at(TokenType.INDENT))
+            if(!this.#at(TokenType.INDENT))
                 return null;
 
-            let open = this.#next().loc,
-                body;
+            let open = this.#next().loc
+                , body;
 
             ++this.#blockDepth;
 
@@ -441,7 +446,7 @@ if (typeof require === 'function' && typeof module === 'object') {
                 --this.#blockDepth;
             }
 
-            let close = this.#peek().loc;
+            const close = this.#peek().loc;
 
             this.#accept(TokenType.DEDENT);
 
@@ -452,16 +457,16 @@ if (typeof require === 'function' && typeof module === 'object') {
 
         /** @return {Object} */
         #parseStatement() {
-            let token = this.#peek(),
-                parse = this.#statementParsers[token.type];
+            const token = this.#peek()
+                , parse = this.#statementParsers[token.type];
 
-            if (parse)
+            if(parse)
                 return parse.call(this, token);
 
             // Caught before anything else: `else`/`switch`/`calc` in statement position are
             // exactly the mistakes a reader arriving from another language makes, and the
             // generic "expected a statement" tells them nothing.
-            if (TokenType.RESERVED === token.type)
+            if(TokenType.RESERVED === token.type)
                 return this.#failReserved(token);
 
             // An all-caps bare word in statement position is a verb call. The decision is
@@ -472,10 +477,10 @@ if (typeof require === 'function' && typeof module === 'object') {
             // An arrow after the arguments binds the call's *result* — `FACT n -> rest` — so
             // the arguments stop just short of it (assignment is the only construct looser
             // than `or`).
-            if (TokenType.IDENT === token.type && this.#functions.has(token.value)) {
+            if(TokenType.IDENT === token.type && this.#functions.has(token.value)) {
                 let statement = this.#parseCall(token, LOWEST_PRECEDENCE + 1);
 
-                if (this.#at(TokenType.ARROW_LOCAL, TokenType.ARROW_PARENT))
+                if(this.#at(TokenType.ARROW_LOCAL, TokenType.ARROW_PARENT))
                     statement = this.#parseAssignmentTail(statement);
 
                 this.#expect(TokenType.NEWLINE, 'end of line');
@@ -483,7 +488,7 @@ if (typeof require === 'function' && typeof module === 'object') {
                 return AST.expressionStatement(statement, statement.loc);
             }
 
-            if (TokenType.IDENT === token.type && token.isUpper)
+            if(TokenType.IDENT === token.type && token.isUpper)
                 return this.#parseVerbStatement(token);
 
             return this.#parseExpressionStatement(token);
@@ -497,13 +502,13 @@ if (typeof require === 'function' && typeof module === 'object') {
          * accepting one would turn every misspelled verb into a silent no-op.
          */
         #parseExpressionStatement(token) {
-            let before = this.#index,
-                expression = null;
+            let before = this.#index
+                , expression = null;
 
             try {
                 expression = this.#parseExpression();
-            } catch (error) {
-                if (!(error instanceof DSLParseError))
+            } catch(error) {
+                if(!(error instanceof DSLParseError))
                     throw error;
 
                 this.#index = before;
@@ -513,7 +518,7 @@ if (typeof require === 'function' && typeof module === 'object') {
 
             // A host call may stand alone too: `&html.setText("#title", "hi")` is done for
             // what it does, exactly as a verb is.
-            if (NodeType.AssignmentExpression !== expression.type && NodeType.JSInvokeExpression !== expression.type && NodeType.CallExpression !== expression.type) {
+            if(NodeType.AssignmentExpression !== expression.type && NodeType.JSInvokeExpression !== expression.type && NodeType.CallExpression !== expression.type) {
                 this.#index = before;
 
                 return this.#fail(`Expected a statement, found ${ this.#describe(token) }`);
@@ -529,13 +534,13 @@ if (typeof require === 'function' && typeof module === 'object') {
             this.#refuseInFunction(token);
             this.#next();
 
-            let subject = this.#parseExpression(),
-                filter = null;
+            let subject = this.#parseExpression()
+                , filter = null;
 
-            if (this.#accept(TokenType.WITH))
+            if(this.#accept(TokenType.WITH))
                 filter = this.#parseExpression();
 
-            let body = this.#parseBlock();
+            const body = this.#parseBlock();
 
             return AST.awaitStatement(subject, filter, body, span(token.loc, (body ?? filter ?? subject).loc));
         }
@@ -544,7 +549,7 @@ if (typeof require === 'function' && typeof module === 'object') {
          * handler on every call, which is exactly the pile-up nested `await`s were fixed to
          * avoid, and a `using` would change grants mid-call. */
         #refuseInFunction(token) {
-            if (this.#inFunction)
+            if(this.#inFunction)
                 this.#fail(`\`${ token.lexeme }\` is not allowed inside a \`define\`; a function computes a value, it does not install handlers`, token);
         }
 
@@ -553,12 +558,12 @@ if (typeof require === 'function' && typeof module === 'object') {
          * @return {Object} the IDENT token
          */
         #expectOwnName(what) {
-            let token = this.#peek();
+            const token = this.#peek();
 
-            if (TokenType.IDENT !== token.type)
+            if(TokenType.IDENT !== token.type)
                 this.#fail(`Expected ${ what }, found ${ this.#describe(token) }`);
 
-            if (THIS_ALIASES.has(token.value) || !VARIABLE_PATTERN.test(token.value))
+            if(THIS_ALIASES.has(token.value) || !VARIABLE_PATTERN.test(token.value))
                 this.#fail(`${ what[0].toUpperCase() + what.slice(1) } needs a lower-case letter; ALL-CAPS names like \`${ token.value }\` are the host's constants and verbs`, token);
 
             return this.#next();
@@ -569,25 +574,25 @@ if (typeof require === 'function' && typeof module === 'object') {
         #parsePluginHeader(token) {
             this.#next();
 
-            let idToken = this.#peek();
+            const idToken = this.#peek();
 
-            if (TokenType.IDENT !== idToken.type || !PLUGIN_ID_PATTERN.test(idToken.value))
+            if(TokenType.IDENT !== idToken.type || !PLUGIN_ID_PATTERN.test(idToken.value))
                 this.#fail(`A plugin id is lower-case letters, digits and \`_\`, starting with a letter — e.g. \`plugin raid_shoutouts\`; found ${ this.#describe(idToken) }`, idToken);
 
             this.#next();
 
-            let fields = { id: idToken.value, name: null, description: null, frames: null, settings: [] };
+            const fields = { id: idToken.value, name: null, description: null, frames: null, settings: [] };
 
-            if (this.#accept(TokenType.DESCRIBE))
+            if(this.#accept(TokenType.DESCRIBE))
                 fields.name = this.#expect(TokenType.STRING, 'the plugin\'s name in quotes, after `--`').value;
 
             this.#expect(TokenType.NEWLINE, 'end of line');
 
-            if (this.#accept(TokenType.INDENT)) {
-                while (true) {
+            if(this.#accept(TokenType.INDENT)) {
+                while(true) {
                     this.#skipNewlines();
 
-                    if (this.#at(TokenType.DEDENT, TokenType.EOF))
+                    if(this.#at(TokenType.DEDENT, TokenType.EOF))
                         break;
 
                     this.#parsePluginLine(fields);
@@ -601,94 +606,98 @@ if (typeof require === 'function' && typeof module === 'object') {
 
         /** One line of a `plugin` header. */
         #parsePluginLine(fields) {
-            let token = this.#peek(),
-                word = (TokenType.SETTING === token.type? 'setting': (TokenType.IDENT === token.type? token.value: null));
+            const token = this.#peek()
+                , word = (TokenType.SETTING === token.type ? 'setting' : (TokenType.IDENT === token.type ? token.value : null));
 
-            switch (word) {
-                case 'about':
+            switch(word) {
+                case 'about': {
                     this.#next();
 
-                    if (null !== fields.description)
+                    if(null !== fields.description)
                         this.#fail('`about` is given twice', token);
 
                     fields.description = this.#expect(TokenType.STRING, 'the description in quotes').value;
                     this.#expect(TokenType.NEWLINE, 'end of line');
 
                     return;
+                }
 
-                case 'frames':
+                case 'frames': {
                     this.#next();
 
-                    if (null !== fields.frames)
+                    if(null !== fields.frames)
                         this.#fail('`frames` is given twice', token);
 
                     fields.frames = [];
 
                     do {
-                        let frame = this.#peek();
+                        const frame = this.#peek();
 
-                        if (TokenType.IDENT !== frame.type || !PLUGIN_FRAMES.has(frame.value))
+                        if(TokenType.IDENT !== frame.type || !PLUGIN_FRAMES.has(frame.value))
                             this.#fail(`Unknown frame ${ this.#describe(frame) }; a script runs in \`${ [...PLUGIN_FRAMES].join('`, `') }\``, frame);
 
                         this.#next();
 
-                        if (!fields.frames.includes(frame.value))
+                        if(!fields.frames.includes(frame.value))
                             fields.frames.push(frame.value);
-                    } while (this.#accept(TokenType.COMMA));
+                    } while(this.#accept(TokenType.COMMA));
 
                     this.#expect(TokenType.NEWLINE, 'end of line');
 
                     return;
+                }
 
-                case 'setting':
+                case 'setting': {
                     return this.#parseSettingDeclaration(fields);
+                }
 
-                default:
+                default: {
                     this.#fail(`A \`plugin\` header holds only \`about\`, \`frames\` and \`setting\` lines; found ${ this.#describe(token) }`, token);
-            }
+                }
+            } // switch word
         }
 
         /** `setting name: type default [-- "Label"]` + an optional block of limits/options. */
         #parseSettingDeclaration(fields) {
-            let start = this.#next(),
-                nameToken = this.#peek();
+            const start = this.#next()
+                , nameToken = this.#peek();
 
-            if (TokenType.IDENT !== nameToken.type || !SETTING_NAME_PATTERN.test(nameToken.value))
+            if(TokenType.IDENT !== nameToken.type || !SETTING_NAME_PATTERN.test(nameToken.value))
                 this.#fail(`A setting name is lower-case letters, digits and \`_\`, starting with a letter; found ${ this.#describe(nameToken) }`, nameToken);
 
-            if (fields.settings.some(entry => entry.name === nameToken.value))
+            if(fields.settings.some(entry => entry.name === nameToken.value))
                 this.#fail(`Setting \`${ nameToken.value }\` is declared twice`, nameToken);
 
             this.#next();
             this.#expect(TokenType.COLON, '`:` after the setting name');
 
-            let typeToken = this.#peek();
+            const typeToken = this.#peek();
 
-            if (TokenType.IDENT !== typeToken.type || !SETTING_TYPES.has(typeToken.value))
+            if(TokenType.IDENT !== typeToken.type || !SETTING_TYPES.has(typeToken.value))
                 this.#fail(`Unknown setting type ${ this.#describe(typeToken) }; use \`${ [...SETTING_TYPES].join('`, `') }\``, typeToken);
 
             this.#next();
 
-            let type = typeToken.value,
-                valueToken = this.#peek(),
-                value = this.#readSettingLiteral(`a default ${ type }`),
-                setting = { name: nameToken.value, type, default: value, label: null, loc: span(start.loc, valueToken.loc) };
+            const type = typeToken.value
+                , valueToken = this.#peek()
+                , value = this.#readSettingLiteral(`a default ${ type }`)
+                , setting = { name: nameToken.value, type, default: value, label: null, loc: span(start.loc, valueToken.loc) };
 
-            let expected = { checkbox: 'boolean', number: 'number', text: 'string', select: 'string' }[type];
+            const expected = { checkbox: 'boolean', number: 'number', text: "string", select: 'string' }[type];
 
-            if (typeof value !== expected)
+            if(typeof value !== expected)
                 this.#fail(`A \`${ type }\` setting's default is a ${ expected }; found ${ this.#describe(valueToken) }`, valueToken);
 
-            if (this.#accept(TokenType.DESCRIBE))
+            if(this.#accept(TokenType.DESCRIBE))
                 setting.label = this.#expect(TokenType.STRING, 'the setting\'s label in quotes, after `--`').value;
 
             this.#expect(TokenType.NEWLINE, 'end of line');
 
-            if (this.#accept(TokenType.INDENT)) {
-                while (true) {
+            if(this.#accept(TokenType.INDENT)) {
+                while(true) {
                     this.#skipNewlines();
 
-                    if (this.#at(TokenType.DEDENT, TokenType.EOF))
+                    if(this.#at(TokenType.DEDENT, TokenType.EOF))
                         break;
 
                     this.#parseSettingLine(setting);
@@ -697,19 +706,19 @@ if (typeof require === 'function' && typeof module === 'object') {
                 this.#accept(TokenType.DEDENT);
             }
 
-            if ('select' === type) {
-                if (!setting.options?.length)
+            if('select' === type) {
+                if(!setting.options?.length)
                     this.#fail(`Select setting \`${ setting.name }\` needs at least one \`option\``, { loc: setting.loc });
 
-                if (!setting.options.some(option => option.value === setting.default))
+                if(!setting.options.some(option => option.value === setting.default))
                     this.#fail(`Select setting \`${ setting.name }\` defaults to "${ setting.default }", which is not one of its options`, { loc: setting.loc });
             }
 
-            if ('number' === type) {
-                if (null != setting.min && null != setting.max && setting.min > setting.max)
+            if('number' === type) {
+                if(null != setting.min && null != setting.max && setting.min > setting.max)
                     this.#fail(`Setting \`${ setting.name }\` has \`min\` above \`max\``, { loc: setting.loc });
 
-                if ((null != setting.min && setting.default < setting.min) || (null != setting.max && setting.default > setting.max))
+                if((null != setting.min && setting.default < setting.min) || (null != setting.max && setting.default > setting.max))
                     this.#fail(`Setting \`${ setting.name }\` defaults to ${ setting.default }, outside its \`min\`/\`max\``, { loc: setting.loc });
             }
 
@@ -720,23 +729,23 @@ if (typeof require === 'function' && typeof module === 'object') {
          * "…"`, or `option "value" [-- "Label"]`. */
         #parseSettingLine(setting) {
             do {
-                let token = this.#peek(),
-                    key = (TokenType.IDENT === token.type? token.value: null),
-                    allowed = SETTING_KEYS[setting.type];
+                const token = this.#peek()
+                    , key = (TokenType.IDENT === token.type ? token.value : null)
+                    , allowed = SETTING_KEYS[setting.type];
 
-                if (!key || !allowed.includes(key))
-                    this.#fail(`A \`${ setting.type }\` setting takes ${ allowed.length? `\`${ allowed.join('`, `') }\``: 'nothing' } here; found ${ this.#describe(token) }`, token);
+                if(!key || !allowed.includes(key))
+                    this.#fail(`A \`${ setting.type }\` setting takes ${ allowed.length ? `\`${ allowed.join('`, `') }\`` : 'nothing' } here; found ${ this.#describe(token) }`, token);
 
                 this.#next();
 
-                if ('option' === key) {
-                    let valueToken = this.#peek(),
-                        value = this.#expect(TokenType.STRING, 'the option\'s value in quotes').value,
-                        label = (this.#accept(TokenType.DESCRIBE)? this.#expect(TokenType.STRING, 'the option\'s label in quotes, after `--`').value: value);
+                if('option' === key) {
+                    const valueToken = this.#peek()
+                        , value = this.#expect(TokenType.STRING, 'the option\'s value in quotes').value
+                        , label = (this.#accept(TokenType.DESCRIBE) ? this.#expect(TokenType.STRING, 'the option\'s label in quotes, after `--`').value : value);
 
                     setting.options ??= [];
 
-                    if (setting.options.some(option => option.value === value))
+                    if(setting.options.some(option => option.value === value))
                         this.#fail(`Option "${ value }" is listed twice`, valueToken);
 
                     setting.options.push({ value, label });
@@ -744,50 +753,53 @@ if (typeof require === 'function' && typeof module === 'object') {
                     continue;
                 }
 
-                if (key in setting)
+                if(key in setting)
                     this.#fail(`\`${ key }\` is given twice`, token);
 
-                let valueToken = this.#peek(),
-                    value = this.#readSettingLiteral(`a value for \`${ key }\``),
-                    expected = (('unit' === key || 'placeholder' === key)? 'string': 'number');
+                const valueToken = this.#peek()
+                    , value = this.#readSettingLiteral(`a value for \`${ key }\``)
+                    , expected = (('unit' === key || 'placeholder' === key) ? 'string' : 'number');
 
-                if (typeof value !== expected)
+                if(typeof value !== expected)
                     this.#fail(`\`${ key }\` takes a ${ expected }; found ${ this.#describe(valueToken) }`, valueToken);
 
-                if ('step' === key && !(value > 0))
+                if('step' === key && !(value > 0))
                     this.#fail('`step` must be above 0', valueToken);
 
                 setting[key] = value;
-            } while (this.#accept(TokenType.COMMA));
+            } while(this.#accept(TokenType.COMMA));
 
             this.#expect(TokenType.NEWLINE, 'end of line');
         }
 
         /** A plain literal in a header: a string, a boolean, or a (signed) number or duration. */
         #readSettingLiteral(what) {
-            let negative = !!this.#accept(TokenType.MINUS),
-                token = this.#peek();
+            const negative = !!this.#accept(TokenType.MINUS)
+                , token = this.#peek();
 
-            switch (token.type) {
+            switch(token.type) {
                 case TokenType.NUMBER:
-                case TokenType.DURATION:
+                case TokenType.DURATION: {
                     this.#next();
 
-                    return (negative? -token.value: token.value);
+                    return (negative ? -token.value : token.value);
+                }
 
                 case TokenType.STRING:
                 case TokenType.TRUE:
-                case TokenType.FALSE:
-                    if (negative)
+                case TokenType.FALSE: {
+                    if(negative)
                         break;
 
                     this.#next();
 
-                    return (TokenType.STRING === token.type? token.value: TokenType.TRUE === token.type);
+                    return (TokenType.STRING === token.type ? token.value : TokenType.TRUE === token.type);
+                }
 
-                default:
+                default: {
                     break;
-            }
+                }
+            } // switch token.type
 
             return this.#fail(`Expected ${ what }: a quoted string, a number, \`true\` or \`false\`; found ${ this.#describe(token) }`, token);
         }
@@ -796,32 +808,32 @@ if (typeof require === 'function' && typeof module === 'object') {
         #parseDefineStatement(token) {
             this.#next();
 
-            if (this.#blockDepth > 0 || this.#inFunction)
+            if(this.#blockDepth > 0 || this.#inFunction)
                 this.#fail('`define` is only allowed at the top level of a script', token);
 
-            let nameToken = this.#peek();
+            const nameToken = this.#peek();
 
             // A function is a verb the script defines, so it is named like one.
-            if (TokenType.IDENT !== nameToken.type || !nameToken.isUpper || nameToken.value in PRESENCE_WORDS)
+            if(TokenType.IDENT !== nameToken.type || !nameToken.isUpper || nameToken.value in PRESENCE_WORDS)
                 this.#fail(`A function is named in ALL-CAPS, like a verb — e.g. \`define TOREADABLE(mils)\`; found ${ this.#describe(nameToken) }`, nameToken);
 
             this.#next();
 
-            let name = nameToken.value;
+            const name = nameToken.value;
 
-            if (!(this.#at(TokenType.LPAREN) && this.#peek().loc.start === this.#peek(-1).loc.end))
+            if(!(this.#at(TokenType.LPAREN) && this.#peek().loc.start === this.#peek(-1).loc.end))
                 this.#fail(`Expected \`(\` straight after \`${ name }\``);
 
             this.#next();
 
-            let params = [];
+            const params = [];
 
             this.#skipSeparators();
 
-            while (!this.#at(TokenType.RPAREN, TokenType.EOF)) {
-                let param = this.#expectOwnName('a parameter name').value;
+            while(!this.#at(TokenType.RPAREN, TokenType.EOF)) {
+                const param = this.#expectOwnName('a parameter name').value;
 
-                if (params.includes(param))
+                if(params.includes(param))
                     this.#fail(`Parameter \`${ param }\` is listed twice`);
 
                 params.push(param);
@@ -830,22 +842,22 @@ if (typeof require === 'function' && typeof module === 'object') {
 
             this.#expect(TokenType.RPAREN, '`)` closing the parameter list');
 
-            let permissions = [];
+            const permissions = [];
 
-            if (this.#accept(TokenType.WITH)) {
-                while (this.#at(TokenType.PERMISSION, TokenType.COMMA)) {
-                    let grant = this.#next();
+            if(this.#accept(TokenType.WITH)) {
+                while(this.#at(TokenType.PERMISSION, TokenType.COMMA)) {
+                    const grant = this.#next();
 
-                    if (TokenType.PERMISSION === grant.type)
+                    if(TokenType.PERMISSION === grant.type)
                         permissions.push(grant.value);
                 }
 
-                if (!permissions.length)
+                if(!permissions.length)
                     this.#fail('`with` after a function lists the permissions it needs, e.g. `with +read:datetime +eval:calc`');
             }
 
-            let saved = { inFunction: this.#inFunction, loops: this.#loops },
-                body;
+            let saved = { inFunction: this.#inFunction, loops: this.#loops }
+                , body;
 
             this.#inFunction = true;
             this.#loops = [];
@@ -857,7 +869,7 @@ if (typeof require === 'function' && typeof module === 'object') {
                 this.#loops = saved.loops;
             }
 
-            if (null === body)
+            if(null === body)
                 this.#fail(`\`define ${ name }\` has no indented body`, token);
 
             return AST.defineStatement(name, params, permissions, body, span(token.loc, body.loc));
@@ -867,12 +879,12 @@ if (typeof require === 'function' && typeof module === 'object') {
         #parseReturnStatement(token) {
             this.#next();
 
-            if (!this.#inFunction)
+            if(!this.#inFunction)
                 this.#fail('`return` is only allowed inside a `define`', token);
 
             let argument = null;
 
-            if (!this.#at(TokenType.NEWLINE, TokenType.EOF, TokenType.DEDENT))
+            if(!this.#at(TokenType.NEWLINE, TokenType.EOF, TokenType.DEDENT))
                 argument = this.#parseExpression();
 
             this.#expect(TokenType.NEWLINE, 'end of line');
@@ -886,23 +898,23 @@ if (typeof require === 'function' && typeof module === 'object') {
 
             let label = null;
 
-            if (this.#at(TokenType.FORMAT) && 'as' === this.#peek().lexeme) {
+            if(this.#at(TokenType.FORMAT) && 'as' === this.#peek().lexeme) {
                 this.#next();
                 label = this.#expectOwnName('a loop label').value;
 
-                if (this.#loops.includes(label))
+                if(this.#loops.includes(label))
                     this.#fail(`A loop inside \`${ label }\` cannot reuse its label`);
 
                 this.#expect(TokenType.COLON, '`:` after the loop label');
             }
 
-            let first = this.#parseExpression(),
-                parts = { list: first };
+            let first = this.#parseExpression()
+                , parts = { list: first };
 
-            if (this.#accept(TokenType.SEMICOLON)) {
+            if(this.#accept(TokenType.SEMICOLON)) {
                 parts = { start: first, stop: this.#parseExpression() };
 
-                if (this.#accept(TokenType.SEMICOLON))
+                if(this.#accept(TokenType.SEMICOLON))
                     parts.step = this.#parseExpression();
             }
 
@@ -916,7 +928,7 @@ if (typeof require === 'function' && typeof module === 'object') {
                 this.#loops.pop();
             }
 
-            if (null === body)
+            if(null === body)
                 this.#fail('`for` has no indented body', token);
 
             return AST.forStatement(label, parts, body, span(token.loc, body.loc));
@@ -928,13 +940,13 @@ if (typeof require === 'function' && typeof module === 'object') {
 
             let label = null;
 
-            if (!this.#loops.length)
+            if(!this.#loops.length)
                 this.#fail(`\`${ token.lexeme }\` is only allowed inside a \`for\``, token);
 
-            if (this.#at(TokenType.IDENT)) {
-                let target = this.#next();
+            if(this.#at(TokenType.IDENT)) {
+                const target = this.#next();
 
-                if (!this.#loops.includes(target.value))
+                if(!this.#loops.includes(target.value))
                     this.#fail(`No enclosing loop is labelled \`${ target.value }\``, target);
 
                 label = target.value;
@@ -942,7 +954,7 @@ if (typeof require === 'function' && typeof module === 'object') {
 
             this.#expect(TokenType.NEWLINE, 'end of line');
 
-            return (TokenType.BREAK === token.type? AST.breakStatement(label, token.loc): AST.renewStatement(label, token.loc));
+            return (TokenType.BREAK === token.type ? AST.breakStatement(label, token.loc) : AST.renewStatement(label, token.loc));
         }
 
         /** `after <duration> [with <filter>]` + block — fires once. The duration is any
@@ -951,15 +963,15 @@ if (typeof require === 'function' && typeof module === 'object') {
             this.#refuseInFunction(token);
             this.#next();
 
-            let subject = this.#parseExpression(),
-                filter = null;
+            let subject = this.#parseExpression()
+                , filter = null;
 
-            if (this.#accept(TokenType.WITH))
+            if(this.#accept(TokenType.WITH))
                 filter = this.#parseExpression();
 
-            let body = this.#parseBlock();
+            const body = this.#parseBlock();
 
-            if (null === body)
+            if(null === body)
                 this.#record(new DSLParseError('`after` has no indented body', token.loc, this.#source));
 
             return AST.afterStatement(subject, filter, body, span(token.loc, (body ?? filter ?? subject).loc));
@@ -970,51 +982,51 @@ if (typeof require === 'function' && typeof module === 'object') {
             this.#refuseInFunction(token);
             this.#next();
 
-            let subjects = [],
-                permissions = [],
-                scopeMode = null,
-                description = null,
-                dangerous = null;
+            let subjects = []
+                , permissions = []
+                , scopeMode = null
+                , description = null
+                , dangerous = null;
 
             // Several subjects may sit on one line — `using <viewer> <everyone> <all>` —
             // with juxtaposition meaning "any of these". Grants may be interleaved with
             // them freely; they are read directly here rather than through
             // `#parseExpression`, which is what keeps a `+permission` from being a valid
             // operand anywhere else in the language.
-            while (!this.#at(TokenType.NEWLINE, TokenType.EOF, TokenType.DEDENT)) {
-                if (this.#accept(TokenType.COMMA))
+            while(!this.#at(TokenType.NEWLINE, TokenType.EOF, TokenType.DEDENT)) {
+                if(this.#accept(TokenType.COMMA))
                     continue;
 
                 // `-- "why"` — says what the block is for, typically why it asks for the
                 // grants it does. Always last: whatever follows the string is an error, so a
                 // description can never swallow a subject that was meant to be live.
-                if (this.#at(TokenType.DESCRIBE)) {
-                    let marker = this.#next(),
-                        text = this.#peek();
+                if(this.#at(TokenType.DESCRIBE)) {
+                    const marker = this.#next()
+                        , text = this.#peek();
 
-                    if (TokenType.STRING !== text.type)
+                    if(TokenType.STRING !== text.type)
                         this.#fail('`--` in a `using` header must be followed by a quoted description, e.g. `-- "needed for the raid timer"`', marker);
 
                     description = this.#next().value;
 
-                    if (!this.#at(TokenType.NEWLINE, TokenType.EOF, TokenType.DEDENT))
+                    if(!this.#at(TokenType.NEWLINE, TokenType.EOF, TokenType.DEDENT))
                         this.#fail('A `--` description ends the `using` header; move anything after it before the `--`');
 
                     break;
                 }
 
-                if (this.#at(TokenType.PERMISSION)) {
-                    let grant = this.#next();
+                if(this.#at(TokenType.PERMISSION)) {
+                    const grant = this.#next();
 
                     // `+scope` looks like a grant but is a switch: it changes where `->` and
                     // `=>` put names, and grants nothing. Kept out of `permissions` so it can
                     // never satisfy a `requirePermission('scope')`.
-                    if ('scope' === grant.value || grant.value.startsWith('scope:'))
+                    if('scope' === grant.value || grant.value.startsWith('scope:'))
                         scopeMode = this.#readScopeMode(grant, scopeMode);
                     else
                         permissions.push(grant.value);
 
-                    if (null === dangerous && DESCRIBED_ACTIONS.has(grant.value.split(':')[0]))
+                    if(null === dangerous && DESCRIBED_ACTIONS.has(grant.value.split(':')[0]))
                         dangerous = grant;
 
                     continue;
@@ -1025,15 +1037,15 @@ if (typeof require === 'function' && typeof module === 'object') {
 
             // A grant that can change the page or run code has to say why, in the header
             // itself — that text is what a host shows when it asks the viewer to allow it.
-            if (null !== dangerous && null === description)
+            if(null !== dangerous && null === description)
                 this.#fail(`\`+${ dangerous.value }\` needs a description saying why: end the header with \`-- "..."\``, dangerous);
 
             // A header with no subject keeps the current one. That is what lets a grant or
             // a `+scope` switch stand on its own, without dragging a subject change in.
-            if (!subjects.length && !permissions.length && null === scopeMode && null === description)
+            if(!subjects.length && !permissions.length && null === scopeMode && null === description)
                 this.#fail('`using` needs a subject, a `+permission`, `+scope`, or a `-- "description"`', token);
 
-            let body = this.#parseBlock();
+            const body = this.#parseBlock();
 
             return AST.usingStatement(subjects, body, span(token.loc, (body ?? token).loc), permissions, scopeMode, description);
         }
@@ -1044,15 +1056,15 @@ if (typeof require === 'function' && typeof module === 'object') {
          * @return {String}
          */
         #readScopeMode(grant, previous) {
-            if (this.#blockDepth > 0)
+            if(this.#blockDepth > 0)
                 this.#fail('`+scope` sets the binding rule for a whole script, so it may only appear in a top-level `using`', grant);
 
-            if (null !== previous)
+            if(null !== previous)
                 this.#fail('`+scope` may only be given once per `using`', grant);
 
-            let mode = ('scope' === grant.value? DEFAULT_SCOPE_MODE: grant.value.slice('scope:'.length));
+            const mode = ('scope' === grant.value ? DEFAULT_SCOPE_MODE : grant.value.slice('scope:'.length));
 
-            if (!SCOPE_MODES.has(mode))
+            if(!SCOPE_MODES.has(mode))
                 this.#fail(`Unknown scope mode ${ JSON.stringify(mode) }; expected \`+scope:local\`, \`+scope:global\` or \`+scope:universal\``, grant);
 
             return mode;
@@ -1067,15 +1079,15 @@ if (typeof require === 'function' && typeof module === 'object') {
         #parseWhenStatement(token) {
             this.#next();
 
-            let discriminant = this.#parseWhenHead(),
-                dangling = this.#dangling;
+            const discriminant = this.#parseWhenHead()
+                , dangling = this.#dangling;
 
             this.#dangling = null;
 
-            if (!dangling) {
-                let body = this.#parseBlock();
+            if(!dangling) {
+                const body = this.#parseBlock();
 
-                if (null === body)
+                if(null === body)
                     this.#record(new DSLParseError('`when` has no indented body', token.loc, this.#source));
 
                 return AST.whenChain(discriminant, body, span(token.loc, (body ?? discriminant).loc));
@@ -1084,20 +1096,20 @@ if (typeof require === 'function' && typeof module === 'object') {
             this.#expect(TokenType.NEWLINE, 'end of line after `when ... is`');
             this.#expect(TokenType.INDENT, 'an indented list of `when` cases');
 
-            let cases = [];
+            const cases = [];
 
             this.#skipNewlines();
 
-            while (!this.#at(TokenType.DEDENT, TokenType.EOF)) {
+            while(!this.#at(TokenType.DEDENT, TokenType.EOF)) {
                 cases.push(this.#parseWhenCase());
                 this.#skipNewlines();
             }
 
-            let close = this.#peek().loc;
+            const close = this.#peek().loc;
 
             this.#accept(TokenType.DEDENT);
 
-            if (!cases.length)
+            if(!cases.length)
                 this.#fail('`when ... is` needs at least one case', { loc: span(token.loc, close) });
 
             return AST.whenStatement(discriminant, dangling.lexeme, cases, span(token.loc, close));
@@ -1118,9 +1130,9 @@ if (typeof require === 'function' && typeof module === 'object') {
         /** `<value>:` + block. A `*` label is the default for free: comparing anything
          * against the wildcard already means "is present". */
         #parseWhenCase() {
-            let test = this.#parseExpression(),
-                colon = this.#expect(TokenType.COLON, '`:` after a `when` case label'),
-                body = this.#parseBlock();
+            const test = this.#parseExpression()
+                , colon = this.#expect(TokenType.COLON, '`:` after a `when` case label')
+                , body = this.#parseBlock();
 
             return AST.whenCase(test, body, span(test.loc, (body ?? colon).loc));
         }
@@ -1132,10 +1144,10 @@ if (typeof require === 'function' && typeof module === 'object') {
         #parseWithStatement(token) {
             this.#next();
 
-            let filter = this.#parseExpression(),
-                body = this.#parseBlock();
+            const filter = this.#parseExpression()
+                , body = this.#parseBlock();
 
-            if (null === body)
+            if(null === body)
                 this.#record(new DSLParseError('`with` has no indented body', token.loc, this.#source));
 
             return AST.withStatement(filter, body, span(token.loc, (body ?? filter).loc));
@@ -1150,22 +1162,22 @@ if (typeof require === 'function' && typeof module === 'object') {
         #parseElseStatement(token) {
             this.#next();
 
-            if (this.#accept(TokenType.IF)) {
-                let test = this.#parseExpression(),
-                    body = this.#parseBlock();
+            if(this.#accept(TokenType.IF)) {
+                const test = this.#parseExpression()
+                    , body = this.#parseBlock();
 
-                if (null === body)
+                if(null === body)
                     this.#record(new DSLParseError('`else if` has no indented body', token.loc, this.#source));
 
                 return AST.whenChain(test, body, span(token.loc, (body ?? test).loc));
             }
 
-            if (this.#at(TokenType.WHEN))
+            if(this.#at(TokenType.WHEN))
                 this.#fail('`else when` is not a thing; write `when <test>` or `else if <test>` for another branch', this.#peek());
 
-            let body = this.#parseBlock();
+            const body = this.#parseBlock();
 
-            if (null === body)
+            if(null === body)
                 this.#record(new DSLParseError('`else` has no indented body', token.loc, this.#source));
 
             return AST.elseClause(body, span(token.loc, (body ?? token).loc));
@@ -1175,10 +1187,10 @@ if (typeof require === 'function' && typeof module === 'object') {
         #parseIfStatement(token) {
             this.#next();
 
-            let test = this.#parseExpression(),
-                body = this.#parseBlock();
+            const test = this.#parseExpression()
+                , body = this.#parseBlock();
 
-            if (null === body)
+            if(null === body)
                 this.#record(new DSLParseError('`if` has no indented body', token.loc, this.#source));
 
             return AST.ifStatement(test, body, span(token.loc, (body ?? test).loc));
@@ -1188,7 +1200,7 @@ if (typeof require === 'function' && typeof module === 'object') {
         #parseGotoStatement(token) {
             this.#next();
 
-            let target = this.#parseExpression();
+            const target = this.#parseExpression();
 
             this.#expect(TokenType.NEWLINE, 'end of line');
 
@@ -1201,7 +1213,7 @@ if (typeof require === 'function' && typeof module === 'object') {
 
             let argument = null;
 
-            if (!this.#at(TokenType.NEWLINE, TokenType.EOF, TokenType.DEDENT))
+            if(!this.#at(TokenType.NEWLINE, TokenType.EOF, TokenType.DEDENT))
                 argument = this.#parseExpression();
 
             this.#expect(TokenType.NEWLINE, 'end of line');
@@ -1237,11 +1249,11 @@ if (typeof require === 'function' && typeof module === 'object') {
         #parseExpression(minimum = LOWEST_PRECEDENCE) {
             let left = this.#parseUnary();
 
-            while (true) {
-                let token = this.#peek(),
-                    operator = OPERATORS[token.type];
+            while(true) {
+                const token = this.#peek()
+                    , operator = OPERATORS[token.type];
 
-                if (!operator || operator.precedence < minimum)
+                if(!operator || operator.precedence < minimum)
                     break;
 
                 this.#next();
@@ -1249,7 +1261,7 @@ if (typeof require === 'function' && typeof module === 'object') {
                 // `when .command is` — a comparison with nothing after it is the switch
                 // head. Legal only where `#danglingAllowed` says so; everywhere else the
                 // right operand is parsed and the missing one reported as usual.
-                if (this.#danglingAllowed && this.#at(TokenType.NEWLINE) && (TokenType.IS === token.type || TokenType.IN === token.type)) {
+                if(this.#danglingAllowed && this.#at(TokenType.NEWLINE) && (TokenType.IS === token.type || TokenType.IN === token.type)) {
                     this.#dangling = token;
 
                     break;
@@ -1260,16 +1272,16 @@ if (typeof require === 'function' && typeof module === 'object') {
                 // non-associativity without a second row in the table. `is or` can mean
                 // nothing else — `or` never starts an operand — so reading it as "or equal"
                 // steals no existing sentence.
-                if (TokenType.IS === token.type && (this.#at(TokenType.COMPARE) || (this.#at(TokenType.OR) && TokenType.COMPARE === this.#peek(1).type))) {
-                    let inclusive = !!this.#accept(TokenType.OR),
-                        comparison = (inclusive? 'or ': '') + this.#next().lexeme,
-                        right = this.#parseExpression(operator.precedence + 1);
+                if(TokenType.IS === token.type && (this.#at(TokenType.COMPARE) || (this.#at(TokenType.OR) && TokenType.COMPARE === this.#peek(1).type))) {
+                    const inclusive = !!this.#accept(TokenType.OR)
+                        , comparison = (inclusive ? 'or ' : '') + this.#next().lexeme
+                        , right = this.#parseExpression(operator.precedence + 1);
 
                     left = AST.binaryExpression(comparison, left, right, span(left.loc, right.loc));
 
-                    let ahead = OPERATORS[this.#peek().type];
+                    const ahead = OPERATORS[this.#peek().type];
 
-                    if (ahead && ahead.precedence === operator.precedence)
+                    if(ahead && ahead.precedence === operator.precedence)
                         this.#fail('`is` is not associative; parenthesize to say which comparison comes first');
 
                     continue;
@@ -1279,27 +1291,27 @@ if (typeof require === 'function' && typeof module === 'object') {
                 // `await (.command is "so") where ("moderator" in .badges)` — it filters a
                 // one-item list of `true`, finds nothing, and the line silently never fires.
                 // That is always a mistake for a condition, so say so here.
-                if (TokenType.WHERE === token.type && isCondition(left))
+                if(TokenType.WHERE === token.type && isCondition(left))
                     this.#fail(`\`${ token.lexeme }\` filters a list, but what comes before it is a yes/no condition. To add a condition, use \`with\` after \`await\` — \`await (.command is "so") with ("moderator" in .badges)\` — or \`and\``, token);
 
                 // A left-associative operator forbids its own precedence on the right, so
                 // `a or b or c` groups as `(a or b) or c`. A non-associative one does the
                 // same, and then rejects a repeat outright.
-                let next = (Associativity.RIGHT === operator.associativity? operator.precedence: operator.precedence + 1),
-                    right = this.#parseExpression(next);
+                const next = (Associativity.RIGHT === operator.associativity ? operator.precedence : operator.precedence + 1)
+                    , right = this.#parseExpression(next);
 
-                if (TokenType.IS === token.type)
+                if(TokenType.IS === token.type)
                     this.#rejectInterpolatedComparison(left, right, token);
 
-                let build = BINARY_BUILDERS[token.type],
-                    loc = span(left.loc, right.loc);
+                const build = BINARY_BUILDERS[token.type]
+                    , loc = span(left.loc, right.loc);
 
-                left = (build? build(left, right, loc, token): AST.binaryExpression(operator.lexeme, left, right, loc));
+                left = (build ? build(left, right, loc, token) : AST.binaryExpression(operator.lexeme, left, right, loc));
 
-                if (Associativity.NONE === operator.associativity) {
-                    let ahead = OPERATORS[this.#peek().type];
+                if(Associativity.NONE === operator.associativity) {
+                    const ahead = OPERATORS[this.#peek().type];
 
-                    if (ahead && ahead.precedence === operator.precedence)
+                    if(ahead && ahead.precedence === operator.precedence)
                         this.#fail(`\`${ operator.lexeme }\` is not associative; parenthesize to say which comparison comes first`);
                 }
             }
@@ -1309,16 +1321,16 @@ if (typeof require === 'function' && typeof module === 'object') {
             // expression — there is nothing for precedence climbing to climb. Gating on the
             // outermost level is what makes it loosest for free, and is why `(5:00 -> a)`
             // works while `1st <| .links -> a` binds the piped result rather than `.links`.
-            if (LOWEST_PRECEDENCE === minimum && this.#at(TokenType.ARROW_LOCAL, TokenType.ARROW_PARENT))
+            if(LOWEST_PRECEDENCE === minimum && this.#at(TokenType.ARROW_LOCAL, TokenType.ARROW_PARENT))
                 return this.#parseAssignmentTail(left);
 
             // `.size above 50` — the `is` was left out.
-            if (LOWEST_PRECEDENCE === minimum && this.#at(TokenType.COMPARE))
+            if(LOWEST_PRECEDENCE === minimum && this.#at(TokenType.COMPARE))
                 this.#parsePrimary();
 
             // A `-` sitting after a complete expression can only have been meant as
             // subtraction. Saying where arithmetic lives beats "expected end of line".
-            if (LOWEST_PRECEDENCE === minimum && this.#at(TokenType.MINUS))
+            if(LOWEST_PRECEDENCE === minimum && this.#at(TokenType.MINUS))
                 this.#fail('arithmetic only works inside `calc( ... )`, e.g. `calc(a - b)`; it needs the `eval:calc` permission');
 
             return left;
@@ -1326,27 +1338,27 @@ if (typeof require === 'function' && typeof module === 'object') {
 
         /** `<value> -> name` / `<value> => name`. */
         #parseAssignmentTail(value) {
-            let arrow = this.#next(),
-                target = this.#peek();
+            const arrow = this.#next()
+                , target = this.#peek();
 
-            if (TokenType.IDENT !== target.type)
+            if(TokenType.IDENT !== target.type)
                 this.#fail(`Expected a variable name after \`${ arrow.lexeme }\`, found ${ this.#describe(target) }`);
 
             this.#next();
 
-            let name = target.value;
+            const name = target.value;
 
             // Enforced here, at the binding site. A reference site cannot reject anything:
             // a name with a lower-case letter resolves variable-then-constant, an ALL-CAPS
             // one resolves constant-only. The subject aliases are only ever read, so they are
             // refused as targets by name rather than by shape.
-            if (THIS_ALIASES.has(name))
+            if(THIS_ALIASES.has(name))
                 this.#fail(`\`${ name }\` always means the current subject and cannot be bound`, target);
 
-            if (!VARIABLE_PATTERN.test(name))
+            if(!VARIABLE_PATTERN.test(name))
                 this.#fail(`A variable name needs a lower-case letter; ALL-CAPS names like \`${ name }\` are the host's constants and verbs`, target);
 
-            if (this.#at(TokenType.ARROW_LOCAL, TokenType.ARROW_PARENT))
+            if(this.#at(TokenType.ARROW_LOCAL, TokenType.ARROW_PARENT))
                 this.#fail('Chained assignment is not allowed; bind one name per expression');
 
             return AST.assignmentExpression(name, arrow.lexeme, value, span(value.loc, target.loc));
@@ -1360,19 +1372,19 @@ if (typeof require === 'function' && typeof module === 'object') {
          * would make the comparison depend on `stringify`'s rendering rules rather than on
          * anything the script said. */
         #rejectInterpolatedComparison(left, right, token) {
-            if (isInterpolated(left) || isInterpolated(right))
+            if(isInterpolated(left) || isInterpolated(right))
                 this.#fail('`is` does not accept a template with `${ ... }` in it; compare against a string, or bind the template to a name first', token);
         }
 
         /** `not <expr>` / `-<expr>` / `=<expr>` */
         #parseUnary() {
-            let token = this.#peek();
+            const token = this.#peek();
 
-            if (this.#at(TokenType.NOT, TokenType.MINUS, TokenType.EXACT)) {
+            if(this.#at(TokenType.NOT, TokenType.MINUS, TokenType.EXACT)) {
                 this.#next();
 
-                let argument = this.#parseUnary(),
-                    operator = (TokenType.NOT === token.type? 'not': TokenType.EXACT === token.type? '=': '-');
+                const argument = this.#parseUnary()
+                    , operator = (TokenType.NOT === token.type ? 'not' : TokenType.EXACT === token.type ? '=' : '-');
 
                 return AST.unaryExpression(operator, argument, span(token.loc, argument.loc));
             }
@@ -1387,8 +1399,8 @@ if (typeof require === 'function' && typeof module === 'object') {
          * @return {Object}
          */
         #parseMembers(object) {
-            while (this.#at(TokenType.SELECTOR_CONTEXT) && this.#peek().loc.start === object.loc.end) {
-                let property = this.#next();
+            while(this.#at(TokenType.SELECTOR_CONTEXT) && this.#peek().loc.start === object.loc.end) {
+                const property = this.#next();
 
                 object = AST.memberExpression(object, property.value, span(object.loc, property.loc));
             }
@@ -1398,120 +1410,138 @@ if (typeof require === 'function' && typeof module === 'object') {
 
         /** @return {Object} */
         #parsePrimary() {
-            let token = this.#peek();
+            const token = this.#peek();
 
-            switch (token.type) {
+            switch(token.type) {
                 case TokenType.NUMBER:
-                case TokenType.STRING:
+                case TokenType.STRING: {
                     this.#next();
 
                     return AST.literal(token.value, token.lexeme, token.loc);
+                }
 
                 case TokenType.TRUE:
-                case TokenType.FALSE:
+                case TokenType.FALSE: {
                     this.#next();
 
                     return AST.literal(TokenType.TRUE === token.type, token.lexeme, token.loc);
+                }
 
-                case TokenType.DURATION:
+                case TokenType.DURATION: {
                     this.#next();
 
                     return AST.duration(token.value, token.loc);
+                }
 
-                case TokenType.ORDINAL:
+                case TokenType.ORDINAL: {
                     this.#next();
 
                     return AST.ordinalIndex(token.value, token.loc);
+                }
 
-                case TokenType.WILDCARD:
+                case TokenType.WILDCARD: {
                     // `* from ( ... )` — `*` is ANYTHING, so "anything from" is `any from`.
-                    if (TokenType.FROM === this.#peek(1).type)
+                    if(TokenType.FROM === this.#peek(1).type)
                         return this.#parseAnyFrom();
 
                     this.#next();
 
                     return AST.wildcard(token.loc);
+                }
 
-                case TokenType.TEMPLATE:
+                case TokenType.TEMPLATE: {
                     this.#next();
 
                     return this.#buildTemplate(token);
+                }
 
-                case TokenType.ANY:
+                case TokenType.ANY: {
                     return this.#parseAnyFrom();
+                }
 
-                case TokenType.LPAREN:
+                case TokenType.LPAREN: {
                     return this.#parseGroup();
+                }
 
-                case TokenType.JS_PATH:
+                case TokenType.JS_PATH: {
                     return this.#parseJSInvoke();
+                }
 
-                case TokenType.CALC:
+                case TokenType.CALC: {
                     return this.#parseCalc();
+                }
 
-                case TokenType.IDENT:
+                case TokenType.IDENT: {
                     // `POST TOREADABLE wait_time` — a defined function, read like a verb.
                     // Inside an expression its arguments stop before `%`/`as`, the
                     // comparisons and the logic words, so `TOREADABLE x as "mm:ss"` formats
                     // the result rather than the argument.
-                    if (this.#functions.has(token.value))
+                    if(this.#functions.has(token.value))
                         return this.#parseCall(token, CALL_ARGUMENT_PRECEDENCE);
 
                     this.#next();
 
                     // `_` and its long-winded spellings are the subject itself — the same
                     // thing `.prop` reads a property from, minus the read.
-                    if (THIS_ALIASES.has(token.value))
+                    if(THIS_ALIASES.has(token.value))
                         return AST.thisExpression(token.loc);
 
                     // `ANYTHING` / `SOMETHING` / `NOTHING` are presence tests, the same kind
                     // of value `*` is. Resolved here rather than through the constant table so
                     // a host cannot shadow them.
-                    if (token.value in PRESENCE_WORDS)
+                    if(token.value in PRESENCE_WORDS)
                         return AST.wildcard(token.loc, PRESENCE_WORDS[token.value]);
 
                     return AST.identifier(token.value, !!token.isUpper, token.loc);
+                }
 
                 case TokenType.SETTING: {
                     this.#next();
 
                     // `setting.delay` — the `.name` glued on, like any property read.
-                    if (!(this.#at(TokenType.SELECTOR_CONTEXT) && this.#peek().loc.start === token.loc.end))
+                    if(!(this.#at(TokenType.SELECTOR_CONTEXT) && this.#peek().loc.start === token.loc.end))
                         this.#fail('A setting is read as `setting.name`', token);
 
-                    let property = this.#next();
+                    const property = this.#next();
 
                     return AST.settingRead(property.value, span(token.loc, property.loc));
                 }
 
-                case TokenType.COUNTER:
+                case TokenType.COUNTER: {
                     this.#next();
 
-                    if (!this.#loops.length)
+                    if(!this.#loops.length)
                         this.#fail('`$` is the loop counter, and there is no `for` here', token);
 
                     return AST.counter(token.loc);
+                }
 
-                case TokenType.RESERVED:
+                case TokenType.RESERVED: {
                     return this.#failReserved(token);
+                }
 
-                case TokenType.COMPARE:
+                case TokenType.COMPARE: {
                     return this.#fail(`\`${ token.lexeme }\` only follows \`is\`, as in \`.raid_size is ${ token.lexeme } 50\` or \`.raid_size is or ${ token.lexeme } 50\``, token);
+                }
 
-                case TokenType.PERMISSION:
+                case TokenType.PERMISSION: {
                     return this.#fail('A `+permission` may only appear in a `using` header', token);
+                }
 
-                case TokenType.DESCRIBE:
+                case TokenType.DESCRIBE: {
                     return this.#fail('A `-- "description"` may only end a `using` header', token);
+                }
 
-                case TokenType.COLON:
+                case TokenType.COLON: {
                     return this.#fail(COLON_MESSAGE, token);
+                }
 
-                default:
+                default: {
                     break;
-            }
+                }
+            } // switch token.type
 
-            if (token.type in SELECTOR_KINDS)
+            if(token.type in SELECTOR_KINDS)
                 return this.#parseSelector();
 
             return this.#fail(`Expected an expression, found ${ this.#describe(token) }`);
@@ -1524,24 +1554,24 @@ if (typeof require === 'function' && typeof module === 'object') {
          * segment list to the runtime, which walks a host-supplied binding table. A script
          * naming a path the host never registered fails loudly, exactly as `DISCORD` does. */
         #parseJSInvoke() {
-            let token = this.#next();
+            const token = this.#next();
 
             // `&Math.PI` — no parentheses glued on — reads a constant. `&Math.max(...)` calls.
-            if (!(this.#at(TokenType.LPAREN) && this.#peek().loc.start === token.loc.end))
+            if(!(this.#at(TokenType.LPAREN) && this.#peek().loc.start === token.loc.end))
                 return AST.jsInvokeExpression(token.value, null, token.loc);
 
             this.#expect(TokenType.LPAREN, '`(` after a `&` host call');
 
-            let args = [];
+            const args = [];
 
             this.#skipSeparators();
 
-            while (!this.#at(TokenType.RPAREN, TokenType.EOF)) {
+            while(!this.#at(TokenType.RPAREN, TokenType.EOF)) {
                 args.push(this.#parseExpression());
                 this.#skipSeparators();
             }
 
-            let close = this.#expect(TokenType.RPAREN, '`)` closing the `&` argument list').loc;
+            const close = this.#expect(TokenType.RPAREN, '`)` closing the `&` argument list').loc;
 
             return AST.jsInvokeExpression(token.value, args, span(token.loc, close));
         }
@@ -1555,19 +1585,19 @@ if (typeof require === 'function' && typeof module === 'object') {
          * error; write `(-2) ** 2` or `-(2 ** 2)`. Operands are ordinary DSL values:
          * numbers, durations, variables, `.prop`, `#prop`, host calls. */
         #parseCalc() {
-            let start = this.#next().loc;
+            const start = this.#next().loc;
 
-            if (!this.#at(TokenType.LPAREN))
+            if(!this.#at(TokenType.LPAREN))
                 this.#fail('`calc` needs its arithmetic in parentheses, e.g. `calc(.raid_size * 2)`');
 
             this.#next();
             this.#skipSeparators();
 
-            let expression = this.#parseSum();
+            const expression = this.#parseSum();
 
             this.#skipSeparators();
 
-            let close = this.#expect(TokenType.RPAREN, '`)` closing `calc(`, or an arithmetic operator').loc;
+            const close = this.#expect(TokenType.RPAREN, '`)` closing `calc(`, or an arithmetic operator').loc;
 
             return AST.calcExpression(expression, span(start, close));
         }
@@ -1576,15 +1606,15 @@ if (typeof require === 'function' && typeof module === 'object') {
         #acceptArith(...operators) {
             this.#skipSeparators();
 
-            return ((this.#at(TokenType.ARITH) && operators.includes(this.#peek().value))? this.#next(): null);
+            return ((this.#at(TokenType.ARITH) && operators.includes(this.#peek().value)) ? this.#next() : null);
         }
 
         #parseSum() {
-            let left = this.#parseProduct(),
-                operator;
+            let left = this.#parseProduct()
+                , operator;
 
-            while ((operator = this.#acceptArith('+', '-'))) {
-                let right = this.#parseProduct();
+            while((operator = this.#acceptArith('+', '-'))) {
+                const right = this.#parseProduct();
 
                 left = AST.arithmeticExpression(operator.value, left, right, span(left.loc, right.loc));
             }
@@ -1593,11 +1623,11 @@ if (typeof require === 'function' && typeof module === 'object') {
         }
 
         #parseProduct() {
-            let left = this.#parseArithUnary(),
-                operator;
+            let left = this.#parseArithUnary()
+                , operator;
 
-            while ((operator = this.#acceptArith('*', '/', '%'))) {
-                let right = this.#parseArithUnary();
+            while((operator = this.#acceptArith('*', '/', '%'))) {
+                const right = this.#parseArithUnary();
 
                 left = AST.arithmeticExpression(operator.value, left, right, span(left.loc, right.loc));
             }
@@ -1606,14 +1636,14 @@ if (typeof require === 'function' && typeof module === 'object') {
         }
 
         #parseArithUnary() {
-            let operator = this.#acceptArith('-', '+');
+            const operator = this.#acceptArith('-', '+');
 
-            if (!operator)
+            if(!operator)
                 return this.#parsePower();
 
-            let argument = this.#parseArithSigned();
+            const argument = this.#parseArithSigned();
 
-            if (this.#at(TokenType.ARITH) && '**' === this.#peek().value)
+            if(this.#at(TokenType.ARITH) && '**' === this.#peek().value)
                 this.#fail('A unary `-` or `+` cannot be the base of `**`; parenthesize: `(-2) ** 2` or `-(2 ** 2)`');
 
             return AST.arithmeticExpression(operator.value, null, argument, span(operator.loc, argument.loc));
@@ -1622,24 +1652,24 @@ if (typeof require === 'function' && typeof module === 'object') {
         /** The operand of a unary sign: more signs, then a bare operand — never `**`, which
          * is what leaves a following `**` visible to the check above. */
         #parseArithSigned() {
-            let operator = this.#acceptArith('-', '+');
+            const operator = this.#acceptArith('-', '+');
 
-            if (!operator)
+            if(!operator)
                 return this.#parseArithOperand();
 
-            let argument = this.#parseArithSigned();
+            const argument = this.#parseArithSigned();
 
             return AST.arithmeticExpression(operator.value, null, argument, span(operator.loc, argument.loc));
         }
 
         #parsePower() {
-            let base = this.#parseArithOperand();
+            const base = this.#parseArithOperand();
 
-            if (!this.#acceptArith('**'))
+            if(!this.#acceptArith('**'))
                 return base;
 
             // Right-associative: `2 ** 3 ** 2` is `2 ** 9`. The exponent may carry a sign.
-            let exponent = this.#parseArithUnary();
+            const exponent = this.#parseArithUnary();
 
             return AST.arithmeticExpression('**', base, exponent, span(base.loc, exponent.loc));
         }
@@ -1647,10 +1677,10 @@ if (typeof require === 'function' && typeof module === 'object') {
         #parseArithOperand() {
             this.#skipSeparators();
 
-            if (this.#at(TokenType.LPAREN)) {
+            if(this.#at(TokenType.LPAREN)) {
                 this.#next();
 
-                let inner = this.#parseSum();
+                const inner = this.#parseSum();
 
                 this.#skipSeparators();
                 this.#expect(TokenType.RPAREN, '`)`');
@@ -1658,7 +1688,7 @@ if (typeof require === 'function' && typeof module === 'object') {
                 return inner;
             }
 
-            if (this.#at(TokenType.ARITH))
+            if(this.#at(TokenType.ARITH))
                 this.#fail(`Expected a number before \`${ this.#peek().value }\``);
 
             return this.#parseMembers(this.#parsePrimary());
@@ -1671,36 +1701,36 @@ if (typeof require === 'function' && typeof module === 'object') {
         #parseCall(token, precedence) {
             this.#next();
 
-            let args = [];
+            const args = [];
 
-            if (this.#at(...ARGUMENT_STARTS)) {
+            if(this.#at(...ARGUMENT_STARTS)) {
                 args.push(this.#parseExpression(precedence));
 
-                while (this.#accept(TokenType.COMMA))
+                while(this.#accept(TokenType.COMMA))
                     args.push(this.#parseExpression(precedence));
             }
 
-            let last = (args[args.length - 1] ?? token);
+            const last = (args[args.length - 1] ?? token);
 
             return AST.callExpression(token.value, args, span(token.loc, last.loc));
         }
 
         /** Any sigil. `/channel` glued directly to `#prop` collapses into one node. */
         #parseSelector() {
-            let token = this.#next(),
-                kind = SELECTOR_KINDS[token.type];
+            const token = this.#next()
+                , kind = SELECTOR_KINDS[token.type];
 
-            if (TokenType.SELECTOR_REALM === token.type)
+            if(TokenType.SELECTOR_REALM === token.type)
                 return AST.selector(kind, token.value.path, { realm: token.value.realm, path: token.value.path }, token.loc);
 
             // `[vip moderator]` — `name` is the first, for display; `names` is what resolves.
-            if (TokenType.SELECTOR_BADGE === token.type)
+            if(TokenType.SELECTOR_BADGE === token.type)
                 return AST.selector(kind, token.value[0], { names: token.value }, token.loc);
 
             // `/ginger_enby#name` — two tokens, but only because they were written without
             // a space. Adjacency in the source is what makes them one selector.
-            if (TokenType.SELECTOR_CHANNEL === token.type && this.#at(TokenType.SELECTOR_PROP) && this.#peek().loc.start === token.loc.end) {
-                let property = this.#next();
+            if(TokenType.SELECTOR_CHANNEL === token.type && this.#at(TokenType.SELECTOR_PROP) && this.#peek().loc.start === token.loc.end) {
+                const property = this.#next();
 
                 return AST.selector('prop', property.value, { channel: token.value }, span(token.loc, property.loc));
             }
@@ -1711,23 +1741,23 @@ if (typeof require === 'function' && typeof module === 'object') {
         /** `any from ( <item> \n <item> ... )`, `any from ( <range> )`, or `any from <value>` —
          * the last picks from a list bound earlier: `any from replies`. */
         #parseAnyFrom() {
-            let start = (this.#accept(TokenType.WILDCARD) ?? this.#expect(TokenType.ANY, '`any`')).loc;
+            const start = (this.#accept(TokenType.WILDCARD) ?? this.#expect(TokenType.ANY, '`any`')).loc;
 
             this.#expect(TokenType.FROM, '`from` after `any`');
 
-            if (!this.#at(TokenType.LPAREN)) {
-                let source = this.#parseUnary();
+            if(!this.#at(TokenType.LPAREN)) {
+                const source = this.#parseUnary();
 
                 return AST.anyFromExpression([source], span(start, source.loc));
             }
 
             this.#expect(TokenType.LPAREN, '`(` after `any from`');
 
-            let items = [];
+            const items = [];
 
             this.#skipSeparators();
 
-            while (!this.#at(TokenType.RPAREN, TokenType.EOF)) {
+            while(!this.#at(TokenType.RPAREN, TokenType.EOF)) {
                 items.push(this.#parseExpression());
 
                 // Items are separated by line; a comma is an *optional* extra separator, so
@@ -1737,9 +1767,9 @@ if (typeof require === 'function' && typeof module === 'object') {
                 this.#skipSeparators();
             }
 
-            let close = this.#expect(TokenType.RPAREN, '`)` closing `any from`').loc;
+            const close = this.#expect(TokenType.RPAREN, '`)` closing `any from`').loc;
 
-            if (!items.length)
+            if(!items.length)
                 this.#fail('`any from` needs at least one item', { loc: span(start, close) });
 
             return AST.anyFromExpression(items, span(start, close));
@@ -1747,28 +1777,28 @@ if (typeof require === 'function' && typeof module === 'object') {
 
         /** A parenthesized expression. May span lines. */
         #parseGroup() {
-            let open = this.#expect(TokenType.LPAREN, '`(`').loc;
+            const open = this.#expect(TokenType.LPAREN, '`(`').loc;
 
             this.#skipSeparators();
 
             // Re-entering at the outermost level is what makes `(5:00 -> wait_time)` bind:
             // the assignment tail pass is gated on that level, and a group is a fresh one.
-            let items = [this.#parseExpression()];
+            const items = [this.#parseExpression()];
 
             this.#skipSeparators();
 
             // Two or more items, separated the way `any from` separates them — by line or
             // by optional comma — make a list: `(\`hi\`, \`hey\`) => greetings`.
-            while (!this.#at(TokenType.RPAREN, TokenType.EOF)) {
+            while(!this.#at(TokenType.RPAREN, TokenType.EOF)) {
                 items.push(this.#parseExpression());
                 this.#skipSeparators();
             }
 
             this.#expect(TokenType.RPAREN, '`)`');
 
-            let loc = span(open, this.#peek(-1).loc);
+            const loc = span(open, this.#peek(-1).loc);
 
-            if (items.length > 1)
+            if(items.length > 1)
                 return AST.listExpression(items, loc);
 
             // A one-item group is transparent; only its span widens, so `(a) is b` and
@@ -1785,10 +1815,10 @@ if (typeof require === 'function' && typeof module === 'object') {
          * @return {Object}
          */
         #buildTemplate(token) {
-            let { quasis, expressions } = token.value,
-                parsed = expressions.map(({ source, offset }) => {
-                    let tokens = new Tokenizer(source, { fragment: true, origin: { offset, source: this.#source } }).tokenize(),
-                        parser = new Parser(tokens, this.#source, this.#functions, this.#loops);
+            const { quasis, expressions } = token.value
+                , parsed = expressions.map(({ source, offset }) => {
+                    const tokens = new Tokenizer(source, { fragment: true, origin: { offset, source: this.#source } }).tokenize()
+                        , parser = new Parser(tokens, this.#source, this.#functions, this.#loops);
 
                     return parser.parseInterpolation();
                 });
@@ -1802,11 +1832,11 @@ if (typeof require === 'function' && typeof module === 'object') {
         parseInterpolation() {
             this.#skipNewlines();
 
-            let expression = this.#parseExpression();
+            const expression = this.#parseExpression();
 
             this.#skipNewlines();
 
-            if (!this.#at(TokenType.EOF))
+            if(!this.#at(TokenType.EOF))
                 this.#fail(`Unexpected ${ this.#describe(this.#peek()) } after the interpolated expression`);
 
             return expression;
@@ -1817,10 +1847,10 @@ if (typeof require === 'function' && typeof module === 'object') {
      * @param {String} source
      * @return {{ program: Object, errors: Array<DSLParseError> }}
      */
-    let parseTolerant = (source) => {
-        let text = String(source),
-            tokens = new Tokenizer(text).tokenize(),
-            parser = new Parser(tokens, text);
+    const parseTolerant = (source) => {
+        const text = String(source)
+            , tokens = new Tokenizer(text).tokenize()
+            , parser = new Parser(tokens, text);
 
         return { program: parser.parseProgram(), errors: parser.errors };
     };
@@ -1830,10 +1860,10 @@ if (typeof require === 'function' && typeof module === 'object') {
      * @return {Object} a `Program` node
      * @throws {DSLSyntaxError|DSLParseError} the first fault found
      */
-    let parse = (source) => {
-        let { program, errors } = parseTolerant(source);
+    const parse = (source) => {
+        const { program, errors } = parseTolerant(source);
 
-        if (errors.length)
+        if(errors.length)
             throw errors[0];
 
         return program;
@@ -1843,5 +1873,5 @@ if (typeof require === 'function' && typeof module === 'object') {
     globalThis.TTV_DSL.parse = parse;
 })();
 
-if (typeof module === 'object' && module?.exports)
+if(typeof module === 'object' && module?.exports)
     module.exports = globalThis.TTV_DSL;
