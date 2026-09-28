@@ -3,7 +3,9 @@
  * settings; this plugin only hosts them. See docs/DSL-HOST.md and src/lib/user-scripts.js.
  *
  * Starts on its own once the page has what the runner needs (the DSL, `Chat` fed by the main relay, a channel and a
- * viewer), so it doesn't wait on `Chat__Initialize`: that never runs while chat is hidden (e.g. an offline channel).
+ * signed-in viewer), so it doesn't wait on `Chat__Initialize`, which needs chat on screen.
+ * Like most of the extension, it needs a live channel: `STREAMER` is only set, and the relay only calls `onmessage`
+ * hooks, once `tools.js` has initialized the page.
  */
 
 import { plugin } from '../../lib/plugins.js';
@@ -12,6 +14,12 @@ import { createUserScripts } from '../../lib/user-scripts.js';
 let RUNNER;
 
 const IS_POPOUT = /^\/popout\//i.test(location.pathname);
+
+/**
+ * The signed-in viewer's login, as the relay uses it. `USERNAME` can be a display name or a placeholder.
+ * @returns {string|undefined}
+ */
+const login = () => Search.cookies.login;
 
 /**
  * Whether this window can host scripts: the top window of a channel page, with the main relay open.
@@ -26,7 +34,7 @@ function hostable() {
         && defined(globalThis.Chat)
         && defined(globalThis.TTV_IRC?.socket)
         && !!globalThis.STREAMER?.name
-        && !!globalThis.USERNAME
+        && !!login()
     );
 }
 
@@ -52,7 +60,7 @@ function boot(context = globalThis) {
         env: {
             Chat,
             STREAMER,
-            USERNAME: context.USERNAME ?? globalThis.USERNAME,
+            USERNAME: login(),
             viewerBadges: () => Chat.viewerBadges,
             goto: name => goto(`/${ name }`),
         },

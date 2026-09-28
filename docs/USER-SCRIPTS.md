@@ -34,6 +34,7 @@ await (.command is "hello")
 
 - `chat`: in chat, on channel pages. Pop-out chat doesn't host scripts yet (it has no chat relay).
 - `main`: on channel pages only. `goto` (going to another channel) only works there.
+- Scripts need a live channel and a signed-in viewer: like most of TTV Tools, they don't load on offline channels.
 - A script restarts when you change its settings, and when you move to another channel.
 
 ## Permissions
