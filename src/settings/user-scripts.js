@@ -6,6 +6,9 @@
 import { renderSection, settingDefaults } from './render.js';
 import { grantsOf, SCRIPTS_KEY, CONSENT_KEY } from '../lib/user-scripts.js';
 
+// Where a reload after saving, approving or removing a script lands
+const RETURN_HASH = 'user-scripts-manager';
+
 const STORAGE = (globalThis.browser ?? globalThis.chrome)?.storage?.local;
 
 // The starter script: what the language can do, in a few lines
@@ -256,7 +259,24 @@ export async function renderUserScripts({ ids, defaults }) {
     Object.assign(defaults, settingDefaults([{ sections }]));
 
     // The manager list
-    const reload = () => location.reload();
+    // Reload back to this list: the fragment brings the page here, then the section is lined up once the page settles
+    const reload = () => {
+        location.hash = RETURN_HASH;
+        location.reload();
+    };
+
+    if(location.hash == `#${ RETURN_HASH }`) {
+        const settle = () => [600, 1_500].forEach(delay => setTimeout(() => section.scrollIntoView({ block: 'start', behavior: 'instant' }), delay));
+
+        if(document.readyState == 'complete')
+            settle();
+        else
+            window.addEventListener('load', settle, { once: true });
+
+        // Only this visit returns here; a later manual reload starts at the top as usual
+        history.replaceState(null, '', location.pathname + location.search);
+    }
+
     const taken = () => new Set([...builtIn, ...scripts.map(({ meta }) => meta.id)]);
 
     const store = async list => {
