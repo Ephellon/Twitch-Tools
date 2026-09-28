@@ -32,7 +32,7 @@ await (.command is "hello")
 
 ## Where scripts run
 
-- `chat`: in chat, on channel pages and in pop-out chat.
+- `chat`: in chat, on channel pages. Pop-out chat doesn't host scripts yet (it has no chat relay).
 - `main`: on channel pages only. `goto` (going to another channel) only works there.
 - A script restarts when you change its settings, and when you move to another channel.
 

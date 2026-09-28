@@ -4996,7 +4996,7 @@ if(top == window) {
                                         );
                                     }
 
-                                    continue;
+                                    // A command is still a chat message: fall through to `onmessage` (TTV DSL scripts listen there)
                                 }
 
                                 const author = source.nick

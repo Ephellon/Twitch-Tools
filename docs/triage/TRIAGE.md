@@ -71,6 +71,7 @@ The owner can still reproduce these; none is fatal.
 - **Left navbar bounces** (an old bug): reproducible by opening the left navbar before the extension takes control of the page.
 - **Fine Details (4)** fails (non-fatal).
 - **Streamer Data (1§1)** fails (non-fatal).
+- **Pop-out chat runs no chat features** (an old bug): its readiness check needs the main controller, a follow button or a frame, and it opens no chat relay. User Scripts only run on channel pages until it has one.
 - **The one-minute timer doesn't show** unless the drag-and-drop has been used on the page.
 
 ## Owner decisions

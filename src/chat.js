@@ -615,7 +615,7 @@ Chat__PAGE_CHECKER = setInterval(Chat__WAIT_FOR_PAGE = async() => {
                                             );
                                         }
 
-                                        continue;
+                                        // A command is still a chat message: fall through to `onmessage` (TTV DSL scripts listen there)
                                     }
 
                                     const author = source.nick
