@@ -1,0 +1,14 @@
+plugin link_guard -- "Link Guard"
+    about "Asks viewers not to post links, except to Twitch and YouTube. Moderators and VIPs are exempt."
+    setting warning: text "Please don't post links in chat 🙏" -- "Warning"
+
+// Any message that contains at least one link
+await (.links is SOMETHING)
+
+    // Keep only the links that aren't to Twitch or YouTube.
+    // The parentheses make this a filter over each link, not one comparison
+    .links | (not ("twitch.tv" in .href or "youtube.com" in .href)) -> outside_links
+
+    // Moderators and VIPs may post whatever they like
+    if outside_links is SOMETHING and not ("moderator" in .badges or "vip" in .badges)
+        REPLY `${ setting.warning } (${ (1st of outside_links).href })`

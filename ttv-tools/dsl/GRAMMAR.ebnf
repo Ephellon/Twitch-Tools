@@ -1,0 +1,518 @@
+(* ==========================================================================
+   TTV DSL - grammar v2.1
+   Companion to dsl/SPEC.md. ISO-style EBNF.
+
+     =    definition        |    alternation      { }  zero or more
+     ,    concatenation     [ ]  optional         ( )  grouping
+     ;    terminator        " "  terminal         [* *] comment
+
+   INDENT, DEDENT, NEWLINE and EOF are TERMINALS synthesised by the lexer,
+   not written in the source. See the lexical section at the foot of the file.
+
+   v2 is a strict syntactic SUPERSET of v1: every v1 production below is
+   unchanged in what it accepts, and every v1 script still parses. New
+   productions are marked (v2).
+
+   v2.1 is NOT a superset of v2: `else`, `above` and `below` became keywords.
+   Productions it added or changed are marked (v2.1). Its behaviour changes
+   (`*` matching empty, the arrows as synonyms, bare `%`) are semantic and are
+   listed in SPEC 14.1a.
+   ========================================================================== *)
+
+(* Railroad viewer: https://matthijsgroen.github.io/ebnf2railroad/try-yourself.html *)
+
+(* -- program and blocks -------------------------------------------------- *)
+
+(* (v2.1) An optional plugin header comes first; see SPEC 6.12. *)
+program        = [ plugin_header ] , { statement } , EOF ;
+
+plugin_header  = "plugin" , PLUGIN_ID , [ DESCRIBE , STRING ] , NEWLINE ,
+                 [ INDENT , header_line , { header_line } , DEDENT ] ;
+header_line    = "about" , STRING , NEWLINE
+               | "frames" , FRAME , { "," , FRAME } , NEWLINE
+               | setting_decl ;
+setting_decl   = "setting" , SETTING_NAME , ":" , SETTING_TYPE , header_literal ,
+                 [ DESCRIBE , STRING ] , NEWLINE ,
+                 [ INDENT , setting_line , { setting_line } , DEDENT ] ;
+setting_line   = setting_item , { "," , setting_item } , NEWLINE ;
+setting_item   = ( "min" | "max" | "step" ) , header_literal
+               | ( "unit" | "placeholder" ) , STRING
+               | "option" , STRING , [ DESCRIBE , STRING ] ;
+header_literal = STRING | "true" | "false" | [ "-" ] , ( NUMBER | DURATION ) ;
+
+(* about / frames / min / max / step / unit / placeholder / option are
+   ordinary IDENTs, read contextually inside the header only. *)
+
+(* Blank and comment-only lines emit no tokens at all, so no production has to
+   allow for them. *)
+statement      = await_stmt
+               | using_stmt
+               | if_stmt
+               | when_stmt          (* v2 *)
+               | after_stmt         (* v2.1 *)
+               | else_stmt          (* v2.1 *)
+               | with_stmt          (* v2 *)
+               | goto_stmt
+               | define_stmt        (* v2.1 *)
+               | return_stmt        (* v2.1 *)
+               | for_stmt           (* v2.1 *)
+               | break_stmt         (* v2.1 *)
+               | renew_stmt         (* v2.1 *)
+               | call_stmt          (* v2.1 *)
+               | verb_stmt
+               | expr_stmt ;        (* v2 *)
+
+(* Every block-opening statement may omit its block - except if_stmt, when_stmt,
+   else_stmt and with_stmt, which require one. That rule is enforced by the parser, not
+   expressible here. *)
+block          = INDENT , statement , { statement } , DEDENT ;
+
+
+(* -- statements ---------------------------------------------------------- *)
+
+(* `with` on the await line takes a plain expression; the parentheses
+   conventionally written around it are ordinary grouping from `primary`, not
+   part of the syntax. This is NOT with_stmt - that one starts a line. *)
+await_stmt     = "await" , expression , [ "with" , expression ] , NEWLINE , [ block ] ;
+
+(* Juxtaposed subjects are separate subjects, one run each:
+   using [viewer] [everyone]. One bracket, [viewer everyone], is one subject
+   meaning "any of these" - see badge_sel.
+   (v2) PERMISSION grants may be interleaved with them anywhere on the line,
+   and commas between any of it are optional noise.
+   (v2.1) Subjects are optional: a header of only grants and/or `+scope` runs
+   its body once under the current subject. It must still carry SOMETHING - a
+   bare `using` is an error. `+scope[:local|global|universal]` is a PERMISSION
+   token the parser diverts: legal only in a using_stmt at the top level, at
+   most once, and never added to the grant set.
+   (v2.1) An optional `-- "description"` ends the header. It is recorded, never
+   evaluated, and may stand alone. *)
+using_stmt     = "using" ,
+                 ( ( { "," } , ( expression | PERMISSION ) ,
+                     { expression | PERMISSION | "," } , [ description ] )
+                 | description ) ,
+                 NEWLINE , [ block ] ;
+
+description    = DESCRIBE , STRING ;
+
+(* (v2) An if_stmt may be continued by a chain when_stmt written as its next
+   SIBLING. The parser folds that sibling into this node's `alternate`; the
+   fold is a tree operation, so it cannot be stated as nesting here. *)
+if_stmt        = "if" , expression , NEWLINE , block ;
+
+(* (v2) Two forms, told apart by whether the head ends on a dangling
+   comparison.
+
+   SWITCH: the head is an expression whose final `is`/`in` has no right
+   operand. Each case is a value, a ":", and its own block.
+
+   CHAIN: an ordinary test plus a block, standing as the `alternate` of the
+   if_stmt or when_stmt immediately before it. *)
+when_stmt      = when_switch | when_chain ;
+
+when_switch    = "when" , expression , ( "is" | "in" ) , NEWLINE ,
+                 INDENT , when_case , { when_case } , DEDENT ;
+
+when_case      = expression , ":" , NEWLINE , block ;
+
+when_chain     = "when" , expression , NEWLINE , block ;
+
+(* (v2.1) The last branch of a chain, folded into its final `alternate` like a
+   when_chain. A bare `else` takes NO condition and nothing may follow it in the
+   same chain. `else if <test>` is a second spelling of when_chain - same node,
+   and it may be followed. `else when` is an error. *)
+else_stmt      = "else" , [ "if" , expression ] , NEWLINE , block ;
+
+(* (v2.1) A one-shot timer. The subject is any expression evaluating to a
+   duration, read when the statement is reached. *)
+after_stmt     = "after" , expression , [ "with" , expression ] , NEWLINE , block ;
+
+(* (v2) The block form. Branches on the RESULT, not on the syntax: a boolean
+   runs the block once under the current subject, anything else iterates. *)
+with_stmt      = "with" , expression , NEWLINE , block ;
+
+goto_stmt      = "goto" , expression , NEWLINE ;
+
+(* UPPER_IDENT in statement position is a verb. The same token inside an
+   expression is an identifier - the decision is positional, which is what
+   keeps the host's verb registry open. The argument is optional. *)
+verb_stmt      = UPPER_IDENT , [ expression ] , NEWLINE ;
+
+(* (v2.1) A function is a verb the script defines. FUNC_NAME is an UPPER_IDENT
+   that some define_stmt in the script names - the parser collects those names
+   before it starts, so a call may come before its definition. define_stmt is
+   top-level only, and its body may not contain await/after/using. *)
+define_stmt    = "define" , FUNC_NAME , "(" , [ VAR_NAME , { [ "," ] , VAR_NAME } ] , ")" ,
+                 [ "with" , PERMISSION , { [ "," ] , PERMISSION } ] , NEWLINE , block ;
+
+return_stmt    = "return" , [ expression ] , NEWLINE ;     (* inside define_stmt only *)
+
+(* On a statement line the arguments take everything up to an arrow, which then
+   binds the call's result. *)
+call_stmt      = FUNC_NAME , [ or_expr , { "," , or_expr } ] ,
+                 [ ( "->" | "=>" ) , VAR_NAME ] , NEWLINE ;
+
+(* Numeric (start ; stop [ ; step ]) or a list. `as label:` names the loop and
+   binds its counter under that name as well as `$`. *)
+for_stmt       = "for" , [ "as" , VAR_NAME , ":" ] ,
+                 ( expression , ";" , expression , [ ";" , expression ] | expression ) ,
+                 NEWLINE , block ;
+
+break_stmt     = "break" , [ VAR_NAME ] , NEWLINE ;         (* inside for_stmt only *)
+renew_stmt     = "renew" , [ VAR_NAME ] , NEWLINE ;         (* inside for_stmt only *)
+
+(* (v2) Deliberately narrow. A bare expression on a line is still an error;
+   only an assignment may stand alone, because only an assignment does
+   anything. *)
+expr_stmt      = ( assign_expr | js_invoke ) , NEWLINE ;   (* v2.1: a host call may stand alone *)
+
+
+(* -- expressions --------------------------------------------------------- *)
+
+(* The cascade encodes the precedence table in SPEC.md section 5.1, loosest
+   first. The parser implements it by precedence climbing over a table rather
+   than as literal nested functions, but the language it accepts is this one. *)
+
+expression     = assign_expr ;
+
+(* (v2) Assignment is the LOOSEST construct in the language, and it is not a
+   binary operator: its right side is a NAME, not an expression. It is also
+   non-chaining - `a -> b -> c` is a parse error - which is why this is
+   [ ... ] and not { ... }.
+
+   (v2.1) The two arrows are SYNONYMS. Where the name lands is decided by the
+   script's `+scope` mode (SPEC 9.2), never by the arrow.
+
+   VAR_NAME must contain a lower-case letter; ALL-CAPS is the host's (and the
+   script's functions'). Checked at the BINDING site only; a reference site
+   checks nothing. *)
+assign_expr    = or_expr , [ ( "->" | "=>" ) , VAR_NAME ] ;
+
+or_expr        = and_expr , { "or" , and_expr } ;
+
+and_expr       = cmp_expr , { "and" , cmp_expr } ;
+
+(* Non-associative: at most one comparison per level. `a is b is c` is a
+   parse error, not a left-associative chain.
+
+   (v2) `is` additionally REJECTS an operand that is a template carrying an
+   interpolation. A template with no `${ }` is just text and is accepted. That
+   restriction is semantic, not syntactic, so it is not written here.
+
+   (v2.1) `is [or] above|below` is the numeric comparison. It shares this
+   level and its non-associativity. `is or` means nothing else - `or` never
+   starts an operand - so the inclusive spelling steals no existing sentence. *)
+cmp_expr       = pct_expr , [ cmp_op , pct_expr ] ;
+
+cmp_op         = "is" , [ [ "or" ] , ( "above" | "below" ) ]
+               | "in" ;
+
+(* (v2) `%` sits between the comparisons and the pipe: looser than `<|` so
+   `1st <| .links % ','` joins what the pipe selected, tighter than `is` so a
+   comparison sees the replaced text. *)
+pct_expr       = pipe_expr , { ( PCT_RUN | "~" | "as" ) , pipe_expr } ;   (* v2.1: "~" / "as" format *)
+
+(* `<|` (also spelled `of`) is LOOSER than `where`, so pipe sits above where in
+   the cascade:
+   1st <| .links where (...)  ==  1st <| (.links where (...)) *)
+pipe_expr      = where_expr , { ( "<|" | "of" ) , where_expr } ;
+
+(* (v2) `|` is an ALIAS for `where` - same token type, same precedence, same
+   node. Because where_expr binds tighter than cmp_expr, a predicate that
+   CONTAINS a comparison must be parenthesized. That is the canonical spelling,
+   and a settled rule rather than a rough edge - see SPEC 5.2:
+       .links | ("x" in .href)     [* a filter *]
+       .links | "x" in .href       [* (.links where "x") in .href - a boolean *] *)
+where_expr     = range_expr , { ( "where" | "|" ) , range_expr } ;
+
+(* Non-associative: `1 .. 5 .. 9` is a parse error. *)
+range_expr     = unary_expr , [ ( ".." | "..." ) , unary_expr ] ;
+
+(* (v2) `=` is a PREFIX on an operand, not a binary operator: it makes the
+   comparison that operand takes part in case-sensitive. *)
+unary_expr     = ( "not" | "-" | "=" ) , unary_expr
+               | member_expr ;
+
+(* (v2.1) `.raider.last.category`. A context_sel counts as a member access only
+   when it is GLUED to what precedes it - no whitespace - so `using .a .b` is
+   still two subjects. The adjacency test is the parser's; it cannot be written
+   in EBNF. *)
+member_expr    = primary , { context_sel } ;
+
+(* (v2.1) Inside an expression, a call's arguments bind no looser than the
+   pipe, so `%`, `~`/`as`, comparisons, `and`/`or` and arrows apply to its
+   result. *)
+call_expr      = FUNC_NAME , [ pipe_expr , { "," , pipe_expr } ] ;
+
+primary        = call_expr          (* v2.1 *)
+               | "setting" , CONTEXT_SEL    (* v2.1: `setting.name`, glued *)
+               | "$"                (* v2.1: the innermost loop's counter *)
+               | literal
+               | selector
+               | any_from
+               | js_invoke          (* v2 *)
+               | calc               (* v2.1 *)
+               | this_expr          (* v2 *)
+               | identifier
+               | group ;
+
+(* A group is transparent: it widens the reported span and nothing else.
+   NEWLINEs and commas inside it are insignificant, unlike the NEWLINEs in
+   any_from. Re-entering `expression` here is what makes
+   `await (5:00 -> wait_time)` bind a name. *)
+(* (v2.1) Two or more items make a list; one item is a plain grouped value. *)
+group          = "(" , { NEWLINE | "," } ,
+                   expression , { { NEWLINE | "," } , expression } ,
+                   { NEWLINE | "," } , ")" ;
+
+(* (v2.1) Inside calc( ), the lexer emits ARITH for + - * / % ** - so these
+   productions see operators, not the wildcard, a permission or a channel.
+   JavaScript precedence; a unary sign may not be the base of "**". *)
+calc           = "calc" , "(" , sum , ")" ;
+sum            = product , { ( "+" | "-" ) , product } ;
+product        = signed , { ( "*" | "/" | "%" ) , signed } ;
+signed         = ( "+" | "-" ) , signed_base   (* a sign never sits directly before "**" *)
+               | power ;
+signed_base    = ( "+" | "-" ) , signed_base | calc_operand ;
+power          = calc_operand , [ "**" , signed ] ;
+calc_operand   = "(" , sum , ")" | member_expr ;
+
+(* (v2) A host-registered binding, reached by dotted path. The path is a single
+   token; resolution is a property walk over a table the host supplied, never
+   compilation of text. *)
+(* (v2.1) With "(" GLUED to the path, a call; without, a constant read
+   (`&Math.PI`). Reading a method or calling a constant is a runtime error. *)
+js_invoke      = JS_PATH , [ "(" ,
+                   { NEWLINE | "," } ,
+                   [ expression , { { NEWLINE | "," } , expression } ] ,
+                   { NEWLINE | "," } ,
+                 ")" ] ;
+
+(* (v2) The current subject itself - the thing `.prop` reads a property from. *)
+this_expr      = "_" | "__this__" | "__self__" | "__me__" ;
+
+
+(* -- any from ------------------------------------------------------------ *)
+
+(* Items are separated by NEWLINE - which is precisely why the lexer keeps
+   emitting NEWLINE inside brackets. A range item contributes all of its
+   members to the pool rather than contributing the list itself.
+
+   (v2) A comma is an ADDITIONAL separator, never a required one. Leading,
+   trailing and repeated commas collapse to nothing; two items on one line are
+   still two items, comma or no comma. *)
+(* (v2.1) `* from` is the same construct: `*` is ANYTHING. Anything other than
+   a "(" after `from` is a single value - usually a list bound earlier. *)
+any_from       = ( "any" | "*" ) , "from" ,
+                 ( "(" ,
+                     { NEWLINE | "," } ,
+                     expression , { { NEWLINE | "," } , expression } ,
+                     { NEWLINE | "," } ,
+                   ")"
+                 | unary_expr ) ;
+
+
+(* -- literals ------------------------------------------------------------ *)
+
+literal        = STRING
+               | TEMPLATE
+               | NUMBER
+               | DURATION
+               | ORDINAL
+               | boolean
+               | wildcard ;
+
+boolean        = "true" | "false" ;
+
+(* Always a presence test, never multiplication; see SPEC 3.7.
+   (v2.1) `*` is ANYTHING - present, empty values included. SOMETHING (present
+   and non-empty) and NOTHING (absent or empty) are resolved by the PARSER from
+   UPPER_IDENT, so a host constant cannot shadow them. *)
+wildcard       = "*" | "ANYTHING" | "SOMETHING" | "NOTHING" ;
+
+identifier     = IDENT | UPPER_IDENT ;
+
+
+(* -- selectors ----------------------------------------------------------- *)
+
+selector       = self_sel
+               | prop_sel
+               | channel_sel
+               | realm_sel
+               | badge_sel
+               | user_sel
+               | context_sel ;
+
+(* A bare "/" means the same as a bare "#": the channel in scope. *)
+self_sel       = "#" | "/" ;
+
+prop_sel       = "#" , IDENT ;
+
+(* The parser fuses channel_sel and prop_sel into one `prop` selector only when
+   they are ADJACENT in the source: /name#prop is one selector, /name #prop is
+   two. Adjacency is a lexical property, so the fusion cannot be stated here. *)
+channel_sel    = "/" , PATH ;
+
+realm_sel      = UPPER_IDENT , "/" , PATH ;
+
+(* (v2.1) ONE token. `[vip moderator]` - commas optional - resolves ONCE, to
+   the first listed badge held: "any of these". One line; `[]` is an error.
+   `<moderator>` and `--moderator` are lexical errors naming this spelling. *)
+badge_sel      = "[" , BADGE_NAME , { [ "," ] , BADGE_NAME } , "]" ;
+
+user_sel       = "@" , PATH ;
+
+(* (v2.1) There is no emote selector. An emote is text: 'kappa'. The old
+   `:kappa:` is a lexical error that says so. *)
+
+context_sel    = "." , IDENT ;
+
+
+(* ==========================================================================
+   LEXICAL DEFINITIONS
+
+   Scanned by a single maximal-munch pass. Branch ORDER is significant wherever
+   two patterns share a prefix; the ordering below is the one the tokenizer
+   actually uses, and each hazard is noted.
+   ========================================================================== *)
+
+(*
+  COMMENT     = "//" [^\n]*
+                [* tested BEFORE channel_sel, or every comment scans as a
+                   channel named after its first word *]
+
+  BLOCK_COMMENT
+              = "/*" . * "*/"
+                [* may span lines. A block comment that owns its whole line is
+                   consumed at the LINE HEAD, so it cannot shift the indent
+                   stack; one reached mid-line is skipped like whitespace, so
+                   `/* note */ POST `hi`` still measures its indentation. *]
+
+  TEMPLATE    = "`" ( [^`\\$] | "\\" . | "$" !"{" | RAW_OPEN | INTERPOLATION )* "`"
+  INTERPOLATION
+              = "${" <balanced braces, stepping over nested strings,
+                      templates and comments> "}"
+                [* emitted as ONE token carrying quasis[] and the raw text plus
+                   absolute offset of each interpolation; the parser re-parses
+                   those substrings so locations stay file-accurate *]
+  RAW_OPEN    = "${" with NO matching "}"                            [* v2 *]
+                [* contributes the literal two characters "${" to the current
+                   quasi. A "${" that DOES close is still an interpolation, and
+                   still an error when its contents are ungrammatical -
+                   degrading that would swallow real typos, and the escape
+                   idiom `${ "${x}" }` only works if the outer pair evaluates. *]
+
+  STRING      = "\"" ( [^"\\\n] | "\\" . )* "\""
+              | "'"  ( [^'\\\n] | "\\" . )* "'"                      [* v2 *]
+                [* the two spellings are one production with the quote as a
+                   parameter, so an escape fixed in one is fixed in both *]
+
+  ORDINAL     = -?\d+(st|nd|rd|th)\b
+                [* tried BEFORE DURATION and NUMBER. A leading "-" belongs to
+                   the ordinal only when a suffix follows, so -1 is still unary
+                   minus applied to 1, and "->" can never be mistaken for one.
+                   Value converts to a 0-based index; negatives count from the
+                   end. *]
+
+  DURATION    = (\d{1,2}):([0-5]\d)(:([0-5]\d))?\b
+                [* tried after ORDINAL, before NUMBER; value in milliseconds.
+                   Scanned from the LEADING DIGIT, which is what keeps the ":"
+                   branch from ever having to recognise one. *]
+
+  NUMBER      = \d+(\.\d+)?(?!\w)
+                [* the lookahead permits a following ".", so 1..9 scans as
+                   NUMBER "1", RANGE_EXCLUSIVE, NUMBER "9" *]
+
+  PERMISSION  = "+" ACTION ( ":" PART ( "." PART )* ( "." "*" )? )?  [* v2.1 *]
+  ACTION      = [A-Za-z_][A-Za-z0-9_]*
+  PART        = [A-Za-z0-9_]+
+                [* consumes its own ":", which is the only reason `+eval:calc`
+                   never reaches the case-label branch. A "+" with no valid name
+                   is a HARD ERROR naming the absence of arithmetic, and so is
+                   one followed directly by ":", ".", "*" or a word character
+                   (`+read:*`, `+a:b:c`). Whether the name is on the permission
+                   list, and whether a write/eval grant carries a description,
+                   is checked later - see SPEC 6.8. *]
+
+  JS_PATH     = "&" [A-Za-z_$][A-Za-z0-9_$]*
+                       ( "." [A-Za-z_$][A-Za-z0-9_$]* )*             [* v2 *]
+                [* (v2.1) was "$:". Value is the segment ARRAY. A "$" outside a template is
+                   a hard error. *]
+
+  PCT_RUN     = "%" ( CLS ( "%" CLS )* )?                            [* v2 *]
+  CLS         = "0" | "a" | "A" | "b" | "B" | "d" | "D" | "f" | "n"
+              | "r" | "s" | "S" | "t" | "v" | "w" | "W" | "c"
+                [* the leading "%" belongs to the FIRST class, so "%n%s" is two
+                   classes and a bare "%" is zero - which is how "%" alone can
+                   mean the default run without a second spelling. Value is the
+                   letter array, empty for a bare "%".
+                   (v2.1) The default run is `\s*\n\s*` - any whitespace run
+                   containing a newline - NOT "%n%s", which is `\n+\s+`. *]
+
+  VAR_NAME    = IDENT containing at least one [a-z]                  [* v2.1 *]
+                [* NOT a lexical class - the lexer emits IDENT and the PARSER
+                   applies this rule, at binding sites only. v2 required an
+                   interior underscore instead. *]
+  FUNC_NAME   = an UPPER_IDENT named by a `define` in the same script  [* v2.1 *]
+  PLUGIN_ID   = [a-z][a-z0-9_]*                                      [* v2.1 *]
+  SETTING_NAME= [a-z][a-z0-9_]*                                      [* v2.1 *]
+  SETTING_TYPE= "checkbox" | "number" | "text" | "select"            [* v2.1 *]
+  FRAME       = "chat" | "main"                                      [* v2.1 *]
+
+  BADGE_NAME  = [A-Za-z][A-Za-z0-9_-]*   [* reached only inside "[ ]" *]
+
+  DESCRIBE    = "--" (?=\s|$)                                        [* v2.1 *]
+                [* only when whitespace or end of input follows; "--name"
+                   glued is the retired badge spelling, and anything else is
+                   a hard error naming the absence of decrement *]
+  PATH        = [A-Za-z0-9_.-]+        [* channel names and realm snowflakes *]
+  IDENT       = [A-Za-z_][A-Za-z0-9_]*
+  UPPER_IDENT = [A-Z][A-Z0-9_]*        [* an IDENT flagged isUpper *]
+
+  KEYWORD     = await | with | using | if | goto | any | from
+              | where | of | is | in | and | or | not | true | false
+              | when                                                 [* v2 *]
+              | else | above | below | after | calc | as           [* v2.1 *]
+              | define | return | for | break | renew             [* v2.1 *]
+              | plugin | setting                                   [* v2.1 *]
+
+  RESERVED    = elif | elseif | switch | case | default
+                [* (v2) reserved for ONE purpose: to produce a diagnostic that
+                   names `when` / `else` (or, for `calc`, the arithmetic
+                   reservation) instead of a generic "expected a statement" *]
+
+  PUNCTUATOR  = "..." | ".." | "<|" | "=>" | "->" | "(" | ")" | "*"
+              | "-" | "=" | "," | "|"
+                [* consulted longest-first, so maximal munch is automatic:
+                   "=>" beats "=" and "->" beats "-" BY CONSTRUCTION, not by
+                   the order they are written. "<|" is in this table only for
+                   documentation - it is claimed at the "<" branch and never
+                   reaches here, which is what makes a bare "|" safe to add.
+                   Context-sensitive lexemes are handled by dedicated branches
+                   that run first: "//", "/*", "\"", "'", "`", ":", "<", ".",
+                   "#", "/", "@", "+", "&", "$", "%", "--" and a leading digit. *]
+
+  COLON       = ":" that is neither a DURATION nor an EMOTE          [* v2 *]
+                [* v1 refused this in the lexer. v2 cannot: a when_case label is
+                   a bare colon, and the scanner has no way to know it is inside
+                   one. The token is emitted and the PARSER owns the diagnostic,
+                   because only the parser knows which reading was expected. *]
+
+  NEWLINE     = end of a line that produced at least one token
+                [* emitted INSIDE brackets too - any_from needs it *]
+  INDENT      = leading whitespace wider than the enclosing level
+  DEDENT      = one per level closed; must land exactly on an enclosing level
+                [* both SUPPRESSED while bracket depth > 0 *]
+  EOF         = end of input, after a final NEWLINE and any pending DEDENTs
+
+  Discarded entirely: blank lines, comment-only lines, and horizontal
+  whitespace between tokens.
+
+  Hard lexical errors: leading whitespace mixing tabs and spaces; a dedent that
+  matches no enclosing level; an unterminated string or template; an
+  unterminated "/*"; an unclosed "(" at EOF; an unmatched ")"; a bare "<", ".",
+  "@", "+", "&" or "--" with no valid continuation; any "$" outside a template.
+
+  NO LONGER a lexical error, as of v2: a bare ":" (see COLON) and an
+  unterminated "${" (see RAW_OPEN).
+*)

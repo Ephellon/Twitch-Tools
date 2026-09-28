@@ -1,0 +1,18 @@
+// Deliberately broken, for error-path tests.
+//
+// Only *recoverable* faults live here. The tokenizer's fatal faults — leading whitespace
+// that mixes tabs and spaces, an unclosed "(", an unterminated template — abort the whole
+// scan before the parser ever runs, so they are exercised as inline snippets in
+// dsl/tests/tokenizer.test.js instead. Everything below should produce one error each,
+// with the surrounding statements still parsing cleanly.
+using *
+    // ERROR: `is` is non-associative, so this chain must be rejected outright.
+    await .a is .b is .c
+        POST `never reached`
+    // ERROR: the pipe operator has no right-hand operand.
+    await 1st <|
+        POST `never reached`
+    // ERROR: `if` opens a block but nothing is indented beneath it.
+    if .sender is "nobody"
+    // This statement is a sibling of the `if`, not its body, and must still parse.
+    POST `still standing`

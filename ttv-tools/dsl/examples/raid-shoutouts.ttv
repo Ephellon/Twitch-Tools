@@ -1,0 +1,41 @@
+plugin raid_shoutouts -- "Raid Shoutouts"
+    about "Thanks raiders automatically, and lets moderators shout out the last raider with !so."
+    setting minimum: number 1 -- "Only thank raids with at least"
+        min 1, max 1000, unit "viewers"
+    setting delay: number 10 -- "Wait before thanking"
+        min 0, max 120, step 5, unit "s"
+    setting style: select "hype" -- "Thank-you style"
+        option "hype" -- "Hype"
+        option "chill" -- "Chill"
+
+// A raid has arrived
+await (.raider is SOMETHING)
+    if .raid_size is or above setting.minimum
+        // Remembered for the thank-you below, and for !so. Top-level blocks share
+        // what they remember, so the !so handler further down can read these too
+        .raider -> last_raider
+        .raid_size -> raid_party
+
+        // The delay setting is in seconds; `after` wants milliseconds. The permission
+        // covers only the arithmetic that needs it
+        using +eval:calc -- "Converts the delay setting from seconds to milliseconds"
+            after calc(setting.delay * 1000)
+                when setting.style is
+                    "hype":
+                        POST any from (
+                            `RAID!!! Welcome in, ${ raid_party } raiders! Go follow @${ last_raider } 💜`
+                            `${ raid_party } gremlins incoming from @${ last_raider }!! Thank you 💜`
+                        )
+
+                    "chill":
+                        POST `Thanks for the raid, @${ last_raider }, and welcome, everyone 💜`
+
+// Moderators can shout out anyone, or the last raider with a bare !so
+await (.command is "so")
+    using [moderator]
+        if .argument is SOMETHING
+            POST `Go check out ${ .argument }! 💜`
+        else if last_raider is SOMETHING
+            POST `Go follow @${ last_raider }, they raided us earlier 💜`
+        else
+            REPLY `Nobody has raided yet. Try !so <name>`
