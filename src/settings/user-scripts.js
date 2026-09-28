@@ -133,20 +133,30 @@ function openEditor({ source, file, original, taken }) {
             <div class="user-script-editor--dialog" role="dialog" aria-label="Script editor">
                 <div class="user-script-editor--head"><strong>${ escape(file) }</strong><span class="user-script-editor--meta"></span></div>
                 <div class="user-script-editor--code">
+                    <div class="user-script-editor--gutter" aria-hidden="true"></div>
                     <pre aria-hidden="true"></pre>
                     <textarea spellcheck="false" autocomplete="off" autocapitalize="off"></textarea>
                 </div>
                 <ul class="user-script-editor--problems"></ul>
-                <div class="user-script-editor--actions"><button class="cancel">Cancel</button> <button class="save">Save</button></div>
+                <div class="user-script-editor--actions"><button class="user-script-editor--cancel">Cancel</button><button class="user-script-editor--save">Save</button></div>
             </div>`;
 
         const textarea = overlay.querySelector('textarea')
             , pre = overlay.querySelector('pre')
+            , gutter = overlay.querySelector('.user-script-editor--gutter')
             , problems = overlay.querySelector('.user-script-editor--problems')
             , meta = overlay.querySelector('.user-script-editor--meta')
-            , save = overlay.querySelector('.save');
+            , save = overlay.querySelector('.user-script-editor--save');
 
-        let timer = null;
+        let timer = null, faulty = new Set;
+
+        // Line numbers, one per line of text; lines with a problem are marked
+        const number = () => {
+            const count = textarea.value.split('\n').length;
+
+            gutter.innerHTML = Array.from({ length: count }, (_, index) => `<div${ faulty.has(index + 1) ? ' problem' : '' }>${ index + 1 }</div>`).join('');
+            gutter.scrollTop = textarea.scrollTop;
+        };
 
         const refresh = () => {
             const text = textarea.value
@@ -162,6 +172,8 @@ function openEditor({ source, file, original, taken }) {
             meta.textContent = ` — ${ info.name } (${ info.id })`;
             problems.innerHTML = found.map(({ message, loc }) => `<li><code>${ loc?.line ?? '?' }:${ loc?.column ?? '?' }</code> ${ escape(message) }</li>`).join('');
             save.disabled = found.length > 0;
+            faulty = new Set(found.map(({ loc }) => loc?.line).filter(Boolean));
+            number();
         };
 
         textarea.value = source;
@@ -169,10 +181,11 @@ function openEditor({ source, file, original, taken }) {
             clearTimeout(timer);
             timer = setTimeout(refresh, 150);
             pre.innerHTML = highlighted(textarea.value);
+            number();
         });
 
         textarea.addEventListener('scroll', () => {
-            pre.scrollTop = textarea.scrollTop;
+            pre.scrollTop = gutter.scrollTop = textarea.scrollTop;
             pre.scrollLeft = textarea.scrollLeft;
         });
 
@@ -190,7 +203,7 @@ function openEditor({ source, file, original, taken }) {
             resolve(result);
         };
 
-        overlay.querySelector('.cancel').onclick = () => close(null);
+        overlay.querySelector('.user-script-editor--cancel').onclick = () => close(null);
         save.onclick = () => close({ file, source: textarea.value });
 
         document.body.append(overlay);

@@ -2271,7 +2271,7 @@ code[fill], [code][fill], [type^="code"i][fill] {
     position: relative;
 }
 
-.user-script-editor--code pre, .user-script-editor--code textarea {
+.user-script-editor--code pre, .user-script-editor--code textarea, .user-script-editor--gutter {
     border: 1px solid var(--ttv-white-20);
     border-radius: var(--ttv-radius-xs);
     box-sizing: border-box;
@@ -2285,6 +2285,29 @@ code[fill], [code][fill], [type^="code"i][fill] {
     tab-size: 4;
     white-space: pre;
     width: 100%;
+}
+
+/* Line numbers on the left; the code sits to their right */
+.user-script-editor--code pre, .user-script-editor--code textarea {
+    left: 3.5rem;
+    width: calc(100% - 3.5rem);
+}
+
+.user-script-editor--gutter {
+    background: var(--ttv-surface-dark);
+    color: var(--ttv-grey);
+    overflow: hidden;
+    padding-left: 0;
+    padding-right: 0.5rem;
+    scroll-behavior: auto;
+    text-align: right;
+    user-select: none;
+    width: 3.5rem;
+}
+
+.user-script-editor--gutter [problem] {
+    background: var(--ttv-red-deep);
+    color: var(--ttv-white);
 }
 
 .user-script-editor--code pre {
@@ -2311,10 +2334,27 @@ code[fill], [code][fill], [type^="code"i][fill] {
 }
 
 .user-script-editor--actions {
-    text-align: right;
+    display: flex;
+    gap: 0.5rem;
+    justify-content: flex-end;
 }
 
-.user-script-editor--actions .save[disabled] {
+.user-script-editor--actions button {
+    height: 2rem;
+    margin: 0;
+    min-width: 5rem;
+}
+
+.user-script-editor--cancel {
+    background-color: var(--ttv-red) !important;
+}
+
+.user-script-editor--cancel:hover {
+    background-color: var(--ttv-red-dark) !important;
+}
+
+.user-script-editor--save[disabled] {
+    cursor: not-allowed;
     opacity: 0.5;
 }
 
