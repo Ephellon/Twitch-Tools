@@ -4,7 +4,7 @@
 
      =    definition        |    alternation      { }  zero or more
      ,    concatenation     [ ]  optional         ( )  grouping
-     ;    terminator        " "  terminal         (* *) comment
+     ;    terminator        " "  terminal         [* *] comment
 
    INDENT, DEDENT, NEWLINE and EOF are TERMINALS synthesised by the lexer,
    not written in the source. See the lexical section at the foot of the file.
@@ -19,6 +19,7 @@
    listed in SPEC 14.1a.
    ========================================================================== *)
 
+(* Railroad viewer: https://matthijsgroen.github.io/ebnf2railroad/try-yourself.html *)
 
 (* -- program and blocks -------------------------------------------------- *)
 
@@ -220,8 +221,8 @@ pipe_expr      = where_expr , { ( "<|" | "of" ) , where_expr } ;
    node. Because where_expr binds tighter than cmp_expr, a predicate that
    CONTAINS a comparison must be parenthesized. That is the canonical spelling,
    and a settled rule rather than a rough edge - see SPEC 5.2:
-       .links | ("x" in .href)     (* a filter *)
-       .links | "x" in .href       (* (.links where "x") in .href - a boolean *) *)
+       .links | ("x" in .href)     [* a filter *]
+       .links | "x" in .href       [* (.links where "x") in .href - a boolean *] *)
 where_expr     = range_expr , { ( "where" | "|" ) , range_expr } ;
 
 (* Non-associative: `1 .. 5 .. 9` is a parse error. *)
@@ -270,7 +271,7 @@ group          = "(" , { NEWLINE | "," } ,
 calc           = "calc" , "(" , sum , ")" ;
 sum            = product , { ( "+" | "-" ) , product } ;
 product        = signed , { ( "*" | "/" | "%" ) , signed } ;
-signed         = ( "+" | "-" ) , signed_base , (* not followed by "**" *)
+signed         = ( "+" | "-" ) , signed_base   (* a sign never sits directly before "**" *)
                | power ;
 signed_base    = ( "+" | "-" ) , signed_base | calc_operand ;
 power          = calc_operand , [ "**" , signed ] ;
@@ -377,131 +378,131 @@ context_sel    = "." , IDENT ;
 
 (*
   COMMENT     = "//" [^\n]*
-                (* tested BEFORE channel_sel, or every comment scans as a
-                   channel named after its first word *)
+                [* tested BEFORE channel_sel, or every comment scans as a
+                   channel named after its first word *]
 
-  BLOCK_COMMENT                                                      (* v2 *)
-              = "/*" ... "*/"
-                (* may span lines. A block comment that owns its whole line is
+  BLOCK_COMMENT
+              = "/*" . * "*/"
+                [* may span lines. A block comment that owns its whole line is
                    consumed at the LINE HEAD, so it cannot shift the indent
                    stack; one reached mid-line is skipped like whitespace, so
-                   `/* note */ POST `hi`` still measures its indentation. *)
+                   `/* note */ POST `hi`` still measures its indentation. *]
 
   TEMPLATE    = "`" ( [^`\\$] | "\\" . | "$" !"{" | RAW_OPEN | INTERPOLATION )* "`"
   INTERPOLATION
               = "${" <balanced braces, stepping over nested strings,
                       templates and comments> "}"
-                (* emitted as ONE token carrying quasis[] and the raw text plus
+                [* emitted as ONE token carrying quasis[] and the raw text plus
                    absolute offset of each interpolation; the parser re-parses
-                   those substrings so locations stay file-accurate *)
-  RAW_OPEN    = "${" with NO matching "}"                            (* v2 *)
-                (* contributes the literal two characters "${" to the current
+                   those substrings so locations stay file-accurate *]
+  RAW_OPEN    = "${" with NO matching "}"                            [* v2 *]
+                [* contributes the literal two characters "${" to the current
                    quasi. A "${" that DOES close is still an interpolation, and
                    still an error when its contents are ungrammatical -
                    degrading that would swallow real typos, and the escape
-                   idiom `${ "${x}" }` only works if the outer pair evaluates. *)
+                   idiom `${ "${x}" }` only works if the outer pair evaluates. *]
 
   STRING      = "\"" ( [^"\\\n] | "\\" . )* "\""
-              | "'"  ( [^'\\\n] | "\\" . )* "'"                      (* v2 *)
-                (* the two spellings are one production with the quote as a
-                   parameter, so an escape fixed in one is fixed in both *)
+              | "'"  ( [^'\\\n] | "\\" . )* "'"                      [* v2 *]
+                [* the two spellings are one production with the quote as a
+                   parameter, so an escape fixed in one is fixed in both *]
 
   ORDINAL     = -?\d+(st|nd|rd|th)\b
-                (* tried BEFORE DURATION and NUMBER. A leading "-" belongs to
+                [* tried BEFORE DURATION and NUMBER. A leading "-" belongs to
                    the ordinal only when a suffix follows, so -1 is still unary
                    minus applied to 1, and "->" can never be mistaken for one.
                    Value converts to a 0-based index; negatives count from the
-                   end. *)
+                   end. *]
 
   DURATION    = (\d{1,2}):([0-5]\d)(:([0-5]\d))?\b
-                (* tried after ORDINAL, before NUMBER; value in milliseconds.
+                [* tried after ORDINAL, before NUMBER; value in milliseconds.
                    Scanned from the LEADING DIGIT, which is what keeps the ":"
-                   branch from ever having to recognise one. *)
+                   branch from ever having to recognise one. *]
 
   NUMBER      = \d+(\.\d+)?(?!\w)
-                (* the lookahead permits a following ".", so 1..9 scans as
-                   NUMBER "1", RANGE_EXCLUSIVE, NUMBER "9" *)
+                [* the lookahead permits a following ".", so 1..9 scans as
+                   NUMBER "1", RANGE_EXCLUSIVE, NUMBER "9" *]
 
-  PERMISSION  = "+" ACTION ( ":" PART ( "." PART )* ( "." "*" )? )?  (* v2.1 *)
+  PERMISSION  = "+" ACTION ( ":" PART ( "." PART )* ( "." "*" )? )?  [* v2.1 *]
   ACTION      = [A-Za-z_][A-Za-z0-9_]*
   PART        = [A-Za-z0-9_]+
-                (* consumes its own ":", which is the only reason `+eval:calc`
+                [* consumes its own ":", which is the only reason `+eval:calc`
                    never reaches the case-label branch. A "+" with no valid name
                    is a HARD ERROR naming the absence of arithmetic, and so is
                    one followed directly by ":", ".", "*" or a word character
                    (`+read:*`, `+a:b:c`). Whether the name is on the permission
                    list, and whether a write/eval grant carries a description,
-                   is checked later - see SPEC 6.8. *)
+                   is checked later - see SPEC 6.8. *]
 
   JS_PATH     = "&" [A-Za-z_$][A-Za-z0-9_$]*
-                       ( "." [A-Za-z_$][A-Za-z0-9_$]* )*             (* v2 *)
-                (* (v2.1) was "$:". Value is the segment ARRAY. A "$" outside a template is
-                   a hard error. *)
+                       ( "." [A-Za-z_$][A-Za-z0-9_$]* )*             [* v2 *]
+                [* (v2.1) was "$:". Value is the segment ARRAY. A "$" outside a template is
+                   a hard error. *]
 
-  PCT_RUN     = "%" ( CLS ( "%" CLS )* )?                            (* v2 *)
+  PCT_RUN     = "%" ( CLS ( "%" CLS )* )?                            [* v2 *]
   CLS         = "0" | "a" | "A" | "b" | "B" | "d" | "D" | "f" | "n"
               | "r" | "s" | "S" | "t" | "v" | "w" | "W" | "c"
-                (* the leading "%" belongs to the FIRST class, so "%n%s" is two
+                [* the leading "%" belongs to the FIRST class, so "%n%s" is two
                    classes and a bare "%" is zero - which is how "%" alone can
                    mean the default run without a second spelling. Value is the
                    letter array, empty for a bare "%".
                    (v2.1) The default run is `\s*\n\s*` - any whitespace run
-                   containing a newline - NOT "%n%s", which is `\n+\s+`. *)
+                   containing a newline - NOT "%n%s", which is `\n+\s+`. *]
 
-  VAR_NAME    = IDENT containing at least one [a-z]                  (* v2.1 *)
-                (* NOT a lexical class - the lexer emits IDENT and the PARSER
+  VAR_NAME    = IDENT containing at least one [a-z]                  [* v2.1 *]
+                [* NOT a lexical class - the lexer emits IDENT and the PARSER
                    applies this rule, at binding sites only. v2 required an
-                   interior underscore instead. *)
-  FUNC_NAME   = an UPPER_IDENT named by a `define` in the same script  (* v2.1 *)
-  PLUGIN_ID   = [a-z][a-z0-9_]*                                      (* v2.1 *)
-  SETTING_NAME= [a-z][a-z0-9_]*                                      (* v2.1 *)
-  SETTING_TYPE= "checkbox" | "number" | "text" | "select"            (* v2.1 *)
-  FRAME       = "chat" | "main"                                      (* v2.1 *)
+                   interior underscore instead. *]
+  FUNC_NAME   = an UPPER_IDENT named by a `define` in the same script  [* v2.1 *]
+  PLUGIN_ID   = [a-z][a-z0-9_]*                                      [* v2.1 *]
+  SETTING_NAME= [a-z][a-z0-9_]*                                      [* v2.1 *]
+  SETTING_TYPE= "checkbox" | "number" | "text" | "select"            [* v2.1 *]
+  FRAME       = "chat" | "main"                                      [* v2.1 *]
 
-  BADGE_NAME  = [A-Za-z][A-Za-z0-9_-]*   (* reached only inside "[ ]" *)
+  BADGE_NAME  = [A-Za-z][A-Za-z0-9_-]*   [* reached only inside "[ ]" *]
 
-  DESCRIBE    = "--" (?=\s|$)                                        (* v2.1 *)
-                (* only when whitespace or end of input follows; "--name"
+  DESCRIBE    = "--" (?=\s|$)                                        [* v2.1 *]
+                [* only when whitespace or end of input follows; "--name"
                    glued is the retired badge spelling, and anything else is
-                   a hard error naming the absence of decrement *)
-  PATH        = [A-Za-z0-9_.-]+        (* channel names and realm snowflakes *)
+                   a hard error naming the absence of decrement *]
+  PATH        = [A-Za-z0-9_.-]+        [* channel names and realm snowflakes *]
   IDENT       = [A-Za-z_][A-Za-z0-9_]*
-  UPPER_IDENT = [A-Z][A-Z0-9_]*        (* an IDENT flagged isUpper *)
+  UPPER_IDENT = [A-Z][A-Z0-9_]*        [* an IDENT flagged isUpper *]
 
   KEYWORD     = await | with | using | if | goto | any | from
               | where | of | is | in | and | or | not | true | false
-              | when                                                 (* v2 *)
-              | else | above | below | after | calc | as           (* v2.1 *)
-              | define | return | for | break | renew             (* v2.1 *)
-              | plugin | setting                                   (* v2.1 *)
+              | when                                                 [* v2 *]
+              | else | above | below | after | calc | as           [* v2.1 *]
+              | define | return | for | break | renew             [* v2.1 *]
+              | plugin | setting                                   [* v2.1 *]
 
   RESERVED    = elif | elseif | switch | case | default
-                (* (v2) reserved for ONE purpose: to produce a diagnostic that
+                [* (v2) reserved for ONE purpose: to produce a diagnostic that
                    names `when` / `else` (or, for `calc`, the arithmetic
-                   reservation) instead of a generic "expected a statement" *)
+                   reservation) instead of a generic "expected a statement" *]
 
   PUNCTUATOR  = "..." | ".." | "<|" | "=>" | "->" | "(" | ")" | "*"
               | "-" | "=" | "," | "|"
-                (* consulted longest-first, so maximal munch is automatic:
+                [* consulted longest-first, so maximal munch is automatic:
                    "=>" beats "=" and "->" beats "-" BY CONSTRUCTION, not by
                    the order they are written. "<|" is in this table only for
                    documentation - it is claimed at the "<" branch and never
                    reaches here, which is what makes a bare "|" safe to add.
                    Context-sensitive lexemes are handled by dedicated branches
                    that run first: "//", "/*", "\"", "'", "`", ":", "<", ".",
-                   "#", "/", "@", "+", "&", "$", "%", "--" and a leading digit. *)
+                   "#", "/", "@", "+", "&", "$", "%", "--" and a leading digit. *]
 
-  COLON       = ":" that is neither a DURATION nor an EMOTE          (* v2 *)
-                (* v1 refused this in the lexer. v2 cannot: a when_case label is
+  COLON       = ":" that is neither a DURATION nor an EMOTE          [* v2 *]
+                [* v1 refused this in the lexer. v2 cannot: a when_case label is
                    a bare colon, and the scanner has no way to know it is inside
                    one. The token is emitted and the PARSER owns the diagnostic,
-                   because only the parser knows which reading was expected. *)
+                   because only the parser knows which reading was expected. *]
 
   NEWLINE     = end of a line that produced at least one token
-                (* emitted INSIDE brackets too - any_from needs it *)
+                [* emitted INSIDE brackets too - any_from needs it *]
   INDENT      = leading whitespace wider than the enclosing level
   DEDENT      = one per level closed; must land exactly on an enclosing level
-                (* both SUPPRESSED while bracket depth > 0 *)
+                [* both SUPPRESSED while bracket depth > 0 *]
   EOF         = end of input, after a final NEWLINE and any pending DEDENTs
 
   Discarded entirely: blank lines, comment-only lines, and horizontal
