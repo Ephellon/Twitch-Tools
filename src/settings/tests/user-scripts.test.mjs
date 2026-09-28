@@ -5,6 +5,8 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { createRequire } from 'node:module';
+import { readFileSync } from 'node:fs';
+import { URL } from 'node:url';
 
 import { TEMPLATE } from '../user-scripts.js';
 
@@ -17,4 +19,8 @@ test('the starter script checks clean and declares its plugin', () => {
     assert.deepEqual(globalThis.TTV_DSL.check(TEMPLATE), []);
     assert.equal(meta.id, 'hello_bot');
     assert.deepEqual(Object.keys(meta.settings), ['hello_bot', 'hello_bot__reply', 'hello_bot__reminders']);
+});
+
+test('the starter script is the published Hello Bot example', () => {
+    assert.equal(TEMPLATE, readFileSync(new URL('../../dsl/examples/hello-bot.ttv', import.meta.url), 'utf8'));
 });

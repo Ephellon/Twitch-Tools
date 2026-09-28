@@ -11,7 +11,7 @@ See the [Wiki](https://github.com/Ephellon/Twitch-Tools/wiki) for more informati
 
 ### What's new in v6
 
-- **User Scripts:** write your own chat automation in the TTV DSL, for example replying to commands, greeting raiders or posting on a timer. Scripts are added and edited in Settings → **User Scripts**, in an editor with highlighting, line numbers and live problem checking. A script that asks for extra permissions only runs once you approve them. See [User Scripts](https://github.com/Ephellon/Twitch-Tools/wiki/User-Scripts) on the Wiki.
+- **User Scripts:** write your own chat automation in the TTV DSL, for example replying to commands, greeting raiders or posting on a timer. Scripts are added and edited in Settings → **User Scripts**, in an editor with highlighting, line numbers and live problem checking. A script that asks for extra permissions only runs once you approve them. See [User Scripts](https://github.com/Ephellon/Twitch-Tools/wiki/User-Scripts) and the [examples](https://github.com/Ephellon/Twitch-Tools/wiki/TTV-DSL-Examples) on the Wiki.
 - **Settings:**
   - Every option now has a sensible default, including options added by an update.
   - Settings can be exported to a file and restored from one (#58).

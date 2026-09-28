@@ -1,0 +1,22 @@
+plugin stream_timers -- "Stream Timers"
+    about "Hydration and stretch reminders while live, a welcome when the bot starts, and !time."
+    setting hydrate: checkbox true -- "Hydration reminder every 30 minutes"
+    setting stretch: checkbox true -- "Stretch break every hour"
+
+// Repeating timers. `with (#live is true)` keeps them quiet while offline
+await 30:00 with (#live is true)
+    if setting.hydrate
+        POST `💧 Hydration check! We've been live for ${ #uptime as "h?:mm:ss" }`
+
+await 1:00:00 with (#live is true)
+    if setting.stretch
+        POST `🧘 Stretch break! Roll those shoulders.`
+
+// A one-off: `after` runs once, a minute after the script starts
+after 1:00
+    POST `The stream bot is up. Type !time to see the streamer's clock.`
+
+// The streamer's local time. Reading the clock is a permission
+using +read:datetime
+    await (.command is "time")
+        REPLY `It's ${ &datetime.time() } for the streamer.`

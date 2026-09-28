@@ -594,6 +594,21 @@
             });
         });
 
+        it('refuses `where` / `|` after a yes/no condition, pointing at `with` and `and`', () => {
+            for(const head of [
+                '(.command is "so") where ("moderator" in .badges)',
+                '(.a and .b) | (.c)',
+                '(not .a) where (.b)',
+                '(.size is above 5) | (.b)',
+                'true where (.b)',
+            ])
+                assert.throws(() => parse(`await ${ head }\n    POST \`x\`\n`), /filters a list, but what comes before it is a yes\/no condition.*use `with`.*or `and`/);
+
+            // Real list filters are untouched, chained ones included.
+            assert.ok(parse('await *\n    goto 1st <| .links where (.href is *) where ("clips" in .href)\n'));
+            assert.ok(parse('await (.links | ("twitch.tv" in .href))\n    POST `x`\n'));
+        });
+
         it('reads an unparenthesized predicate as a comparison, not a filter', () => {
             const { NodeType } = globalThis.TTV_DSL.ast;
 

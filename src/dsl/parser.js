@@ -117,6 +117,16 @@ if(typeof require === 'function' && typeof module === 'object') {
      * four readings were on the table. */
     const COLON_MESSAGE = 'Unexpected ":"; expected a duration like "15:00", or a `when` case label like `"help":`';
 
+    /** Operators whose result is always `true` or `false`. */
+    const CONDITION_OPERATORS = new Set(['is', 'in', 'and', 'or', 'above', 'below', 'or above', 'or below']);
+
+    /** @param {Object} node @return {Boolean} true for an expression that can only be yes/no —
+     * a comparison, `and`/`or`/`not`, or a `true`/`false` literal */
+    const isCondition = (node) => (false
+        || (NodeType.BinaryExpression === node?.type && CONDITION_OPERATORS.has(node.operator))
+        || (NodeType.UnaryExpression === node?.type && 'not' === node.operator)
+        || (NodeType.Literal === node?.type && typeof node.value === 'boolean'));
+
     /** @param {Object} node @return {Boolean} true for a template that still needs evaluating */
     const isInterpolated = (node) => (NodeType.TemplateLiteral === node?.type && node.expressions.length > 0);
 
@@ -1276,6 +1286,13 @@ if(typeof require === 'function' && typeof module === 'object') {
 
                     continue;
                 }
+
+                // `where` / `|` filters a *list*. Put after a yes/no value —
+                // `await (.command is "so") where ("moderator" in .badges)` — it filters a
+                // one-item list of `true`, finds nothing, and the line silently never fires.
+                // That is always a mistake for a condition, so say so here.
+                if(TokenType.WHERE === token.type && isCondition(left))
+                    this.#fail(`\`${ token.lexeme }\` filters a list, but what comes before it is a yes/no condition. To add a condition, use \`with\` after \`await\` — \`await (.command is "so") with ("moderator" in .badges)\` — or \`and\``, token);
 
                 // A left-associative operator forbids its own precedence on the right, so
                 // `a or b or c` groups as `(a or b) or c`. A non-associative one does the

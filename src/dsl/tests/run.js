@@ -45,6 +45,8 @@ const TESTS = [
     'functions.test.js',
     'plugin.test.js',
     'highlight.test.js',
+    'example.test.js',
+    'examples.test.js',
 ];
 
 for(const name of MODULES)

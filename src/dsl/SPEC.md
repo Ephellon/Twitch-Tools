@@ -624,6 +624,17 @@ than by agreement — the two spellings cannot drift apart. Likewise `of` and `<
 
 See §5.2 for the precedence gotcha this inherits.
 
+**Not a condition** *(v2.1)*. `where` / `|` filters a *list*; it cannot add a condition to a
+yes/no test. `await (.command is "so") where ("moderator" in .badges)` would filter a
+one-item list of `true`, find nothing, and never fire — so a `where` whose left side is a
+comparison (`is`, `in`, `above`, …), `and`/`or`/`not`, or `true`/`false` is a parse error that
+names the fix: `with` after `await`, or `and`.
+
+```
+await (.command is "so") with ("moderator" in .badges)     // a condition on the await
+await (.command is "so") and ("moderator" in .badges)      // or one combined test
+```
+
 ### 5.11 The jobs of `:` *(v2)*
 
 `:` means three things: a duration (`15:00`), a permission segment (`+eval:calc`), and a

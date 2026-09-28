@@ -27,6 +27,7 @@ await (.command is "hello")
 
 - The `plugin` header names the script, says where it runs (`frames chat, main`; `chat` by default), and declares its settings: `checkbox`, `number`, `text` or `select`.
 - The body reacts to chat (`await …`), posts (`POST`) and replies (`REPLY`), and reads the channel (`#live`, `#viewers`, …).
+- More scripts to start from: `src/dsl/examples/`, published on the Wiki as [TTV DSL Examples](https://github.com/Ephellon/Twitch-Tools/wiki/TTV-DSL-Examples). Each one is tested against a real chat session.
 - The full language is described in `src/dsl/SPEC.md`. What a script can see of Twitch is described in `docs/DSL-HOST.md`.
 
 ## Where scripts run

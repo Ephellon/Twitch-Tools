@@ -40,6 +40,7 @@ const EXCLUDE = [
     /^dsl\/tests\//,
     /^dsl\/.+\.(md|ebnf)$/,
     /^dsl\/(fake-page\.js|playground\.html)$/,   // Test and development aids
+    /^dsl\/examples\//,                          // Example scripts and their wiki pages
     /^dsl\/host\//,                              // Host conformance suite and reference adapter
     /(^|\/)-[^/]*$/,            // Local scratch files, e.g. `-test.js` (see .gitignore)
     /(^|\/)\.[^/]*$/,           // Dotfiles
