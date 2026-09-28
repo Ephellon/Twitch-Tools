@@ -221,11 +221,15 @@ function openEditor({ source, file, original, taken }) {
  * @returns {Promise<boolean>} Whether they approved
  */
 async function askApproval(script) {
-    const lines = script.meta.permissions.map(({ permissions, description, line }) =>
-        `<li><code>${ permissions.map(escape).join(', ') }</code>${ description ? ` — ${ escape(description) }` : '' } <small>(line ${ line })</small></li>`
+    const rows = script.meta.permissions.map(({ permissions, description, line }) =>
+        `<li><code>${ permissions.map(escape).join(', ') }</code><span>${ escape(description ?? '') }</span><small>line ${ line }</small></li>`
     ).join('');
 
-    return ask(`<strong>${ escape(script.meta.name) }</strong> asks for these permissions:<ul>${ lines }</ul>Only approve scripts you trust.`);
+    return ask(`<div class="user-scripts--approval">
+        <p><strong>${ escape(script.meta.name) }</strong> asks for these permissions:</p>
+        <ul>${ rows }</ul>
+        <p class="user-scripts--approval-note">Only approve scripts you trust.</p>
+    </div>`);
 }
 
 /**
