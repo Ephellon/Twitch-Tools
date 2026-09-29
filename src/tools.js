@@ -3303,16 +3303,18 @@ let Initialize = async(START_OVER = false) => {
                         //     created_at:string<Date.UTC>,
                         // }>
                     api_twitch_tv: if(!FETCHED_OK)
-                        fetchURL.fromDisk(`https://api.twitch.tv/helix/users?id=${ STREAMER.sole }`, {
+                        // The OAuth token loads later (Search helpers, below); asking before it's set gets a 401
+                            // Signed-out viewers never get one: stop waiting after 30s
+                        when.defined((until => () => Search.authorization ?? (+new Date > until ? when.null : void null))(+new Date + 30_000), 250).then(authorization => fetchURL.fromDisk(`https://api.twitch.tv/helix/users?id=${ STREAMER.sole }`, {
                             headers: {
-                                Authorization: Search.authorization,
+                                Authorization: authorization,
                                 'Client-Id': Search.clientID,
                             },
                             mode: 'cors',
                             hoursUntilEntryExpires: 168,
-                        })
+                        }))
                             .then(response => response.json())
-                            .then(json => JSON.parse(json.data ?? 'null'))
+                            .then(json => json.data?.[0])
                             .then(json => {
                                 if(nullish(json))
                                     throw "Fine Detail JSON data could not be parsed...";
@@ -4122,6 +4124,11 @@ if(top == window) {
                                         observer.observe(container, { attributes: true, subtree: true });
                                     });
                     }
+
+                    // Twitch's side-nav sections no longer carry an icon to match: find "followed" by its cards (#42)
+                    for(const container of $.all('[id*="side"i][id*="nav"i] .side-nav-section[aria-label]:not([tt-svg-label])'))
+                        if($.defined('[data-a-id^="followed-channel"i], [data-test-selector="followed-channel"i]', container))
+                            container.setAttribute('tt-svg-label', 'followed');
                 } // :SectionLabeling
 
                 top.onlocationchange = () => {

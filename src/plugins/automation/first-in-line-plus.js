@@ -16,6 +16,9 @@ plugin({
     async install({ StopWatch }) {
         let OLD_STREAMERS, NEW_STREAMERS, BAD_STREAMERS, ON_INSTALLED_REASON;
 
+        // Re-rendering the Side Nav toggles it: do it once per page, never while one is pending (#42)
+        let RERENDERED_AT = null;
+
         await Cache.load(['OLD_STREAMERS', 'BAD_STREAMERS'], cache => {
             OLD_STREAMERS = cache.OLD_STREAMERS ?? '';
             BAD_STREAMERS = cache.BAD_STREAMERS ?? '';
@@ -46,6 +49,11 @@ plugin({
 
                 // removeFromSearch(['tt-err-chn']);
             } else if($.nullish('[id*="side"i][id*="nav"i] .side-nav-section[aria-label][tt-svg-label="followed"i] a[class*="side-nav-card"i]') && !/^User_Not_Logged_In_\d+$/.test(USERNAME)) {
+                if(RERENDERED_AT == location.pathname)
+                    return /* Already tried on this page */;
+
+                RERENDERED_AT = location.pathname;
+
                 wait(3000).then(() => {
                     // Collapse and re-expand an open Side Nav so Twitch re-renders the followed channels
                     if(SideNav.open)

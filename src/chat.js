@@ -362,7 +362,7 @@ Chat__PAGE_CHECKER = setInterval(Chat__WAIT_FOR_PAGE = async() => {
 
             ChatObserver: {
                 let [CHANNEL] = location.pathname.toLowerCase().slice(1).split('/').slice(+IS_A_FRAMED_CONTAINER)
-                    , USERNAME = Search.cookies.login;
+                    , USERNAME = Search.cookies.login ?? `User_Not_Logged_In_${ +new Date }`;
 
                 CHANNEL = `#${ CHANNEL }`;
 

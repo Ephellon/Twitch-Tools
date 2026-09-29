@@ -1951,7 +1951,12 @@ Object.defineProperties(fetchURL, {
                     }
                 });
 
-            return fetchURL(url, options).then(response => response.text()).then(text => {
+            return fetchURL(url, options).then(async response => {
+                // An error reply (401, 404, 429...) isn't content: hand it back as-is, but never cache it
+                if(!response.ok)
+                    return response;
+
+                const text = await response.text();
                 let data;
 
                 // Set the expiration date...
