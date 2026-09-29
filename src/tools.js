@@ -3936,10 +3936,15 @@ if(top == window) {
                                         // features after that would otherwise reload forever
                                         const RELOADED = JSON.parse(sessionStorage.getItem('ttv-tools:reinit-reload') || '{}');
 
+                                        // Don't stop watching, though: the jobs above keep restarting until they load (e.g. Up
+                                        // Next once an offline channel goes live), as v5 did; only the reload waits
                                         if(RELOADED.path == location.pathname && (+new Date - RELOADED.at) < 300_000) {
-                                            $warn(`Still not activated after a reload: ${ NOT_LOADED_CORRECTLY }. Giving up on this page.`);
+                                            if(!PAGE_IS_READY)
+                                                $warn(`Still not activated after a reload: ${ NOT_LOADED_CORRECTLY }. Retrying without reloading.`);
 
-                                            return PAGE_IS_READY = !clearInterval(REINIT_JOBS);
+                                            PAGE_IS_READY = true;
+
+                                            return false;
                                         }
 
                                         sessionStorage.setItem('ttv-tools:reinit-reload', JSON.stringify({ path: location.pathname, at: +new Date }));
