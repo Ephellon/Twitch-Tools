@@ -3,6 +3,7 @@
  *
  *     node scripts/build.mjs              → dist/chrome/, dist/firefox/
  *     node scripts/build.mjs --zip        → also dist/ttv-tools.zip, dist/ttv-tools-firefox.zip
+ *     node scripts/build.mjs --release    → also the release zips at the repo root: ttv-tools.zip, ttv-tools.moz.zip
  *     node scripts/build.mjs --watch      → rebuild on every change under src/
  *
  * Load `dist/chrome` (or `dist/firefox`) unpacked. The build copies `src/` (minus dev-only files and
@@ -16,7 +17,11 @@ import * as esbuild from 'esbuild';
 
 const SOURCE = 'src';
 const OUTPUT = 'dist';
-const ZIP = process.argv.includes('--zip');
+const RELEASE = process.argv.includes('--release');
+const ZIP = RELEASE || process.argv.includes('--zip');
+
+// The release zips committed at the repo root (the pre-commit hook rebuilds them: .githooks/pre-commit)
+const RELEASE_ZIPS = { chrome: 'ttv-tools.zip', firefox: 'ttv-tools.moz.zip' };
 const WATCH = process.argv.includes('--watch');
 
 // ES-module entry points (in SOURCE) → the classic script each becomes (in the extension)
@@ -181,8 +186,15 @@ function write(target, transform, files, manifest, bundles) {
     if(ZIP) {
         const name = target == 'chrome' ? 'ttv-tools.zip' : `ttv-tools-${ target }.zip`;
 
-        fs.writeFileSync(path.join(OUTPUT, name), zip(entries));
+        const data = zip(entries);
+
+        fs.writeFileSync(path.join(OUTPUT, name), data);
         console.log(`${ target }: ${ path.join(OUTPUT, name) }`);
+
+        if(RELEASE && RELEASE_ZIPS[target]) {
+            fs.writeFileSync(RELEASE_ZIPS[target], data);
+            console.log(`${ target }: ${ RELEASE_ZIPS[target] }`);
+        }
     }
 }
 

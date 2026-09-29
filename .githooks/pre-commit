@@ -1,0 +1,13 @@
+#!/bin/sh
+# Rebuilds the release zips (ttv-tools.zip, ttv-tools.moz.zip) whenever a commit changes src/,
+# so the zips at the repo root always match the source. Enabled by `npm install` (package.json "prepare").
+# Skip once with `git commit --no-verify`.
+
+git diff --cached --quiet -- src && exit 0
+
+node scripts/build.mjs --release > /dev/null || {
+    echo "pre-commit: the build failed; fix it, or commit with --no-verify" >&2
+    exit 1
+}
+
+git add ttv-tools.zip ttv-tools.moz.zip

@@ -124,7 +124,7 @@ Other background duties:
 2. esbuild bundles `lib/index.js` (which imports every plugin) into `lib.js`, an IIFE for Chrome 88+/Firefox 142+ that keeps function names.
 3. It writes `manifest.json` for each target.
 
-`--zip` adds the release zips.
+`--zip` adds zips to `dist/`. `npm run release` (`--release`) also writes the committed release zips at the repo root (`ttv-tools.zip`, `ttv-tools.moz.zip`); the pre-commit hook (`.githooks/pre-commit`, enabled by `npm install`) runs it whenever a commit changes `src/`.
 
 ## 9. Browser compatibility
 
