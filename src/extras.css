@@ -742,8 +742,10 @@ caption {
 .tt-silent.tt-veiled:is(.tt-alert, .tt-confirm, .tt-prompt, .tt-select) :is(.tt-alert-container, .tt-confirm-container, .tt-prompt-container, .tt-select-container) {
     transition: transform 0.6s ease 0s, opacity var(--ttv-slow) ease 0s;
 
-    transform: translate(-50%, calc(1% + 0.1em));
-    top: 99%;
+    /* Peek 10px of the box (was a ~3px sliver), and end the revealed box at the bottom edge (was 99%): hovering the
+       sliver made the box slide out from under the pointer and back, so its buttons couldn't be clicked */
+    transform: translate(-50%, -10px);
+    top: 100%;
 }
 
 .tt-silent.tt-veiled:is(.tt-alert, .tt-confirm, .tt-prompt, .tt-select) :is(.tt-alert-container, .tt-confirm-container, .tt-prompt-container, .tt-select-container):is(:hover, :focus-within) {
