@@ -72,7 +72,9 @@ The owner can still reproduce these; none is fatal.
 - ~~**Fine Details (4)** fails~~: fixed. 401 replies were cached for a week, the request ran before the token, the reply was mis-parsed, and the saved Client-Id didn't match the token.
 - **Streamer Data (1§1)** fails (non-fatal): external. The corsfix proxy has no active plan and its error arrives as a 200.
 - **Pop-out chat runs no chat features** (an old bug): its readiness check needs the main controller, a follow button or a frame, and it opens no chat relay. User Scripts only run on channel pages until it has one.
-- ~~**The one-minute timer doesn't show**~~ unless the drag-and-drop has been used: fixed. `REDO_FIRST_IN_LINE_QUEUE` skipped every restart after the first job. Not yet seen live through a full Up Next cycle.
+- ~~**The one-minute timer doesn't show**~~ unless the drag-and-drop has been used: fixed. `REDO_FIRST_IN_LINE_QUEUE` skipped every restart after the first job, and live notifications set `FIRST_IN_LINE_HREF` without starting one. Verified live (prompt, Skip, next prompt, tagged switch).
+- **Up Next job URLs repeat `?tool=`** (seen in the timer recheck). Harmless so far.
+- **Up Next's Skip button can sit off-screen** (seen in the timer recheck).
 
 ## Owner decisions
 
