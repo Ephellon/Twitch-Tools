@@ -211,7 +211,11 @@ class Search {
                             , data = $('head>script[type^="application"i][type$="json"i]', doc)?.textContent;
 
                         try {
-                            [data] = JSON.parse(data || `{"@graph":[]}`)['@graph'];
+                            // Twitch's graph is `[ItemList, VideoObject (only while live), ProfilePage]`: the live flag sits on the
+                            // VideoObject's `publication`, so taking the first item read every channel as offline (#45)
+                            const graph = JSON.parse(data || `{"@graph":[]}`)['@graph'];
+
+                            data = graph.find(item => defined(item?.publication)) ?? graph.find(item => item?.['@type'] == 'ProfilePage') ?? graph[0];
                         } catch(error) {
                             // Not an object...
                             try {
