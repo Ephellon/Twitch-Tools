@@ -2983,10 +2983,15 @@ let Initialize = async(START_OVER = false) => {
                         // usualStartTime:string<Date-Time<{HH:MM}>>
                         // usualStopTime:string<Date-Time<{HH:MM}>>
                     www_twitchmetrics_net: if(!FETCHED_OK) {
-                        when(() => defined(STREAMER.sole) ? STREAMER : false).then(({ name, sole }) => {
+                        // Keep the ID that was checked: `STREAMER.sole` is a getter, and a second read can be empty (`/c/undefined-…`)
+                        when(() => (sole => defined(sole) ? { name: STREAMER.name, sole } : false)(STREAMER.sole)).then(({ name, sole }) => {
                             fetchURL.fromDisk(`https://www.twitchmetrics.net/c/${ sole }-${ name.toLowerCase() }/stream_time_values`, { mode: 'cors', hoursUntilEntryExpires: 168 })
                                 .then(response => response.json())
                                 .then(json => {
+                                    // A list of `[start, stop]` pairs; anything else is an error page (e.g. a CORS proxy's own error, sent as a 200)
+                                    if(defined(json) && !Array.isArray(json))
+                                        throw `Unexpected stream-time data: ${ JSON.stringify(json)?.slice(0, 120) }`;
+
                                     const data = { dailyBroadcastTime: 0, activeDaysPerWeek: 0, usualStartTime: '00:00', usualStopTime: '00:00', daysStreaming: [], dailyStartTimes: {}, dailyStopTimes: {} }
                                         , today = new Date;
 
