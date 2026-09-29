@@ -248,6 +248,21 @@ class Search {
 
                         const channelData = await Search.convertResults({ async json() { return json } });
 
+                        // Live status changes: after 5 min a read re-fetches in the background and updates this object in place,
+                        // so every holder (SEARCH_CACHE, ALL_CHANNELS, Up Next rows) sees it; it used to last the whole page
+                        const lease = { live: channelData.live, at: +new Date };
+
+                        Object.defineProperty(channelData, 'live', { configurable: true, enumerable: true, get() {
+                            if(+new Date - lease.at > 300_000) {
+                                lease.at = +new Date;
+                                SEARCH_CACHE.delete(name);
+                                // Read the fresh cache entry, not `convertResults`: its global `parseType` may belong to another search by then
+                                new Search(name).then(() => lease.live = parseBool(SEARCH_CACHE.get(name)?.live ?? lease.live)).catch($warn);
+                            }
+
+                            return lease.live;
+                        } });
+
                         SEARCH_CACHE.set(display_name.toLowerCase(), channelData);
                         ALL_CHANNELS = [...ALL_CHANNELS, channelData].filter(defined).filter(uniqueChannels);
 
