@@ -90,12 +90,15 @@ export default {
         },
         auto_focus_detection_threshold: {
             type: 'custom',
+            default: '0',
         },
         auto_focus_poll_interval: {
             type: 'custom',
+            default: '3',
         },
         auto_focus_poll_image_type: {
             type: 'custom',
+            default: 'webp',
         },
     },
 };

@@ -68,7 +68,7 @@ Every row also takes `attrs` for extra attributes on its element.
 | Field | Meaning |
 |---|---|
 | `type` | `checkbox`, `radio`, `number`, `text`, `select`, or `custom` (a value a widget in `settings.js` stores itself) |
-| `default` | The value before the user changes it. For a `select`, mark the option with `default: true` |
+| `default` | The value before the user changes it. For a `select`, mark the option with `default: true`. A `custom` row has a default only when it declares one here (its HTML can't be read at build time) |
 | `min`, `max`, `step`, `placeholder` | Input limits |
 | `unit` | Unit label shown after a number (`'min'`, `'%'`, `'GB'`) |
 | `group` | A radio group's name |

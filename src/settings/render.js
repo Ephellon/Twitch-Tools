@@ -175,8 +175,16 @@ export function settingDefaults(groups) {
             for(const id in settings) {
                 const setting = settings[id];
 
-                if(setting.store === false || setting.type == 'custom')
+                if(setting.store === false)
                     continue;
+
+                // Custom rows build their own inputs, so only an explicit `default` is known
+                if(setting.type == 'custom') {
+                    if('default' in setting)
+                        defaults[id] = String(setting.default);
+
+                    continue;
+                }
 
                 if(setting.type == 'select') {
                     const option = setting.options.find(option => option.default) ?? setting.options[0];

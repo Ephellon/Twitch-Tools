@@ -73,3 +73,13 @@ test('defaults use the saved form', () => {
     assert.equal(defaults.next_channel_preference, 'random');
     assert.ok(!('filter_rules-input' in defaults), 'helper inputs are not saved');
 });
+
+test('custom rows count only with an explicit default', () => {
+    const defaults = settingDefaults(layout);
+
+    // Unset, the poll interval read as NaN and Auto-Focus polled as fast as the browser allowed
+    assert.equal(defaults.auto_focus_poll_interval, '3');
+    assert.equal(defaults.auto_focus_detection_threshold, '0');
+    assert.equal(defaults.auto_focus_poll_image_type, 'webp');
+    assert.ok(!('ram_onlow' in defaults), 'no default declared, none invented');
+});
