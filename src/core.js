@@ -1275,8 +1275,20 @@ try {
                 // when.defined(condition:function<any>, ms:number?<integer>) → Promise~any
             async function(condition, ms = 100, ...args) {
                 return new Promise((resolve, reject) => {
+                    // One check at a time: a condition that never settles (e.g. an element that never renders) otherwise
+                    // leaves one pending async call per tick, forever (#57)
+                    let busy = false, value;
+
                     const interval = setInterval(async args => {
-                        const value = await condition.apply(null, args);
+                        if(busy)
+                            return;
+
+                        try {
+                            busy = true;
+                            value = await condition.apply(null, args);
+                        } finally {
+                            busy = false;
+                        }
 
                         if(defined(value)) {
                             clearInterval(interval);
