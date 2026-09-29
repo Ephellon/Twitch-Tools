@@ -303,6 +303,12 @@ plugin({
 
         const FIRST_IN_LINE_BALLOON__INSURANCE =
             setInterval(() => {
+                // A page change without a reload (Keep Pop-out) removes the balloon but not this reference: build it again (#46)
+                if(defined(FIRST_IN_LINE_BALLOON?.container) && !FIRST_IN_LINE_BALLOON.container.isConnected) {
+                    FIRST_IN_LINE_SORTING_HANDLER?.destroy?.();
+                    FIRST_IN_LINE_BALLOON = FIRST_IN_LINE_SORTING_HANDLER = null;
+                }
+
                 if(NORMAL_MODE && nullish(FIRST_IN_LINE_BALLOON)) {
                     FIRST_IN_LINE_BALLOON = new Balloon({ title: "Up Next", icon: (UP_NEXT_ALLOW_THIS_TAB ? 'calendar' : 'error') });
 
