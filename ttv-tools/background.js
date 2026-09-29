@@ -168,6 +168,9 @@ const RESERVED_TWITCH_PATHNAMES = Object.defineProperties([
 });
 
 const SHARED_DATA = new Map;
+// The only keys content scripts share (tools.js); every one is a string. Readers copy them onto `window`
+// (clips.js, player.js), so nothing else may get in
+const SHARED_DATA_KEYS = ['USERNAME', 'THEME', 'ANTITHEME', 'ACTIVITY'];
 
 /**
  * Reloads the specified tab.
@@ -688,8 +691,13 @@ Runtime.onMessage.addListener((request, sender, respond) => {
         } break;
 
         case 'POST_SHARED_DATA': {
-            for(let key in request.data)
-                SHARED_DATA.set(key, request.data[key]);
+            // Only this extension's own scripts, only known keys, only short strings (PR #59, CWE-20)
+            let ok = (sender?.id == Runtime.id && typeof request.data == 'object' && request.data !== null);
+
+            if(ok)
+                for(let [key, value] of Object.entries(request.data))
+                    if(SHARED_DATA_KEYS.includes(key) && typeof value == 'string')
+                        SHARED_DATA.set(key, value.slice(0, 256));
         } break;
 
         case 'RESPAWN_THIS_TAB': {

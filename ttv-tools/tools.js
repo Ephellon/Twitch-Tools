@@ -2951,7 +2951,9 @@ try {
 
     // Receive messages from other content scripts
     top.addEventListener('message', async event => {
-        if(!/(\.|\b)twitch\.tv\b/i.test(event.origin))
+        // Twitch's own frames only: the old test also let in `*.ext-twitch.tv` (third-party Twitch Extensions) and
+        // look-alikes such as `twitch.tv.example.com`
+        if(!/^https:\/\/(?:[\w-]+\.)*twitch\.tv$/i.test(event.origin))
             return /* Not meant for us... */;
 
         let R = RegExp;
