@@ -99,6 +99,12 @@ Living plan for the multi-week revamp. One phase at a time; each phase ends in s
 
 ### 8. Documentation & release
 - JSDoc for remaining files, README + wiki refresh, CONTRIBUTING (how to write a plugin), CHANGELOG, version bump.
+- **Release steps (owner's plan), after the bug squash (most or all issues closed):**
+  1. Remove `archive/`: it only kept old code for reference and isn't part of 6.1.
+  2. Overwrite `master` with this branch.
+  3. Rebuild the zips (`npm run release`).
+  4. Finalize the docs (README, CHANGELOG, wiki).
+  5. Push with the owner's "super-commit" message.
 
 ## Offser usage
 
