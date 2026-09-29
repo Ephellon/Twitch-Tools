@@ -268,6 +268,10 @@ class Search {
 
                         // Pre-reads the stream if converted into a proper `Response`
                         return ({
+                            // How `convertResults` reads this result; the global `Search.parseType` may belong to
+                            // another search by the time a caller converts it
+                            parseType: 'pure',
+
                             async arrayBuffer() {
                                 return new Blob([JSON.stringify(json, null, 0)], { type: 'application/json' }).arrayBuffer();
                             },
@@ -518,7 +522,7 @@ class Search {
             }
             , deeper = [];
 
-        switch(Search.parseType) {
+        switch(response?.parseType ?? Search.parseType) {
             case 'advanced': {
                 // @TODO: Parse advanced Search results...
             } break;
@@ -567,7 +571,7 @@ class Search {
                     throw `Unable to parse results: ${ error }`;
                 }
             } break;
-        } // switch Search.parseType
+        } // switch response?.parseType ?? Search.parseType
 
         // Deeper levels
         const deeperLevels = {};
