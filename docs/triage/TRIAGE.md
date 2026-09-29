@@ -119,3 +119,13 @@ About 40 candidates flag Twitch DOM that "may be null", brittle selectors, or `i
 | #35 shop data | Twitch's `jump` data no longer carries the shop, so it is scraped from the menu. Scraped items are always "available", with no input flag; needs live data |
 | #42 collapsing, #37 Auto-Focus, #13 DVR ads, #11 desync, #7 blank videos | Need live Twitch testing |
 | #3 Firefox | Build exists since Phase 0; needs a gecko ID decision and a real test pass |
+
+## Live round 4 (GitHub issues)
+
+- ~~**#46** Up Next button gone after an in-app page change~~: fixed (2d6f7f5). Keep Pop-out's page change detached the balloon, which was never rebuilt.
+- ~~**#45** a channel you don't follow shows offline~~: fixed (3e7d3c9). `Search` read `@graph[0]`, but Twitch's JSON-LD now lists `ItemList` first, so every lookup read offline. This also caused **Live Reminders sometimes not firing** (v5 has the same bug; a hand-apply write-up was sent to the owner).
+- ~~**#57** Up Next memory~~: fixed (d748334). `when.defined` stacked one pending await per tick on conditions that never settle, +115 MB in 10 min. Flat after the fix.
+- ~~Search results never refreshed~~: fixed (762a54f). `live` is re-read every 5 min.
+- ~~v6 regression: Up Next button lost on offline channels~~: fixed (4fbc5d0). The reload cap had also stopped the watchdog. The owner's own offline channel still fails (no follow button); v5 behaves the same.
+- **Verified live:** #52, #44, #49, #50, #56 (pause held), and the PR #59 security fix. #55 was N/A (no candidate channel).
+- **Noted:** `new Search(x).then(Search.convertResults)` races on the global `Search.parseType`. The sidebar getters report "not listed" as offline.
