@@ -129,3 +129,11 @@ About 40 candidates flag Twitch DOM that "may be null", brittle selectors, or `i
 - ~~v6 regression: Up Next button lost on offline channels~~: fixed (4fbc5d0). The reload cap had also stopped the watchdog. The owner's own offline channel still fails (no follow button); v5 behaves the same.
 - **Verified live:** #52, #44, #49, #50, #56 (pause held), and the PR #59 security fix. #55 was N/A (no candidate channel).
 - **Noted:** `new Search(x).then(Search.convertResults)` races on the global `Search.parseType`. The sidebar getters report "not listed" as offline.
+
+## Live round 5
+
+- ~~`Search.parseType` race~~: fixed (a739c63). Channel results now carry their own parse type.
+- ~~Auto-Focus polls nonstop when its options were never opened~~: fixed (7ab71bd). Custom rows can now declare defaults, and Auto-Focus declares 0 / 3 s / webp.
+- ~~Unlisted sidebar channels read offline, and every sidebar entry had an empty name~~: fixed (39f1a39). The getter half was verified live; the name half still needs a live check (`ttv-live-verify-names`).
+- **#54** (Up Next error icon, 1 h timer): not reproduced in 25 min. The symptom is the non-owner tab state. Suggested fixes: re-claim ownership on `visibilitychange`/`pageshow` and every ~30 s; handle `tabs.onReplaced` in the background; don't save a due date computed while not the owner. Capture steps are in the `ttv-live-issue-54` report.
+
