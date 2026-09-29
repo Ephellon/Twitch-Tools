@@ -137,3 +137,10 @@ About 40 candidates flag Twitch DOM that "may be null", brittle selectors, or `i
 - ~~Unlisted sidebar channels read offline, and every sidebar entry had an empty name~~: fixed (39f1a39). The getter half was verified live; the name half still needs a live check (`ttv-live-verify-names`).
 - **#54** (Up Next error icon, 1 h timer): not reproduced in 25 min. The symptom is the non-owner tab state. Suggested fixes: re-claim ownership on `visibilitychange`/`pageshow` and every ~30 s; handle `tabs.onReplaced` in the background; don't save a due date computed while not the owner. Capture steps are in the `ttv-live-issue-54` report.
 
+## Round 6
+
+- ~~**Streamer Data (1§1)** crash~~: fixed (d367edb). A CORS proxy's error object reached `.slice`, and the channel ID was read twice (`/c/undefined-…`). The proxy itself is still dead (external).
+- ~~**#54** ownership lost when Chrome replaces a tab~~: fixed (4d1d286, `tabs.onReplaced`). The other suggested fixes wait for a repro.
+- ~~**Up Next job URLs repeat `?tool=`**~~: fixed (bc07899). `parseURL.addSearch` treated `key=value` strings as bare keys. Also in v5's `ext/polyfill.js`.
+- **Open:** Up Next's Skip button can sit off-screen.
+
