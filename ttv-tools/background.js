@@ -688,8 +688,10 @@ Runtime.onMessage.addListener((request, sender, respond) => {
         } break;
 
         case 'POST_SHARED_DATA': {
-            for(let key in request.data)
-                SHARED_DATA.set(key, request.data[key]);
+            if(request.data && typeof request.data === "object")
+                for(let key of Object.keys(request.data))
+                    if(key !== "__proto__" && key !== "constructor" && key !== "prototype")
+                        SHARED_DATA.set(key, request.data[key]);
         } break;
 
         case 'RESPAWN_THIS_TAB': {
