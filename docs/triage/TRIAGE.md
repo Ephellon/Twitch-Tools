@@ -68,11 +68,11 @@ Tooling: ESLint now sees `window.X ??=` globals, `Object.defineProperties(top, �
 
 The owner can still reproduce these; none is fatal.
 
-- **Left navbar bounces** (an old bug): reproducible by opening the left navbar before the extension takes control of the page.
-- **Fine Details (4)** fails (non-fatal).
-- **Streamer Data (1§1)** fails (non-fatal).
+- ~~**Left navbar bounces**~~ (#42): fixed. Twitch dropped the section icon the labeler matched, so First in Line+ re-rendered the nav every second. The followed section is now found by its cards, and re-rendered at most once per page.
+- ~~**Fine Details (4)** fails~~: fixed. 401 replies were cached for a week, the request ran before the token, the reply was mis-parsed, and the saved Client-Id didn't match the token.
+- **Streamer Data (1§1)** fails (non-fatal): external. The corsfix proxy has no active plan and its error arrives as a 200.
 - **Pop-out chat runs no chat features** (an old bug): its readiness check needs the main controller, a follow button or a frame, and it opens no chat relay. User Scripts only run on channel pages until it has one.
-- **The one-minute timer doesn't show** unless the drag-and-drop has been used on the page.
+- ~~**The one-minute timer doesn't show**~~ unless the drag-and-drop has been used: fixed. `REDO_FIRST_IN_LINE_QUEUE` skipped every restart after the first job. Not yet seen live through a full Up Next cycle.
 
 ## Owner decisions
 
