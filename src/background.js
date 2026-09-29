@@ -463,6 +463,14 @@ Runtime.onInstalled.addListener(({ reason, previousVersion, id }) => {
     });
 });
 
+// A prerendered, discarded or restored tab comes back under a new ID: Up Next ownership follows it (#54)
+Container.tabs.onReplaced?.addListener((addedTabId, removedTabId) => {
+    Storage.get(['UP_NEXT_OWNER'], ({ UP_NEXT_OWNER = null }) => {
+        if(UP_NEXT_OWNER == removedTabId)
+            Storage.set({ UP_NEXT_OWNER: addedTabId });
+    });
+});
+
 // Update the tab(s) when they unload
     // `Container.tabs.onUpdated.addListener(...)` does not support pages crashing...
 const OfflineTabs = new Set();
