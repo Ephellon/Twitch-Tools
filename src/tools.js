@@ -3305,7 +3305,7 @@ let Initialize = async(START_OVER = false) => {
                     api_twitch_tv: if(!FETCHED_OK)
                         // The OAuth token loads later (Search helpers, below); asking before it's set gets a 401
                             // Signed-out viewers never get one: stop waiting after 30s
-                        when.defined((until => () => Search.authorization ?? (+new Date > until ? when.null : void null))(+new Date + 30_000), 250).then(authorization => fetchURL.fromDisk(`https://api.twitch.tv/helix/users?id=${ STREAMER.sole }`, {
+                        when.defined((until => () => (Search.validated ? Search.authorization : void null) ?? (+new Date > until ? when.null : void null))(+new Date + 30_000), 250).then(authorization => fetchURL.fromDisk(`https://api.twitch.tv/helix/users?id=${ STREAMER.sole }`, {
                             headers: {
                                 Authorization: authorization,
                                 'Client-Id': Search.clientID,
@@ -3455,7 +3455,7 @@ let Initialize = async(START_OVER = false) => {
                     Search.authorization = `Bearer ${ oauthToken }`;
                     Search.clientID = client_id;
 
-                    Cache.save({ clientID: clientID, oauthToken });
+                    Cache.save({ clientID: client_id, oauthToken });
                 }).catch(error => {
                     $warn(error);
 
@@ -3478,6 +3478,13 @@ let Initialize = async(START_OVER = false) => {
                 });
             })
         }
+
+        // The token decides the Client-Id: a cached, default or `null` one gets a 401 from every Helix call. Ask Twitch
+        when.defined(() => Search.authorization, 1000).then(authorization => fetchURL(`https://id.twitch.tv/oauth2/validate`, { headers: { Authorization: authorization.replace(/^Bearer\b/, 'OAuth') } }))
+            .then(response => response.json())
+            .then(({ client_id }) => client_id && Cache.save({ clientID: Search.clientID = client_id }))
+            .catch($warn)
+            .finally(() => Search.validated = true);
     } else {
         top.UP_NEXT_ALLOW_THIS_TAB = UP_NEXT_ALLOW_THIS_TAB = true;
         Runtime.sendMessage({ action: 'WAIVE_UP_NEXT' });
@@ -4126,9 +4133,12 @@ if(top == window) {
                     }
 
                     // Twitch's side-nav sections no longer carry an icon to match: find "followed" by its cards (#42)
-                    for(const container of $.all('[id*="side"i][id*="nav"i] .side-nav-section[aria-label]:not([tt-svg-label])'))
-                        if($.defined('[data-a-id^="followed-channel"i], [data-test-selector="followed-channel"i]', container))
-                            container.setAttribute('tt-svg-label', 'followed');
+                        // The cards only exist while the nav is expanded, and Twitch re-renders sections: keep checking
+                    top.FOLLOWED_SECTION_LABELER ??= setInterval(() => {
+                        for(const container of $.all('[id*="side"i][id*="nav"i] .side-nav-section[aria-label]:not([tt-svg-label])'))
+                            if($.defined('[data-a-id^="followed-channel"i], [data-test-selector="followed-channel"i]', container))
+                                container.setAttribute('tt-svg-label', 'followed');
+                    }, 1000);
                 } // :SectionLabeling
 
                 top.onlocationchange = () => {

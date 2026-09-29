@@ -34,7 +34,12 @@ plugin({
             // REDO_FIRST_IN_LINE_QUEUE(url:string?<URL>, search:object?) → <Promise>?undefined
         top.REDO_FIRST_IN_LINE_QUEUE =
         async function REDO_FIRST_IN_LINE_QUEUE(url, search = null) {
-            if(nullish(url) || (FIRST_IN_LINE_HREF === url && [FIRST_IN_LINE_JOB, FIRST_IN_LINE_WARNING_JOB, FIRST_IN_LINE_WARNING_TEXT_UPDATE].filter(nullish).length < 1))
+            // Skip only if a job for this URL is really running: cleared intervals keep their IDs, and callers often set
+            // `FIRST_IN_LINE_HREF = url` first, so the old check skipped every restart until a drag passed another URL
+            const { running } = REDO_FIRST_IN_LINE_QUEUE
+                , requested = String(url ?? '');
+
+            if(nullish(url) || (running?.url === requested && (+new Date - running.at) < 2_500))
                 return;
             else if(nullish(search))
                 url = parseURL(url).addSearch(location.search);
@@ -150,6 +155,9 @@ plugin({
             }, 1000);
 
             FIRST_IN_LINE_JOB = setInterval(() => {
+                // Heartbeat: tells a later REDO_FIRST_IN_LINE_QUEUE which job is still running
+                REDO_FIRST_IN_LINE_QUEUE.running = { url: requested, at: +new Date };
+
                 // If the channel disappears (or goes offline), kill the job for it
                 // @FIXME: Reanimating First in Line jobs may cause reloading issues?
                 let index = ALL_CHANNELS.findIndex(channel => RegExp(parseURL(channel.href).pathname + '\\b', 'i').test(FIRST_IN_LINE_HREF))

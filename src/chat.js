@@ -361,6 +361,10 @@ Chat__PAGE_CHECKER = setInterval(Chat__WAIT_FOR_PAGE = async() => {
             let CHAT_SELF_REFLECTOR;
 
             ChatObserver: {
+                // Only chat frames get a relay: a hidden page frame (e.g. Claim Drops' /drops/inventory) would join "#inventory"
+                if(!/^\/(?:popout|embed)\/[^/]+\/chat\b/i.test(location.pathname))
+                    break ChatObserver;
+
                 let [CHANNEL] = location.pathname.toLowerCase().slice(1).split('/').slice(+IS_A_FRAMED_CONTAINER)
                     , USERNAME = Search.cookies.login ?? `User_Not_Logged_In_${ +new Date }`;
 
