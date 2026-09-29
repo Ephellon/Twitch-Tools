@@ -237,7 +237,10 @@ plugin({
                                 Cache.save({ ALL_FIRST_IN_LINE_JOBS });
                             }
 
-                            if(time < 60_000 && nullish(FIRST_IN_LINE_HREF)) {
+                            // Start the first job whenever none is running: a live notification sets FIRST_IN_LINE_HREF
+                            // without starting it, so waiting for `nullish(FIRST_IN_LINE_HREF)` left no prompt and no switch
+                            if(index == 0 && (+new Date - (REDO_FIRST_IN_LINE_QUEUE.running?.at ?? 0)) > 5_000 && (+new Date - (REDO_FIRST_IN_LINE_QUEUE.restarted ?? 0)) > 5_000) {
+                                REDO_FIRST_IN_LINE_QUEUE.restarted = +new Date;
                                 FIRST_IN_LINE_DUE_DATE = NEW_DUE_DATE(time);
 
                                 $warn("Creating job to avoid [First in Line] mitigation event", channel);
