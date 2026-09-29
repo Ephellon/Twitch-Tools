@@ -1253,7 +1253,7 @@ async function update() {
 
                         return live;
                     },
-                    name: ($('img', element)?.alt ?? parseURL(element.href).pathname.slice(1)).split(/\s/).shift(),
+                    name: ($('img', element)?.alt || parseURL(element.href).pathname.slice(1)).split(/\s/).shift(),
                 };
 
                 element.setAttribute('draggable', true);
@@ -1286,14 +1286,14 @@ async function update() {
                         const parent = $(`[id*="side"i][id*="nav"i] .side-nav-section [href$="${ pathname }"i]`);
 
                         if(nullish(parent))
-                            return false;
+                            return UnlistedLive(pathname);
 
                         const live = defined(parent)
                             && $.nullish(`[class*="--offline"i]`, parent);
 
                         return live;
                     },
-                    name: ($('img', element)?.alt ?? parseURL(element.href).pathname.slice(1)).split(/\s/).shift(),
+                    name: ($('img', element)?.alt || parseURL(element.href).pathname.slice(1)).split(/\s/).shift(),
                 };
 
                 element.setAttribute('draggable', true);
@@ -1324,14 +1324,14 @@ async function update() {
                         const parent = $(`[id*="side"i][id*="nav"i] .side-nav-section[aria-label][tt-svg-label="followed"i] [href$="${ pathname }"i]`);
 
                         if(nullish(parent))
-                            return false;
+                            return UnlistedLive(pathname);
 
                         const live = defined(parent)
                             && $.nullish(`[class*="--offline"i]`, parent);
 
                         return live;
                     },
-                    name: ($('img', element)?.alt ?? parseURL(element.href).pathname.slice(1)).split(/\s/).shift(),
+                    name: ($('img', element)?.alt || parseURL(element.href).pathname.slice(1)).split(/\s/).shift(),
                 };
 
                 element.setAttribute('draggable', true);
@@ -1535,6 +1535,21 @@ const SideNav = {
         return this.open == open;
     },
 };
+
+/**
+ * The live status of a channel that isn't listed right now (side nav collapsed, trimmed or scrolled). Unlisted isn't offline:
+ * use its Search result (which refreshes itself every 5 minutes), asked for once; `false` only until that answers.
+ * @param {string} pathname - The channel's path (`/name`)
+ * @returns {boolean} Whether the channel is live
+ */
+function UnlistedLive(pathname) {
+    const name = String(pathname).slice(1).toLowerCase();
+
+    if(!SEARCH_CACHE.has(name) && !(UnlistedLive.asked ??= new Set).has(name))
+        UnlistedLive.asked.add(name), new Search(name).catch($ignore);
+
+    return SEARCH_CACHE.get(name)?.live ?? false;
+}
 
 // Intializes the extension
     // Initialize(START_OVER:boolean) → undefined
@@ -1902,13 +1917,13 @@ let Initialize = async(START_OVER = false) => {
                         const parent = $(`.search-tray [href$="${ pathname }"i]:not([href*="/search?"])`);
 
                         if(nullish(parent))
-                            return false;
+                            return UnlistedLive(pathname);
 
                         const live = $.defined(`[data-test-selector="live-badge"i]`, parent);
 
                         return live;
                     },
-                    name: ($('img', element)?.alt ?? parseURL(element.href).pathname.slice(1)).split(/\s/).shift(),
+                    name: ($('img', element)?.alt || parseURL(element.href).pathname.slice(1)).split(/\s/).shift(),
                 };
 
                 element.setAttribute('draggable', true);
@@ -2707,14 +2722,14 @@ let Initialize = async(START_OVER = false) => {
                                 const parent = $(`[id*="side"i][id*="nav"i] .side-nav-section [href$="${ pathname }"i]`);
 
                                 if(nullish(parent))
-                                    return false;
+                                    return UnlistedLive(pathname);
 
                                 // The "is it offline" result
                                 const live = defined(parent) && $.nullish(`[class*="--offline"i]`, parent);
 
                                 return live;
                             },
-                            name: ($('img', element)?.alt ?? parseURL(element.href).pathname.slice(1)).split(/\s/).shift(),
+                            name: ($('img', element)?.alt || parseURL(element.href).pathname.slice(1)).split(/\s/).shift(),
                         };
 
                         element.setAttribute('draggable', true);
@@ -2752,13 +2767,13 @@ let Initialize = async(START_OVER = false) => {
                                 const parent = $(`[id*="side"i][id*="nav"i] .side-nav-section [href$="${ pathname }"i]`);
 
                                 if(nullish(parent))
-                                    return false;
+                                    return UnlistedLive(pathname);
 
                                 const live = defined(parent) && $.nullish(`[class*="--offline"i]`, parent);
 
                                 return live;
                             },
-                            name: ($('img', element)?.alt ?? parseURL(element.href).pathname.slice(1)).split(/\s/).shift(),
+                            name: ($('img', element)?.alt || parseURL(element.href).pathname.slice(1)).split(/\s/).shift(),
                         };
 
                         element.setAttribute('draggable', true);
@@ -2793,13 +2808,13 @@ let Initialize = async(START_OVER = false) => {
                                 const parent = $(`[id*="side"i][id*="nav"i] .side-nav-section[aria-label][tt-svg-label="followed"i] [href$="${ pathname }"i]`);
 
                                 if(nullish(parent))
-                                    return false;
+                                    return UnlistedLive(pathname);
 
                                 const live = defined(parent) && $.nullish(`[class*="--offline"i]`, parent);
 
                                 return live;
                             },
-                            name: ($('img', element)?.alt ?? parseURL(element.href).pathname.slice(1)).split(/\s/).shift(),
+                            name: ($('img', element)?.alt || parseURL(element.href).pathname.slice(1)).split(/\s/).shift(),
                         };
 
                         element.setAttribute('draggable', true);
