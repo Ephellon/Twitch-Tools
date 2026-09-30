@@ -147,11 +147,11 @@ About 40 candidates flag Twitch DOM that "may be null", brittle selectors, or `i
 ## Round 7 (owner-reported KIs)
 
 - ~~**Not all settings are saved** (Live Reminders)~~: fixed (73fada7), **verified live**. `Cache` is twitch.tv's localStorage, which the Settings page can't read. Reminders are now mirrored to extension storage, included in Export, and merged on Restore.
-- ~~**Redo jobs (†) disappear**~~: fixed (2707bea). The next job inherited the removed job's `?redo=`, and the page's search overwrote the job's own. Live verify in progress (`ttv-live-redo-jobs`).
-- ~~**Blocklist doesn't block sometimes**~~: fixed (1772ddc). The rule parser dropped everything outside `[...]`, and one invalid rule aborted the whole run, so the hiding CSS was never added. Live verify in progress (`ttv-live-blocklist`).
+- ~~**Redo jobs (†) disappear**~~: fixed (2707bea). The next job inherited the removed job's `?redo=`, and the page's search overwrote the job's own. Verified (see "continued").
+- ~~**Blocklist doesn't block sometimes**~~: fixed (1772ddc). The rule parser dropped everything outside `[...]`, and one invalid rule aborted the whole run, so the hiding CSS was never added. Verified (see "continued").
 - ~~**Silent-dialog 31px peek**~~: fixed with a 10px peek (2ce4b48).
-- **Offline-stagnant state**: in progress (`ttv-live-offline-stagnant`; the owner can go live on `@ephellon`).
-- **RAM ≥1 GB on `@novapovie`**: in progress (`ttv-live-ram-usage`, measured against an extension-off baseline).
+- ~~**Offline-stagnant state**~~: see "continued".
+- ~~**RAM ≥1 GB on `@novapovie`**~~: see "continued".
 
 ## Round 7, continued (after midnight)
 
@@ -159,9 +159,9 @@ About 40 candidates flag Twitch DOM that "may be null", brittle selectors, or `i
 - ~~**Redo jobs**~~: also the #55 guard and job restarts (89b73a5) on top of 2707bea. **Verified live** (two laps).
 - ~~**Page shifted left**~~: the unshift no longer uses a hashed class (c968610). **Verified live.**
 - ~~**Corsfix down (all proxied fetches)**~~: Site Access, owner's choice of optional host permissions granted in Settings (5f4528b, 8f9979d). A background `FETCH_URL` relay with proxy fallback. **Verified live** (Nintendo hosts added).
-- ~~**Offline-stagnant**~~: `STREAMER.live` missed Twitch's live-home layout (3317188, **verified live** 4 runs). Follow-ups: Stay Live memory survives a reload (ede448a), Away Mode no longer flickers the quality menu on a dead player (f1e8ec0), and the watchdog tolerates an ended stream (657d9d4). Recheck pending.
-- ~~**RAM**~~: no leak (heap flat). Store catalogs moved out of the JS heap (heap 200 → 115 MB), and the store card's `og:image` check read the wrong page, causing a re-parse every 5 s (ed57376). Recheck pending.
+- ~~**Offline-stagnant**~~: `STREAMER.live` missed Twitch's live-home layout (3317188, **verified live** 4 runs). Follow-ups: Stay Live memory survives a reload (ede448a), Away Mode no longer flickers the quality menu on a dead player (f1e8ec0), and the watchdog tolerates an ended stream (657d9d4). Recheck **PASS** (below).
+- ~~**RAM**~~: no leak (heap flat). Store catalogs moved out of the JS heap (heap 200 → 115 MB), and the store card's `og:image` check read the wrong page, causing a re-parse every 5 s (ed57376). Recheck **PASS**: the store card is placed (Steam price and link), and the same-channel baseline with the extension off grows by the same amount, so the growth is Twitch's. Leftover churn: `Glyphs.modify` built a new XML document on every call (~38/min), and old builds' catalogs were still in `persistentCache` (~50 MB). Both fixed in 2150256.
 - ~~**Watchdog reloaded every channel ~3 min in**~~: Away Mode's default placement is "Do not display", so the button it waited for never appears (987880f, **verified live**). This caused today's module-report reloads.
 - Offline-stagnant recheck: **PASS** (Stay Live moves on ≤7 s in front and hidden tabs, survives a reload, no picker flicker, #50 intact).
 - **Open (note):** the unshift is one-shot, so a later shift (SPA back) isn't undone.
-
+- **Open (note):** proxy health probes (`example.org`) log `Failed to fetch` / `AggregateError` on every load while all proxies are down. It's noise, not a bug.
