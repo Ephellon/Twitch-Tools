@@ -171,6 +171,15 @@ About 40 candidates flag Twitch DOM that "may be null", brittle selectors, or `i
 
 - Glyph cache and catalog purge (2150256): **verified live**. `DOMParser` calls went from 38/min to 0, all 92 Settings icons render, and no catalog keys are left.
 - ~~**Recover Frames reloaded offline channels every ~40 s**~~: fixed (dec26e5). The stalled preview video counted as "paused unsafely". It now skips unless the channel is live or on `/videos/`.
+- DSL on real pages (`ttv-live-dsl-pages`): **mostly PASS**. Channel props, the viewer's badges (these follow `/mod` on the viewer's next post), the approve flow, frames, restart on settings change, `goto`, and all six examples (0 problems, replies on `@ephellon`) all work.
+    - ~~Message `badges` were `["0"]`, so `using [role]` never matched on chat events~~: fixed (4c4edea), with tests.
+    - ~~`#game` printed the category URL~~: fixed in the same commit.
+    - **Open:**
+        - `Chat.send` has no pacing: bursts get dropped, and Twitch silently mutes for ~30 min. Proposal: a per-channel queue, ≥1 s apart, ≤20 per 30 s.
+        - Whispers aren't delivered over IRC, so `onwhisper` is unverified.
+        - `stream_timers` re-announces whenever the runner reloads.
+        - `#id` (`STREAMER.sole`) is empty on channels with no panels or points icon.
+    - **By design:** the viewer's own messages don't trigger their scripts, because IRC doesn't echo them. Document this in USER-SCRIPTS.
 
 ## Planned tests (after 6.1 feedback)
 
