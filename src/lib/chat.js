@@ -3,6 +3,13 @@
  * Moved verbatim from tools.js in Phase 3; see src/lib/index.js for how it reaches the page.
  */
 
+import { createSendPacer } from './send-pacer.js';
+
+// One queue for sends and replies, so a script's burst can't get dropped or the viewer muted
+const PACER = createSendPacer({
+    limit: () => (Chat.viewerBadges ?? []).some(badge => /^(broadcaster|moderator|vip)$/.test(badge)) ? 100 : 20,
+});
+
 function Chat(message = '', ...mentions) {
     if(!message.length)
         return Chat.get();
@@ -91,9 +98,9 @@ Object.defineProperties(Chat, {
                 return;
 
             when(() => TTV_IRC.socket.readyState === WebSocket.OPEN)
-                .then(ready => {
+                .then(ready => PACER.push(() => {
                     TTV_IRC.socket.send(`PRIVMSG #${ STREAMER.name.toLowerCase() } :${ message }`);
-                });
+                }));
         }
     },
 
@@ -106,9 +113,9 @@ Object.defineProperties(Chat, {
                 return;
 
             when(() => TTV_IRC.socket.readyState === WebSocket.OPEN)
-                .then(ready => {
+                .then(ready => PACER.push(() => {
                     TTV_IRC.socket.send(`@reply-parent-msg-id=${ to } PRIVMSG #${ STREAMER.name.toLowerCase() } :${ message }`);
-                });
+                }));
         }
     },
 
