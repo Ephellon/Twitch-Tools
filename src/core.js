@@ -1948,6 +1948,20 @@ Object.defineProperties(fetchURL, {
                 Cache.large.load(DB_KEY, cache => {
                     for(const [org, map] of (cache?.[DB_KEY] ?? []))
                         fetchURL.persistentCache.set(org, map);
+
+                    // Store catalogs moved to the HTTP cache; drop copies older builds kept here (~50 MB)
+                    let stale = fetchURL.persistentCache.get('https://raw.githubusercontent.com'), dropped = 0;
+
+                    for(const fullpath of [...(stale?.keys() ?? [])])
+                        if(fullpath.startsWith('/Ephellon/game-store-catalog/'))
+                            stale.delete(fullpath), ++dropped;
+
+                    if(dropped) {
+                        if(stale.size < 1)
+                            fetchURL.persistentCache.delete('https://raw.githubusercontent.com');
+
+                        Cache.large.save({ [DB_KEY]: fetchURL.persistentCache });
+                    }
                 });
 
                 // Clean the DataBase periodically...

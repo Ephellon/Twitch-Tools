@@ -387,8 +387,19 @@ window.Glyphs ??= {
     modify(glyph, attributes, element = 'svg') {
         let XMLParser = window.Glyphs.DOMParser ??= new DOMParser;
 
-        let XML = XMLParser.parseFromString((glyph in window.Glyphs? window.Glyphs[glyph]: glyph), 'text/xml'),
-            ele = $(element, XML);
+        // Parse each glyph once; every call edits a fresh copy (#57: stops a new XML document per call)
+        let templates = window.Glyphs.modify.templates ??= new Map,
+            source = (glyph in window.Glyphs? window.Glyphs[glyph]: glyph),
+            key = `${ element }\n${ source }`;
+
+        if(!templates.has(key)) {
+            if(templates.size >= 128)
+                templates.delete(templates.keys().next().value);
+
+            templates.set(key, $(element, XMLParser.parseFromString(source, 'text/xml')));
+        }
+
+        let ele = templates.get(key)?.cloneNode(true);
 
         for(let attribute in attributes) {
             let value = attributes[attribute];
