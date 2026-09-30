@@ -41,9 +41,14 @@ plugin({
 
             if(nullish(url) || (running?.url === requested && (+new Date - running.at) < 2_500))
                 return;
-            else if(nullish(search))
-                url = parseURL(url).addSearch(location.search);
-            else
+            else if(nullish(search)) {
+                // The page's search rides along, but never over the job's own, and never the job-only `redo`/`tool`:
+                // the page's `redo` named another channel, so a redo job wasn't re-queued when it arrived (owner KI)
+                const job = parseURL(url)
+                    , { redo, tool, ...page } = (parseURL(location.href).searchParameters ?? {});
+
+                url = job.addSearch({ ...page, ...(job.searchParameters ?? {}) });
+            } else
                 url = parseURL(url).addSearch((_ => {
                     for(const k in _)
                         if(_[k] === '')
@@ -127,8 +132,10 @@ plugin({
                         FIRST_IN_LINE_HREF = void null;
                         FIRST_IN_LINE_DUE_DATE = NEW_DUE_DATE(FIRST_IN_LINE_TIMER);
 
+                        // The next job keeps its own `redo`: passing the removed job's overwrote it, so a redo channel
+                        // arrived with another channel's name and wasn't re-queued (owner KI)
                         if(defined(next))
-                            REDO_FIRST_IN_LINE_QUEUE(next, { redo: (parseURL(removed).searchParameters?.redo ?? '') });
+                            REDO_FIRST_IN_LINE_QUEUE(next, { redo: (parseURL(next).searchParameters?.redo ?? '') });
 
                         Cache.save({ ALL_FIRST_IN_LINE_JOBS, FIRST_IN_LINE_DUE_DATE }, () => {
                             if(action) {
