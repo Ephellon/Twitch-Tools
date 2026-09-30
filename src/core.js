@@ -1715,6 +1715,11 @@ function fetchURL(url, options = {}) {
 
     // CORS required
     else {
+        // A site the viewer allowed (Settings → Networking → Site Access) is read by the background worker: no proxy.
+        // Until then, or if the background can't, the proxy below is used as before
+        if(!options.viaProxy && fetchURL.backgroundMayRead(href))
+            return fetchURL.viaBackground(href, options).catch(() => fetchURL(url, { ...options, viaProxy: true }));
+
         options.mode = 'cors';
         switch(foster) {
             // https://www.whateverorigin.org/get?url={ %URL }
@@ -1867,6 +1872,37 @@ function fetchURL(url, options = {}) {
 
 Object.defineProperties(fetchURL, {
     requests: { value: new Map },
+
+    // Whether a URL's site is one the background may read for us: the manifest's `optional_host_permissions`
+    // (whether the viewer granted it is checked by the background)
+    backgroundMayRead: {
+        value: href => {
+            const origin = parseURL(href)?.origin;
+
+            return (globalThis.Manifest?.optional_host_permissions ?? []).some(pattern => pattern.replace(/\/\*$/, '') == origin);
+        },
+    },
+
+    // Fetches through the background worker (`FETCH_URL`), which has the host permission; rejects when it can't
+    viaBackground: {
+        value: (href, { method, headers, body, timeout = 0 } = {}) => {
+            const request = new Promise((resolve, reject) =>
+                Runtime.sendMessage({ action: 'FETCH_URL', url: href, init: { method, headers, body: (typeof body == 'string' ? body : void null) } }, reply => {
+                    if(nullish(reply) || defined(reply.error))
+                        return reject(new Error(reply?.error ?? Runtime.lastError?.message ?? 'No reply from the background'));
+
+                    // Statuses that can't carry a body
+                    const empty = [101, 204, 205, 304].includes(reply.status);
+
+                    resolve(new Response(empty ? null : reply.body, { status: reply.status, statusText: reply.statusText, headers: reply.headers }));
+                })
+            );
+
+            return (timeout > 0)
+                ? Promise.race([request, new Promise((resolve, reject) => setTimeout(() => reject(new Error('The fetch has timed out')), timeout))])
+                : request;
+        },
+    },
 
     // Reduce duplicates
     idempotent: {

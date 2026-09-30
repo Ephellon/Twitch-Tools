@@ -152,6 +152,18 @@
         "https://twitch.tv/*"
     ],
 
+    "optional_host_permissions": [
+        "https://www.twitchmetrics.net/*",
+        "https://twitchstats.net/*",
+        "https://twitchtracker.com/*",
+        "https://tinyurl.com/*",
+        "https://preview.tinyurl.com/*",
+        "https://store.steampowered.com/*",
+        "https://store.playstation.com/*",
+        "https://store.epicgames.com/*",
+        "https://www.microsoft.com/*"
+    ],
+
     "permissions": [
         "storage",
         "alarms",

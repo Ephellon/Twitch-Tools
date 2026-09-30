@@ -735,6 +735,33 @@ Runtime.onMessage.addListener((request, sender, respond) => {
             });
         } break;
 
+        case 'FETCH_URL': {
+            // Cross-origin reads for the content scripts, without a CORS proxy: only for sites the viewer allowed
+            // (Settings → Networking → Site Access; `optional_host_permissions` in the manifest)
+            const { url, init = {} } = request;
+            const origin = (() => { try { return new URL(url).origin } catch(error) { return null } })();
+
+            if(!origin || !/^https:/.test(origin)) {
+                respond({ error: 'invalid-url' });
+            } else {
+                Container.permissions.contains({ origins: [`${ origin }/*`] })
+                    .then(allowed => {
+                        if(!allowed)
+                            return respond({ error: 'not-permitted' });
+
+                        return fetch(url, { method: init.method ?? 'GET', headers: init.headers, body: init.body, credentials: 'omit' })
+                            .then(async response => respond({
+                                ok: response.ok,
+                                status: response.status,
+                                statusText: response.statusText,
+                                headers: [...response.headers],
+                                body: await response.text(),
+                            }));
+                    })
+                    .catch(error => respond({ error: String(error?.message ?? error) }));
+            }
+        } break;
+
         case 'OPEN_OPTIONS_PAGE': {
             Runtime.openOptionsPage();
 

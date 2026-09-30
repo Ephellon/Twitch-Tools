@@ -44,6 +44,7 @@ import pointWatcher38 from '../plugins/customization/point-watcher.settings.js';
 import streamPreview39 from '../plugins/customization/stream-preview.settings.js';
 import watchTime40 from '../plugins/customization/watch-time.settings.js';
 import exportSettings41 from './sections/export-settings.js';
+import siteAccess from './sections/site-access.js';
 import storeIntegration42 from '../plugins/customization/store-integration.settings.js';
 import videoClips43 from '../plugins/networking/auto-dvr.settings.js';
 import keepPopOuts44 from './sections/keep-pop-outs.js';
@@ -151,6 +152,7 @@ export default [
         save: true,
         sections: [
             exportSettings41,
+            siteAccess,
             storeIntegration42,
             videoClips43,
         ],
