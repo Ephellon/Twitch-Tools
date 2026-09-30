@@ -5,7 +5,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 
-import { createAdapter, toRaidEvent } from '../dsl-host.js';
+import { createAdapter, toMessageEvent, toRaidEvent } from '../dsl-host.js';
 
 const STREAMER = { name: 'Some_Channel', sole: '42', live: true };
 const Chat = { send() {}, reply() {} };
@@ -14,6 +14,19 @@ test('a raid notice becomes a raid event; other notices don\'t', () => {
     assert.deepEqual(toRaidEvent({ subject: 'raid', raider: 'Zip', raid_size: '12', timestamp: 5 }), { kind: 'raid', raider: 'zip', raid_size: 12, timestamp: 5 });
     assert.equal(toRaidEvent({ subject: 'raid' }), null, 'an unraid carries no raider');
     assert.equal(toRaidEvent({ subject: 'gift', raider: 'zip' }), null);
+});
+
+test('message badges are names, from the relay\'s list or an IRC tag map', () => {
+    assert.deepEqual(toMessageEvent({ author: 'a', message: 'hi', badges: ['moderator', 'bits'] }).badges, ['moderator', 'bits']);
+    assert.deepEqual(toMessageEvent({ author: 'a', message: 'hi', badges: { vip: '1' } }).badges, ['vip']);
+    assert.deepEqual(toMessageEvent({ author: 'a', message: 'hi' }).badges, []);
+});
+
+test('a String-object channel field (#game carries an href) reads as its text', () => {
+    const game = Object.assign(new String('Just Chatting'), { href: 'https://www.twitch.tv/directory/category/just-chatting' });
+    const channel = createAdapter({ Chat, STREAMER: { ...STREAMER, game }, USERNAME: 'me' }).options.realms.TWITCH.current;
+    assert.equal(channel.game, 'Just Chatting');
+    assert.equal(typeof channel.game, 'string');
 });
 
 test('the channel exposes the viewer\'s badges only when the extension knows them', () => {

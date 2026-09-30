@@ -40,7 +40,8 @@ export function toMessageEvent(message) {
             display: String(message.handle ?? message.author ?? ''),
             message: text,
             mentions: [...(message.mentions ?? [])].map(name => String(name).toLowerCase()),
-            badges: Object.keys(message.badges ?? {}),
+            // The relay gives badge names as a list (`['moderator']`); a `{ name: version }` map (IRC tags) is keyed by name
+            badges: (Array.isArray(message.badges) ? message.badges : Object.keys(message.badges ?? {})).map(String),
             emotes: [...(message.emotes ?? [])].map(emote => String(emote?.name ?? emote)),
             links: [...text.matchAll(URL_PATTERN)].map(([href]) => ({ href, text: href })),
             timestamp: Number(message.timestamp ?? Date.now()),
@@ -115,7 +116,8 @@ export function createAdapter(env) {
                 ? String(STREAMER[source] ?? '').toLowerCase()
                 : field == 'live'
                     ? !!STREAMER[source]
-                    : STREAMER[source],
+                    // `STREAMER.game` is a `String` object carrying an `href`, which a template would print instead
+                    : (value => value instanceof String ? String(value) : value)(STREAMER[source]),
         });
 
     // The viewer's own badges, when the extension knows them (IRC USERSTATE)
