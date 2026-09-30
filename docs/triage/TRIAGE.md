@@ -153,3 +153,13 @@ About 40 candidates flag Twitch DOM that "may be null", brittle selectors, or `i
 - **Offline-stagnant state**: in progress (`ttv-live-offline-stagnant`; the owner can go live on `@ephellon`).
 - **RAM ≥1 GB on `@novapovie`**: in progress (`ttv-live-ram-usage`, measured against an extension-off baseline).
 
+## Round 7, continued (after midnight)
+
+- ~~**Blocklist**~~: the list never arrived (Corsfix 403 was parsed as rules). It's fetched directly now (83b1023), and the parser fix is 1772ddc. **Verified live.**
+- ~~**Redo jobs**~~: also the #55 guard and job restarts (89b73a5) on top of 2707bea. **Verified live** (two laps).
+- ~~**Page shifted left**~~: the unshift no longer uses a hashed class (c968610). **Verified live.**
+- ~~**Corsfix down (all proxied fetches)**~~: Site Access, owner's choice of optional host permissions granted in Settings (5f4528b, 8f9979d). A background `FETCH_URL` relay with proxy fallback. **Verified live** (Nintendo hosts added).
+- ~~**Offline-stagnant**~~: `STREAMER.live` missed Twitch's live-home layout (3317188, **verified live** 4 runs). Follow-ups: Stay Live memory survives a reload (ede448a), Away Mode no longer flickers the quality menu on a dead player (f1e8ec0), and the watchdog tolerates an ended stream (657d9d4). Recheck pending.
+- ~~**RAM**~~: no leak (heap flat). Store catalogs moved out of the JS heap (heap 200 → 115 MB), and the store card's `og:image` check read the wrong page, causing a re-parse every 5 s (ed57376). Recheck pending.
+- **Open (note):** the unshift is one-shot, so a later shift (SPA back) isn't undone.
+
