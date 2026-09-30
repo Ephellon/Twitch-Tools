@@ -34,6 +34,11 @@ plugin({
     handler: async({ StopWatch }) => {
         new StopWatch('away_mode');
 
+        // Reading the quality opens the player's settings menu: on a channel whose stream has ended it failed every
+        // tick, and the menu kept flickering open and shut (VODs aren't "live", but have a player)
+        if(!STREAMER.live && nullish(Handlers.away_mode.quality) && !/\/videos?\//i.test(location.pathname))
+            return StopWatch.stop('away_mode');
+
         let button = $('#away-mode')
             , currentQuality = (Handlers.away_mode.quality ??= await GetQuality());
 
