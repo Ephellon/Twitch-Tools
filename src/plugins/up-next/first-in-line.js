@@ -62,8 +62,8 @@ plugin({
             if(DO_NOT_AUTO_ADD.contains(href) || RESERVED_TWITCH_PATHNAMES.test(href))
                 continue;
 
-            // Already on this channel's page: there's nothing to queue or redirect to (#55)
-            if(parseURL(href).pathname?.equals(`/${ STREAMER?.name }`))
+            // Already on this channel's page: there's nothing to queue or redirect to (#55); a redo job re-queues itself here
+            if(parseURL(href).pathname?.equals(`/${ STREAMER?.name }`) && !/\[Entry Redo\]/.test(innerText))
                 continue;
 
             // A notification that links to Twitch's home page names no channel (it showed up as a bare
@@ -245,7 +245,8 @@ plugin({
 
                                 $warn("Creating job to avoid [First in Line] mitigation event", channel);
 
-                                return StopWatch.stop('first_in_line__job_watcher', 1000), REDO_FIRST_IN_LINE_QUEUE(FIRST_IN_LINE_HREF = channel.href);
+                                // The job's own URL, not the channel's: that one has no `?redo`
+                                return StopWatch.stop('first_in_line__job_watcher', 1000), REDO_FIRST_IN_LINE_QUEUE(FIRST_IN_LINE_HREF = ALL_FIRST_IN_LINE_JOBS[0] ?? channel.href);
                             }
 
                             if(time < 1000)

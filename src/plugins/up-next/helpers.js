@@ -1487,7 +1487,7 @@ plugin({
 
                                                 $warn("Creating job to avoid [Job Listing] mitigation event", channel);
 
-                                                return StopWatch.stop('up_next_balloon__subheader_timer_animation', 1000), REDO_FIRST_IN_LINE_QUEUE(FIRST_IN_LINE_HREF = channel.href);
+                                                return StopWatch.stop('up_next_balloon__subheader_timer_animation', 1000), REDO_FIRST_IN_LINE_QUEUE(FIRST_IN_LINE_HREF = ALL_FIRST_IN_LINE_JOBS[0] ?? channel.href);
                                             }
 
                                             if(time < 1000)
