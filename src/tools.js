@@ -3876,6 +3876,8 @@ if(top == window) {
                                                     || $.defined('#away-mode')
                                                     // No player to put the button on (an offline channel)
                                                     || $.nullish('[data-a-target="player-controls"i]')
+                                                    // A stream that has ended: Away Mode waits for the next one
+                                                    || (!STREAMER.live && !/\/videos?\//i.test(location.pathname))
 
                                                     || !NOT_LOADED_CORRECTLY.push('away_mode')
                                                 )
