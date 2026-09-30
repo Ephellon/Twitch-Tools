@@ -144,3 +144,12 @@ About 40 candidates flag Twitch DOM that "may be null", brittle selectors, or `i
 - ~~**Up Next job URLs repeat `?tool=`**~~: fixed (bc07899). `parseURL.addSearch` treated `key=value` strings as bare keys. Also in v5's `ext/polyfill.js`.
 - **Open:** Up Next's Skip button can sit off-screen.
 
+## Round 7 (owner-reported KIs)
+
+- ~~**Not all settings are saved** (Live Reminders)~~: fixed (73fada7), **verified live**. `Cache` is twitch.tv's localStorage, which the Settings page can't read. Reminders are now mirrored to extension storage, included in Export, and merged on Restore.
+- ~~**Redo jobs (†) disappear**~~: fixed (2707bea). The next job inherited the removed job's `?redo=`, and the page's search overwrote the job's own. Live verify in progress (`ttv-live-redo-jobs`).
+- ~~**Blocklist doesn't block sometimes**~~: fixed (1772ddc). The rule parser dropped everything outside `[...]`, and one invalid rule aborted the whole run, so the hiding CSS was never added. Live verify in progress (`ttv-live-blocklist`).
+- ~~**Silent-dialog 31px peek**~~: fixed with a 10px peek (2ce4b48).
+- **Offline-stagnant state**: in progress (`ttv-live-offline-stagnant`; the owner can go live on `@ephellon`).
+- **RAM ≥1 GB on `@novapovie`**: in progress (`ttv-live-ram-usage`, measured against an extension-off baseline).
+
