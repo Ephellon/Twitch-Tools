@@ -161,5 +161,7 @@ About 40 candidates flag Twitch DOM that "may be null", brittle selectors, or `i
 - ~~**Corsfix down (all proxied fetches)**~~: Site Access, owner's choice of optional host permissions granted in Settings (5f4528b, 8f9979d). A background `FETCH_URL` relay with proxy fallback. **Verified live** (Nintendo hosts added).
 - ~~**Offline-stagnant**~~: `STREAMER.live` missed Twitch's live-home layout (3317188, **verified live** 4 runs). Follow-ups: Stay Live memory survives a reload (ede448a), Away Mode no longer flickers the quality menu on a dead player (f1e8ec0), and the watchdog tolerates an ended stream (657d9d4). Recheck pending.
 - ~~**RAM**~~: no leak (heap flat). Store catalogs moved out of the JS heap (heap 200 → 115 MB), and the store card's `og:image` check read the wrong page, causing a re-parse every 5 s (ed57376). Recheck pending.
+- ~~**Watchdog reloaded every channel ~3 min in**~~: Away Mode's default placement is "Do not display", so the button it waited for never appears (987880f, **verified live**). This caused today's module-report reloads.
+- Offline-stagnant recheck: **PASS** (Stay Live moves on ≤7 s in front and hidden tabs, survives a reload, no picker flicker, #50 intact).
 - **Open (note):** the unshift is one-shot, so a later shift (SPA back) isn't undone.
 
