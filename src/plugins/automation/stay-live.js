@@ -18,6 +18,17 @@ plugin({
     init() {
         ClearIntent = void null;
         WATCHED_LIVE = void null;       // The channel seen live during this visit
+
+        // A watchdog reload of a dead page must not forget it (it did, and Stay Live then treated the channel as one
+        // the viewer opened); kept per tab, and only briefly, so it never moves the viewer off a channel they return to
+        try {
+            const { name, at } = JSON.parse(sessionStorage.getItem('ttv-tools:watched-live') ?? '{}');
+
+            if(name && (+new Date - at) < 600_000)
+                WATCHED_LIVE = name;
+        } catch(error) {
+            // No storage: remember this visit only
+        }
         USER_INTENT = void null;        // A channel the viewer chose themselves (see user-intent.js)
         twitch_pathnames = [
             USERNAME,
@@ -55,8 +66,15 @@ plugin({
 
         const ignoreReruns = parseBool(Settings.stay_live__ignore_channel_reruns);
 
-        if(STREAMER.live && !(ignoreReruns && STREAMER.redo))
+        if(STREAMER.live && !(ignoreReruns && STREAMER.redo)) {
             WATCHED_LIVE = STREAMER.name;
+
+            try {
+                sessionStorage.setItem('ttv-tools:watched-live', JSON.stringify({ name: WATCHED_LIVE, at: +new Date }));
+            } catch(error) {
+                // No storage: remember this visit only
+            }
+        }
 
         NotLive:
         if(false
