@@ -1715,6 +1715,14 @@ $('#sync-settings--upload-json-input').onchange = async event => {
 
         $.all('[data-rest-id]').map(e => { delete e.dataset.restId });
 
+        // Live Reminders join the ones already kept; each Twitch tab merges them in on its next load (see `Cache.load`)
+        if(data.LiveReminders__backup && typeof data.LiveReminders__backup == 'object') {
+            const { LiveReminders__backup = {} } = await Storage.get('LiveReminders__backup') ?? {};
+            const merged = { ...LiveReminders__backup, ...data.LiveReminders__backup };
+
+            await Storage.set({ LiveReminders__backup: merged, LIVE_REMINDERS: Object.keys(merged) });
+        }
+
         // SaveSettings() skips fields whose value fails the field's own checks (range, step, pattern)
         const skipped = Object.keys(data).filter(id => $(`#${ id }:invalid`)).map(depadName);
 
@@ -1844,14 +1852,20 @@ $('#sync-settings--download-json').onmouseup = async event => {
         settings[ID] = value;
     }
 
+    // Live Reminders aren't a form field: their copy in the extension's storage goes along (see `Cache.save`)
+    const { LiveReminders__backup } = await Storage.get('LiveReminders__backup') ?? {};
+
+    if(LiveReminders__backup && typeof LiveReminders__backup == 'object')
+        settings.LiveReminders__backup = LiveReminders__backup;
+
     try {
         PostSyncStatus('Making file...');
 
+        // URI-encoded, not `btoa`: that throws on any character outside Latin-1 (e.g. a rule in another script)
         const j = JSON.stringify(settings);
-        const b = btoa(j);
         const a = furnish('a', {
             download: `TTV Settings.json`,
-            href: `data:application/json;base64,${ b }`,
+            href: `data:application/json;charset=utf-8,${ encodeURIComponent(j) }`,
         }, `Download Settings`);
 
         document.head.appendChild(a);

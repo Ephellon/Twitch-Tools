@@ -2232,6 +2232,11 @@ let Cache = window.Cache = {
         for(const key in properties)
             set(key, JSON.stringify(properties[key]));
 
+        // Live Reminders live in twitch.tv's localStorage, which the Settings page can't read: keep a copy in the
+        // extension's storage so Export/Restore carries them (and a new browser gets them back)
+        if('LiveReminders' in properties)
+            await window.Storage?.set?.({ LiveReminders__backup: properties.LiveReminders ?? {} })?.catch?.($warn);
+
         if(typeof callback == 'function')
             callback();
     },
@@ -2276,6 +2281,14 @@ let Cache = window.Cache = {
                 for(const key in properties)
                     results[key] = get(key) ?? properties[key];
             } break;
+        }
+
+        // Reminders restored from a backup (Settings → Restore, or a new browser) join the ones this page knows
+        if('LiveReminders' in results) {
+            const backup = (await window.Storage?.get?.('LiveReminders__backup'))?.LiveReminders__backup;
+
+            if(backup && typeof backup == 'object')
+                results.LiveReminders = { ...backup, ...(results.LiveReminders ?? {}) };
         }
 
         if(typeof callback == 'function')
