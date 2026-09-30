@@ -37,7 +37,7 @@ await (.command is "hello")
 - Scripts need a live channel and a signed-in viewer: like most of TTV Tools, they don't load on offline channels.
 - A script restarts when you change its settings, and when you move to another channel.
 - Your own messages don't trigger your scripts, because Twitch doesn't echo them back. To test a command, have someone else type it.
-- Twitch drops messages sent too quickly and may silently mute you, so keep `POST`/`REPLY` to one per trigger.
+- Posts are paced for you: at least ~1 s apart, and at most 20 per 30 s (100 if you're the broadcaster, a moderator or a VIP). Extra posts wait in line, so a busy script replies late rather than getting you muted.
 
 ## Permissions
 

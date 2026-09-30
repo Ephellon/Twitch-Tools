@@ -175,8 +175,8 @@ About 40 candidates flag Twitch DOM that "may be null", brittle selectors, or `i
     - ~~Message `badges` were `["0"]`, so `using [role]` never matched on chat events~~: fixed (4c4edea), with tests.
     - ~~`#game` printed the category URL~~: fixed in the same commit.
     - **Open:**
-        - `Chat.send` has no pacing: bursts get dropped, and Twitch silently mutes for ~30 min. Proposal: a per-channel queue, ≥1 s apart, ≤20 per 30 s.
-        - Whispers aren't delivered over IRC, so `onwhisper` is unverified.
+        - ~~`Chat.send` has no pacing~~: fixed (16b8c2b). Sends and replies share a queue, ≥1.1 s apart, ≤20 per 30 s (≤100 for broadcaster, moderators and VIPs). The queue is per frame.
+        - Whispers use a separate channel, not IRC (owner), so `onwhisper` never fires from the IRC relay. The transport is being located live (`ttv-live-whisper-source`).
         - `stream_timers` re-announces whenever the runner reloads.
         - `#id` (`STREAMER.sole`) is empty on channels with no panels or points icon.
     - **By design:** the viewer's own messages don't trigger their scripts, because IRC doesn't echo them. Document this in USER-SCRIPTS.

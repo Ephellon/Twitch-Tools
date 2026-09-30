@@ -49,6 +49,11 @@
     - **Stay Live:** works with Twitch's live-home layout and survives a reload.
     - **Blocklist:** the list is fetched directly, and one bad rule no longer disables the rest.
     - **Store Integration:** the game card is placed again, and catalogs use the browser's HTTP cache, which cuts the page heap by about 85 MB.
+    - **User Scripts:**
+        - Role checks (`using [moderator]`) now match on chat messages.
+        - `#game` shows the name.
+        - Posts are paced to avoid Twitch's silent mute.
+    - **Recover Frames:** no longer reloads offline channels.
     - **Watchdog:** no longer reloads channels when Away Mode is set to "Do not display".
     - **Other:**
         - Streamer Data crash.
