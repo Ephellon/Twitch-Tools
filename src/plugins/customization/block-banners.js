@@ -70,7 +70,7 @@ plugin({
          * [style*="asset"i] < button < 3   // Find all `[style*="asset"i]`, travel up to closest `button`, then travel up three more (3) generations (buttons' "great-grand-parent")
          */
         // TTV Tools — Banner Rules
-        fetchURL.fromDisk(`https://ephellon.github.io/ttv-tools/ad-banners.css`, { hoursUntilEntryExpires: 24 }).then(r => r.text()).then(bannerSelectors => {
+        fetchURL.fromDisk(`https://ephellon.github.io/ttv-tools/ad-banners.css`, { hoursUntilEntryExpires: 24 }).then(r => (r.ok ? r.text() : '')).then(bannerSelectors => {
             // Hide marked banners first: a rule that fails below must not keep the others from working
             AddCustomCSSBlock('Remove Banner Ads', `[data-${ UNWANTED_BANNER_AD_SELECTOR }="true"i] {display:none!important}`);
 

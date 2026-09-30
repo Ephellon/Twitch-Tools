@@ -1692,7 +1692,7 @@ function fetchURL(url, options = {}) {
     const [domain = unknown, site = unknown, ...subDomain] = domainPath;
 
     const allowedHosts = 'static-cdn.jtvnw.net'.split(' ')
-        , allowedSites = 'betterttv blerp githubusercontent nightbot streamelements streamloots twitch twitchinsights twitchtokengenerator'.split(' ')
+        , allowedSites = 'betterttv blerp github githubusercontent nightbot streamelements streamloots twitch twitchinsights twitchtokengenerator'.split(' ')
         , allowedDomains = 'gd'.split(' ');
 
     // No CORS required
