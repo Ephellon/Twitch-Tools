@@ -57,6 +57,10 @@ plugin({
         if((paused && isTrusted) || PAGE_HAS_FOCUS === false)
             return StopWatch.stop('recover_frames');
 
+        // An offline channel's preview video isn't a stream to recover (it stalls, and the page reloaded every ~40 s)
+        if(!STREAMER.live && !/\/videos?\//i.test(location.pathname))
+            return StopWatch.stop('recover_frames');
+
         // The video is stalling: either stuck on the same frame, or lagging behind 15 frames
         if(true
             && (false
