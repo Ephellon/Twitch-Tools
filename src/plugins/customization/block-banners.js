@@ -6,7 +6,46 @@
 import { plugin } from '../../lib/plugins.js';
 
 // The feature's state; init() resets it whenever the page (re)initializes
-let UNWANTED_BANNER_AD_SELECTOR, LAST_ELEMENT, EMPTY_ELEMENT_SUBSTITUTE;
+let UNWANTED_BANNER_AD_SELECTOR;
+
+// Rules already reported as unusable, so the job (every 2.5s) warns once
+const SKIPPED_RULES = new Set;
+
+/**
+ * Splits a banner rule on its `<` hops, leaving `<` inside brackets, parentheses or strings alone. Every other character
+ * is kept as written (the old parser dropped tags, classes, ids and pseudo-classes, and broke on `:not(…)`).
+ * @param {string} rule - One line of the banner list, e.g. `[style*="asset"i] < button < 3`
+ * @returns {string[]} The selector, then each hop
+ */
+function splitHops(rule) {
+    const parts = [''];
+    let depth = 0, quote = null, escaped = false;
+
+    for(const char of rule) {
+        if(quote) {
+            if(escaped)
+                escaped = false;
+            else if(char == '\\')
+                escaped = true;
+            else if(char == quote)
+                quote = null;
+        } else if(char == '"' || char == "'") {
+            quote = char
+        } else if(char == '[' || char == '(') {
+            ++depth
+        } else if(char == ']' || char == ')') {
+            --depth
+        } else if(char == '<' && depth == 0) {
+            parts.push('');
+
+            continue;
+        }
+
+        parts[parts.length - 1] += char;
+    }
+
+    return parts;
+}
 
 plugin({
     id: 'block_banners',
@@ -18,8 +57,6 @@ plugin({
      */
     init() {
         UNWANTED_BANNER_AD_SELECTOR = new nanoid(21, nanoid.LOWERCASE_SAFE).value;
-        LAST_ELEMENT = Symbol('last-selector-slot');
-        EMPTY_ELEMENT_SUBSTITUTE = { dataset: {} };
     },
 
     /**
@@ -34,130 +71,38 @@ plugin({
          */
         // TTV Tools — Banner Rules
         fetchURL.fromDisk(`https://ephellon.github.io/ttv-tools/ad-banners.css`, { hoursUntilEntryExpires: 24 }).then(r => r.text()).then(bannerSelectors => {
-            bannerSelectors = bannerSelectors.split(/[\r\n]+/).filter(s => s.trim().length).map(selector => {
-                const syntaxes = [];
-                const path = [''];
-                let curr = '';
-                let esc = false;
-                /**
-                 * Detects special syntax characters to determine the current parsing state of a banner selector.
-                 * @param {string} char - The character being processed.
-                 * @returns {boolean} True if the parser state was updated.
-                 */
-                const detect = char => {
-                    const { length } = syntaxes;
-
-                    if(char == '(') {
-                        curr = char;
-                        syntaxes.push('operator');
-                    } else if(char == '[') {
-                        curr = char;
-                        syntaxes.push('attribute');
-                    } else if(char == '"') {
-                        syntaxes.push('string:2')
-                    } else if(char == "'") {
-                        syntaxes.push('string:1')
-                    } else if(char == '<') {
-                        path.push('');
-                        syntaxes.push('closest');
-                    }
-
-                    return length < syntaxes.length;
-                };
-
-                constructing: for(const char of selector)
-                    switch(syntaxes.at(-1)) {
-                        case 'operator': {
-                            curr += char;
-
-                            if(detect(char)) {
-                                continue constructing
-                            } else if(char == ')') {
-                                path[path.length - 1] = curr;
-
-                                curr = '';
-                                syntaxes.pop();
-                            }
-                        } break;
-
-                        case 'attribute': {
-                            curr += char;
-
-                            if(detect(char)) {
-                                continue constructing
-                            } else if(char == ']') {
-                                path[path.length - 1] = curr;
-
-                                curr = '';
-                                syntaxes.pop();
-                            }
-                        } break;
-
-                        case 'string:2': {
-                            curr += char;
-
-                            if(char == '\\')
-                                esc = !esc;
-                            else if(esc)
-                                esc = !esc;
-                            else if(!esc && char == '"')
-                                syntaxes.pop();
-                        } break;
-
-                        case 'string:1': {
-                            curr += char;
-
-                            if(char == '\\')
-                                esc = !esc;
-                            else if(esc)
-                                esc = !esc;
-                            else if(!esc && char == "'")
-                                syntaxes.pop();
-                        } break;
-
-                        case 'closest': {
-                            if(detect(char))
-                                continue constructing;
-                            else
-                                path[path.length - 1] += char;
-                        } break;
-
-                        default: {
-                            detect(char);
-                        } break;
-                    } // :constructing | switch syntaxes.at(-1)
-
-                path.push(LAST_ELEMENT);
-
-                return path.reduce((elements, v, i, a) => {
-                    if(v === LAST_ELEMENT)
-                        return elements;
-                    else if(v.trim() === '')
-                        return [EMPTY_ELEMENT_SUBSTITUTE];
-                    else if(i === 0)
-                        return $.all(v);
-
-                    let c = parseInt(v.trim() || '1');
-
-                    if(Number.isNaN(c)) {
-                        return elements.map(el => el.closest(v)).filter(defined)
-                    } else {
-                        for(;c-- > 0;)
-                            elements = elements.map(el => el.parentElement).filter(defined);
-
-                        return elements;
-                    }
-                }, []).isolate().forEach(el => {
-                    if(parseBool(el.dataset?.[UNWANTED_BANNER_AD_SELECTOR]))
-                        return;
-
-                    $remark("Blocking...", el);
-
-                    el.dataset[UNWANTED_BANNER_AD_SELECTOR] = true;
-                });
-            });
-
+            // Hide marked banners first: a rule that fails below must not keep the others from working
             AddCustomCSSBlock('Remove Banner Ads', `[data-${ UNWANTED_BANNER_AD_SELECTOR }="true"i] {display:none!important}`);
+
+            for(const rule of bannerSelectors.split(/[\r\n]+/).filter(line => line.trim().length))
+                try {
+                    // A CSS selector, then `<` hops: a number (generations up; none means 1) or a selector (`closest`)
+                    const [selector, ...hops] = splitHops(rule);
+
+                    let elements = (selector.trim().length ? $.all(selector) : []);
+
+                    for(const hop of hops) {
+                        const generations = parseInt(hop.trim() || '1');
+
+                        if(Number.isNaN(generations))
+                            elements = elements.map(element => element.closest(hop.trim())).filter(defined);
+                        else
+                            for(let count = generations; count-- > 0;)
+                                elements = elements.map(element => element.parentElement).filter(defined);
+                    }
+
+                    for(const element of elements.isolate()) {
+                        if(parseBool(element.dataset?.[UNWANTED_BANNER_AD_SELECTOR]))
+                            continue;
+
+                        $remark("Blocking...", element);
+
+                        element.dataset[UNWANTED_BANNER_AD_SELECTOR] = true;
+                    }
+                } catch(error) {
+                    if(!SKIPPED_RULES.has(rule))
+                        SKIPPED_RULES.add(rule), $warn(`Banner rule skipped: ${ rule } — ${ error?.message ?? error }`);
+                }
         });
     },
 
