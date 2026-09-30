@@ -37,6 +37,25 @@
 ## Release History
 
 ### Version 6.\* (pre-release)
+- `6.1` (pre-release): bug-squash rounds.
+    - **Security:** the background's shared-data relay accepts only its own known keys, and only from the extension itself (PR #59).
+    - **Site Access (Settings → Networking):** optional host permissions let the background fetch store and stats sites directly now that the CORS proxies are down.
+    - **Live Reminders:** saved to extension storage as well, and included in Export/Restore. They also fire reliably again: channel lookups read the right JSON-LD entry.
+    - **Up Next:**
+        - Fixes: #45, #46, #54 (tab replaced), #55 (redo jobs), #57 (memory).
+        - Recovers on offline and ended streams.
+        - Redo jobs (†) are kept.
+        - Job URLs no longer repeat `?tool=`.
+    - **Stay Live:** works with Twitch's live-home layout and survives a reload.
+    - **Blocklist:** the list is fetched directly, and one bad rule no longer disables the rest.
+    - **Store Integration:** the game card is placed again, and catalogs use the browser's HTTP cache, which cuts the page heap by about 85 MB.
+    - **Watchdog:** no longer reloads channels when Away Mode is set to "Do not display".
+    - **Other:**
+        - Streamer Data crash.
+        - Auto-Focus polling nonstop when never configured.
+        - Sidebar names blank and unlisted channels shown offline.
+        - Page shifted left.
+        - The silent-dialog peek is now 10px.
 - `6.0` (pre-release): the revamp.
     - **User Scripts:** chat automation written in the TTV DSL (v2.1), with an editor, per-script settings and a permission approval step.
     - **Settings:**
