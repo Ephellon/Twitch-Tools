@@ -52,7 +52,9 @@ plugin({
                 let [title, description, image] = ['title', 'description', 'image'].map(get)
                     , error = DOM.querySelector('parsererror')?.textContent;
 
-                const ok = $.defined('meta[property="og:image"i]');
+                // The fetched game page's metadata, not Twitch's own page: checking the page threw every time, so the card
+                // was never placed and the game page was fetched and parsed again every 5s
+                const ok = defined(DOM.querySelector('meta[property="og:image"i]'));
 
                 if(!ok)
                     throw `No metadata available for "${ STREAMER.game }"`;
@@ -241,7 +243,9 @@ plugin({
                  * @returns {Promise<*>} A promise resolving to the game details object or an empty object
                  */
                 async function fetchSteamGame(game) {
-                    return fetchURL.fromDisk(`https://raw.githubusercontent.com/Ephellon/game-store-catalog/main/steam/${ (game[0].toLowerCase().replace(/[^a-z]/, '_')) }.json`, { hoursUntilEntryExpires: 168 })
+                    // The catalogs (up to ~14 MB each) live in the browser's HTTP cache (revalidated, so updates arrive):
+                    // `fetchURL.fromDisk` kept every cached body in each tab's JS heap (~100 MB of strings for 45 catalogs)
+                    return fetchURL(`https://raw.githubusercontent.com/Ephellon/game-store-catalog/main/steam/${ (game[0].toLowerCase().replace(/[^a-z]/, '_')) }.json`)
                         .then(r => r.json())
                         .then(data => {
                             const [best, ...othr] = data.sort((prev, next) =>
@@ -486,7 +490,7 @@ plugin({
                  * @returns {Promise<*>} A promise resolving to the game details object or an empty object
                  */
                 async function fetchPlayStationGame(game, index = 1, pages = 1) {
-                    return fetchURL.fromDisk(`https://raw.githubusercontent.com/Ephellon/game-store-catalog/main/psn/${ (game[0].toLowerCase().replace(/[^a-z]/, '_')) }.json`, { hoursUntilEntryExpires: 168 })
+                    return fetchURL(`https://raw.githubusercontent.com/Ephellon/game-store-catalog/main/psn/${ (game[0].toLowerCase().replace(/[^a-z]/, '_')) }.json`)
                         .then(r => r.json())
                         .then(data => {
                             const [best, ...othr] = data.sort((prev, next) =>
@@ -794,7 +798,7 @@ plugin({
                  * @returns {Promise<*>} A promise resolving to the game details object or an empty object
                  */
                 async function fetchXboxGame(game) {
-                    return fetchURL.fromDisk(`https://raw.githubusercontent.com/Ephellon/game-store-catalog/main/xbox/${ (game[0].toLowerCase().replace(/[^a-z]/, '_')) }.json`, { hoursUntilEntryExpires: 168 })
+                    return fetchURL(`https://raw.githubusercontent.com/Ephellon/game-store-catalog/main/xbox/${ (game[0].toLowerCase().replace(/[^a-z]/, '_')) }.json`)
                         .then(r => r.json())
                         .then(data => {
                             const [best, ...othr] = data.sort((prev, next) =>
@@ -1168,7 +1172,7 @@ plugin({
                  * @returns {Promise<Object>} The game details object
                  */
                 async function fetchNintendoGame(game) {
-                    return fetchURL.fromDisk(`https://raw.githubusercontent.com/Ephellon/game-store-catalog/main/nintendo/${ (game[0].toLowerCase().replace(/[^a-z]/, '_')) }.json`, { hoursUntilEntryExpires: 168 })
+                    return fetchURL(`https://raw.githubusercontent.com/Ephellon/game-store-catalog/main/nintendo/${ (game[0].toLowerCase().replace(/[^a-z]/, '_')) }.json`)
                         .then(r => r.json())
                         .then(data => {
                             const [best, ...othr] = data.sort((prev, next) =>
@@ -1544,7 +1548,7 @@ plugin({
                  * @returns {Promise<Object>} The game details object
                  */
                 async function fetchEpicGame(game) {
-                    return fetchURL.fromDisk(`https://raw.githubusercontent.com/Ephellon/game-store-catalog/main/epic/${ (game[0].toLowerCase().replace(/[^a-z]/, '_')) }.json`, { hoursUntilEntryExpires: 168 })
+                    return fetchURL(`https://raw.githubusercontent.com/Ephellon/game-store-catalog/main/epic/${ (game[0].toLowerCase().replace(/[^a-z]/, '_')) }.json`)
                         .then(r => r.json())
                         .then(data => {
                             const [best, ...othr] = data.sort((prev, next) =>
