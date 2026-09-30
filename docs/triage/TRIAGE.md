@@ -165,3 +165,7 @@ About 40 candidates flag Twitch DOM that "may be null", brittle selectors, or `i
 - Offline-stagnant recheck: **PASS** (Stay Live moves on ≤7 s in front and hidden tabs, survives a reload, no picker flicker, #50 intact).
 - **Open (note):** the unshift is one-shot, so a later shift (SPA back) isn't undone.
 - **Open (note):** proxy health probes (`example.org`) log `Failed to fetch` / `AggregateError` on every load while all proxies are down. It's noise, not a bug.
+
+## Planned tests (after 6.1 feedback)
+
+- **DSL ↔ page parity:** check that each DSL query gives the same answer as the page function it stands for. For example, `using [moderator]` (does the user have the moderator badge?) must agree with `STREAMER.perm` (`tools.js` `get perm`). The DSL's `[badge]` currently reads `subject.badges` (`dsl/runtime.js` `badge()`). Go through every badge and role, and every host binding in `jsPermissions`, on a channel where the owner is a moderator, one where they're a viewer, and their own channel.
