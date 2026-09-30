@@ -161,7 +161,9 @@
         "https://store.steampowered.com/*",
         "https://store.playstation.com/*",
         "https://store.epicgames.com/*",
-        "https://www.microsoft.com/*"
+        "https://www.microsoft.com/*",
+        "https://u3b6gr4ua3-dsn.algolia.net/*",
+        "https://www.nintendo.com/*"
     ],
 
     "permissions": [
