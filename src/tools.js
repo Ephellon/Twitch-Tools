@@ -3878,6 +3878,8 @@ if(top == window) {
                                                     || $.nullish('[data-a-target="player-controls"i]')
                                                     // A stream that has ended: Away Mode waits for the next one
                                                     || (!STREAMER.live && !/\/videos?\//i.test(location.pathname))
+                                                    // "Do not display" (the default placement): there's no button to find
+                                                    || (Settings.away_mode_placement ?? 'null') == 'null'
 
                                                     || !NOT_LOADED_CORRECTLY.push('away_mode')
                                                 )
