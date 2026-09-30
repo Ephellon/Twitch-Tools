@@ -314,13 +314,15 @@ Chat__PAGE_CHECKER = setInterval(Chat__WAIT_FOR_PAGE = async() => {
         // Fixes shift-left issue
         when(() => $.defined('[data-a-target*="chat"i][data-a-target*="welcome"i]')).then(() => {
             setTimeout(() => {
-                const ebWabz = $('.Layout-sc-1xcs6mc-0.ebWabz');
+                // Any container of the channel page that's scrolled sideways, not one hashed class: Twitch renames
+                // those (`ebWabz` became `hyqqEQ`), and the fix silently stopped running
                 const root = $('.channel-root--home');
 
                 $notice(`Unshifting webpage...`);
 
-                if(defined(ebWabz) && defined(root))
-                    ebWabz.scrollLeft = 0;
+                for(let node = root; defined(node) && node != document.body; node = node.parentElement)
+                    if(node.scrollLeft > 0)
+                        node.scrollLeft = 0;
             }, 5e3);
         });
 
