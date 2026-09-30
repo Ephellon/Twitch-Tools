@@ -2246,6 +2246,7 @@ let Initialize = async(START_OVER = false) => {
                     [class*="channel"i][class*="info"i] [class*="home"i][class*="head"i] [status="live"i]
                     , [class*="channel"i][class*="info"i] [id*="live"i][id*="channel"i]
                     , [class*="channel"i][class*="info"i] [id*="live"i][id*="stream"i]
+                    , [class*="channel-root--live"i] [class*="channel-status-info--live"i]
                 `)
                 && $.nullish(`[class*="offline-recommendations"i], [data-test-selector="follow-panel-overlay"i]`)
                 && !looksOffline
