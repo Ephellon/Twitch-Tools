@@ -166,6 +166,12 @@ About 40 candidates flag Twitch DOM that "may be null", brittle selectors, or `i
 - **Open (note):** the unshift is one-shot, so a later shift (SPA back) isn't undone.
 - **Open (note):** proxy health probes (`example.org`) log `Failed to fetch` / `AggregateError` on every load while all proxies are down. It's noise, not a bug.
 
+
+## 6.1 pre-release follow-ups
+
+- Glyph cache and catalog purge (2150256): **verified live**. `DOMParser` calls went from 38/min to 0, all 92 Settings icons render, and no catalog keys are left.
+- ~~**Recover Frames reloaded offline channels every ~40 s**~~: fixed (dec26e5). The stalled preview video counted as "paused unsafely". It now skips unless the channel is live or on `/videos/`.
+
 ## Planned tests (after 6.1 feedback)
 
 - **DSL on real pages:** every DSL query and host binding should work on a live channel, not just in unit tests. Run sample scripts that use each badge and role, each `jsPermissions` binding, and each trigger. Do it as a moderator, as a viewer, and on the owner's own channel (only posting on `@ephellon`). Check that each gives the page's answer. For example, `using [moderator]` should match the user's actual badge. Message badges are real-time, while `STREAMER.perm` holds until a refresh, so a lag in `perm` after gaining or losing VIP is expected.
