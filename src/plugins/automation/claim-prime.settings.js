@@ -16,7 +16,7 @@ export default {
             toggle: 'claim_prime',
         },
         {
-            text: "Automatically reclaim your <a href='https://help.twitch.tv/s/article/how-to-use-twitch-prime-subscriptions' top-tooltip='Prime Gaming Subscription'>Prime Subscription</a> every month.",
+            text: "Renew your free <a href='https://help.twitch.tv/s/article/how-to-use-twitch-prime-subscriptions' top-tooltip='Prime Gaming Subscription'>Prime Subscription</a> each month.",
         },
         {
             extras: {

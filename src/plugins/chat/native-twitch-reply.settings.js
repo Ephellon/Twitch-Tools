@@ -13,7 +13,7 @@ export default {
             toggle: 'native_twitch_reply',
         },
         {
-            text: "Attempt to display native Twitch™ replies on all channels.",
+            text: "Show Twitch™'s own replies on every channel.",
         },
     ],
     settings: {

@@ -16,7 +16,7 @@ export default {
             toggle: 'recover_messages',
         },
         {
-            text: "When a message is deleted, attempt to recover it.",
+            text: "When a message is deleted, try to bring it back.",
         },
     ],
     settings: {

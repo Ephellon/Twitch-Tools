@@ -15,7 +15,7 @@ export default {
     keywords: 'cors,proxy,permission,permissions,sites,network,statistics,store,steam,playstation,epic,xbox,tinyurl,twitchmetrics,twitchtracker',
     rows: [
         {
-            text: "Some features read other sites: stream statistics (TwitchMetrics, TwitchTracker, TwitchStats), store prices (Steam, PlayStation, Epic, Microsoft) and sync links (TinyURL). Allow access and TTV Tools reads them directly; otherwise it goes through a public proxy, which can be slow or down.",
+            text: "Let TTV Tools read stream stats, store prices and sync links straight from their sites. Without it, a public proxy is used, which can be slow or down.",
         },
         {
             html: "<div id='site-access-manager'></div>",

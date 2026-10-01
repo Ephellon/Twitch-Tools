@@ -13,7 +13,7 @@ export default {
             toggle: 'keep_popout',
         },
         {
-            text: "When moving to another page, prevent the extension from destroying the small videos (pop-outs) of any streams.",
+            text: "Keep small stream videos (pop-outs) open when you move to another page.",
         },
     ],
     settings: {

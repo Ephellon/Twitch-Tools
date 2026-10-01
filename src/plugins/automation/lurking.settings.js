@@ -16,10 +16,10 @@ export default {
             toggle: 'away_mode',
         },
         {
-            text: "Adds a button to toggle <b attention-text top-tooltip='Watching (one or more) streams with little to no engagement'>lurking</b>.",
+            text: "Add a button to turn <b attention-text top-tooltip='Watching (one or more) streams with little to no engagement'>lurking</b> on and off.",
         },
         {
-            text: "The keyboard shortcut <code id='key:alt-a'>Alt + A</code> can also be used.",
+            text: "You can also press <code id='key:alt-a'>Alt + A</code>.",
         },
         {
             extras: {

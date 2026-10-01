@@ -13,10 +13,10 @@ export default {
     keywords: 'channels,charge,directive,handling,information,letter,management,manipulation,memo,memorandum,message,news,note,notice,oversight,plan,policy,report,strategy,transaction,treatment,vip,word',
     rows: [
         {
-            text: "Send message(s) in specific channels based on rules you set. If multiple messages are defined for the same rule, a random one will be chosen.",
+            text: "Send messages in chosen channels, based on your rules. If a rule has several messages, one is picked at random.",
         },
         {
-            text: "When you have the following <a href='https://help.twitch.tv/s/article/twitch-chat-badges-guide' top-tooltip='Chat Badges'>special badge</a>, it will send a <em>general message</em> on your behalf:",
+            text: "With this <a href='https://help.twitch.tv/s/article/twitch-chat-badges-guide' top-tooltip='Chat Badges'>badge</a>, send a <em>general message</em> for you:",
         },
         {
             html: `<div>

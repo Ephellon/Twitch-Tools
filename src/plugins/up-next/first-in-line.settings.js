@@ -13,10 +13,10 @@ export default {
     keywords: 'avenue,blink,carrier,channel,current,flood,flow,flutter,jerk,jiggle,keep,keep reminders,live,live reminders,means,medium,route,rush,shudder,spate,stream,surge,tide,torrent,tremble,tributary,tunnel,twitch',
     rows: [
         {
-            text: "When a channel goes live, head to its stream automatically.",
+            text: "Go to a channel's stream when it goes live.",
         },
         {
-            text: "<b>Up Next</b> adds a queueing service to Twitch™.",
+            text: "<b>Up Next</b> keeps a queue of channels to watch next.",
         },
         {
             extras: {
@@ -29,7 +29,7 @@ export default {
                     choice: 'first_in_line_none',
                     title: "Disabled",
                     tr: 'first-in-line:disabled',
-                    text: "Do not ues this feature",
+                    text: "Do not use this feature",
                 },
                 {
                     choice: 'first_in_line_now',
@@ -97,7 +97,7 @@ export default {
                             toggle: 'live_reminders',
                         },
                         {
-                            text: "Adds a <b attention-text top-tooltip='A notification will display when a channel goes live'>reminder</b> button in the <b>about me</b> panel.",
+                            text: "Add a <b attention-text top-tooltip='A notification will display when a channel goes live'>reminder</b> button to the channel's <b>About</b> panel.",
                         },
                     ],
                 },
@@ -111,7 +111,7 @@ export default {
                             toggle: 'keep_live_reminders',
                         },
                         {
-                            text: "When enabled, <span class='live'>LIVE</span> Reminders will not be automatically removed.",
+                            text: "Don't remove <span class='live'>LIVE</span> Reminders automatically.",
                         },
                     ],
                 },

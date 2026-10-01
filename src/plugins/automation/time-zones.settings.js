@@ -16,7 +16,7 @@ export default {
             toggle: 'time_zones',
         },
         {
-            text: "Automatically convert detected times on the page to your local time zone.",
+            text: "Show times on the page in your own time zone.",
         },
     ],
     settings: {

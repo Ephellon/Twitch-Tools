@@ -16,7 +16,7 @@ export default {
             toggle: 'low_data_mode',
         },
         {
-            text: "Forces the extension to use less overhead data per hour.",
+            text: "Use less data each hour.",
         },
         {
             text: "Current estimate {{est-data-usage}}",

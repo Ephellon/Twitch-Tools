@@ -16,7 +16,7 @@ export default {
             toggle: 'hide_blank_ads',
         },
         {
-            text: "When Twitch™ displays a <b attention-text top-tooltip='Purple Screen'>Blank Ad</b>, temporarily hide it.",
+            text: "Hide Twitch™'s <b attention-text top-tooltip='Purple Screen'>Blank Ads</b> while they play.",
         },
     ],
     settings: {

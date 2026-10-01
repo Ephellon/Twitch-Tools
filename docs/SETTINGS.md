@@ -49,6 +49,15 @@ export default {
 | `rows` | What the section shows, in order (below) |
 | `settings` | Every control in the section, by id (below) |
 
+## Writing descriptions
+
+The owner's rule: say what the setting does in **one sentence**, or two if the second is really needed (a warning, a shortcut).
+
+- Use plain, friendly words that a non-native speaker can follow. Say "try to bring it back", not "attempt to recover"; "Hide repeated messages", not "detect repetitious messages".
+- Start with a verb ("Show…", "Hide…", "Go to…") and leave out "Allow the extension to…" and "Automatically…".
+- Put details in a tooltip (`top-tooltip`) or the wiki, not in the row.
+- Sub-option rows are short labels, not sentences about the parent feature.
+
 ## Rows
 
 | Row | Renders |

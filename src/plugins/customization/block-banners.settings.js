@@ -16,7 +16,7 @@ export default {
             toggle: 'block_banners',
         },
         {
-            text: "Remove (ad) banners for: <em>Bits</em>, <em>SUBtember</em>, <em>Turbo</em>, etc.",
+            text: "Remove ad banners for <em>Bits</em>, <em>SUBtember</em>, <em>Turbo</em> and more.",
         },
     ],
     settings: {

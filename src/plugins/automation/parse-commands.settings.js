@@ -16,7 +16,7 @@ export default {
             toggle: 'parse_commands',
         },
         {
-            text: "When a <b alert-text top-tooltip='!command'>command</b> has been found on the page, retrieve the contents of the command.",
+            text: "When the page mentions a <b alert-text top-tooltip='!command'>command</b>, look up what it says.",
         },
         {
             extras: {
@@ -35,7 +35,7 @@ export default {
                             toggle: 'parse_commands__create_links',
                         },
                         {
-                            text: "<b>Parse Commands</b> will turn commands that contain links into their <b attention-text top-tooltip='Most fulfilled (missing the least number of components)'>best</b> link.",
+                            text: "If a command has several links, use the <b attention-text top-tooltip='Most fulfilled (missing the least number of components)'>best</b> one.",
                         },
                     ],
                 },

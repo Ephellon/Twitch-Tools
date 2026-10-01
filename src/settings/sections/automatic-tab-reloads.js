@@ -13,10 +13,10 @@ export default {
             toggle: 'auto_tab_reloads',
         },
         {
-            text: "Allow the extension to automatically reload tabs.",
+            text: "Let TTV Tools reload tabs when needed.",
         },
         {
-            text: "This may cause data loss.",
+            text: "Unsaved work in those tabs may be lost.",
             attrs: {
                 'warning-text': '',
             },

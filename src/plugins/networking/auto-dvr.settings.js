@@ -14,7 +14,7 @@ export default {
     keywords: 'allocation,alt,avenue,bar,beginning,block,book,break,breathing space,carrier,case,channels,charge,chunk,citation,clips,collectibles,conclusion,crown,cup,current,data,dawn,decoration,default,delinquency,directory,dossier,dvr,excerpt,file,flood,flow,folder,fraction,fragment,gold,halt,handling,hesitation,hiatus,hitch,information,interlude,intermission,interruption,interval,keepsake,kickoff,lapse,layoff,letup,list,lot,lull,management,manipulation,means,medal,medium,memento,mow,nonpayment,notebook,opening,outset,oversight,part,pause,piece,plan,policy,portions,prize,prune,quantity,queue,recess,record,recording,respite,route,rush,section,segment,serving,shave,shear,snip,souvenir,spate,start,stoppage,strategy,streams,surge,suspension,televised,tide,torrent,transaction,treatment,tributary,trim,trophies,trophy,tunnel,video',
     rows: [
         {
-            text: "Allows recording portions of streams. Use <code id='key:alt-z'>Alt + Z</code> to start/stop recording.",
+            text: "Record parts of a stream; press <code id='key:alt-z'>Alt + Z</code> to start or stop.",
         },
         {
             extras: {
@@ -72,7 +72,7 @@ export default {
                             toggle: 'video_clips__dvr',
                         },
                         {
-                            text: "Automatically record (and save) certain streams. Channels marked as <b>DVR</b> will skip and pause the <b>First in Line</b> queue.",
+                            text: "Record and save streams from channels you mark as <b>DVR</b>. These channels pause the <b>Up Next</b> queue.",
                         },
                     ],
                 },
@@ -89,7 +89,7 @@ export default {
                             toggle: 'video_clips__trophy',
                         },
                         {
-                            text: "Automatically record (and save) channel point redemption clips. Clips will be {{video_clips__trophy_length}} long.",
+                            text: "Record a {{video_clips__trophy_length}} clip when you redeem a channel point reward.",
                         },
                     ],
                 },
@@ -106,7 +106,7 @@ export default {
                             toggle: 'record_foreign_rewards',
                         },
                         {
-                            text: "When another user redeems a channel point item you have saved to your \"Buy Later\" list, record their redemption.",
+                            text: "Record it when someone else redeems a reward on your \"Buy Later\" list.",
                         },
                     ],
                 },

@@ -13,7 +13,7 @@ export default {
     keywords: 'arrest,assault,avenue,break in,capture,carrier,channels,charge,handling,incursion,invasion,management,manipulation,means,medium,onslaught,oversight,plan,policy,raiding,route,sortie,strategy,surprise attack,sweep,transaction,treatment,tunnel',
     rows: [
         {
-            text: "Prevent certain or all channels from raiding by going to the <b>Next Channel</b>.",
+            text: "When a channel starts a raid, go to the <b>Next Channel</b> instead.",
         },
         {
             select: 'prevent_raiding',

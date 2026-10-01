@@ -13,7 +13,7 @@ export default {
             toggle: 'highlight_mentions_popup',
         },
         {
-            text: "When someone mentions you <code purple>@username</code>, make the message stand out by showing a pop-up.",
+            text: "Show a pop-up when someone mentions you (<code purple>@username</code>).",
         },
     ],
     settings: {

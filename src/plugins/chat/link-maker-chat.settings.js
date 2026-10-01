@@ -16,7 +16,7 @@ export default {
             toggle: 'link_maker__chat',
         },
         {
-            text: "Automatically convert links in chat to preview cards.",
+            text: "Turn links in chat into preview cards.",
         },
     ],
     settings: {

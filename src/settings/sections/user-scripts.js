@@ -14,10 +14,10 @@ export default {
     keywords: 'dsl,script,scripts,ttv,automation,plugin,plugins,custom,bot,commands',
     rows: [
         {
-            text: "Write your own chat automation in the TTV DSL: reply to commands, greet raiders, post on a timer. Each script appears below with its own switch and settings.",
+            text: "Write your own chat helpers: reply to commands, greet raiders or post on a timer. Each script gets its own switch and settings below.",
         },
         {
-            text: "Scripts run in chat on channel pages and pop-out chat. A script that asks for permissions only runs once you approve them.",
+            text: "Scripts run in chat. A script that asks for permissions waits until you approve them.",
         },
         {
             html: "<div id='user-scripts-manager'></div>",

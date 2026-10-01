@@ -16,10 +16,10 @@ export default {
             toggle: 'extra_keyboard_shortcuts',
         },
         {
-            text: "Allow the extension to add extra keyboard shortcuts.",
+            text: "Add extra keyboard shortcuts.",
         },
         {
-            text: "Keyboard shortcuts can be viewed by invoking <code id='key:?'>?</code> on any stream.",
+            text: "Press <code id='key:?'>?</code> on any stream to see them.",
         },
     ],
     settings: {

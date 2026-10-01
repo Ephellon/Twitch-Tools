@@ -16,7 +16,7 @@ export default {
             toggle: 'claim_loot',
         },
         {
-            text: "Automatically claim and dismiss <b>Prime Gaming Loot</b> offers when the page loads.",
+            text: "Claim and close <b>Prime Gaming Loot</b> offers when the page loads.",
         },
     ],
     settings: {

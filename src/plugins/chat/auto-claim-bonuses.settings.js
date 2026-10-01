@@ -13,7 +13,7 @@ export default {
             toggle: 'auto_claim_bonuses',
         },
         {
-            text: "When the <a href='https://help.twitch.tv/s/article/channel-points-guide' top-tooltip='Bonus Channel Points'><button style='background-color:var(--blue)!important'><span small black glyph='bonuschannelpoints'></span></button></a> button appears, click it automatically.",
+            text: "When the <a href='https://help.twitch.tv/s/article/channel-points-guide' top-tooltip='Bonus Channel Points'><button style='background-color:var(--blue)!important'><span small black glyph='bonuschannelpoints'></span></button></a> button appears, click it for you.",
         },
     ],
     settings: {

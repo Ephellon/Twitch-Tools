@@ -12,7 +12,7 @@ export default {
             toggle: 'recover_chat',
         },
         {
-            text: "When the chat object is not loaded (or suddenly destroyed), attempt to recover it.",
+            text: "If chat doesn't load or disappears, try to bring it back.",
         },
     ],
     settings: {

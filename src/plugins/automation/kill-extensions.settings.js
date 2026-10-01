@@ -13,7 +13,7 @@ export default {
             toggle: 'kill_extensions',
         },
         {
-            text: "Do not allow Twitch™ extensions to display over the stream.",
+            text: "Hide Twitch™ extensions that cover the stream.",
         },
     ],
     settings: {

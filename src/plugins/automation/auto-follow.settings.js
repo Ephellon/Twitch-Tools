@@ -10,7 +10,7 @@ export default {
     keywords: 'avenue,board,bulletin,bureau,button,cabinet,carrier,channels,charge,collectibles,commission,current,extras,flood,flow,follow,forum,group,handling,jury,knob,management,manipulation,means,medium,notice,notification,oversight,panel,plan,policy,proclamation,reminders,route,rush,spate,strategy,streams,surge,tab,task force,tide,torrent,transaction,treatment,tribunal,tributary,tunnel,warning',
     rows: [
         {
-            text: "While watching a channel that is not followed, follow it automatically.",
+            text: "Follow channels automatically while you watch them.",
         },
         {
             html: `<div>

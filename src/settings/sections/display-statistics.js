@@ -13,7 +13,7 @@ export default {
             toggle: 'show_stats',
         },
         {
-            text: "Allow the extension to display statistics from certain features, such as calculated data, images, errors, etc.",
+            text: "Show extra details from some features, like numbers, images and errors.",
         },
     ],
     settings: {

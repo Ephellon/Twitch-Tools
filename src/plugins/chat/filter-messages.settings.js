@@ -16,10 +16,10 @@ export default {
             toggle: 'filter_messages',
         },
         {
-            text: "Remove messages/rules across all channels.",
+            text: "Hide messages that match your rules, in every channel.",
         },
         {
-            text: "Please see <a href='https://github.com/Ephellon/Twitch-Tools/wiki/Filter-Messages'>TTV Tools Wiki — Filter Messages</a> for assistance.",
+            text: "Need help? See <a href='https://github.com/Ephellon/Twitch-Tools/wiki/Filter-Messages'>TTV Tools Wiki — Filter Messages</a>.",
         },
         {
             tr: false,

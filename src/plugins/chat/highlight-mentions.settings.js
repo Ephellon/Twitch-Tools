@@ -13,7 +13,7 @@ export default {
             toggle: 'highlight_mentions',
         },
         {
-            text: "When someone mentions you <code purple>@username</code>, make the message stand out by highlighting it.",
+            text: "Highlight messages that mention you (<code purple>@username</code>).",
         },
         {
             extras: {

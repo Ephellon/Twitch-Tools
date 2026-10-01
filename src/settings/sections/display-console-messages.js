@@ -13,7 +13,7 @@ export default {
             toggle: 'display_in_console',
         },
         {
-            text: "Allow the extension to display messages in the console.",
+            text: "Show TTV Tools messages in the browser console.",
         },
         {
             extras: {

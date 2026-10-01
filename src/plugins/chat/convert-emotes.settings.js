@@ -13,13 +13,10 @@ export default {
             toggle: 'convert_emotes',
         },
         {
-            text: "When presented with Twitch™ emotes, collect them for usage (without requiring a subscription).",
+            text: "Collect emotes from the stream you're watching, so you can use them without subscribing.",
         },
         {
-            text: "This only works for the current stream you are viewing.",
-        },
-        {
-            text: "This does <b>not</b> save/unlock the emote.",
+            text: "This does <b>not</b> unlock or save them.",
             attrs: {
                 'warning-text': '',
             },

@@ -13,7 +13,7 @@ export default {
             toggle: 'recover_pages',
         },
         {
-            text: "If the webpage fails to display, attempt to recover it.",
+            text: "If the page doesn't show, try to bring it back.",
         },
     ],
     settings: {

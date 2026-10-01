@@ -16,7 +16,7 @@ export default {
     },
     rows: [
         {
-            text: "If you would like to <b attention-text top-tooltip='Save settings from somewhere else to this device'>download settings</b>, enter the <b attention-text top-tooltip='6 or more letters, numbers and/or dashes'>Upload ID</b>.",
+            text: "To <b attention-text top-tooltip='Save settings from somewhere else to this device'>download settings</b>, enter their <b attention-text top-tooltip='6 or more letters, numbers and/or dashes'>Upload ID</b>.",
         },
         {
             tr: false,

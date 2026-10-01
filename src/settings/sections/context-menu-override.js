@@ -16,7 +16,7 @@ export default {
             toggle: 'context_menu_override',
         },
         {
-            text: "Use a custom context menu (right-click) on select Twitch pages.",
+            text: "Use TTV Tools' own right-click menu on some Twitch pages.",
         },
     ],
     settings: {

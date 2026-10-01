@@ -13,7 +13,7 @@ export default {
             toggle: 'recover_ads',
         },
         {
-            text: "When an advertisement <b attention-text top-tooltip='Fails to play for more than 5 seconds'>freezes</b>, attempt to recover it.",
+            text: "When an advertisement <b attention-text top-tooltip='Fails to play for more than 5 seconds'>freezes</b>, try to fix it.",
         },
     ],
     settings: {

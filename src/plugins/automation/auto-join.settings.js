@@ -13,7 +13,7 @@ export default {
             toggle: 'auto_accept_mature',
         },
         {
-            text: "When presented with a warning that the stream is intended for <b warning-text>mature audiences</b>, proceed automatically.",
+            text: "Skip the <b warning-text>mature audiences</b> warning.",
         },
         {
             text: "This will also join <a href='https://help.twitch.tv/s/article/watch-parties' top-tooltip='Watch Parties'>Watch Parties</a> automatically.",

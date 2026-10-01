@@ -13,7 +13,7 @@ export default {
             toggle: 'prevent_spam',
         },
         {
-            text: "When repetitive messages are detected in chat, hide them.",
+            text: "Hide repeated messages in chat.",
         },
         {
             extras: {
@@ -29,7 +29,7 @@ export default {
                     },
                     rows: [
                         {
-                            text: "<b>Prevent Spam</b> will look back {{prevent_spam_look_back}} lines to detect <b attention-text top-tooltip='This will look for messages that match word-for-word'>plagiarism</b>.",
+                            text: "Compare each message with the last {{prevent_spam_look_back}} lines to find <b attention-text top-tooltip='This will look for messages that match word-for-word'>copies</b>.",
                         },
                     ],
                 },
@@ -40,7 +40,7 @@ export default {
                     },
                     rows: [
                         {
-                            text: "<b>Prevent Spam</b> will ignore messages if there are not any words longer than {{prevent_spam_minimum_length}} characters.",
+                            text: "Skip messages with no word longer than {{prevent_spam_minimum_length}} characters.",
                         },
                     ],
                 },
@@ -51,7 +51,7 @@ export default {
                     },
                     rows: [
                         {
-                            text: "<b>Prevent Spam</b> will mark any message as <b>repetitious</b> after any word appears {{prevent_spam_ignore_under}} or more times.",
+                            text: "Treat a message as spam when one word appears {{prevent_spam_ignore_under}} or more times.",
                         },
                     ],
                 },

@@ -35,7 +35,7 @@ export default {
                             toggle: 'recover_frames__allow_embed',
                         },
                         {
-                            text: "Attempt to override the video with an embedded stream.",
+                            text: "Try replacing the video with an embedded stream.",
                         },
                     ],
                 },

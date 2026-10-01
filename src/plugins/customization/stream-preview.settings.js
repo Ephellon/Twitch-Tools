@@ -16,7 +16,7 @@ export default {
             toggle: 'stream_preview',
         },
         {
-            text: "When hovering over a streamer's icon, display a preview of their broadcast.",
+            text: "Show a preview of the stream when you hover over a streamer's picture.",
         },
         {
             extras: {
@@ -32,7 +32,7 @@ export default {
                     },
                     rows: [
                         {
-                            text: "Adjust the <b attention-text top-tooltip='In front of, or behind'>orthogonal</b> position of the preview.",
+                            text: "Choose whether the preview sits <b attention-text top-tooltip='In front of, or behind'>in front of or behind</b> the page.",
                         },
                         {
                             select: 'stream_preview_position',
@@ -46,7 +46,7 @@ export default {
                     },
                     rows: [
                         {
-                            text: "How large sould the preview be?",
+                            text: "How big should the preview be?",
                         },
                         {
                             select: 'stream_preview_scale',
@@ -60,10 +60,10 @@ export default {
                     },
                     rows: [
                         {
-                            text: "Should the preview be audible?",
+                            text: "Play the preview's sound?",
                         },
                         {
-                            text: "This will temporarily mute the current stream.",
+                            text: "This mutes the current stream for a moment.",
                             attrs: {
                                 'warning-text': '',
                             },

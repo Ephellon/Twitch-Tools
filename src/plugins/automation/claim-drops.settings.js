@@ -16,7 +16,7 @@ export default {
             toggle: 'claim_drops',
         },
         {
-            text: "While viewing supported streams, automatically claim <a href='https://help.twitch.tv/s/article/mission-based-drops' top-tooltip='Drops'>Drops</a> in your inventory every {{claim_drops__interval}}.",
+            text: "Claim your <a href='https://help.twitch.tv/s/article/mission-based-drops' top-tooltip='Drops'>Drops</a> every {{claim_drops__interval}} while you watch.",
         },
     ],
     settings: {

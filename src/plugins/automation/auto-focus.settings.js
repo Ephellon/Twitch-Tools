@@ -13,10 +13,10 @@ export default {
             toggle: 'auto_focus',
         },
         {
-            text: "Automatically adjust <b>Up Next</b> and <b>Easy Lurk</b> based upon stream activity.",
+            text: "Adjust <b>Up Next</b> and <b>Easy Lurk</b> based on how active the stream is.",
         },
         {
-            text: "This will <b>not</b> stop the <b>Up Next / First in Line</b> one minute timer.",
+            text: "This does <b>not</b> stop the <b>Up Next</b> one-minute timer.",
             attrs: {
                 'warning-text': '',
             },

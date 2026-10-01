@@ -12,7 +12,7 @@ export default {
     },
     rows: [
         {
-            text: "When a tab reaches a certain RAM level, what should the extension do?",
+            text: "What should TTV Tools do when a tab uses a lot of memory?",
         },
         {
             extras: {

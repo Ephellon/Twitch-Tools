@@ -16,10 +16,10 @@ export default {
             toggle: 'soft_unban',
         },
         {
-            text: "Re-enable chat for channels you've been banned from.",
+            text: "Read chat in channels that banned you.",
         },
         {
-            text: "This only re-enables viewing the chat.",
+            text: "You still can't send messages.",
             attrs: {
                 'warning-text': '',
             },

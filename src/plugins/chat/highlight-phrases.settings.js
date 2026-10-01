@@ -16,10 +16,10 @@ export default {
             toggle: 'highlight_phrases',
         },
         {
-            text: "When someone sends a message with one of the following phrases, make the message stand out by highlighting it.",
+            text: "Highlight messages that contain any of these phrases.",
         },
         {
-            text: "Please see <a href='https://github.com/Ephellon/Twitch-Tools/wiki/Highlight-Phrases'>TTV Tools Wiki — Highlight Phrases</a> for assistance.",
+            text: "Need help? See <a href='https://github.com/Ephellon/Twitch-Tools/wiki/Highlight-Phrases'>TTV Tools Wiki — Highlight Phrases</a>.",
         },
         {
             tr: false,

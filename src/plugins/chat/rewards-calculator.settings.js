@@ -13,7 +13,7 @@ export default {
             toggle: 'rewards_calculator',
         },
         {
-            text: "Estimates how long a stream needs to be watched to redeem <a href='https://help.twitch.tv/s/article/channel-points-guide' top-tooltip='Channel Points'><button style='background-color:var(--grey)!important'><span small purple glyph='channelpoints'></span></button></a> rewards.",
+            text: "Estimate how long you need to watch to afford <a href='https://help.twitch.tv/s/article/channel-points-guide' top-tooltip='Channel Points'><button style='background-color:var(--grey)!important'><span small purple glyph='channelpoints'></span></button></a> rewards.",
         },
     ],
     settings: {

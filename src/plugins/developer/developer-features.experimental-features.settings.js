@@ -13,10 +13,10 @@ export default {
             toggle: 'experimental_mode',
         },
         {
-            text: "Allow the extension to display, and use experimental features.",
+            text: "Try features that are still being tested.",
         },
         {
-            text: "Some features may cause data loss.",
+            text: "Some of them may lose data.",
             attrs: {
                 'warning-text': '',
             },

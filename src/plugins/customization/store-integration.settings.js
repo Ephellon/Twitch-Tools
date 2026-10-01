@@ -16,7 +16,7 @@ export default {
             toggle: 'store_integration',
         },
         {
-            text: "When a stream is loaded and a game is detected, search for the game and create a purchase link.",
+            text: "Show where to buy the game being streamed.",
         },
         {
             extras: {

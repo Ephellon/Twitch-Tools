@@ -16,7 +16,7 @@ export default {
             text: "How should the next channel be chosen when <b>Up Next</b> is empty?",
         },
         {
-            text: "<b warning-text>This only activates when the current stream goes offline</b>.",
+            text: "<b warning-text>This only happens when the current stream ends</b>.",
         },
         {
             select: 'next_channel_preference',

@@ -13,7 +13,7 @@ export default {
     keywords: 'accent,adoption,benefit,bulletin,buzz,character,climax,conditions,expression,feature,flawless,focal point,gossip,handling,harmony,help,highlight,hint,idiom,innuendo,intact,leader,melody,motto,murmur,music,need,noise,note,notice,notification,official,operation,phrases,phrasing,practice,proclamation,purpose,remark,robust,safe,sane,saying,service,sigh,slogan,solid,someone,sounds,stable,star,sturdy,terminology,thorough,tone,treatment,usage,uses,utterance,value,vibrant,vibration,vigorous,voice,warning,whispers,wording,wording',
     rows: [
         {
-            text: "When one (or more) of the following conditions are met, play a notification sound.",
+            text: "Play a sound when any of these happen.",
         },
         {
             html: `<div>

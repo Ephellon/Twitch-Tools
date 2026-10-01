@@ -13,10 +13,10 @@ export default {
             toggle: 'fine_details',
         },
         {
-            text: "Allow the extension to make use of Twitch™ API data to enhance your experience.",
+            text: "Use extra data from Twitch™ to improve features.",
         },
         {
-            text: "This will not collect any data. It will use the data Twitch™ has already collected.",
+            text: "Nothing new is collected; it only uses data Twitch™ already has.",
             attrs: {
                 'warning-text': '',
             },

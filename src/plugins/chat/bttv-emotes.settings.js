@@ -13,10 +13,10 @@ export default {
             toggle: 'bttv_emotes',
         },
         {
-            text: "Enable the usage of BetterTTV emotes.",
+            text: "Use BetterTTV emotes in chat.",
         },
         {
-            text: "This may cause instability while loading emotes.",
+            text: "Loading them can make the page less stable.",
             attrs: {
                 'warning-text': '',
             },
