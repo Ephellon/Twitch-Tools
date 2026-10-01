@@ -2335,10 +2335,18 @@ let Cache = window.Cache = {
 
         // Reminders restored from a backup (Settings → Restore, or a new browser) join the ones this page knows
         if('LiveReminders' in results) {
-            const backup = (await window.Storage?.get?.('LiveReminders__backup'))?.LiveReminders__backup;
+            // Either copy may still be a JSON string (older saves); spreading a string would invent "0", "1", … entries
+            const asObject = value => {
+                if(typeof value == 'string')
+                    try { value = JSON.parse(value) } catch(error) { return null }
 
-            if(backup && typeof backup == 'object')
-                results.LiveReminders = { ...backup, ...(results.LiveReminders ?? {}) };
+                return (value && typeof value == 'object' && !Array.isArray(value)) ? value : null;
+            };
+
+            const backup = asObject((await window.Storage?.get?.('LiveReminders__backup'))?.LiveReminders__backup);
+
+            if(backup)
+                results.LiveReminders = { ...backup, ...(asObject(results.LiveReminders) ?? {}) };
         }
 
         if(typeof callback == 'function')
