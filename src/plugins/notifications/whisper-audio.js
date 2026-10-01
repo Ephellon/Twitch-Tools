@@ -21,6 +21,7 @@ plugin({
             if(!unread && !from && !message)
                 return;
 
+            NOTIFIED.whisperSoundAt = Date.now();
             NOTIFICATION_SOUND?.play();
         };
 
@@ -33,6 +34,10 @@ plugin({
         if(NOTIFIED.whisper >= unread)
             return StopWatch.stop('whisper_audio');
         NOTIFIED.whisper = unread;
+
+        // The whisper relay already chimed for this one
+        if(Date.now() - (NOTIFIED.whisperSoundAt ?? 0) < 10_000)
+            return StopWatch.stop('whisper_audio');
 
         NOTIFICATION_SOUND?.play();
 

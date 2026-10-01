@@ -4789,6 +4789,10 @@ if(top == window) {
 
             CHANNEL = `#${ CHANNEL }`;
 
+            // Whispers come over Hermes, not IRC; one relay per tab (top frame only)
+            if(!IS_A_FRAMED_CONTAINER)
+                startWhisperRelay();
+
             // Simple WebSocket → https://dev.twitch.tv/docs/irc
             if(defined(TTV_IRC.socket))
                 return;
