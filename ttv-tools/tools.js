@@ -1267,7 +1267,11 @@ class Search {
                             data = $('head>script[type^="application"i][type$="json"i]', doc)?.textContent;
 
                         try {
-                            [data] = JSON.parse(data || `{"@graph":[]}`)['@graph'];
+                            // Twitch's graph is `[ItemList, VideoObject (only while live), ProfilePage]`: the live flag sits on the
+                            // VideoObject's `publication`, so taking the first item read every channel as offline (#45)
+                            let graph = JSON.parse(data || `{"@graph":[]}`)['@graph'];
+
+                            data = graph.find(item => defined(item?.publication)) ?? graph.find(item => item?.['@type'] == 'ProfilePage') ?? graph[0];
                         } catch(error) {
                             // Not an object...
                             try {
@@ -8051,8 +8055,18 @@ let Initialize = async(START_OVER = false) => {
                             reminders.push({ name: reminderName, time: new Date(LiveReminders[reminderName]) });
                         reminders = reminders.sort((a, b) => (abs(+now - +a.time) < abs(+now - +b.time))? -1: +1);
 
-                        if(!reminders.length)
+                        // Nothing to list: close the (empty) list
+                        const nothingToList = async() => {
+                            body?.remove();
+                            live_reminders_catalog_button.innerHTML = Glyphs.modify('notify', { height: '20px', width: '20px' });
+                            live_reminders_catalog_button.tooltip.innerHTML = 'View Live Reminders';
+                            head.innerHTML = 'Up Next';
+
                             return await alert.timed(`There are no Live Reminders to display<p tt-x>${ (new UUID) }</p>`, 7000);
+                        };
+
+                        if(!reminders.length)
+                            return await nothingToList();
 
                         listing:
                         for(let index = 0; index < reminders.length; ++index) {
@@ -8173,7 +8187,7 @@ let Initialize = async(START_OVER = false) => {
 
                             let DVR_ON = parseBool(DVRChannels[_name]);
 
-                            if((game || desc)?.length)
+                            if(defined(search) && (game || desc)?.length)
                                 autocomplete(search, { [name]: [name, game, desc].filter(s => s.length).join(' - ') });
 
                             let imgSize = '70px';
@@ -8406,6 +8420,10 @@ let Initialize = async(START_OVER = false) => {
                             // Loading reminders (progress bar)...
                             $('[up-next--body] > *')?.modStyle(`border-bottom:2px solid #0000; transition:border .5s; border-image:linear-gradient(90deg, var(--user-complement-color) ${ (100 * (index / length)).toFixed(0) }%, #0000 0) 1;`);
                         }
+
+                        // Every reminder was skipped (lookups failed): same as an empty list
+                        if(body.isConnected && $.nullish('.tt-reminder', body))
+                            await nothingToList();
 
                         wait(500)
                             .then(() => $('[up-next--body] > *').modStyle('border-bottom:2px solid #0000; transition:border .5s; border-image:linear-gradient(90deg, #0000, #0000) 1;'));

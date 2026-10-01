@@ -37,6 +37,7 @@
 ## Release History
 
 ### Version 5.35.\*
+- [`5.35.4.1`](https://github.com/Ephellon/Twitch-Tools/releases/tag/5.35.4) — Fixed doubled `?tool=` in Up Next URLs; fixed issue where Live Reminders sometimes don't fire.
 - [`5.35.4`](https://github.com/Ephellon/Twitch-Tools/releases/tag/5.35.4) — Fixed #59 (CWE-20 possibility).
 - [`5.35.3.3`](https://github.com/Ephellon/Twitch-Tools/releases/tag/5.35.3.3) — Fixed #58 (added JSON export/restore).
 - [`5.35.3.2`](https://github.com/Ephellon/Twitch-Tools/releases/tag/5.35.3.2) — Added outline for `TTV` language.

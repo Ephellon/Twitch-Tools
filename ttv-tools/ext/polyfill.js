@@ -134,8 +134,13 @@ function parseURL(url) {
                 parameters = parameters.replace(/^\?/, '').split('&');
 
             if(parameters instanceof Array) {
-                for(let key of parameters)
-                    params[key] = key;
+                // `key=value` pairs (from a search string) keep their value; a bare `key` stays `key=key`. Treating the
+                // whole pair as a key doubled `?tool=…` in Up Next's job URLs
+                for(let pair of parameters) {
+                    let [key, ...value] = pair.split('=');
+
+                    params[key] = (value.length ? value.join('=') : key);
+                }
 
                 parameters = params;
             }
