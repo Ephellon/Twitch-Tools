@@ -53,6 +53,7 @@
         - Role checks (`using [moderator]`) now match on chat messages.
         - `#game` shows the name.
         - Posts are paced to avoid Twitch's silent mute.
+        - Whisper events work again: they're read from Twitch's whisper socket, since IRC no longer carries them. Whisper Audio benefits too.
     - **Recover Frames:** no longer reloads offline channels.
     - **Watchdog:** no longer reloads channels when Away Mode is set to "Do not display".
     - **Other:**

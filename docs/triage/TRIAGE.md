@@ -176,7 +176,8 @@ About 40 candidates flag Twitch DOM that "may be null", brittle selectors, or `i
     - ~~`#game` printed the category URL~~: fixed in the same commit.
     - **Open:**
         - ~~`Chat.send` has no pacing~~: fixed (16b8c2b). Sends and replies share a queue, ≥1.1 s apart, ≤20 per 30 s (≤100 for broadcaster, moderators and VIPs). The queue is per frame.
-        - Whispers use a separate channel, not IRC (owner), so `onwhisper` never fires from the IRC relay. The transport is being located live (`ttv-live-whisper-source`).
+        - ~~Whispers never reached `onwhisper`~~: they come over Twitch's Hermes socket (PubSub `whispers.<viewer id>`), found live by `ttv-live-whisper-source`. The relay now lives in `lib/whispers.js` (2922558): our own connection using the cookie token, with no new permission. Live verify pending.
+        - Send pacer (16b8c2b): **verified live**. 5 posts arrived in order, ≥1.1 s apart, each acknowledged, no mute.
         - `stream_timers` re-announces whenever the runner reloads.
         - `#id` (`STREAMER.sole`) is empty on channels with no panels or points icon.
     - **By design:** the viewer's own messages don't trigger their scripts, because IRC doesn't echo them. Document this in USER-SCRIPTS.
