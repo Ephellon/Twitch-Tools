@@ -727,8 +727,18 @@ plugin({
                                     reminders.push({ name: reminderName, time: new Date(LiveReminders[reminderName]) });
                                 reminders = reminders.sort((a, b) => (abs(+now - +a.time) < abs(+now - +b.time)) ? -1 : +1);
 
-                                if(!reminders.length)
+                                // Nothing to list: close the (empty) listing and say so
+                                const nothingToList = async() => {
+                                    body?.remove();
+                                    live_reminders_catalog_button.innerHTML = Glyphs.modify('notify', { height: '20px', width: '20px' });
+                                    live_reminders_catalog_button.tooltip.innerHTML = "View Live Reminders";
+                                    head.innerHTML = "Up Next";
+
                                     return await alert.timed(`There are no Live Reminders to display<p tt-x>${ (new UUID) }</p>`, 7000);
+                                };
+
+                                if(!reminders.length)
+                                    return await nothingToList();
 
                                 listing:
                                 for(let index = 0; index < reminders.length; ++index) {
@@ -1086,6 +1096,10 @@ plugin({
                                     // Loading reminders (progress bar)...
                                     $('[up-next--body] > *')?.modStyle(`border-bottom:2px solid #0000; transition:border .5s; border-image:linear-gradient(90deg, var(--user-complement-color) ${ (100 * (index / length)).toFixed(0) }%, #0000 0) 1;`);
                                 } // :listing
+
+                                // Every reminder was skipped (lookups failed): same as an empty list
+                                if(body.isConnected && $.nullish('.tt-reminder', body))
+                                    await nothingToList();
 
                                 wait(500)
                                     .then(() => $('[up-next--body] > *').modStyle('border-bottom:2px solid #0000; transition:border .5s; border-image:linear-gradient(90deg, #0000, #0000) 1;'));
