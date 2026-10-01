@@ -731,7 +731,12 @@ Chat__PAGE_CHECKER = setInterval(Chat__WAIT_FOR_PAGE = async() => {
 
                                 // Got a whisper
                                 case 'WHISPER': {
-                                    const results = { unread: 1, from: channel, message: parameters, timestamp: new Date };
+                                    // The Hermes relay (lib/whispers.js) delivers whispers where it runs; IRC is the fallback
+                                    if(globalThis.startWhisperRelay?.socket)
+                                        break;
+
+                                    // `channel` is the recipient here; the sender is the source
+                                    const results = { unread: 1, from: source?.nick ?? channel, message: parameters, timestamp: new Date };
 
                                     for(const [name, callback] of Chat.__onwhisper__)
                                         callback(results);

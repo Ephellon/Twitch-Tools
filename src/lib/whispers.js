@@ -48,8 +48,9 @@ export function dispatchWhisper(whisper) {
     for(const [, callback] of Chat.__onwhisper__)
         when(() => PAGE_IS_READY, 250).then(() => callback(whisper));
 
+    // A whisper has no chat element to wait for, so deferred listeners only wait for the page
     for(const [, callback] of Chat.__deferredEvents__.__onwhisper__)
-        when.defined.pipe(async(callback, whisper) => await whisper?.element, 1000, callback, whisper).then(([callback, whisper]) => callback(whisper));
+        when(() => PAGE_IS_READY, 250).then(() => callback(whisper));
 
     for(const [name, callback] of Chat.__consumableEvents__.__onwhisper__)
         when(() => PAGE_IS_READY, 250).then(() =>

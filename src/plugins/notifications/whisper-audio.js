@@ -18,7 +18,8 @@ plugin({
 
         // Play sound on new message
         NOTIFICATION_EVENTS.onwhisper ??= Chat.onwhisper = ({ unread, from, message }) => {
-            if(!unread && !from && !message)
+            // Nothing to say, or the pill check already chimed for this one
+            if((!unread && !from && !message) || Date.now() - (NOTIFIED.whisperSoundAt ?? 0) < 10_000)
                 return;
 
             NOTIFIED.whisperSoundAt = Date.now();
@@ -39,6 +40,7 @@ plugin({
         if(Date.now() - (NOTIFIED.whisperSoundAt ?? 0) < 10_000)
             return StopWatch.stop('whisper_audio');
 
+        NOTIFIED.whisperSoundAt = Date.now();
         NOTIFICATION_SOUND?.play();
 
         StopWatch.stop('whisper_audio');

@@ -5159,7 +5159,12 @@ if(top == window) {
 
                             // Got a whisper
                             case 'WHISPER': {
-                                const results = { unread: 1, from: channel, message: parameters, timestamp: new Date };
+                                // The Hermes relay (lib/whispers.js) delivers whispers; IRC is only a fallback without it
+                                if(globalThis.startWhisperRelay?.socket)
+                                    break;
+
+                                // `channel` is the recipient here; the sender is the source
+                                const results = { unread: 1, from: source?.nick ?? channel, message: parameters, timestamp: new Date };
 
                                 for(const [name, callback] of Chat.__onwhisper__)
                                     when(() => PAGE_IS_READY, 250).then(() => callback(results));
