@@ -851,7 +851,8 @@ plugin({
 
                                     const DVR_ON = parseBool(DVRChannels[_name]);
 
-                                    if((game || desc)?.length)
+                                    // The search box only exists with more than 6 reminders
+                                    if(defined(search) && (game || desc)?.length)
                                         autocomplete(search, { [name]: [name, game, desc].filter(s => s.length).join(' - ') });
 
                                     const imgSize = '70px';
