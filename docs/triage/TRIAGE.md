@@ -181,6 +181,17 @@ About 40 candidates flag Twitch DOM that "may be null", brittle selectors, or `i
         - `stream_timers` re-announces whenever the runner reloads.
         - `#id` (`STREAMER.sole`) is empty on channels with no panels or points icon.
     - **By design:** the viewer's own messages don't trigger their scripts, because IRC doesn't echo them. Document this in USER-SCRIPTS.
+- **Owner KIs (round 8):**
+    - ~~**No recovery after a browser restart**~~: restored tabs come back unloaded, so no content script runs. On startup the background now reloads the Up Next owner's tab (matched by name) or the first Twitch tab (74149a1). This couldn't be reproduced under automation, so it still needs the owner's own restart test (checklist in the `ttv-live-restart-recovery` report).
+    - **Up Next button too high (offline pages)**: not reproduced. v5 and v6 measure the same and the icon is centred at 1400×1000, zoom 100%. Needs the owner's screenshot, window size and zoom.
+    - ~~**Site Access unreadable in the pop-up**~~: friendly names that wrap (57b697f). Verified at the real pop-up width (800 px).
+    - ~~**Setting descriptions too long**~~: every one is now 1–2 plain sentences (57b697f). The rule is in `docs/SETTINGS.md`.
+    - ~~**Live Reminders listing: autocomplete error and missing "none" popup**~~: fixed in c0f120f, bae377e, 86678c5 and 74149a1, and **verified live** with 0, 3, 8, all-fake and mixed reminders. Causes:
+        - the search box only exists with more than 6 reminders;
+        - `ChannelPoints` loaded as `null`;
+        - the retry counter skipped the fallback;
+        - `Search` cached failed lookups in `ALL_CHANNELS`;
+        - string-shaped reminder copies were spread into fake entries.
 
 ## Planned tests (after 6.1 feedback)
 

@@ -55,6 +55,9 @@
         - Posts are paced to avoid Twitch's silent mute.
         - Whisper events work again: they're read from Twitch's whisper socket, since IRC no longer carries them. Whisper Audio benefits too.
     - **Recover Frames:** no longer reloads offline channels.
+    - **Browser restart:** Up Next, Stay Live and Next Channel pick up again (the owner tab is reloaded on startup).
+    - **Live Reminders:** the listing no longer errors or shows empty; with none saved, it says so.
+    - **Settings:** plain one-sentence descriptions; Site Access lists readable site names.
     - **Watchdog:** no longer reloads channels when Away Mode is set to "Do not display".
     - **Other:**
         - Streamer Data crash.
