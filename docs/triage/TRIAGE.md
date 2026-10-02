@@ -182,7 +182,7 @@ About 40 candidates flag Twitch DOM that "may be null", brittle selectors, or `i
         - `#id` (`STREAMER.sole`) is empty on channels with no panels or points icon.
     - **By design:** the viewer's own messages don't trigger their scripts, because IRC doesn't echo them. Document this in USER-SCRIPTS.
 - **Owner KIs (round 8):**
-    - ~~**No recovery after a browser restart**~~: restored tabs come back unloaded, so no content script runs. On startup the background now reloads the Up Next owner's tab (matched by name) or the first Twitch tab (74149a1). This couldn't be reproduced under automation, so it still needs the owner's own restart test (checklist in the `ttv-live-restart-recovery` report).
+    - ~~**No recovery after a browser restart**~~: restored tabs come back unloaded, so no content script runs. On startup the background now reloads the Up Next owner's tab (matched by name) or the first Twitch tab (74149a1). **Verified by the owner**: after a full restart, Up Next resumed on its own.
     - **Up Next button too high (offline pages)**: not reproduced. v5 and v6 measure the same and the icon is centred at 1400×1000, zoom 100%. Needs the owner's screenshot, window size and zoom.
     - ~~**Site Access unreadable in the pop-up**~~: friendly names that wrap (57b697f). Verified at the real pop-up width (800 px).
     - ~~**Setting descriptions too long**~~: every one is now 1–2 plain sentences (57b697f). The rule is in `docs/SETTINGS.md`.
