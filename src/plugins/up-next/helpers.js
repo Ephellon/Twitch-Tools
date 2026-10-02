@@ -648,6 +648,9 @@ plugin({
                                 , parent = currentTarget.closest('[id^="tt-balloon-container"i]');
 
                             Cache.load(['LiveReminders', 'ChannelPoints', 'DVRChannels'], async({ LiveReminders = null, ChannelPoints = {}, DVRChannels = null }) => {
+                                // A key never saved loads as `null` (not `undefined`), so the default above doesn't apply
+                                ChannelPoints ??= {};
+
                                 try {
                                     LiveReminders = JSON.parse(LiveReminders || '{}');
                                 } catch(error) {
@@ -764,7 +767,8 @@ plugin({
                                         // $warn(`Re-search, ${ num } ${ 'retry'.pluralSuffix(num) } left [Catalog]: "${ name }" → OK = ${ ok }`);
                                     }
 
-                                    if(!num && !ok) {
+                                    // Retries exhausted (`num` ends at -1, so `!num` never held): fall back to known channels, else skip
+                                    if(!ok) {
                                         channel = ALL_CHANNELS.find(channel => channel.name.equals(name));
 
                                         if(nullish(channel?.name))

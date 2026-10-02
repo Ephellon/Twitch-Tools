@@ -264,7 +264,9 @@ class Search {
                         } });
 
                         SEARCH_CACHE.set(display_name.toLowerCase(), channelData);
-                        ALL_CHANNELS = [...ALL_CHANNELS, channelData].filter(defined).filter(uniqueChannels);
+                        // A failed lookup (`ok: false`, e.g. no such channel) isn't a known channel
+                        if(channelData.ok !== false)
+                            ALL_CHANNELS = [...ALL_CHANNELS, channelData].filter(defined).filter(uniqueChannels);
 
                         // Pre-reads the stream if converted into a proper `Response`
                         return ({

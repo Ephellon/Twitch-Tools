@@ -471,6 +471,26 @@ Container.tabs.onReplaced?.addListener((addedTabId, removedTabId) => {
     });
 });
 
+// After a browser restart, Edge/Chrome restore background tabs unloaded (no content script), so Up Next, Stay Live
+// and Next Channel never resume until the viewer clicks the tab. Load the Up Next owner's tab (matched by channel
+// name: restored tabs get new ids), or the first Twitch tab if there's no owner
+Container.runtime.onStartup?.addListener(() => {
+    Storage.get(['UP_NEXT_OWNER_NAME'], ({ UP_NEXT_OWNER_NAME = null }) => {
+        Container.tabs.query({ url: '*://*.twitch.tv/*' }, (tabs = []) => {
+            const channelOf = url => { try { return new URL(url).pathname.slice(1).split('/').shift().toLowerCase().trim() } catch(error) { return '' } };
+            const asleep = tab => tab.discarded || tab.status == 'unloaded';
+            const owner = tabs.find(tab => UP_NEXT_OWNER_NAME && channelOf(tab.url) == UP_NEXT_OWNER_NAME)
+                , tab = owner ?? tabs[0];
+
+            if(owner)
+                Storage.set({ UP_NEXT_OWNER: owner.id });
+
+            if(tab && asleep(tab))
+                Container.tabs.reload(tab.id);
+        });
+    });
+});
+
 // Update the tab(s) when they unload
     // `Container.tabs.onUpdated.addListener(...)` does not support pages crashing...
 const OfflineTabs = new Set();
