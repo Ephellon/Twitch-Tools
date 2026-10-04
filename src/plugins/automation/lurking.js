@@ -45,8 +45,11 @@ plugin({
         // Alt + A | Opt + A
         if(nullish(GLOBAL_EVENT_LISTENERS.KEYDOWN_ALT_A))
             $.on('keydown', GLOBAL_EVENT_LISTENERS.KEYDOWN_ALT_A = function Toggle_Lurking({ key = '', altKey, ctrlKey, metaKey, shiftKey }) {
-                if(!(ctrlKey || metaKey || shiftKey) && altKey && key.equals('a'))
+                if(!(ctrlKey || metaKey || shiftKey) && altKey && key.equals('a')) {
+                    // A scripted click isn't trusted: mark the shortcut as the viewer's own toggle (#60)
+                    $('#away-mode')?.setAttribute?.('user-toggle', '');
                     $('#away-mode')?.click?.();
+                }
             });
 
         /** Return (don't activate) if
@@ -221,6 +224,11 @@ plugin({
                 , { container, background, tooltip } = AwayModeButton;
 
             container.setAttribute('tt-away-mode-enabled', enabled);
+
+            // Who toggled: a viewer's click (or Alt + A) is theirs to keep; Auto-Focus clicks from script (#60)
+            container.setAttribute('toggled-by', (event.isTrusted || container.hasAttribute('user-toggle')) ? 'user' : 'auto');
+            container.removeAttribute('user-toggle');
+
             tooltip.innerHTML = `${ ['Start', 'Stop'][+enabled] } Lurking (${ GetMacro('alt+a') })`;
             background?.modStyle(`background:${ [`var(--user-accent-color)`, 'var(--color-background-button-secondary-default)'][+enabled] } !important;`);
 

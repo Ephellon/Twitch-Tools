@@ -140,6 +140,10 @@ plugin({
                                     if(quality.auto)
                                         break __AutoFocus_Disable_AwayMode__;
 
+                                    // The viewer started or stopped lurking themselves: leave it (#60)
+                                    if(button?.getAttribute('toggled-by') == 'user')
+                                        break __AutoFocus_Disable_AwayMode__;
+
                                     button?.click();
 
                                     changes.push('disabling lurking');
@@ -172,6 +176,10 @@ plugin({
                                         , quality = await GetQuality();
 
                                     if(quality.low)
+                                        break __AutoFocus_Enable_AwayMode__;
+
+                                    // The viewer started or stopped lurking themselves: leave it (#60)
+                                    if(button?.getAttribute('toggled-by') == 'user')
                                         break __AutoFocus_Enable_AwayMode__;
 
                                     button?.click();
