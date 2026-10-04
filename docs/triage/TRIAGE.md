@@ -192,7 +192,8 @@ About 40 candidates flag Twitch DOM that "may be null", brittle selectors, or `i
         - the retry counter skipped the fallback;
         - `Search` cached failed lookups in `ALL_CHANNELS`;
         - string-shaped reminder copies were spread into fake entries.
-- ~~**#60** Auto-Focus overrides the viewer's Easy Lurk choice~~: fixed (9bee32f). It uses the same pattern as #56: the button records who toggled it, and Auto-Focus leaves the viewer's toggle alone. Live verify pending (`ttv-live-issue-60`).
+- ~~**#60** Auto-Focus overrides the viewer's Easy Lurk choice~~: fixed (9bee32f). It uses the same pattern as #56: the button records who toggled it, and Auto-Focus leaves the viewer's toggle alone. **Verified live** (`ttv-live-issue-60`). Part 2 (a009620): click the statistics readout to pause or resume Auto-Focus on the page. It shows `⏸ Paused`, and resuming hands Lurk back to Auto-Focus. **Verified live** (`ttv-live-issue-60-hold`). Both are also in v5 5.35.4.2.
+    - Pre-existing, not changed: Auto-Focus doesn't disable Lurk while quality is "Auto" (`quality.auto`), even at a low resolution.
 
 ## Planned tests (after 6.1 feedback)
 
