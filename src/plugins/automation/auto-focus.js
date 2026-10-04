@@ -8,6 +8,9 @@ import { plugin } from '../../lib/plugins.js';
 // The feature's state; init() resets it whenever the page (re)initializes
 let CAPTURE_HISTORY, CAPTURE_INTERVAL, POLL_INTERVAL, STALLED_FRAMES, POSITIVE_TREND;
 
+// Paused by the viewer for this page (#60): Auto-Focus keeps measuring but changes nothing. Survives re-inits, not reloads
+let AUTO_FOCUS_HELD = false;
+
 plugin({
     id: 'auto_focus',
     timer: -1000,
@@ -99,12 +102,25 @@ plugin({
                                 parent.append(diffDat, diffImg);
                             }
 
+                            // Click the readout to pause or resume Auto-Focus on this page (#60); resuming hands Easy
+                            // Lurk back to Auto-Focus, undoing the viewer's earlier toggle
+                            diffDat.style.cursor = 'pointer';
+                            diffDat.title = `${ ['Pause', 'Resume'][+!!AUTO_FOCUS_HELD] } Auto-Focus on this page`;
+                            diffDat.onclick ??= () => {
+                                AUTO_FOCUS_HELD = !AUTO_FOCUS_HELD;
+
+                                if(!AUTO_FOCUS_HELD)
+                                    $('#away-mode')?.removeAttribute('toggled-by');
+
+                                $log(`[Auto-Focus] ${ ['resumed', 'paused'][+AUTO_FOCUS_HELD] } on this page`);
+                            };
+
                             diffImg.src = data.getImageDataUrl?.();
 
                             const size = diffImg.src.length
                                 , { totalVideoFrames } = video.getVideoPlaybackQuality();
 
-                            diffDat.innerHTML = `Frame #${ totalVideoFrames.toString(36).toUpperCase() } / ${ detectedTrend } ${ misMatchPercentage }% &#866${ 3 + (trend[0].equals('d')) }; / ${ ((stop - start) / 1000).suffix('s', 2) } / ${ size.suffix('B', 2) } / ${ videoHeight }p`;
+                            diffDat.innerHTML = (AUTO_FOCUS_HELD ? '&#9208; Paused / ' : '') + `Frame #${ totalVideoFrames.toString(36).toUpperCase() } / ${ detectedTrend } ${ misMatchPercentage }% &#866${ 3 + (trend[0].equals('d')) }; / ${ ((stop - start) / 1000).suffix('s', 2) } / ${ size.suffix('B', 2) } / ${ videoHeight }p`;
                             // diffDat.tooltip = new Tooltip(diffDat, `Frame ID / Overall Trend, Change Percentage, Current Trend / Time to Calculate Changes / Size of Changes (Bytes) / Image Resolution`, { from: 'left' });
                         } else {
                             diffImg?.remove();
@@ -114,7 +130,8 @@ plugin({
                         /* Alter other settings according to the trend */
                         const changes = ['changing trend detection level'];
 
-                        if(bias.length > 30 && GET_TIME_REMAINING() > 60_000) {
+                        // Paused by the viewer: keep measuring, change nothing (#60)
+                        if(!AUTO_FOCUS_HELD && bias.length > 30 && GET_TIME_REMAINING() > 60_000) {
                             // Positive activity trend; disable Lurking, pause Up Next
                             if((nullish(POSITIVE_TREND) || POSITIVE_TREND === false) && bias.slice(-(30 / pollInterval)).filter(trend => trend.equals('down')).length < (30 / pollInterval) / 2) {
                                 POSITIVE_TREND = true;
