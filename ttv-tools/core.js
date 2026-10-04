@@ -1254,8 +1254,19 @@ try {
                 // when.defined(condition:function<any>, ms:number?<integer>) → Promise~any
             async function(condition, ms = 100, ...args) {
                 return new Promise((resolve, reject) => {
+                    // One check at a time: a condition that never settles otherwise leaves one pending call per tick (#57)
+                    let busy = false, value;
+
                     let interval = setInterval(async args => {
-                        let value = await condition.apply(null, args);
+                        if(busy)
+                            return;
+
+                        try {
+                            busy = true;
+                            value = await condition.apply(null, args);
+                        } finally {
+                            busy = false;
+                        }
 
                         if(defined(value)) {
                             clearInterval(interval);
@@ -1658,7 +1669,7 @@ function fetchURL(url, options = {}) {
     let [domain = unknown, site = unknown, ...subDomain] = domainPath;
 
     let allowedHosts = 'static-cdn.jtvnw.net'.split(' '),
-        allowedSites = 'betterttv blerp githubusercontent nightbot streamelements streamloots twitch twitchinsights twitchtokengenerator'.split(' '),
+        allowedSites = 'betterttv blerp github githubusercontent nightbot streamelements streamloots twitch twitchinsights twitchtokengenerator'.split(' '),
         allowedDomains = 'gd'.split(' ');
 
     // No CORS required
@@ -1926,7 +1937,12 @@ Object.defineProperties(fetchURL, {
                     }
                 });
 
-            return fetchURL(url, options).then(response => response.text()).then(text => {
+            return fetchURL(url, options).then(async response => {
+                // An error reply isn't content: hand it back as-is, but never cache it
+                if(!response.ok)
+                    return response;
+
+                let text = await response.text();
                 let data;
 
                 // Set the expiration date...

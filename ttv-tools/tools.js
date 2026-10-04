@@ -1305,7 +1305,9 @@ class Search {
                         let channelData = await Search.convertResults({ async json() { return json } });
 
                         SEARCH_CACHE.set(display_name.toLowerCase(), channelData);
-                        ALL_CHANNELS = [...ALL_CHANNELS, channelData].filter(defined).filter(uniqueChannels);
+                        // A failed lookup (`ok: false`) isn't a known channel
+                        if(channelData.ok !== false)
+                            ALL_CHANNELS = [...ALL_CHANNELS, channelData].filter(defined).filter(uniqueChannels);
 
                         // Pre-reads the stream if converted into a proper `Response`
                         return ({
@@ -4492,6 +4494,7 @@ let Initialize = async(START_OVER = false) => {
                     [class*="channel"i][class*="info"i] [class*="home"i][class*="head"i] [status="live"i]
                     , [class*="channel"i][class*="info"i] [id*="live"i][id*="channel"i]
                     , [class*="channel"i][class*="info"i] [id*="live"i][id*="stream"i]
+                    , [class*="channel-root--live"i] [class*="channel-status-info--live"i]
                 `)
                 && $.nullish(`[class*="offline-recommendations"i], [data-test-selector="follow-panel-overlay"i]`)
                 && !looksOffline
@@ -5793,6 +5796,9 @@ let Initialize = async(START_OVER = false) => {
         STALLED_FRAMES,
         POSITIVE_TREND;
 
+    // Paused by the viewer for this page (#60): Auto-Focus keeps measuring but changes nothing
+    let AUTO_FOCUS_HELD = false;
+
     // Estimated level of screen activity
         // See https://www.twitch.tv/directory/all/tags
     function scoreTagActivity(...tags) {
@@ -5970,12 +5976,25 @@ let Initialize = async(START_OVER = false) => {
                                 parent.append(diffDat, diffImg);
                             }
 
+                            // Click the readout to pause or resume Auto-Focus on this page (#60); resuming hands Easy
+                            // Lurk back to Auto-Focus, undoing the viewer's earlier toggle
+                            diffDat.style.cursor = 'pointer';
+                            diffDat.title = `${ ['Pause', 'Resume'][+!!AUTO_FOCUS_HELD] } Auto-Focus on this page`;
+                            diffDat.onclick ??= () => {
+                                AUTO_FOCUS_HELD = !AUTO_FOCUS_HELD;
+
+                                if(!AUTO_FOCUS_HELD)
+                                    $('#away-mode')?.removeAttribute('toggled-by');
+
+                                $log(`[Auto-Focus] ${ ['resumed', 'paused'][+AUTO_FOCUS_HELD] } on this page`);
+                            };
+
                             diffImg.src = data.getImageDataUrl?.();
 
                             let size = diffImg.src.length,
                                 { totalVideoFrames } = video.getVideoPlaybackQuality();
 
-                            diffDat.innerHTML = `Frame #${ totalVideoFrames.toString(36).toUpperCase() } / ${ detectedTrend } ${ misMatchPercentage }% &#866${ 3 + (trend[0].equals('d')) }; / ${ ((stop - start) / 1000).suffix('s', 2) } / ${ size.suffix('B', 2) } / ${ videoHeight }p`;
+                            diffDat.innerHTML = (AUTO_FOCUS_HELD ? '&#9208; Paused / ' : '') + `Frame #${ totalVideoFrames.toString(36).toUpperCase() } / ${ detectedTrend } ${ misMatchPercentage }% &#866${ 3 + (trend[0].equals('d')) }; / ${ ((stop - start) / 1000).suffix('s', 2) } / ${ size.suffix('B', 2) } / ${ videoHeight }p`;
                             // diffDat.tooltip = new Tooltip(diffDat, `Frame ID / Overall Trend, Change Percentage, Current Trend / Time to Calculate Changes / Size of Changes (Bytes) / Image Resolution`, { from: 'left' });
                         } else {
                             diffImg?.remove();
@@ -5985,7 +6004,8 @@ let Initialize = async(START_OVER = false) => {
                         /* Alter other settings according to the trend */
                         let changes = ['changing trend detection level'];
 
-                        if(bias.length > 30 && GET_TIME_REMAINING() > 60_000) {
+                        // Paused by the viewer: keep measuring, change nothing (#60)
+                        if(!AUTO_FOCUS_HELD && bias.length > 30 && GET_TIME_REMAINING() > 60_000) {
                             // Positive activity trend; disable Lurking, pause Up Next
                             if((nullish(POSITIVE_TREND) || POSITIVE_TREND === false) && bias.slice(-(30 / pollInterval)).filter(trend => trend.equals('down')).length < (30 / pollInterval) / 2) {
                                 POSITIVE_TREND = true;
@@ -6011,6 +6031,10 @@ let Initialize = async(START_OVER = false) => {
                                     if(quality.auto)
                                         break __AutoFocus_Disable_AwayMode__;
 
+                                    // The viewer started or stopped lurking themselves: leave it (#60)
+                                    if(button?.getAttribute('toggled-by') == 'user')
+                                        break __AutoFocus_Disable_AwayMode__;
+
                                     button?.click();
 
                                     changes.push('disabling lurking');
@@ -6028,7 +6052,8 @@ let Initialize = async(START_OVER = false) => {
                                     let button = $('#up-next-control'),
                                         paused = parseBool(button?.getAttribute('paused'));
 
-                                    if(!paused)
+                                    // Only undo a pause Auto-Focus made; a viewer's pause stays (#56)
+                                    if(!paused || button?.getAttribute('paused-by') == 'user')
                                         break __AutoFocus_Resume_UpNext__;
 
                                     button?.click();
@@ -6042,6 +6067,10 @@ let Initialize = async(START_OVER = false) => {
                                         quality = await GetQuality();
 
                                     if(quality.low)
+                                        break __AutoFocus_Enable_AwayMode__;
+
+                                    // The viewer started or stopped lurking themselves: leave it (#60)
+                                    if(button?.getAttribute('toggled-by') == 'user')
                                         break __AutoFocus_Enable_AwayMode__;
 
                                     button?.click();
@@ -6117,8 +6146,11 @@ let Initialize = async(START_OVER = false) => {
         // Alt + A | Opt + A
         if(nullish(GLOBAL_EVENT_LISTENERS.KEYDOWN_ALT_A))
             $.on('keydown', GLOBAL_EVENT_LISTENERS.KEYDOWN_ALT_A = function Toggle_Lurking({ key = '', altKey, ctrlKey, metaKey, shiftKey }) {
-                if(!(ctrlKey || metaKey || shiftKey) && altKey && key.equals('a'))
+                if(!(ctrlKey || metaKey || shiftKey) && altKey && key.equals('a')) {
+                    // A scripted click isn't trusted: mark the shortcut as the viewer's own toggle (#60)
+                    $('#away-mode')?.setAttribute?.('user-toggle', '');
                     $('#away-mode')?.click?.();
+                }
             });
 
         /** Return (don't activate) if
@@ -6275,6 +6307,11 @@ let Initialize = async(START_OVER = false) => {
                 { container, background, tooltip } = AwayModeButton;
 
             container.setAttribute('tt-away-mode-enabled', enabled);
+
+            // Who toggled: a viewer's click (or Alt + A) is theirs to keep; Auto-Focus clicks from script (#60)
+            container.setAttribute('toggled-by', (event.isTrusted || container.hasAttribute('user-toggle')) ? 'user' : 'auto');
+            container.removeAttribute('user-toggle');
+
             tooltip.innerHTML = `${ ['Start','Stop'][+enabled] } Lurking (${ GetMacro('alt+a') })`;
             background?.modStyle(`background:${ [`var(--user-accent-color)`, 'var(--color-background-button-secondary-default)'][+enabled] } !important;`);
 
@@ -7957,6 +7994,9 @@ let Initialize = async(START_OVER = false) => {
                     currentTarget.setAttribute('paused', FIRST_IN_LINE_PAUSED = paused);
                     currentTarget.setAttribute('paused-at', FIRST_IN_LINE_PAUSED_AT = +new Date);
 
+                    // Who paused: a viewer's click is trusted; Auto-Focus clicks the button from script (#56)
+                    currentTarget.setAttribute('paused-by', paused? ['auto', 'user'][+event.isTrusted]: '');
+
                     if(defined(currentTarget.tooltip))
                         currentTarget.tooltip.innerHTML = `${ ['Pause','Resume'][+paused] } the queue`;
                 },
@@ -7976,6 +8016,8 @@ let Initialize = async(START_OVER = false) => {
                         parent = currentTarget.closest('[id^="tt-balloon-container"i]');
 
                     Cache.load(['LiveReminders', 'ChannelPoints', 'DVRChannels'], async({ LiveReminders = null, ChannelPoints = {}, DVRChannels = null }) => {
+                        // A key never saved loads as `null`, so the default above doesn't apply
+                        ChannelPoints ??= {};
                         try {
                             LiveReminders = JSON.parse(LiveReminders || '{}');
                         } catch(error) {
@@ -8092,7 +8134,8 @@ let Initialize = async(START_OVER = false) => {
                                 // $warn(`Re-search, ${ num } ${ 'retry'.pluralSuffix(num) } left [Catalog]: "${ name }" → OK = ${ ok }`);
                             }
 
-                            if(!num && !ok) {
+                            // Retries exhausted (`num` ends at -1, so `!num` never held): fall back to known channels, else skip
+                            if(!ok) {
                                 channel = ALL_CHANNELS.find(channel => channel.name.equals(name));
 
                                 if(nullish(channel?.name))
@@ -14192,6 +14235,40 @@ let Initialize = async(START_OVER = false) => {
      *
      */
     const UNWANTED_BANNER_AD_SELECTOR = new nanoid(21, nanoid.LOWERCASE_SAFE).value;
+
+    // Rules already reported as unusable: warned once, not every 2.5 s
+    const SKIPPED_RULES = new Set;
+
+    // `selector < 2 < .closest` → ['selector ', ' 2 ', ' .closest'], ignoring `<` inside quotes, [] or ()
+    function splitHops(rule) {
+        const parts = [''];
+        let depth = 0, quote = null, escaped = false;
+
+        for(const char of rule) {
+            if(quote) {
+                if(escaped)
+                    escaped = false;
+                else if(char == '\\')
+                    escaped = true;
+                else if(char == quote)
+                    quote = null;
+            } else if(char == '"' || char == "'") {
+                quote = char;
+            } else if(char == '[' || char == '(') {
+                ++depth;
+            } else if(char == ']' || char == ')') {
+                --depth;
+            } else if(char == '<' && depth == 0) {
+                parts.push('');
+
+                continue;
+            }
+
+            parts[parts.length - 1] += char;
+        }
+
+        return parts;
+    }
     const LAST_ELEMENT = Symbol("last-selector-slot");
     const EMPTY_ELEMENT_SUBSTITUTE = ({ dataset: {} });
 
@@ -14203,126 +14280,39 @@ let Initialize = async(START_OVER = false) => {
          * [style*="asset"i] < button < 3   // Find all `[style*="asset"i]`, travel up to closest `button`, then travel up three more (3) generations (buttons' "great-grand-parent")
          */
         // TTV Tools — Banner Rules
-        fetchURL.fromDisk(`https://ephellon.github.io/ttv-tools/ad-banners.css`, { hoursUntilEntryExpires: 24 }).then(r => r.text()).then(bannerSelectors => {
-            bannerSelectors = bannerSelectors.split(/[\r\n]+/).filter(s => s.trim().length).map(selector => {
-                let syntaxes = [];
-                let path = [''];
-                let curr = "";
-                let esc = false;
-                let detect = char => {
-                    let { length } = syntaxes;
-
-                    if(char == '(') {
-                        curr = char;
-                        syntaxes.push('operator');
-                    } else if(char == '[') {
-                        curr = char;
-                        syntaxes.push('attribute');
-                    } else if(char == '"') {
-                        syntaxes.push('string:2');
-                    } else if(char == "'") {
-                        syntaxes.push('string:1');
-                    } else if(char == '<') {
-                        path.push('');
-                        syntaxes.push('closest');
-                    }
-
-                    return length < syntaxes.length;
-                };
-
-                constructing: for(let char of selector)
-                    switch(syntaxes.at(-1)) {
-                        case 'operator': {
-                            curr += char;
-
-                            if(detect(char))
-                                continue constructing;
-                            else if(char == ')') {
-                                path[path.length - 1] = curr;
-
-                                curr = "";
-                                syntaxes.pop();
-                            }
-                        } break;
-
-                        case 'attribute': {
-                            curr += char;
-
-                            if(detect(char))
-                                continue constructing;
-                            else if(char == ']') {
-                                path[path.length - 1] = curr;
-
-                                curr = "";
-                                syntaxes.pop();
-                            }
-                        } break;
-
-                        case 'string:2': {
-                            curr += char;
-
-                            if(char == '\\')
-                                esc = !esc;
-                            else if(esc)
-                                esc = !esc;
-                            else if(!esc && char == '"')
-                                syntaxes.pop();
-                        } break;
-
-                        case 'string:1': {
-                            curr += char;
-
-                            if(char == '\\')
-                                esc = !esc;
-                            else if(esc)
-                                esc = !esc;
-                            else if(!esc && char == "'")
-                                syntaxes.pop();
-                        } break;
-
-                        case 'closest': {
-                            if(detect(char))
-                                continue constructing;
-                            else
-                                path[path.length - 1] += char;
-                        } break;
-
-                        default: {
-                            detect(char);
-                        } break;
-                    }
-
-                    path.push(LAST_ELEMENT);
-
-                    return path.reduce((elements, v, i, a) => {
-                        if(v === LAST_ELEMENT)
-                            return elements;
-                        else if(v.trim() === '')
-                            return [EMPTY_ELEMENT_SUBSTITUTE];
-                        else if(i === 0)
-                            return $.all(v);
-
-                        let c = parseInt(v.trim() || '1');
-
-                        if(Number.isNaN(c)) {
-                            return elements.map(el => el.closest(v)).filter(defined);
-                        } else {
-                            for(;c-->0;)
-                                elements = elements.map(el => el.parentElement).filter(defined);
-
-                            return elements;
-                        }
-                    }, []).isolate().forEach(el => {
-                        if(parseBool(el.dataset?.[UNWANTED_BANNER_AD_SELECTOR]))
-                            return;
-
-                        $remark('Blocking...', el);
-
-                        el.dataset[UNWANTED_BANNER_AD_SELECTOR] = true;
-                    });
-            });
-
+        fetchURL.fromDisk(`https://ephellon.github.io/ttv-tools/ad-banners.css`, { hoursUntilEntryExpires: 24 }).then(r => (r.ok ? r.text() : '')).then(bannerSelectors => {
+            // Hide marked banners first: a rule that fails below must not keep the others from working
             AddCustomCSSBlock('Remove Banner Ads', `[data-${ UNWANTED_BANNER_AD_SELECTOR }="true"i] {display:none!important}`);
+
+            for(const rule of bannerSelectors.split(/[\r\n]+/).filter(line => line.trim().length))
+                try {
+                    // A CSS selector, then `<` hops: a number (generations up; none means 1) or a selector (`closest`)
+                    const [selector, ...hops] = splitHops(rule);
+
+                    let elements = (selector.trim().length ? $.all(selector) : []);
+
+                    for(const hop of hops) {
+                        const generations = parseInt(hop.trim() || '1');
+
+                        if(Number.isNaN(generations))
+                            elements = elements.map(element => element.closest(hop.trim())).filter(defined);
+                        else
+                            for(let count = generations; count-- > 0;)
+                                elements = elements.map(element => element.parentElement).filter(defined);
+                    }
+
+                    for(const element of elements.isolate()) {
+                        if(parseBool(element.dataset?.[UNWANTED_BANNER_AD_SELECTOR]))
+                            continue;
+
+                        $remark('Blocking...', element);
+
+                        element.dataset[UNWANTED_BANNER_AD_SELECTOR] = true;
+                    }
+                } catch(error) {
+                    if(!SKIPPED_RULES.has(rule))
+                        SKIPPED_RULES.add(rule), $warn(`Banner rule skipped: ${ rule } — ${ error?.message ?? error }`);
+                }
         });
     };
     Timers.block_banners = 2_500;
@@ -15944,6 +15934,10 @@ let Initialize = async(START_OVER = false) => {
         // if the page isn't in focus, ignore this setting
         // if the video is paused by the user (trusted) move on
         if((paused && isTrusted) || PAGE_HAS_FOCUS === false)
+            return StopWatch.stop('recover_frames');
+
+        // An offline channel's preview video isn't a stream to recover (it stalls, and the page reloaded every ~40 s)
+        if(!STREAMER.live && !/\/videos?\//i.test(location.pathname))
             return StopWatch.stop('recover_frames');
 
         // The video is stalling: either stuck on the same frame, or lagging behind 15 frames
@@ -18343,7 +18337,8 @@ if(top == window) {
 
                             // Got a whisper
                             case 'WHISPER': {
-                                let results = { unread: 1, from: channel, message: parameters, timestamp: new Date };
+                                // `channel` is the recipient here; the sender is the source
+                                let results = { unread: 1, from: source?.nick ?? channel, message: parameters, timestamp: new Date };
 
                                 for(let [name, callback] of Chat.__onwhisper__)
                                     when(() => PAGE_IS_READY, 250).then(() => callback(results));

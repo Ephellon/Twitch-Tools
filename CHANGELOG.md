@@ -37,6 +37,7 @@
 ## Release History
 
 ### Version 5.35.\*
+- [`5.35.4.2`](https://github.com/Ephellon/Twitch-Tools/releases/tag/5.35.4.2) — Fixed #57 (Up Next memory leak), #56 and #60 (Auto-Focus no longer undoes your own Up Next pause or Lurk toggle; click the statistics readout to pause or resume Auto-Focus), and #54 (Up Next keeps its tab when the browser replaces it); Up Next, Stay Live and Next Channel resume after a browser restart; Block Banners works again; error replies are no longer cached; offline pages no longer reload every ~40 s; fixed live detection on Twitch's new channel layout, empty or fake Live Reminders listings, whisper senders and the page shifting left; icons use less memory.
 - [`5.35.4.1`](https://github.com/Ephellon/Twitch-Tools/releases/tag/5.35.4) — Fixed doubled `?tool=` in Up Next URLs; fixed issue where Live Reminders sometimes don't fire.
 - [`5.35.4`](https://github.com/Ephellon/Twitch-Tools/releases/tag/5.35.4) — Fixed #59 (CWE-20 possibility).
 - [`5.35.3.3`](https://github.com/Ephellon/Twitch-Tools/releases/tag/5.35.3.3) — Fixed #58 (added JSON export/restore).
