@@ -192,6 +192,7 @@ About 40 candidates flag Twitch DOM that "may be null", brittle selectors, or `i
         - the retry counter skipped the fallback;
         - `Search` cached failed lookups in `ALL_CHANNELS`;
         - string-shaped reminder copies were spread into fake entries.
+- ~~**#60** Auto-Focus overrides the viewer's Easy Lurk choice~~: fixed (9bee32f). It uses the same pattern as #56: the button records who toggled it, and Auto-Focus leaves the viewer's toggle alone. Live verify pending (`ttv-live-issue-60`).
 
 ## Planned tests (after 6.1 feedback)
 
