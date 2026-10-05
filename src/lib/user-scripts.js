@@ -148,6 +148,36 @@ export function createUserScripts({ DSL, storage, env, frame, log }) {
     }
 
     /**
+     * Rereads the installed scripts and approvals, and restarts only the scripts whose source or approval changed.
+     * Editing or approving one script used to restart them all, so their one-off `after` blocks ran again.
+     * @returns {Promise<void>}
+     */
+    async function refresh() {
+        const stored = await storage.get([SCRIPTS_KEY, CONSENT_KEY])
+            , before = new Map(scripts.map(script => [script.meta?.id, script]))
+            , consentBefore = consent;
+
+        consent = stored[CONSENT_KEY] ?? {};
+        scripts = (stored[SCRIPTS_KEY] ?? []).map(({ file, source }) => ({ file, source, ...DSL.inspect(source, { file }) }));
+
+        const after = new Map(scripts.map(script => [script.meta?.id, script]));
+
+        for(const id of before.keys())
+            if(!after.has(id))
+                halt(id);
+
+        for(const [id, script] of after) {
+            const old = before.get(id);
+
+            if(old && old.source == script.source && consentBefore[id] === consent[id])
+                continue;
+
+            halt(id);
+            await launch(script);
+        }
+    }
+
+    /**
      * Restarts the scripts a storage change affects.
      * @param {Object} changes - `{ key: { oldValue, newValue } }`
      * @returns {Promise<void>}
@@ -156,7 +186,7 @@ export function createUserScripts({ DSL, storage, env, frame, log }) {
         const keys = Object.keys(changes);
 
         if(keys.includes(SCRIPTS_KEY) || keys.includes(CONSENT_KEY))
-            return reload();
+            return refresh();
 
         for(const script of scripts) {
             const { id } = script.meta;

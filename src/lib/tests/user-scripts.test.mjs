@@ -96,6 +96,32 @@ test('changing a setting restarts the script with the new value; turning it off 
     runner.stop();
 });
 
+test('editing one script restarts only that script', async() => {
+    const other = SCRIPT.replace('plugin greeter -- "Greeter"', 'plugin echo -- "Echo"');
+    const runs = [];
+    const counting = { ...DSL, run: (source, ...rest) => (runs.push(DSL.inspect(source).meta.id), DSL.run(source, ...rest)) };
+    const storage = fakeStorage({
+        [SCRIPTS_KEY]: [{ file: 'greeter.ttv', source: SCRIPT }, { file: 'echo.ttv', source: other }],
+        [CONSENT_KEY]: {},
+        greeter: true,
+        echo: true,
+    });
+    const log = { log() {}, warn() {}, error() {} };
+    const runner = createUserScripts({ DSL: counting, storage, env: { Chat: createFakeChat(), STREAMER: createFakeStreamer(), USERNAME: 'me' }, frame: 'main', log });
+
+    await runner.start();
+    assert.deepEqual(runs.sort(), ['echo', 'greeter']);
+
+    runs.length = 0;
+    await storage.set({ [SCRIPTS_KEY]: [{ file: 'greeter.ttv', source: SCRIPT }, { file: 'echo.ttv', source: other.replace('${ .sender }', '!') }] });
+    assert.deepEqual(runs, ['echo'], 'greeter keeps running');
+    assert.deepEqual(runner.running.sort(), ['echo', 'greeter']);
+
+    await storage.set({ [SCRIPTS_KEY]: [{ file: 'greeter.ttv', source: SCRIPT }] });
+    assert.deepEqual(runner.running, ['greeter'], 'a removed script stops');
+    runner.stop();
+});
+
 test('a main-only script does not run in pop-out chat', async() => {
     const source = SCRIPT.replace('-- "Greeter"', '-- "Greeter"\n    frames main');
     const stored = { [SCRIPTS_KEY]: [{ file: 'g.ttv', source }], [CONSENT_KEY]: { greeter: '' }, greeter: true };
