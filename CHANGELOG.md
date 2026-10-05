@@ -56,6 +56,8 @@
         - Whisper events work again: they're read from Twitch's whisper socket, since IRC no longer carries them. Whisper Audio benefits too.
     - **Recover Frames:** no longer reloads offline channels.
     - **Auto-Focus:** no longer starts or stops Easy Lurk after you toggle it yourself; click its statistics readout to pause or resume it on the page (#60).
+    - **Auto-Focus (round 9):** takes no screenshots while paused (#61), rests by itself when it has nothing to control (#62), and reads Lurk's real state.
+    - **User Scripts:** editing or approving one script no longer restarts the others; `#id` is filled on every channel.
     - **Browser restart:** Up Next, Stay Live and Next Channel pick up again (the owner tab is reloaded on startup).
     - **Live Reminders:** the listing no longer errors or shows empty; with none saved, it says so.
     - **Settings:** plain one-sentence descriptions; Site Access lists readable site names.

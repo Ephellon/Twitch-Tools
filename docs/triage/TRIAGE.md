@@ -195,6 +195,19 @@ About 40 candidates flag Twitch DOM that "may be null", brittle selectors, or `i
 - ~~**#60** Auto-Focus overrides the viewer's Easy Lurk choice~~: fixed (9bee32f). It uses the same pattern as #56: the button records who toggled it, and Auto-Focus leaves the viewer's toggle alone. **Verified live** (`ttv-live-issue-60`). Part 2 (a009620): click the statistics readout to pause or resume Auto-Focus on the page. It shows `⏸ Paused`, and resuming hands Lurk back to Auto-Focus. **Verified live** (`ttv-live-issue-60-hold`). Both are also in v5 5.35.4.2.
     - Pre-existing, not changed: Auto-Focus doesn't disable Lurk while quality is "Auto" (`quality.auto`), even at a low resolution.
 
+## Round 9 (10 fixes)
+
+- ~~**#61** Auto-Focus still takes screenshots while paused~~ and ~~**#62** it runs when it controls nothing (this tab doesn't own Up Next, or you paused it, and you toggled Lurk)~~: fixed (0ab7927). It now takes no screenshots in either case, shows `⏸ Paused` / `⏸ Idle`, and picks up again by itself.
+- ~~Auto-Focus judged Lurk's state from the stream quality~~ (Auto meant "off", low meant "on"): it now reads the button (efe1453).
+- ~~The page shift came back after in-app navigation~~: the fix keeps watching every 2.5 s (92ff288).
+- ~~The proxy probes all shared one request~~: `fetchURL.idempotent` keyed by URL only. They now don't log an uncaught `AggregateError` on each load (f1179d6).
+- ~~Editing or approving one user script restarted all of them~~ (`stream_timers` re-announced itself): only changed scripts restart now, with a test (3f7e41a).
+- ~~`#id` (`STREAMER.sole`) empty on channels with no panels or points icon~~: it's looked up by name. `findUserID` returned NaN on failure (c0e56ac).
+- ~~Parse Commands threw when you picked a suggestion with no `!` typed~~ (339f87a).
+- ~~Recover Stream threw if the player was gone 5 s later~~ (00b95c1).
+- ~~The Steam handler carried dead Xbox parsing with an undefined `gameID`~~: removed.
+- Live verify pending: `ttv-live-round-9`.
+
 ## Planned tests (after 6.1 feedback)
 
 - **DSL on real pages:** every DSL query and host binding should work on a live channel, not just in unit tests. Run sample scripts that use each badge and role, each `jsPermissions` binding, and each trigger. Do it as a moderator, as a viewer, and on the owner's own channel (only posting on `@ephellon`). Check that each gives the page's answer. For example, `using [moderator]` should match the user's actual badge. Message badges are real-time, while `STREAMER.perm` holds until a refresh, so a lag in `perm` after gaining or losing VIP is expected.
