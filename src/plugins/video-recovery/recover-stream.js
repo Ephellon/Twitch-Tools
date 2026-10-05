@@ -81,10 +81,13 @@ plugin({
             control.dataset.recoveryAttempts = ++attempts;
 
             wait(5000).then(() => {
-                let control = $('button[data-a-player-state]')
-                    , attempts = control.dataset?.recoveryAttempts | 0;
+                const control = $('button[data-a-player-state]');
 
-                control.dataset.recoveryAttempts = --attempts;
+                // The player may be gone (page change, player rebuilt) by now
+                if(nullish(control))
+                    return;
+
+                control.dataset.recoveryAttempts = (control.dataset.recoveryAttempts | 0) - 1;
             });
         }
 
