@@ -2628,6 +2628,13 @@ let Initialize = async(START_OVER = false) => {
 
     STREAMER.__sole__ = (await Cache.load('ChannelPoints')).ChannelPoints?.[STREAMER.name]?.split('|')?.at(2)?.split('/')?.at(0);
 
+    // No panel images, no channel-points icon and nothing saved: look the ID up once (`#id` was empty on such channels)
+    if(!STREAMER.sole && STREAMER.name)
+        Search.findUserID(STREAMER.name).then(id => {
+            if(Number.isFinite(id) && id > 0)
+                STREAMER.__sole__ ||= id;
+        });
+
     // Make the main icon draggable...
     const StreamerMainIcon = $(`main a[href$="${ NORMALIZED_PATHNAME }"i]`)
         , StreamerFilteredData = { ...STREAMER };

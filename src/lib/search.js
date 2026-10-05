@@ -624,7 +624,8 @@ class Search {
             .then(json => {
                 const id = parseInt(json?.id);
 
-                if(nullish(id))
+                // `parseInt` gives NaN (not nullish) for a missing id
+                if(!Number.isFinite(id))
                     throw `[${ json.status }] An error occurred: ${ json.error }`;
 
                 return id;
