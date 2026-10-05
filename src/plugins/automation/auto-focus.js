@@ -177,10 +177,10 @@ plugin({
 
                                 // Disable Lurking
                                 __AutoFocus_Disable_AwayMode__: {
-                                    const button = $('#away-mode')
-                                        , quality = await GetQuality();
+                                    const button = $('#away-mode');
 
-                                    if(quality.auto)
+                                    // Already off: read the button, not the quality (lurking at "Auto" quality looked like "off")
+                                    if(nullish(button) || !parseBool(button.getAttribute('tt-away-mode-enabled')))
                                         break __AutoFocus_Disable_AwayMode__;
 
                                     // The viewer started or stopped lurking themselves: leave it (#60)
@@ -215,10 +215,10 @@ plugin({
 
                                 // Enable Lurking
                                 __AutoFocus_Enable_AwayMode__: {
-                                    const button = $('#away-mode')
-                                        , quality = await GetQuality();
+                                    const button = $('#away-mode');
 
-                                    if(quality.low)
+                                    // Already on: read the button, not the quality (a low stream quality isn't lurking)
+                                    if(nullish(button) || parseBool(button.getAttribute('tt-away-mode-enabled')))
                                         break __AutoFocus_Enable_AwayMode__;
 
                                     // The viewer started or stopped lurking themselves: leave it (#60)
