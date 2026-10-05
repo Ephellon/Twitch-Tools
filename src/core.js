@@ -1907,12 +1907,16 @@ Object.defineProperties(fetchURL, {
     // Reduce duplicates
     idempotent: {
         value: (url, options) => {
-            let [request, date] = fetchURL.requests.get(url) ?? [];
+            // The same URL through different proxies (`foster`) or formats (`as`) is a different request: keyed by URL
+            // alone, every proxy probe got the first probe's answer
+            const variant = [options?.foster?.description, options?.as].filter(defined).join('|')
+                , key = (variant ? `${ url }\n${ variant }` : url);
+            let [request, date] = fetchURL.requests.get(key) ?? [];
 
             if(nullish(request) || (+new Date - +date > 60_000)) {
                 request = fetchURL(url, options);
 
-                fetchURL.requests.set(url, [request, new Date]);
+                fetchURL.requests.set(key, [request, new Date]);
             }
 
             return request;
@@ -2088,7 +2092,12 @@ prevent_fetch_dragging: if(top == window) {
     const probe = (name, run) => ({
         configurable: true,
         get() {
-            Object.defineProperty(this, name, { value: run() });
+            const result = run();
+
+            // Every proxy failing is an answer, not an error: don't let it surface as an uncaught rejection
+            result?.catch?.(() => {});
+
+            Object.defineProperty(this, name, { value: result });
 
             return this[name];
         },
