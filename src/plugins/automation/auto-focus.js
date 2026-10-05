@@ -8,8 +8,22 @@ import { plugin } from '../../lib/plugins.js';
 // The feature's state; init() resets it whenever the page (re)initializes
 let CAPTURE_HISTORY, CAPTURE_INTERVAL, POLL_INTERVAL, STALLED_FRAMES, POSITIVE_TREND;
 
-// Paused by the viewer for this page (#60): Auto-Focus keeps measuring but changes nothing. Survives re-inits, not reloads
+// Paused by the viewer for this page (#60): no screenshots, no changes (#61). Survives re-inits, not reloads
 let AUTO_FOCUS_HELD = false;
+
+/**
+ * Whether Auto-Focus still controls anything on this page: Up Next (this tab owns it and the viewer didn't pause it)
+ * or Easy Lurk (the viewer didn't toggle it). With neither, it has nothing to do (#62).
+ * @returns {boolean}
+ */
+function autoFocusHasWork() {
+    const upNext = $('#up-next-control')
+        , lurk = $('#away-mode');
+
+    return false
+        || (UP_NEXT_ALLOW_THIS_TAB && defined(upNext) && upNext.getAttribute('paused-by') != 'user')
+        || (defined(lurk) && lurk.getAttribute('toggled-by') != 'user');
+}
 
 plugin({
     id: 'auto_focus',
@@ -42,6 +56,18 @@ plugin({
             CAPTURE_HISTORY.shift();
 
         CAPTURE_INTERVAL = setInterval(() => {
+            // Paused by the viewer (#61), or nothing left to control (#62): take no screenshots at all
+            const resting = (AUTO_FOCUS_HELD ? 'Paused' : autoFocusHasWork() ? null : 'Idle (Up Next and Lurk are under your control)');
+
+            if(resting) {
+                const readout = $('span#tt-auto-focus-stats');
+
+                if(defined(readout))
+                    readout.innerHTML = `&#9208; ${ resting }`;
+
+                return;
+            }
+
             const video = $.all('video').pop();
 
             if(nullish(video))
@@ -130,7 +156,7 @@ plugin({
                         /* Alter other settings according to the trend */
                         const changes = ['changing trend detection level'];
 
-                        // Paused by the viewer: keep measuring, change nothing (#60)
+                        // Paused by the viewer while this capture was in flight: change nothing (#60)
                         if(!AUTO_FOCUS_HELD && bias.length > 30 && GET_TIME_REMAINING() > 60_000) {
                             // Positive activity trend; disable Lurking, pause Up Next
                             if((nullish(POSITIVE_TREND) || POSITIVE_TREND === false) && bias.slice(-(30 / pollInterval)).filter(trend => trend.equals('down')).length < (30 / pollInterval) / 2) {
