@@ -391,12 +391,18 @@ plugin({
 
                                                         if(defined(command)) {
                                                             const target = $('[data-a-target="chat-input"i]');
-                                                            const match = (target?.value ?? target?.textContent ?? target?.innerText).match(/!(\S+|$)/)
-                                                                , { index } = match
-                                                                , [text, word] = match;
+                                                            const value = String(target?.value ?? target?.textContent ?? target?.innerText ?? '');
 
-                                                            target.setRangeText(`!${ command }`, index, index + text.length, 'end');
-                                                            target.focus();
+                                                            // No `!` typed yet: add the command at the end (a null match threw here)
+                                                            const match = value.match(/!(\S+|$)/) ?? Object.assign([''], { index: value.length })
+                                                                , { index } = match
+                                                                , [text] = match;
+
+                                                            // Only text fields have `setRangeText`
+                                                            if(typeof target?.setRangeText == 'function') {
+                                                                target.setRangeText(`!${ command }`, index, index + text.length, 'end');
+                                                                target.focus();
+                                                            }
                                                         }
 
                                                         tray.classList.remove('tt-chat-input-tray__open');
