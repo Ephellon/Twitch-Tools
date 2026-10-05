@@ -392,21 +392,6 @@ plugin({
                                                 gameDesc.innerText = description || gameDesc.innerText;
                                                 gameDesc.removeAttribute('data-twitch-provided-description');
                                             }
-
-                                            let data = DOM.head.getElementByText('core2')?.textContent?.replace(/.*preload.*(\{[^$]+?\});/, '$1');
-
-                                            if(data?.length) {
-                                                data = JSON.parse(data).core2?.products?.productSummaries?.[gameID];
-
-                                                if(nullish(data?.specificPrices))
-                                                    return;
-
-                                                const mature = data.contentRating?.rating || ''
-                                                    , price = data.specificPrices?.purchaseable?.shift?.()?.listPrice;
-
-                                                $('.tt-store-purchase--container.is-steam').dataset.matureContent = mature;
-                                                $('.is-steam .tt-store-purchase--price').textContent = /^\p{Sc}?(\d+(?:[\.,]\d+)?|\w+)$/u.test(price ?? '') ? price : info.price;
-                                            }
                                         });
 
                                     container.replaceWith(purchase);
