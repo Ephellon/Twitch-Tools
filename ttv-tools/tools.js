@@ -1087,6 +1087,7 @@ class Search {
     static anonID = 'kimne78kx3ncx6brgo4mv6wki5h1ko';
 
     static #cache = new Map;
+    static #users = new Map;
     static cacheLeaseTime = 300_000 * (parseInt(Settings.low_data_mode) || 1);
 
     constructor(ID = null, type = 'channel', as = null) {
@@ -1293,7 +1294,7 @@ class Search {
                             broadcaster_id;
 
                         try {
-                            broadcaster_id = parseInt(await fetchURL.fromDisk(`https://api.twitchinsights.net/v1/user/status/${ name }`, { hoursUntilEntryExpires: 744 }).then(r => r.json()).then(j => j.id)) | 0;
+                            broadcaster_id = parseInt((await Search.lookupUser({ login: name }))?.id) | 0;
                         } catch(error) {
                             // Do nothing...
                         }
@@ -1650,14 +1651,44 @@ class Search {
         return new Promise(resolve => resolve({ ok: parseBool(parseURL(data.icon).pathname?.startsWith('/jtv_user')), ...data }));
     }
 
-    static async findUserID(username = null) {
-        return fetchURL.fromDisk(`https://api.twitchinsights.net/v1/user/status/${ username }`)
-            .then(response => response.json())
-            .then(json => {
-                let id = parseInt(json?.id);
+    // Looks a user up on Twitch's GQL as an anonymous viewer. Twitch Insights' API (used before) now refuses every
+    // request (403). IDs and names don't change during a session, so each answer is kept; failures aren't
+    static lookupUser(by) {
+        let key = JSON.stringify(by);
 
-                if(nullish(id))
-                    throw `[${ json.status }] An error occurred: ${ json.error }`;
+        if(!Search.#users.has(key))
+            Search.#users.set(key, fetchURL('https://gql.twitch.tv/gql', {
+                method: 'POST',
+                headers: { 'Client-Id': Search.anonID },
+                body: JSON.stringify({
+                    query: `query($id: ID, $login: String) { user(id: $id, login: $login, lookupType: ALL) { id login displayName } }`,
+                    variables: by,
+                }),
+            })
+                .then(response => response.json())
+                .then(json => json?.data?.user ?? null)
+                .then(user => {
+                    if(nullish(user))
+                        Search.#users.delete(key);
+
+                    return user;
+                }, error => {
+                    Search.#users.delete(key);
+
+                    throw error;
+                }));
+
+        return Search.#users.get(key);
+    }
+
+    static async findUserID(username = null) {
+        return Search.lookupUser({ login: String(username).toLowerCase() })
+            .then(user => {
+                let id = parseInt(user?.id);
+
+                // `parseInt` gives NaN (not nullish) for a missing id
+                if(!Number.isFinite(id))
+                    throw `An error occurred: no user "${ username }"`;
 
                 return id;
             })
@@ -1665,13 +1696,12 @@ class Search {
     }
 
     static async findUsername(userID = null) {
-        return fetchURL.fromDisk(`https://api.twitchinsights.net/v1/user/status/${ userID }`)
-            .then(response => response.json())
-            .then(json => {
-                let name = json?.displayName;
+        return Search.lookupUser({ id: String(userID) })
+            .then(user => {
+                let name = user?.displayName;
 
                 if(nullish(name))
-                    throw `[${ json.status }] An error occurred: ${ json.error }`;
+                    throw `An error occurred: no user #${ userID }`;
 
                 return name;
             })
@@ -4874,6 +4904,13 @@ let Initialize = async(START_OVER = false) => {
 
     STREAMER.__sole__ = (await Cache.load('ChannelPoints')).ChannelPoints?.[STREAMER.name]?.split('|')?.at(2)?.split('/')?.at(0);
 
+    // No panel images, no channel-points icon and nothing saved: look the ID up once
+    if(!STREAMER.sole && STREAMER.name)
+        Search.findUserID(STREAMER.name).then(id => {
+            if(Number.isFinite(id) && id > 0)
+                STREAMER.__sole__ ||= id;
+        });
+
     // Make the main icon draggable...
     let StreamerMainIcon = $(`main a[href$="${ NORMALIZED_PATHNAME }"i]`),
         StreamerFilteredData = { ...STREAMER };
@@ -5799,6 +5836,17 @@ let Initialize = async(START_OVER = false) => {
     // Paused by the viewer for this page (#60): Auto-Focus keeps measuring but changes nothing
     let AUTO_FOCUS_HELD = false;
 
+    // Whether Auto-Focus still controls anything here: Up Next (this tab owns it and you didn't pause it) or Lurk
+    // (you didn't toggle it). With neither, it has nothing to do (#62)
+    function autoFocusHasWork() {
+        let upNext = $('#up-next-control'),
+            lurk = $('#away-mode');
+
+        return false
+            || (UP_NEXT_ALLOW_THIS_TAB && defined(upNext) && upNext.getAttribute('paused-by') != 'user')
+            || (defined(lurk) && lurk.getAttribute('toggled-by') != 'user');
+    }
+
     // Estimated level of screen activity
         // See https://www.twitch.tv/directory/all/tags
     function scoreTagActivity(...tags) {
@@ -5916,6 +5964,20 @@ let Initialize = async(START_OVER = false) => {
             CAPTURE_HISTORY.shift();
 
         CAPTURE_INTERVAL = setInterval(() => {
+            // Paused by the viewer (#61), or nothing left to control (#62): take no screenshots at all
+            let resting = (AUTO_FOCUS_HELD? 'Paused': autoFocusHasWork()? null: 'Idle (Up Next and Lurk are under your control)');
+
+            if(resting) {
+                let readout = $('span#tt-auto-focus-stats');
+
+                if(defined(readout)) {
+                    readout.innerHTML = `&#9208; ${ resting }`;
+                    readout.title = `Resume Auto-Focus on this page`;
+                }
+
+                return;
+            }
+
             let video = $.all('video').pop();
 
             if(nullish(video))
@@ -5981,10 +6043,17 @@ let Initialize = async(START_OVER = false) => {
                             diffDat.style.cursor = 'pointer';
                             diffDat.title = `${ ['Pause', 'Resume'][+!!AUTO_FOCUS_HELD] } Auto-Focus on this page`;
                             diffDat.onclick ??= () => {
-                                AUTO_FOCUS_HELD = !AUTO_FOCUS_HELD;
+                                // Idle (#62) reads as "Resume": hand Easy Lurk back instead of pausing
+                                let idle = (!AUTO_FOCUS_HELD && !autoFocusHasWork() && $.defined('#away-mode[toggled-by]'));
+
+                                if(!idle)
+                                    AUTO_FOCUS_HELD = !AUTO_FOCUS_HELD;
 
                                 if(!AUTO_FOCUS_HELD)
                                     $('#away-mode')?.removeAttribute('toggled-by');
+
+                                // Paused, no capture comes along to refresh the tooltip
+                                $('span#tt-auto-focus-stats').title = `${ ['Pause', 'Resume'][+AUTO_FOCUS_HELD] } Auto-Focus on this page`;
 
                                 $log(`[Auto-Focus] ${ ['resumed', 'paused'][+AUTO_FOCUS_HELD] } on this page`);
                             };
@@ -6025,10 +6094,10 @@ let Initialize = async(START_OVER = false) => {
 
                                 // Disable Lurking
                                 __AutoFocus_Disable_AwayMode__: {
-                                    let button = $('#away-mode'),
-                                        quality = await GetQuality();
+                                    let button = $('#away-mode');
 
-                                    if(quality.auto)
+                                    // Already off: read the button, not the quality (lurking at "Auto" quality looked like "off")
+                                    if(nullish(button) || !parseBool(button.getAttribute('tt-away-mode-enabled')))
                                         break __AutoFocus_Disable_AwayMode__;
 
                                     // The viewer started or stopped lurking themselves: leave it (#60)
@@ -6063,10 +6132,10 @@ let Initialize = async(START_OVER = false) => {
 
                                 // Enable Lurking
                                 __AutoFocus_Enable_AwayMode__: {
-                                    let button = $('#away-mode'),
-                                        quality = await GetQuality();
+                                    let button = $('#away-mode');
 
-                                    if(quality.low)
+                                    // Already on: read the button, not the quality (a low stream quality isn't lurking)
+                                    if(nullish(button) || parseBool(button.getAttribute('tt-away-mode-enabled')))
                                         break __AutoFocus_Enable_AwayMode__;
 
                                     // The viewer started or stopped lurking themselves: leave it (#60)
@@ -9997,6 +10066,12 @@ let Initialize = async(START_OVER = false) => {
                     return string?.replace(/[\u2010-\u2015]/g, '-')?.replace(EditionsRegExp, '') ?? '';
                 }
 
+                // Whether a catalog item shows a price ("$14.99", "14,99 €", "Free"). Priced items sort first; the rest
+                // keep their order. The old check read "$14.99" as no price and pushed "Free" games above the right one
+                function priced({ price } = {}) {
+                    return +/^free$|\d/i.test(String(price ?? '').trim());
+                }
+
                 /*** Get the Steam link (if applicable)
                  *       _____ _
                  *      / ____| |
@@ -10027,13 +10102,7 @@ let Initialize = async(START_OVER = false) => {
                                             .toLowerCase()
                                             .distanceFrom(game.toLowerCase())
                                     )
-                                    .sort((prev, next) =>
-                                        !isNaN(parseFloat((next.price + '').replace(/^free$/i, '0')))
-                                            ? +0
-                                            : !isNaN(parseFloat((prev.price + '').replace(/^free$/i, '0')))
-                                                ? -1
-                                                : +1
-                                    );
+                                    .sort((prev, next) => priced(next) - priced(prev));
 
                                 if(false
                                     || best.name.equals(game)
@@ -10155,21 +10224,6 @@ let Initialize = async(START_OVER = false) => {
                                                     gameDesc.innerText = description || gameDesc.innerText;
                                                     gameDesc.removeAttribute('data-twitch-provided-description');
                                                 }
-
-                                                let data = DOM.head.getElementByText('core2')?.textContent?.replace(/.*preload.*(\{[^$]+?\});/, '$1');
-
-                                                if(data?.length) {
-                                                    data = JSON.parse(data).core2?.products?.productSummaries?.[gameID];
-
-                                                    if(nullish(data?.specificPrices))
-                                                        return;
-
-                                                    let mature = data.contentRating?.rating || '',
-                                                        price = data.specificPrices?.purchaseable?.shift?.()?.listPrice;
-
-                                                    $('.tt-store-purchase--container.is-steam').dataset.matureContent = mature;
-                                                    $('.is-steam .tt-store-purchase--price').textContent = /^\p{Sc}?(\d+(?:[\.,]\d+)?|\w+)$/u.test(price ?? '')? price: info.price;
-                                                }
                                             });
 
                                         container.replaceWith(purchase);
@@ -10264,13 +10318,7 @@ let Initialize = async(START_OVER = false) => {
                                             .toLowerCase()
                                             .distanceFrom(game.toLowerCase())
                                     )
-                                    .sort((prev, next) =>
-                                        !isNaN(parseFloat((next.price + '').replace(/^free$/i, '0')))
-                                            ? +0
-                                            : !isNaN(parseFloat((prev.price + '').replace(/^free$/i, '0')))
-                                                ? -1
-                                                : +1
-                                    );
+                                    .sort((prev, next) => priced(next) - priced(prev));
 
                                 if(false
                                     || best.name.equals(game)
@@ -10564,13 +10612,7 @@ let Initialize = async(START_OVER = false) => {
                                             .toLowerCase()
                                             .distanceFrom(game.toLowerCase())
                                     )
-                                    .sort((prev, next) =>
-                                        !isNaN(parseFloat((next.price + '').replace(/^free$/i, '0')))
-                                            ? +0
-                                            : !isNaN(parseFloat((prev.price + '').replace(/^free$/i, '0')))
-                                                ? -1
-                                                : +1
-                                    );
+                                    .sort((prev, next) => priced(next) - priced(prev));
 
                                 if(false
                                     || best.name.equals(game)
@@ -10928,13 +10970,7 @@ let Initialize = async(START_OVER = false) => {
                                             .toLowerCase()
                                             .distanceFrom(game.toLowerCase())
                                     )
-                                    .sort((prev, next) =>
-                                        !isNaN(parseFloat((next.price + '').replace(/^free$/i, '0')))
-                                            ? +0
-                                            : !isNaN(parseFloat((prev.price + '').replace(/^free$/i, '0')))
-                                                ? -1
-                                                : +1
-                                    );
+                                    .sort((prev, next) => priced(next) - priced(prev));
 
                                 if(false
                                     || best.name.equals(game)
@@ -11296,13 +11332,7 @@ let Initialize = async(START_OVER = false) => {
                                             .toLowerCase()
                                             .distanceFrom(game.toLowerCase())
                                     )
-                                    .sort((prev, next) =>
-                                        !isNaN(parseFloat((next.price + '').replace(/^free$/i, '0')))
-                                            ? +0
-                                            : !isNaN(parseFloat((prev.price + '').replace(/^free$/i, '0')))
-                                                ? -1
-                                                : +1
-                                    );
+                                    .sort((prev, next) => priced(next) - priced(prev));
 
                                 if(false
                                     || best.name.equals(game)
@@ -11591,6 +11621,36 @@ let Initialize = async(START_OVER = false) => {
      *
      *
      */
+    // Puts `!command` into the chat input, replacing the `!word` being typed (or adding it at the end when there's none).
+    // Twitch's chat input is a rich-text editor (a `contenteditable` DIV) with no `setRangeText`, so the whole text is
+    // replaced the way typing would (`insertText`), which the editor picks up
+    function insertCommand(target, command) {
+        if(nullish(target))
+            return;
+
+        // The editor keeps a zero-width placeholder when empty
+        let value = String(target.value ?? target.textContent ?? '').replace(/\uFEFF/g, ''),
+            match = value.match(/!(\S+|$)/) ?? Object.assign([''], { index: value.length }),
+            { index } = match,
+            [text] = match;
+
+        if(typeof target.setRangeText == 'function') {
+            target.setRangeText(`!${ command }`, index, index + text.length, 'end');
+            target.focus();
+
+            return;
+        }
+
+        let range = document.createRange(),
+            selection = getSelection();
+
+        target.focus();
+        range.selectNodeContents(target);
+        selection.removeAllRanges();
+        selection.addRange(range);
+        document.execCommand('insertText', false, `${ value.slice(0, index) }!${ command }${ value.slice(index + text.length) }`);
+    }
+
     // Parses textual commands
     function parseCommands(string = '', variables = {}) {
         for(let MAX_ITER = 3 * string.count('$'), regexp = /\$?(\([^\(\)]+?\)|\{[^\{\}]+?\}|\[[^\[\]]+?\])/; regexp.test(string) && --MAX_ITER > 0;)
@@ -11851,13 +11911,8 @@ let Initialize = async(START_OVER = false) => {
 
             if(['Tab', 'Space', 'Enter', 'Escape'].contains(code) || value?.contains(' ') || !value?.startsWith('!')) {
                 let command = $('.tt-chat-input-suggestion')?.getAttribute('command');
-                if(code.equals('Tab') && defined(command)) {
-                    let match = value.match(/!(\S+|$)/),
-                        { index } = match,
-                        [text, word] = match;
-
-                    target.setRangeText(`!${ command }`, index, index + text.length, 'end');
-                }
+                if(code.equals('Tab') && defined(command))
+                    insertCommand(target, command);
 
                 tray?.classList?.remove('tt-chat-input-tray__open');
 
@@ -11955,15 +12010,8 @@ let Initialize = async(START_OVER = false) => {
                                                             return;
 
                                                         let command = $('.tt-chat-input-suggestion', target.closest('[id]'))?.getAttribute('command');
-                                                        if(defined(command)) {
-                                                            let target = $('[data-a-target="chat-input"i]');
-                                                            let match = (target?.value ?? target?.textContent ?? target?.innerText).match(/!(\S+|$)/),
-                                                                { index } = match,
-                                                                [text, word] = match;
-
-                                                                target.setRangeText(`!${ command }`, index, index + text.length, 'end');
-                                                                target.focus();
-                                                        }
+                                                        if(defined(command))
+                                                            insertCommand($('[data-a-target="chat-input"i]'), command);
 
                                                         tray.classList.remove('tt-chat-input-tray__open');
 
@@ -16123,8 +16171,9 @@ let Initialize = async(START_OVER = false) => {
             $error(error);
 
             let control = $('button[data-a-player-state]'),
-                playing = control.dataset?.aPlayerState?.equals('playing'),
-                attempts = control.dataset?.recoveryAttempts | 0;
+                // `control` may be missing: read it safely, the check below handles it
+                playing = control?.dataset?.aPlayerState?.equals('playing'),
+                attempts = control?.dataset?.recoveryAttempts | 0;
 
             if(nullish(control)) {
                 $warn("No video controls presented.");
@@ -16148,10 +16197,13 @@ let Initialize = async(START_OVER = false) => {
             control.dataset.recoveryAttempts = ++attempts;
 
             wait(5000).then(() => {
-                let control = $('button[data-a-player-state]'),
-                    attempts = control.dataset?.recoveryAttempts | 0;
+                let control = $('button[data-a-player-state]');
 
-                control.dataset.recoveryAttempts = --attempts;
+                // The player may be gone (page change, player rebuilt) by now
+                if(nullish(control))
+                    return;
+
+                control.dataset.recoveryAttempts = (control.dataset.recoveryAttempts | 0) - 1;
             });
         }
 

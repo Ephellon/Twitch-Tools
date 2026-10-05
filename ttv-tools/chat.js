@@ -3717,16 +3717,19 @@ Chat__PAGE_CHECKER = setInterval(Chat__WAIT_FOR_PAGE = async() => {
 
         // Fixes shift-left issue
         when(() => $.defined('[data-a-target*="chat"i][data-a-target*="welcome"i]')).then(() => {
-            setTimeout(() => {
-                // Any container of the channel page that's scrolled sideways, not one hashed class (Twitch renames those)
-                const root = $('.channel-root--home');
-
-                $notice(`Unshifting webpage...`);
-
-                for(let node = root; defined(node) && node != document.body; node = node.parentElement)
-                    if(node.scrollLeft > 0)
+            // Any container of the channel page that's scrolled sideways, not one hashed class (Twitch renames those).
+            // Kept watching (cheap: a short walk up the tree), since moving between pages in the app can shift it again
+            const unshift = () => {
+                // `.channel-root` is on every channel page; `--home` is only on the offline/home page
+                for(let node = $('.channel-root'); defined(node) && node != document.body; node = node.parentElement)
+                    if(node.scrollLeft > 0) {
+                        $notice(`Unshifting webpage...`);
                         node.scrollLeft = 0;
-            }, 5e3);
+                    }
+            };
+
+            setTimeout(unshift, 5e3);
+            window.UNSHIFT_WATCH ??= setInterval(unshift, 2500);
         });
 
         await Settings.get();
