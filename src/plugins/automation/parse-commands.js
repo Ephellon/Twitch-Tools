@@ -8,6 +8,40 @@ import { plugin } from '../../lib/plugins.js';
 // The feature's state; init() resets it whenever the page (re)initializes
 let parseCommands, decodeMD;
 
+/**
+ * Puts `!command` into the chat input, replacing the `!word` being typed (or adding it at the end when there's none).
+ * Twitch's chat input is a rich-text editor (a `contenteditable` DIV), not a text field: it has no `setRangeText`, so the
+ * whole text is replaced the way typing would (`insertText`), which the editor picks up.
+ * @param {HTMLElement} target - The chat input
+ * @param {string} command - The command, without `!`
+ */
+function insertCommand(target, command) {
+    if(nullish(target))
+        return;
+
+    // The editor keeps a zero-width placeholder when empty
+    const value = String(target.value ?? target.textContent ?? '').replace(/\uFEFF/g, '')
+        , match = value.match(/!(\S+|$)/) ?? Object.assign([''], { index: value.length })
+        , { index } = match
+        , [text] = match;
+
+    if(typeof target.setRangeText == 'function') {
+        target.setRangeText(`!${ command }`, index, index + text.length, 'end');
+        target.focus();
+
+        return;
+    }
+
+    const range = document.createRange()
+        , selection = getSelection();
+
+    target.focus();
+    range.selectNodeContents(target);
+    selection.removeAllRanges();
+    selection.addRange(range);
+    document.execCommand('insertText', false, `${ value.slice(0, index) }!${ command }${ value.slice(index + text.length) }`);
+}
+
 plugin({
     id: 'parse_commands',
     timer: -1000,
@@ -284,13 +318,8 @@ plugin({
             if(['Tab', 'Space', 'Enter', 'Escape'].contains(code) || value?.contains(' ') || !value?.startsWith('!')) {
                 const command = $('.tt-chat-input-suggestion')?.getAttribute('command');
 
-                if(code.equals('Tab') && defined(command)) {
-                    const match = value.match(/!(\S+|$)/)
-                        , { index } = match
-                        , [text, word] = match;
-
-                    target.setRangeText(`!${ command }`, index, index + text.length, 'end');
-                }
+                if(code.equals('Tab') && defined(command))
+                    insertCommand(target, command);
 
                 tray?.classList?.remove('tt-chat-input-tray__open');
 
@@ -389,21 +418,8 @@ plugin({
 
                                                         const command = $('.tt-chat-input-suggestion', target.closest('[id]'))?.getAttribute('command');
 
-                                                        if(defined(command)) {
-                                                            const target = $('[data-a-target="chat-input"i]');
-                                                            const value = String(target?.value ?? target?.textContent ?? target?.innerText ?? '');
-
-                                                            // No `!` typed yet: add the command at the end (a null match threw here)
-                                                            const match = value.match(/!(\S+|$)/) ?? Object.assign([''], { index: value.length })
-                                                                , { index } = match
-                                                                , [text] = match;
-
-                                                            // Only text fields have `setRangeText`
-                                                            if(typeof target?.setRangeText == 'function') {
-                                                                target.setRangeText(`!${ command }`, index, index + text.length, 'end');
-                                                                target.focus();
-                                                            }
-                                                        }
+                                                        if(defined(command))
+                                                            insertCommand($('[data-a-target="chat-input"i]'), command);
 
                                                         tray.classList.remove('tt-chat-input-tray__open');
 

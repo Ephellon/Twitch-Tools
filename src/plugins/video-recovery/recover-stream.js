@@ -55,8 +55,9 @@ plugin({
             $error(error);
 
             let control = $('button[data-a-player-state]')
-                , playing = control.dataset?.aPlayerState?.equals('playing')
-                , attempts = control.dataset?.recoveryAttempts | 0;
+                // `control` may be missing: read it safely, the check below handles it
+                , playing = control?.dataset?.aPlayerState?.equals('playing')
+                , attempts = control?.dataset?.recoveryAttempts | 0;
 
             if(nullish(control)) {
                 $warn("No video controls presented.");

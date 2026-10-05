@@ -62,8 +62,10 @@ plugin({
             if(resting) {
                 const readout = $('span#tt-auto-focus-stats');
 
-                if(defined(readout))
+                if(defined(readout)) {
                     readout.innerHTML = `&#9208; ${ resting }`;
+                    readout.title = `Resume Auto-Focus on this page`;
+                }
 
                 return;
             }
@@ -133,10 +135,17 @@ plugin({
                             diffDat.style.cursor = 'pointer';
                             diffDat.title = `${ ['Pause', 'Resume'][+!!AUTO_FOCUS_HELD] } Auto-Focus on this page`;
                             diffDat.onclick ??= () => {
-                                AUTO_FOCUS_HELD = !AUTO_FOCUS_HELD;
+                                // Idle (#62) reads as "Resume": hand Easy Lurk back instead of pausing
+                                const idle = (!AUTO_FOCUS_HELD && !autoFocusHasWork() && $.defined('#away-mode[toggled-by]'));
+
+                                if(!idle)
+                                    AUTO_FOCUS_HELD = !AUTO_FOCUS_HELD;
 
                                 if(!AUTO_FOCUS_HELD)
                                     $('#away-mode')?.removeAttribute('toggled-by');
+
+                                // Paused, no capture comes along to refresh the tooltip
+                                $('span#tt-auto-focus-stats').title = `${ ['Pause', 'Resume'][+AUTO_FOCUS_HELD] } Auto-Focus on this page`;
 
                                 $log(`[Auto-Focus] ${ ['resumed', 'paused'][+AUTO_FOCUS_HELD] } on this page`);
                             };

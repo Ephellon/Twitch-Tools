@@ -29,6 +29,7 @@ class Search {
     static anonID = 'kimne78kx3ncx6brgo4mv6wki5h1ko';
 
     static #cache = new Map;
+    static #users = new Map;
     static cacheLeaseTime = 300_000 * (parseInt(Settings.low_data_mode) || 1);
 
     constructor(ID = null, type = 'channel', as = null) {
@@ -237,7 +238,7 @@ class Search {
                             , broadcaster_id;
 
                         try {
-                            broadcaster_id = parseInt(await fetchURL.fromDisk(`https://api.twitchinsights.net/v1/user/status/${ name }`, { hoursUntilEntryExpires: 744 }).then(r => r.json()).then(j => j.id)) | 0;
+                            broadcaster_id = parseInt((await Search.lookupUser({ login: name }))?.id) | 0;
                         } catch(error) {
                             // Do nothing...
                         }
@@ -618,15 +619,48 @@ class Search {
         return new Promise(resolve => resolve({ ok: parseBool(parseURL(data.icon).pathname?.startsWith('/jtv_user')), ...data }));
     }
 
+    /**
+     * Looks a user up on Twitch's GQL as an anonymous viewer. Twitch Insights' API (used before) now refuses every request
+     * with 403. IDs and names don't change during a session, so each answer is kept; failures aren't.
+     * @param {{ id?: string, login?: string }} by - The user's ID or login
+     * @returns {Promise<{ id: string, login: string, displayName: string }|null>}
+     */
+    static lookupUser(by) {
+        const key = JSON.stringify(by);
+
+        if(!Search.#users.has(key))
+            Search.#users.set(key, fetchURL('https://gql.twitch.tv/gql', {
+                method: 'POST',
+                headers: { 'Client-Id': Search.anonID },
+                body: JSON.stringify({
+                    query: `query($id: ID, $login: String) { user(id: $id, login: $login, lookupType: ALL) { id login displayName } }`,
+                    variables: by,
+                }),
+            })
+                .then(response => response.json())
+                .then(json => json?.data?.user ?? null)
+                .then(user => {
+                    if(nullish(user))
+                        Search.#users.delete(key);
+
+                    return user;
+                }, error => {
+                    Search.#users.delete(key);
+
+                    throw error;
+                }));
+
+        return Search.#users.get(key);
+    }
+
     static async findUserID(username = null) {
-        return fetchURL.fromDisk(`https://api.twitchinsights.net/v1/user/status/${ username }`)
-            .then(response => response.json())
-            .then(json => {
-                const id = parseInt(json?.id);
+        return Search.lookupUser({ login: String(username).toLowerCase() })
+            .then(user => {
+                const id = parseInt(user?.id);
 
                 // `parseInt` gives NaN (not nullish) for a missing id
                 if(!Number.isFinite(id))
-                    throw `[${ json.status }] An error occurred: ${ json.error }`;
+                    throw `An error occurred: no user "${ username }"`;
 
                 return id;
             })
@@ -634,13 +668,12 @@ class Search {
     }
 
     static async findUsername(userID = null) {
-        return fetchURL.fromDisk(`https://api.twitchinsights.net/v1/user/status/${ userID }`)
-            .then(response => response.json())
-            .then(json => {
-                const name = json?.displayName;
+        return Search.lookupUser({ id: String(userID) })
+            .then(user => {
+                const name = user?.displayName;
 
                 if(nullish(name))
-                    throw `[${ json.status }] An error occurred: ${ json.error }`;
+                    throw `An error occurred: no user #${ userID }`;
 
                 return name;
             })

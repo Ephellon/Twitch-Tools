@@ -226,6 +226,16 @@ plugin({
                 return string?.replace(/[\u2010-\u2015]/g, '-')?.replace(EditionsRegExp, '') ?? '';
             }
 
+            /**
+             * Whether a catalog item shows a price ("$14.99", "14,99 €", "Free"). Priced items sort first; the rest keep
+             * their order. The old check read "$14.99" as no price and pushed "Free" games above the right one
+             * @param {Object} item - A catalog item
+             * @returns {number} 1 if priced, else 0
+             */
+            function priced({ price } = {}) {
+                return +/^free$|\d/i.test(String(price ?? '').trim());
+            }
+
             /*** Get the Steam link (if applicable)
              *       _____ _
              *      / ____| |
@@ -263,13 +273,7 @@ plugin({
                                             .toLowerCase()
                                             .distanceFrom(game.toLowerCase())
                                 )
-                                .sort((prev, next) =>
-                                    !isNaN(parseFloat((next.price + '').replace(/^free$/i, '0')))
-                                        ? +0
-                                        : !isNaN(parseFloat((prev.price + '').replace(/^free$/i, '0')))
-                                            ? -1
-                                            : +1
-                                );
+                                .sort((prev, next) => priced(next) - priced(prev));
 
                             if(false
                                 || best.name.equals(game)
@@ -493,13 +497,7 @@ plugin({
                                             .toLowerCase()
                                             .distanceFrom(game.toLowerCase())
                                 )
-                                .sort((prev, next) =>
-                                    !isNaN(parseFloat((next.price + '').replace(/^free$/i, '0')))
-                                        ? +0
-                                        : !isNaN(parseFloat((prev.price + '').replace(/^free$/i, '0')))
-                                            ? -1
-                                            : +1
-                                );
+                                .sort((prev, next) => priced(next) - priced(prev));
 
                             if(false
                                 || best.name.equals(game)
@@ -801,13 +799,7 @@ plugin({
                                             .toLowerCase()
                                             .distanceFrom(game.toLowerCase())
                                 )
-                                .sort((prev, next) =>
-                                    !isNaN(parseFloat((next.price + '').replace(/^free$/i, '0')))
-                                        ? +0
-                                        : !isNaN(parseFloat((prev.price + '').replace(/^free$/i, '0')))
-                                            ? -1
-                                            : +1
-                                );
+                                .sort((prev, next) => priced(next) - priced(prev));
 
                             if(false
                                 || best.name.equals(game)
@@ -1175,13 +1167,7 @@ plugin({
                                             .toLowerCase()
                                             .distanceFrom(game.toLowerCase())
                                 )
-                                .sort((prev, next) =>
-                                    !isNaN(parseFloat((next.price + '').replace(/^free$/i, '0')))
-                                        ? +0
-                                        : !isNaN(parseFloat((prev.price + '').replace(/^free$/i, '0')))
-                                            ? -1
-                                            : +1
-                                );
+                                .sort((prev, next) => priced(next) - priced(prev));
 
                             if(false
                                 || best.name.equals(game)
@@ -1551,13 +1537,7 @@ plugin({
                                             .toLowerCase()
                                             .distanceFrom(game.toLowerCase())
                                 )
-                                .sort((prev, next) =>
-                                    !isNaN(parseFloat((next.price + '').replace(/^free$/i, '0')))
-                                        ? +0
-                                        : !isNaN(parseFloat((prev.price + '').replace(/^free$/i, '0')))
-                                            ? -1
-                                            : +1
-                                );
+                                .sort((prev, next) => priced(next) - priced(prev));
 
                             if(false
                                 || best.name.equals(game)

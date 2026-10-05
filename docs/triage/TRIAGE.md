@@ -206,7 +206,18 @@ About 40 candidates flag Twitch DOM that "may be null", brittle selectors, or `i
 - ~~Parse Commands threw when you picked a suggestion with no `!` typed~~ (339f87a).
 - ~~Recover Stream threw if the player was gone 5 s later~~ (00b95c1).
 - ~~The Steam handler carried dead Xbox parsing with an undefined `gameID`~~: removed.
-- Live verify pending: `ttv-live-round-9`.
+- Live verify (`ttv-live-round-9`): 7 passed. 3 failed and were fixed, then passed on a recheck:
+  - ~~The page-shift fix only ran on a channel's home page~~: it now starts from `.channel-root`, so live pages are covered too.
+  - ~~`#id` still empty~~: Twitch Insights now refuses all requests (403). IDs come from Twitch GQL (`Search.lookupUser`) and are cached only for the session.
+  - ~~No Steam card for priced games~~: the price sort read "$14.99" as "no price". One `priced()` check now covers all 5 stores, which also fixed PlayStation.
+  - Other problems found by the live job:
+    - the Auto-Focus tooltip was wrong while paused or idle;
+    - an idle click paused instead of resuming;
+    - picking a command inserted nothing, because Twitch's chat input is a rich editor (now `insertCommand`);
+    - Recover Stream read `control` before its null check.
+- Left open:
+  - the News fetch logs an uncaught "Failed to fetch" (blocked by CORS, older than this round);
+  - `twitchinsights` is still in `allowedSites` but is no longer used.
 
 ## Planned tests (after 6.1 feedback)
 

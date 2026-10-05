@@ -317,7 +317,8 @@ Chat__PAGE_CHECKER = setInterval(Chat__WAIT_FOR_PAGE = async() => {
             // those (`ebWabz` became `hyqqEQ`), and the fix silently stopped running. Kept watching (cheap: a short
             // walk up the tree), since moving between pages in the app can shift it again
             const unshift = () => {
-                for(let node = $('.channel-root--home'); defined(node) && node != document.body; node = node.parentElement)
+                // `.channel-root` is on every channel page; `--home` is only on the offline/home page, not the live one
+                for(let node = $('.channel-root'); defined(node) && node != document.body; node = node.parentElement)
                     if(node.scrollLeft > 0) {
                         $notice(`Unshifting webpage...`);
                         node.scrollLeft = 0;
