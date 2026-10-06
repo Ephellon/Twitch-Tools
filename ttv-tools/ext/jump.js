@@ -18,6 +18,22 @@
  *                                                            | |
  *                                                            |_|
  */
+
+/**
+ * @file Hands Twitch's page data to TTV Tools. Injected into the page itself (not the extension's isolated world), so it
+ * can read Twitch's Apollo GraphQL cache, which content scripts can't reach; it posts that data to the top window once.
+ *
+ * @simply jump.js → postMessage(JumpMessage)
+ */
+
+/**
+ * The message this file posts to the top window.
+ * @typedef {object} JumpMessage
+ *
+ * @property {string} action    Always <code>"jump"</code>
+ * @property {object} [data]    Twitch's Apollo cache data (<code>__APOLLO_CLIENT__.cache.data.data</code>), keyed by
+ *                              GraphQL object ID; <code>undefined</code> when the page hasn't built its cache yet
+ */
 FrameJumper: {
     let action = 'jump',
         data = top.__APOLLO_CLIENT__?.cache?.data?.data;

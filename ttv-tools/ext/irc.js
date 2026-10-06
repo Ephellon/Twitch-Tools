@@ -5,9 +5,63 @@
 // Expects the caller to pass a single message. (Remember, the Twitch
 // IRC server may send one or more IRC messages in a single message.)
 
+/**
+ * @file Twitch chat (IRC) message parser, adapted from Twitch's {@link https://dev.twitch.tv/docs/irc/example-parser example parser}.
+ */
+
+/**
+ * The parts of one IRC message.
+ * @typedef {object} ParsedMessage
+ *
+ * @property {?object} tags             The message's tags (see {@link TTV_IRC.parseTags}); <code>null</code> without tags
+ * @property {?ParsedSource} source     Who sent it; <code>null</code> when the message has no source (e.g., PING)
+ * @property {ParsedCommand} command    What kind of message it is, and where it went
+ * @property {?string} parameters       Everything after the command: the chat text for PRIVMSG
+ */
+
+/**
+ * The command part of an IRC message.
+ * @typedef {object} ParsedCommand
+ *
+ * @property {string} command                   The IRC command (e.g., <code>PRIVMSG</code>, <code>JOIN</code>, <code>PING</code>)
+ * @property {string} [channel]                 The channel it applies to (e.g., <code>#ephellon</code>)
+ * @property {string} [enabledCapabilities]     CAP only: the capabilities the server acknowledged
+ * @property {boolean} [isCapRequestEnabled]    CAP only: whether the capability request was accepted (<code>ACK</code>)
+ * @property {string} [botCommand]              A chat command's name, without <code>!</code> (e.g., <code>dice</code>)
+ * @property {string} [botCommandParams]        Whatever followed the chat command (e.g., <code>3</code> for <code>!dice 3</code>)
+ */
+
+/**
+ * The source (sender) part of an IRC message.
+ * @typedef {object} ParsedSource
+ *
+ * @property {?string} nick     The sender's login name; <code>null</code> for server messages
+ * @property {string} host      The sender's host (e.g., <code>nick@nick.tmi.twitch.tv</code>, or <code>tmi.twitch.tv</code>)
+ */
+
+/**
+ * Twitch chat (IRC) helpers, shared by every frame of the page (<code>window.TTV_IRC</code>).
+ * @namespace TTV_IRC
+ */
 window.TTV_IRC ??= {
+    /**
+     * The chat sockets TTV Tools opens itself, by channel (set in chat.js).
+     * @memberof TTV_IRC
+     * @type {object<string, WebSocket>}
+     */
     sockets: {},
 
+    /**
+     * Parses one IRC message into its parts. Pass a single message: Twitch may send several in one socket frame, one
+     * per line.
+     *
+     * @simply TTV_IRC.parseMessage(message:string) → ParsedMessage?
+     *
+     * @memberof TTV_IRC
+     * @param  {string} message     One raw IRC message (e.g., <code>@badges=…;color=… :nick!nick@nick.tmi.twitch.tv PRIVMSG #channel :hi</code>)
+     *
+     * @return {?ParsedMessage}     The message's parts; <code>null</code> for messages TTV Tools ignores (numeric replies, unknown commands)
+     */
     parseMessage(message) {
         // Contains the component parts.
         let parsedMessage = {
@@ -93,6 +147,20 @@ window.TTV_IRC ??= {
 
     // Parses the tags component of the IRC message.
         // badge-info=;badges=broadcaster/1;color=#0000FF;...
+    /**
+     * Parses the tags part of an IRC message (the text between <code>@</code> and the first space).
+     * <code>badges</code> and <code>badge-info</code> become <code>{ name: version }</code>; <code>emotes</code> becomes
+     * <code>{ emoteID: [{ startPosition, endPosition }] }</code>; <code>emote-sets</code> becomes a list of IDs. Empty
+     * values become <code>null</code>; <code>client-nonce</code> and <code>flags</code> are dropped. Tag names have
+     * non-word characters replaced with <code>_</code> (e.g., <code>badge-info</code> → <code>badge_info</code>).
+     *
+     * @simply TTV_IRC.parseTags(tags:string) → object
+     *
+     * @memberof TTV_IRC
+     * @param  {string} tags    The raw tags (e.g., <code>badge-info=;badges=broadcaster/1;color=#0000FF</code>)
+     *
+     * @return {object}         The tags, by (converted) name
+     */
     parseTags(tags) {
         // List of tags to ignore.
         const tagsToIgnore = {
@@ -196,6 +264,19 @@ window.TTV_IRC ??= {
     },
 
     // Parses the command component of the IRC message.
+    /**
+     * Parses the command part of an IRC message. Chat events (JOIN, PART, NOTICE, PRIVMSG, WHISPER, CLEARMSG,
+     * CLEARCHAT, USERNOTICE, HOSTTARGET, USERSTATE, ROOMSTATE) keep their channel; PING, GLOBALUSERSTATE and RECONNECT
+     * don't have one; CAP reports the capability answer.
+     *
+     * @simply TTV_IRC.parseCommand(rawCommandComponent:string) → ParsedCommand?
+     *
+     * @memberof TTV_IRC
+     * @param  {string} rawCommandComponent     The raw command (e.g., <code>PRIVMSG #channel</code>)
+     *
+     * @return {?ParsedCommand}                 The command; <code>null</code> for numeric replies other than
+     *                                          <code>001</code> (logged in), and for commands TTV Tools doesn't handle
+     */
     parseCommand(rawCommandComponent) {
         let [command, channel, ...request] = rawCommandComponent.trim().split(' ');
 
@@ -275,6 +356,16 @@ window.TTV_IRC ??= {
     },
 
     // Parses the source (nick and host) components of the IRC message.
+    /**
+     * Parses the source part of an IRC message: who sent it.
+     *
+     * @simply TTV_IRC.parseSource(rawSourceComponent:string?) → ParsedSource?
+     *
+     * @memberof TTV_IRC
+     * @param  {?string} rawSourceComponent     The raw source (e.g., <code>nick!nick@nick.tmi.twitch.tv</code>, or <code>tmi.twitch.tv</code>)
+     *
+     * @return {?ParsedSource}                  The sender; <code>null</code> when the message has no source
+     */
     parseSource(rawSourceComponent) {
         // Not all messages contain a source
         if(nullish(rawSourceComponent)) {
@@ -290,6 +381,17 @@ window.TTV_IRC ??= {
     },
 
     // Parsing the IRC parameters component if it contains a command (e.g., !dice).
+    /**
+     * Reads a chat command out of the message text (e.g., <code>!dice 3</code>) and adds it to the parsed command.
+     *
+     * @simply TTV_IRC.parseParameters(rawParametersComponent:string, command:ParsedCommand) → ParsedCommand
+     *
+     * @memberof TTV_IRC
+     * @param  {string} rawParametersComponent  The message text, starting with <code>!</code>
+     * @param  {ParsedCommand} command          The parsed command to add to (changed in place)
+     *
+     * @return {ParsedCommand}                  The same command, with <code>botCommand</code> (and <code>botCommandParams</code> when given)
+     */
     parseParameters(rawParametersComponent, command) {
         let index = 0;
         let commandParts = rawParametersComponent.slice(index + 1).trim();

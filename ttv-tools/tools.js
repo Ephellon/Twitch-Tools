@@ -752,6 +752,89 @@ class ChatFooter {
     }
 }
 
+// A placeholder card with a spinner (`Card.deferred`); `post(state)` swaps in the real Card. Declared on its own:
+// jsdoc fails on a class expression as a class-field value ("Cannot read properties of null (reading 'memberof')")
+class DeferredCard {
+    constructor(fineTuning = {}) {
+        fineTuning.top ??= '7rem';
+        fineTuning.left ??= '0px';
+        fineTuning.cursor ??= 'auto';
+        fineTuning.padding ??= '1rem';
+
+        let styling = ['border:var(--border-width-default) solid var(--color-border-base);'];
+
+        for(let key in fineTuning) {
+            let [value, unit] = (fineTuning[key] ?? "").toString().split(/([\-\+]?[\d\.]+)([^\d\.]+)/).filter(string => string.length);
+
+            if(nullish(value))
+                continue;
+
+            if(parseFloat(value) >= -Infinity)
+                unit ??= "px";
+            else
+                unit ??= "";
+
+            styling.push(`${ key }:${ value }${ unit }`);
+        }
+
+        styling = styling.join(';');
+
+        let f = furnish;
+
+        let container = $('[data-a-target*="card"i] [class*="card-layer"i]'),
+            card = f(`.tt-absolute.tt-border-radius-large.viewer-card-layer__draggable[@aTarget=viewer-card-positioner]`, { style: styling },
+                f('.tt-absolute.tt-mg-r-05.tt-mg-t-05.tt-right-0.tt-top-0[@aTarget=viewer-card-close-button]',
+                    {
+                        onmouseup: ({ button = -1 }) => {
+                            !button && $.all('[data-a-target*="card"i] [class*="card-layer"] > *').forEach(node => node.remove());
+                        },
+                    },
+                    f('.tt-inline-flex.viewer-card-drag-cancel').with(
+                        f('button.tt-button-icon.tt-button-icon--secondary.tt-core-button[@testSelector=close-viewer-card]', {
+                            'aria-label': "Hide",
+                        },
+                            f('span.tt-button-icon__icon').with(
+                                f('div[style="width: 2rem; height: 2rem;"]').with(
+                                    f('.tt-icon').with(
+                                        f('.tt-aspect').html(Glyphs.modify('x', { height: '20px', width: '20px' }).toString())
+                                    )
+                                )
+                            )
+                        )
+                    )
+                )
+            );
+
+        // Remove current cards. Only one allowed at a time
+        [...container.children].forEach(child => child.remove());
+
+        // Furnish the card
+        card.append(
+            f('.tt-spinner')
+        );
+
+        // Add the card
+        container.append(card);
+
+        let uuid = UUID.from(card.getPath()).value;
+
+        card.id = uuid;
+        card.classList.add('tt-c-background-base');
+
+        this.body = card;
+        this.uuid = uuid;
+        this.container = container;
+
+        return this;
+    }
+
+    post(state) {
+        this.body.remove();
+
+        return new Card(state);
+    }
+}
+
 // Creates a Twitch-style card
     // new Card({ title:string, subtitle:string?, fineTuning:object? }) → Element<Card>
 class Card {
@@ -894,86 +977,7 @@ class Card {
         return Card.#CARDS.get(title);
     }
 
-    static deferred = class deferred {
-        constructor(fineTuning = {}) {
-            fineTuning.top ??= '7rem';
-            fineTuning.left ??= '0px';
-            fineTuning.cursor ??= 'auto';
-            fineTuning.padding ??= '1rem';
-
-            let styling = ['border:var(--border-width-default) solid var(--color-border-base);'];
-
-            for(let key in fineTuning) {
-                let [value, unit] = (fineTuning[key] ?? "").toString().split(/([\-\+]?[\d\.]+)([^\d\.]+)/).filter(string => string.length);
-
-                if(nullish(value))
-                    continue;
-
-                if(parseFloat(value) >= -Infinity)
-                    unit ??= "px";
-                else
-                    unit ??= "";
-
-                styling.push(`${ key }:${ value }${ unit }`);
-            }
-
-            styling = styling.join(';');
-
-            let f = furnish;
-
-            let container = $('[data-a-target*="card"i] [class*="card-layer"i]'),
-                card = f(`.tt-absolute.tt-border-radius-large.viewer-card-layer__draggable[@aTarget=viewer-card-positioner]`, { style: styling },
-                    f('.tt-absolute.tt-mg-r-05.tt-mg-t-05.tt-right-0.tt-top-0[@aTarget=viewer-card-close-button]',
-                        {
-                            onmouseup: ({ button = -1 }) => {
-                                !button && $.all('[data-a-target*="card"i] [class*="card-layer"] > *').forEach(node => node.remove());
-                            },
-                        },
-                        f('.tt-inline-flex.viewer-card-drag-cancel').with(
-                            f('button.tt-button-icon.tt-button-icon--secondary.tt-core-button[@testSelector=close-viewer-card]', {
-                                'aria-label': "Hide",
-                            },
-                                f('span.tt-button-icon__icon').with(
-                                    f('div[style="width: 2rem; height: 2rem;"]').with(
-                                        f('.tt-icon').with(
-                                            f('.tt-aspect').html(Glyphs.modify('x', { height: '20px', width: '20px' }).toString())
-                                        )
-                                    )
-                                )
-                            )
-                        )
-                    )
-                );
-
-            // Remove current cards. Only one allowed at a time
-            [...container.children].forEach(child => child.remove());
-
-            // Furnish the card
-            card.append(
-                f('.tt-spinner')
-            );
-
-            // Add the card
-            container.append(card);
-
-            let uuid = UUID.from(card.getPath()).value;
-
-            card.id = uuid;
-            card.classList.add('tt-c-background-base');
-
-            this.body = card;
-            this.uuid = uuid;
-            this.container = container;
-
-            return this;
-        }
-
-        post(state) {
-            this.body.remove();
-
-            return new Card(state);
-        }
-    }
+    static deferred = DeferredCard;
 }
 
 // Creates a Twitch-style context menu
