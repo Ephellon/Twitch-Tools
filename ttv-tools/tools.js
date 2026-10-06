@@ -17851,7 +17851,11 @@ if(top == window) {
 
                 switch(request?.action) {
                     case 'heap-audit': {
+<<<<<<< HEAD
                         // Not `| 0`: it wraps 2 GB and up to a negative number, so the HIGH (2 GB) RAM Alarm could never fire
+=======
+                        // Not `| 0`: it wraps 2 GB and up to a negative number, so the HIGH (2 GB) RAM Alarm could never fire (#64)
+>>>>>>> 914077d39014c07d74f1df189d8c80e837b8ff7c
                         respond({ ok: true, results: [Math.round(window.performance?.memory?.usedJSHeapSize ?? 0), Math.round(window.performance?.now?.() ?? 0)] });
                     } break;
 

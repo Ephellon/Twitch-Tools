@@ -1680,6 +1680,11 @@ function fetchURL(url, options = {}) {
     // `githubusercontent` (raw.githubusercontent.com) answers cross-origin requests itself: the store catalogs load from it
     // directly. Sent through a proxy instead, every catalog got a 403 and no store card was placed
     let allowedHosts = 'static-cdn.jtvnw.net'.split(' '),
+<<<<<<< HEAD
+=======
+        // `githubusercontent` (raw.githubusercontent.com) answers cross-origin requests itself: the store catalogs load from
+        // it directly. Sent through a proxy instead, every catalog got a 403 and no store card was placed
+>>>>>>> 914077d39014c07d74f1df189d8c80e837b8ff7c
         allowedSites = 'betterttv blerp github githubusercontent nightbot streamelements streamloots twitch twitchinsights twitchtokengenerator'.split(' '),
         allowedDomains = 'gd'.split(' ');
 

@@ -37,7 +37,11 @@
 ## Release History
 
 ### Version 5.35.\*
+<<<<<<< HEAD
 - [`5.35.4.7`](https://github.com/Ephellon/Twitch-Tools/releases/tag/5.35.4.7) — Fixed Wiki page fetching.
+=======
+- [`5.35.4.7`](https://github.com/Ephellon/Twitch-Tools/releases/tag/5.35.4.7) — Store cards load again (store catalogs are fetched directly, not through a proxy); RAM Alarms: a page over 2 GB now reaches the HIGH level (#64).
+>>>>>>> 914077d39014c07d74f1df189d8c80e837b8ff7c
 - [`5.35.4.6`](https://github.com/Ephellon/Twitch-Tools/releases/tag/5.35.4.6) — Pruned obsolete CORS proxies.
 - [`5.35.4.5`](https://github.com/Ephellon/Twitch-Tools/releases/tag/5.35.4.5) — Fixed #63 (on offline channels, Lurk no longer opens and closes the quality menu over and over), #64 (RAM Alarms now match the levels shown in Settings: 500 MB, 1 GB, 2 GB) and #65 (each tab keeps its own Lurk state).
 - [`5.35.4.4`](https://github.com/Ephellon/Twitch-Tools/releases/tag/5.35.4.4) — Rewrote recording (DVR, trophy clips, Alt+Z). Recordings are saved to disk as they go, and one a closed or crashed tab didn't save is offered on the next load, with a preview. Clips keep their last seconds. Recording keeps going in background tabs. Two recordings at once both keep their sound. The DVR pauses during ads instead of splicing them in, which could break the file. Saved files get the right type. DVR files are named for their own length. The player-frame DVR no longer starts a new recorder every half second.
