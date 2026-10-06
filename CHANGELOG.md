@@ -58,6 +58,8 @@
     - **Auto-Focus:** no longer starts or stops Easy Lurk after you toggle it yourself; click its statistics readout to pause or resume it on the page (#60).
     - **Auto-Focus (round 9):** takes no screenshots while paused (#61), rests by itself when it has nothing to control (#62), and reads Lurk's real state.
     - **User Scripts:** editing or approving one script no longer restarts the others; `#id` is filled on every channel.
+    - **Store Integration:** games with a price (Steam, PlayStation) get their card again.
+    - **Parse Commands:** picking a command suggestion puts it in the chat box again.
     - **Recording (rewritten; DVR, trophy clips, Alt+Z):**
         - Recordings are saved to disk as they go, so long DVRs don't use more memory over time. A recording a closed or crashed tab didn't save is offered on the next page load.
         - Clips keep their last seconds.
