@@ -20,6 +20,26 @@ plugin({
 
         MASTER_VIDEO = $('[data-a-player-state] video');
 
+        // Recordings a closed or crashed tab didn't save: offer them once (one tab asks; the others skip)
+        Recording.cleanup()
+            .then(() => navigator.locks?.request('tt-recordings:recovery', { ifAvailable: true }, async lock => {
+                if(!lock)
+                    return;
+
+                for(const leftover of await Recording.leftovers())
+                    await confirm.silent(`
+                        <input hidden controller
+                            icon="\uD83D\uDCBE\uFE0F" title="Unsaved recording"
+                            okay="${ encodeHTML(Glyphs.modify('download', { height: '20px', width: '20px', style: 'vertical-align:bottom' })) } Save"
+                            deny="${ encodeHTML(Glyphs.modify('trash', { height: '20px', width: '20px', style: 'vertical-align:bottom' })) } Discard"
+                        />
+                        This recording wasn't saved before its tab closed: <strong>${ encodeHTML(leftover.as ?? leftover.name ?? 'Recording') }</strong> (${ leftover.size.suffix('B', 2) })`
+                    )
+                        .then(answer => answer === false ? leftover.discard() : answer ? leftover.save() : null)
+                        .catch($warn);
+            }))
+            .catch($warn);
+
         // Might take a few seconds to fulfill...
         when.defined(() => $('[data-a-player-state] video')).then(_ => MASTER_VIDEO = _);
 
@@ -101,7 +121,7 @@ plugin({
                                             SetQuality(VideoClips.quality, 'auto').then(() => {
                                                 MASTER_VIDEO.DEFAULT_RECORDING = Recording.proxy(MASTER_VIDEO, { name: 'AUTO_DVR', as: DVR_CLIP_PRECOMP_NAME, mimeType: `video/${ VideoClips.filetype }`, hidden: !Settings.show_stats });
 
-                                                MASTER_VIDEO.DEFAULT_RECORDING.then(Handlers.__MASTER_AUTO_DVR_HANDLER__);
+                                                MASTER_VIDEO.DEFAULT_RECORDING.done.then(Handlers.__MASTER_AUTO_DVR_HANDLER__).catch($warn);
                                             });
                                         });
                                 }
@@ -111,7 +131,8 @@ plugin({
 
                                     delete DVRChannels[DVR_ID];
 
-                                    MASTER_VIDEO.DEFAULT_RECORDING?.stop()?.save(DVR_CLIP_PRECOMP_NAME);
+                                    // The DVR's handler saves it once the last chunk is in
+                                    MASTER_VIDEO.DEFAULT_RECORDING?.stop();
                                 }
 
                                 currentTarget.closest('[tt-action]').setAttribute('enabled', enabled);
@@ -138,7 +159,7 @@ plugin({
                             SetQuality(VideoClips.quality, 'auto').then(() => {
                                 MASTER_VIDEO.DEFAULT_RECORDING = Recording.proxy(MASTER_VIDEO, { name: 'AUTO_DVR', mimeType: `video/${ VideoClips.filetype }`, hidden: !Settings.show_stats });
 
-                                MASTER_VIDEO.DEFAULT_RECORDING.then(Handlers.__MASTER_AUTO_DVR_HANDLER__);
+                                MASTER_VIDEO.DEFAULT_RECORDING.done.then(Handlers.__MASTER_AUTO_DVR_HANDLER__).catch($warn);
                             });
                         });
 
@@ -147,11 +168,12 @@ plugin({
                             return;
                         STASH_SAVED = true;
 
-                        for(const [guid, { recording }] of Recording.__RECORDERS__)
+                        // The DVR's handler saves it; anything else is saved here. What doesn't finish is offered on the next load
+                        for(const recording of Recording.list({ active: true }))
                             if(recording == MASTER_VIDEO.DEFAULT_RECORDING)
-                                recording?.stop()?.save(DVR_CLIP_PRECOMP_NAME);
+                                recording.stop();
                             else
-                                recording?.stop()?.save();
+                                recording.stop().save().catch($warn);
 
                         const next = await GetNextStreamer();
 
@@ -183,9 +205,9 @@ plugin({
             Object.defineProperties(top, {
                 DVR_CLIP_PRECOMP_NAME: {
                     get() {
-                        const chunks = MASTER_VIDEO.getRecording(Recording.ANY)?.blobs;
+                        const recording = MASTER_VIDEO?.DEFAULT_RECORDING ?? Recording.find(Recording.ANY);
 
-                        if(!chunks?.length)
+                        if(!recording?.size)
                             return new ClipName(2);
 
                         const now = new Date;
@@ -194,7 +216,7 @@ plugin({
                         return [
                             STREAMER.name,
                             now.toLocaleDateString().replace(/[\/\\:\*\?"<>\|]+/g, '-'),
-                            `(${ (parseBool(Settings.show_stats) ? toTimeString(chunks.recordingLength, 'short') : ((now.getHours() % 12) || 12) + now.getMeridiem()).replace(/\b(0+[ydhms])+/ig, '') })`,
+                            `(${ (parseBool(Settings.show_stats) ? toTimeString(recording.duration, 'short') : ((now.getHours() % 12) || 12) + now.getMeridiem()).replace(/\b(0+[ydhms])+/ig, '') })`,
                         ]
                             .filter(s => s?.length)
                             .map(s => s.trim())
@@ -208,11 +230,12 @@ plugin({
                     return;
                 STASH_SAVED = true;
 
-                for(const [guid, { recording }] of Recording.__RECORDERS__)
+                // The DVR's handler saves it; anything else is saved here. What doesn't finish is offered on the next load
+                for(const recording of Recording.list({ active: true }))
                     if(recording == MASTER_VIDEO.DEFAULT_RECORDING)
-                        recording?.stop()?.save(DVR_CLIP_PRECOMP_NAME);
+                        recording.stop();
                     else
-                        recording?.stop()?.save();
+                        recording.stop().save().catch($warn);
 
                 const next = await GetNextStreamer();
 
@@ -222,22 +245,20 @@ plugin({
             /* Ignore these errors :P */
         }
 
-        Handlers.__MASTER_AUTO_DVR_HANDLER__ = event => {
-            MASTER_VIDEO.DEFAULT_RECORDING?.then(({ target }) => {
-                const chunks = target.blobs;
-                const feed = null /* No prompt exists for the master recording */
-                    , halt = parseBool(feed?.getAttribute('halt'))
-                    , name = (feed?.getAttribute('value') || DVR_CLIP_PRECOMP_NAME).replace(GetFileSystem().allIllegalFilenameCharacters, '-');
-            })
-                ?.stop()
-                ?.save(DVR_CLIP_PRECOMP_NAME)
+        // Saves a finished DVR recording and shows it (`recording.done` resolves `{ target: recording }`)
+        Handlers.__MASTER_AUTO_DVR_HANDLER__ = ({ target: recording } = {}) => {
+            recording ??= MASTER_VIDEO.DEFAULT_RECORDING;
+
+            return recording
+                ?.save(DVR_CLIP_PRECOMP_NAME.replace(GetFileSystem().allIllegalFilenameCharacters, '-'))
                 ?.then(link => alert.silent(`
                 <video controller controls
                     title="Video Saved &mdash; ${ link.download }"
                     src="${ link.href }" style="max-width:-webkit-fill-available"
                 ></video>
                 `)
-                );
+                )
+                ?.catch($warn);
         };
 
         Unhandlers.video_clips__dvr = () => {
@@ -251,7 +272,7 @@ plugin({
                 top.titleInterval = setInterval(() => {
                     document.title = (
                         MASTER_VIDEO.hasRecording(Recording.ANY)
-                            ? `\u{1f534} ${ STREAMER.name } - ${ toTimeString((new Date) - MASTER_VIDEO.getRecording(Recording.ANY)?.creationTime, 'clock') }`
+                            ? `\u{1f534} ${ STREAMER.name } - ${ toTimeString(Recording.find(Recording.ANY, MASTER_VIDEO)?.duration, 'clock') }`
                             : `${ STREAMER.name } - Twitch`
                     );
                 }, 250);
@@ -262,50 +283,27 @@ plugin({
             $remark("Adding DVR functionality...");
 
             /**
-             * Manages the DVR recording during ad breaks by capturing ad chunks and merging them into the main recording.
-             * @param {Element} adCountdown - The ad countdown element
-             * @returns {void|Promise<void>}
+             * Pauses the DVR while an ad plays and resumes it after, so the file holds no ad footage (one clean file).
+             * @returns {Promise<void>}
              */
-            function HandleAd(adCountdown) {
-                const [main, mini] = $.all('video');
+            function HandleAd() {
+                const recording = Recording.find('AUTO_DVR');
+                const paused = (recording?.state == 'recording');
 
-                if(false
-                    || nullish(main)
-                    || !main.hasRecording('AUTO_DVR')
-                    || nullish(mini)
-                )
-                    return when.defined(() => $('[data-a-target*="ad-countdown"i]')).then(HandleAd);
+                if(paused) {
+                    recording.pause();
+                    $notice(`There is an ad playing... DVR paused at ${ toTimeString(recording.duration, 'clock') }`);
+                }
 
-                const blobs = main.getRecording('AUTO_DVR')?.blobs ?? [];
-
-                const InsertChunksAt = blobs.length;
-
-                const AdBreak = Recording.proxy(mini, { name: 'AUTO_DVR:AD_HANDLER', mimeType: main.mimeType });
-
-                AdBreak.then(event => {
-                    const chunks = event.target.blobs;
-
-                    $notice(`Adding chunks to main <video> @ ${ InsertChunksAt }`, { blobs, chunks, event });
-
-                    blobs.splice(InsertChunksAt, 0, ...chunks);
-                });
-
-                when.nullish(() => $('[data-a-target*="ad-countdown"i]'))
+                return when.nullish(() => $('[data-a-target*="ad-countdown"i]'))
                     .then(() => {
-                        const [main, mini] = $.all('video');
+                        if(paused) {
+                            recording.resume();
+                            $notice(`Ad is done playing... DVR resumed`);
+                        }
 
-                        main?.resumeRecording('AUTO_DVR');
-                        mini?.stopRecording('AUTO_DVR:AD_HANDLER');
-
-                        when.defined(() => $('[data-a-target*="ad-countdown"i]'))
-                            .then(HandleAd);
-
-                        $notice(`Ad is done playing... ${ toTimeString((new Date) - main?.getRecording('AUTO_DVR')?.creationTime, 'clock') } | ${ (new Date).toJSON() }`, { main, mini, blobs, chunks: mini?.getRecording('AUTO_DVR:AD_HANDLER')?.blobs });
+                        return when.defined(() => $('[data-a-target*="ad-countdown"i]')).then(HandleAd);
                     });
-
-                main.pauseRecording('AUTO_DVR');
-
-                $notice(`There is an ad playing... ${ toTimeString((new Date) - main.getRecording('AUTO_DVR')?.creationTime, 'clock') } | ${ (new Date).toJSON() }`, { main, mini });
             }
 
             when.defined(() => $('[data-a-target*="ad-countdown"i]'))
@@ -456,24 +454,14 @@ plugin({
 
                                     when.nullish(() => $('[data-a-target*="ad-countdown"i]'))
                                         .then(() => {
-                                            const recordingKey = 'AUTO_DVR:AD_COUNTDOWN';
-
                                             SetQuality(VideoClips.quality, 'auto').then(() => {
-                                                Recording.proxy(MASTER_VIDEO, { name: recordingKey, mimeType: `video/${ VideoClips.filetype }`, hidden: !Settings.show_stats })
-                                                    .then(Handlers.__MASTER_AUTO_DVR_HANDLER__);
+                                                // Another start (the channel panel's) may have begun meanwhile
+                                                if(MASTER_VIDEO.hasRecording('AUTO_DVR'))
+                                                    return;
 
-                                                when(() => MASTER_VIDEO.hasRecording('AUTO_DVR')).then(() => {
-                                                    MASTER_VIDEO.cancelRecording(recordingKey, `Master recording ("AUTO_DVR") already exists. Removing "AUTO_DVR:AD_COUNTDOWN"`).removeRecording(recordingKey);
-                                                });
+                                                MASTER_VIDEO.DEFAULT_RECORDING = Recording.proxy(MASTER_VIDEO, { name: 'AUTO_DVR', mimeType: `video/${ VideoClips.filetype }`, hidden: !Settings.show_stats });
 
-                                                wait(5000).then(() => {
-                                                    if(!MASTER_VIDEO.hasRecording(recordingKey))
-                                                        return;
-
-                                                    MASTER_VIDEO.DEFAULT_RECORDING = MASTER_VIDEO.getRecording(recordingKey);
-
-                                                    MASTER_VIDEO.DEFAULT_RECORDING.then(Handlers.__MASTER_AUTO_DVR_HANDLER__);
-                                                });
+                                                MASTER_VIDEO.DEFAULT_RECORDING.done.then(Handlers.__MASTER_AUTO_DVR_HANDLER__).catch($warn);
                                             });
                                         });
 
@@ -484,11 +472,12 @@ plugin({
 
                                         const DVR_ID = STREAMER.name.toLowerCase();
 
-                                        for(const [guid, { recording }] of Recording.__RECORDERS__)
+                                        // The DVR's handler saves it; anything else is saved here. What doesn't finish is offered on the next load
+                                        for(const recording of Recording.list({ active: true }))
                                             if(recording == MASTER_VIDEO.DEFAULT_RECORDING)
-                                                recording?.stop()?.save(DVR_CLIP_PRECOMP_NAME);
+                                                recording.stop();
                                             else
-                                                recording?.stop()?.save();
+                                                recording.stop().save().catch($warn);
 
                                         const next = await GetNextStreamer();
 

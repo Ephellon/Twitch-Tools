@@ -4,8 +4,12 @@
  */
 
 import { plugin, plugins, run, start } from '../../lib/plugins.js';
+import { Recording, installVideoMethods } from '../../lib/recording.js';
 
 globalThis.TTV ??= { plugin, plugins, run, start };
+globalThis.Recording = Recording;
+installVideoMethods();
+
 import './auto-accept-mature.js';
 import './recover-video.js';
 import './hide-blank-ads.js';

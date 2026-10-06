@@ -12,6 +12,7 @@ import { ContextMenu } from './context-menu.js';
 import { Search } from './search.js';
 import { Chat } from './chat.js';
 import { startWhisperRelay } from './whispers.js';
+import { Recording, installVideoMethods } from './recording.js';
 import { parseCoin } from './currency.js';
 import { GetQuality, SetQuality, GetVolume, SetVolume, GetViewMode, SetViewMode } from './player.js';
 import { GetActivity, GetLanguage, ReloadPage } from './page.js';
@@ -32,8 +33,12 @@ Object.assign(globalThis, {
     Search,
     Chat,
     startWhisperRelay,
+    Recording,
     parseCoin,
     GetQuality, SetQuality, GetVolume, SetVolume, GetViewMode, SetViewMode,
     GetActivity, GetLanguage, ReloadPage,
     scoreTagActivity,
 });
+
+// video.startRecording() … video.saveRecording()
+installVideoMethods();

@@ -11,7 +11,7 @@
     - Add "Sync Activity across devices" (auto-switch to unique channels).
     - Implement "Full Tab Captures" ([Chrome API](https://developer.chrome.com/docs/extensions/reference/tabCapture/)).
 - [ ] **DVR & Recording:**
-    - Modify logic to record over ads (substitute mini-video contents).
+    - Optionally record over ads (the DVR pauses during ads since the Recording rewrite).
     - Add option to record specific games.
 - [ ] **Chat & Interaction:**
     - Add option to handle chat commands/messages via a dedicated bot extension.
@@ -58,6 +58,14 @@
     - **Auto-Focus:** no longer starts or stops Easy Lurk after you toggle it yourself; click its statistics readout to pause or resume it on the page (#60).
     - **Auto-Focus (round 9):** takes no screenshots while paused (#61), rests by itself when it has nothing to control (#62), and reads Lurk's real state.
     - **User Scripts:** editing or approving one script no longer restarts the others; `#id` is filled on every channel.
+    - **Recording (rewritten; DVR, trophy clips, Alt+Z):**
+        - Recordings are saved to disk as they go, so long DVRs don't use more memory over time. A recording a closed or crashed tab didn't save is offered on the next page load.
+        - Clips keep their last seconds.
+        - Recording keeps going in background tabs.
+        - The DVR pauses during ads instead of splicing them in, which could break the file.
+        - Recover Frames continues the same file.
+        - Saved files get the right type.
+        - The player-frame DVR no longer starts a new recorder every half second.
     - **Browser restart:** Up Next, Stay Live and Next Channel pick up again (the owner tab is reloaded on startup).
     - **Live Reminders:** the listing no longer errors or shows empty; with none saved, it says so.
     - **Settings:** plain one-sentence descriptions; Site Access lists readable site names.

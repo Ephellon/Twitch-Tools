@@ -21,35 +21,21 @@ plugin({
 
         const video = $('video');
         const live = $.nullish('[class*="channel-status"i][class*="offline"i]');
+        const recording = Recording.find('PLAYER_DVR');
 
+        // Offline (or gone): stop; the recording saves itself below
         if(nullish(video) || !live)
-            return (
-                parseBool(autosave)
-                    ? video?.stopRecording()
-                    : null
-            );
+            return void (parseBool(autosave) && recording?.stop());
 
-        if(defined(video.__recorder__))
+        if(recording?.active)
             return;
 
-        video.startRecording(Infinity, { mimeType: `video/${ filetype }` })
-            .then(chunks => {
-                const blob = new Blob(chunks, { type: chunks.type });
-                const link = furnish(`a#${ slug }`, { href: URL.createObjectURL(blob), download: `${ slug }.${ window.MIME_Types.find(video.mimeType) }`, hidden: true }, slug);
-
-                $.head.append(link);
-                link.click();
-            })
+        // Before the rewrite, `__recorder__` was never set: a new recorder started on every tick
+        Recording.proxy(video, { name: 'PLAYER_DVR', as: slug, mimeType: `video/${ filetype }` })
+            .done
+            .then(({ target }) => target.save(slug))
             .catch($warn)
-            .finally(() => {
-                const link = $(`#${ slug }`);
-
-                // Free up the memory
-                URL.revokeObjectURL(link?.href);
-                link?.remove();
-
-                window.postMessage({ action: 'report-offline-dvr', from: 'player.js', slug }, '*');
-            });
+            .finally(() => window.postMessage({ action: 'report-offline-dvr', from: 'player.js', slug }, '*'));
     },
 
     /**

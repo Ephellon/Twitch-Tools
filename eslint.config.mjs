@@ -285,6 +285,11 @@ export default [
         rules: { 'no-unused-vars': ['error', { argsIgnorePattern: '^\\$' }], 'no-constant-binary-expression': 'off' },
     },
     {
+        // Unit tests of the ES modules: Node, with the browser APIs they fake
+        files: [`${ ROOT }/lib/tests/*.mjs`, `${ ROOT }/settings/tests/*.mjs`],
+        languageOptions: { sourceType: 'module', globals: { ...globals.node, ...globals.browser } },
+    },
+    {
         files: ['*.mjs', 'scripts/**/*.mjs'],
         languageOptions: { sourceType: 'module', globals: globals.node },
         plugins: { '@stylistic': stylistic, ttv: house },

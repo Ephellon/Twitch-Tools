@@ -96,16 +96,17 @@ plugin({
             SetQuality(VideoClips.quality, 'auto').then(() => {
                 const recording = Recording.proxy(video, { name, as: name, maxTime: time, mimeType: `video/${ VideoClips.filetype }`, hidden: !Settings.show_stats });
 
-                // CANNOT be chained with the above; removes `this` context (can no longer be aborted)
-                recording
-                    .then(async({ target }) => await target.recording.save())
+                // Saved once the last chunk is in; a discarded clip rejects `done` (nothing to save)
+                recording.done
+                    .then(() => recording.save())
                     .then(link => alert.silent(`
                         <video controller controls
                             title="Trophy Clip Saved &mdash; ${ link.download }"
                             src="${ link.href }" style="max-width:-webkit-fill-available"
                         ></video>
                         `)
-                    );
+                    )
+                    .catch(error => $warn(error));
 
                 confirm.timed(`
                     <input hidden controller
@@ -122,7 +123,7 @@ plugin({
                     })
                     .catch(error => {
                         alert.silent(error);
-                        recording.controller.abort(error);
+                        recording.discard();
                     })
                     .finally(() => {
                         // Unpause Up Next (if done automatically)

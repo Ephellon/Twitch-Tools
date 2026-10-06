@@ -122,27 +122,15 @@ plugin({
                                     if((iVideo.currentTime || 0) <= 0)
                                         return /* iframe video not loading */;
 
-                                    // Continue recordings...
-                                    for(const [key, { recording }] of video.getRecording(Recording.ALL)) {
-                                        let { name, as, maxTime } = recording;
-
-                                        maxTime = parseFloat(maxTime);
-                                        maxTime = maxTime < 0 ? Infinity : maxTime;
-
-                                        if(!/^\[\[(.+)\]\]$/.test(key)) {
-                                            recording.save();
-                                            Recording.proxy(iVideo, { name, as, maxTime }).then(event => {
-                                                const { target } = event;
-                                                const { recording } = target;
-                                                const { name, as } = recording;
-
-                                                if(name.startsWith('AUTO_DVR'))
-                                                    Handlers.__MASTER_AUTO_DVR_HANDLER__.call(target, event);
-                                                else
-                                                    recording.save(as);
-                                            });
-                                        }
-                                    }
+                                    // Continue recordings from the embedded video, in the same files
+                                    for(const recording of Recording.of(video).values())
+                                        if(recording.active)
+                                            try {
+                                                recording.retarget(iVideo);
+                                            } catch(error) {
+                                                // Not proxied: save what there is
+                                                recording.stop().save().catch($warn);
+                                            }
 
                                     return VIDEO_OVERRIDE = true;
                                 }, 2_5_0);

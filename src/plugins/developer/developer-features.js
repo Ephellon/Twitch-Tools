@@ -85,48 +85,39 @@ plugin({
                         if(!video.hasRecording(EVENT_NAME)) {
                             prompt.silent(body).then(value => {
                                 const feed = $(`.tt-prompt[uuid="${ UUID.from(body).value }"i]`);
-                                const temp = video.stopRecording(EVENT_NAME);
+                                const recording = Recording.find(EVENT_NAME, video);
 
                                 feed?.setAttribute('halt', nullish(value));
+                                DEFAULT_CLIP_NAME = new ClipName(2);
 
+                                // Discard
                                 if(nullish(value)) {
-                                    phantomClick($('.deny', feed))
-                                } else {
-                                    phantomClick($('.okay', feed));
-                                    temp.saveRecording(EVENT_NAME, SAVE_NAME = value || SAVE_NAME);
+                                    phantomClick($('.deny', feed));
+                                    return recording?.discard();
                                 }
 
-                                temp?.removeRecording(EVENT_NAME);
-                            });
+                                // Save (once the last chunk is in), show it, then let go of it
+                                phantomClick($('.okay', feed));
+                                SAVE_NAME = (value || SAVE_NAME).replace(GetFileSystem().allIllegalFilenameCharacters, '-');
 
-                            SetQuality(VideoClips.quality, 'auto').then(() => {
-                                Recording.proxy(video, { name: EVENT_NAME, as: DEFAULT_CLIP_NAME, mimeType: `video/${ VideoClips.filetype }`, hidden: !Settings.show_stats })
-                                    .then(({ target }) => {
-                                        const chunks = target.blobs;
-                                        const feed = $(`.tt-prompt[uuid="${ UUID.from(body).value }"i]`)
-                                            , halt = parseBool(feed?.getAttribute('halt'))
-                                            , name = (feed?.getAttribute('value') || SAVE_NAME).replace(GetFileSystem().allIllegalFilenameCharacters, '-');
-
-                                        return SAVE_NAME = name;
-                                    })
+                                recording?.stop().save(SAVE_NAME)
+                                    .then(link => alert.silent(`
+                                        <video controller controls
+                                            title="Video Saved &mdash; ${ link.download }"
+                                            src="${ link.href }" style="max-width:-webkit-fill-available"
+                                        ></video>
+                                        `)
+                                    )
                                     .catch(error => {
                                         $warn(error);
 
                                         alert.timed(error, 7000);
                                     })
-                                    .finally(() => {
-                                        DEFAULT_CLIP_NAME = new ClipName(2);
+                                    .finally(() => recording.discard());
+                            });
 
-                                        video.stopRecording(EVENT_NAME).saveRecording(EVENT_NAME, SAVE_NAME);
-
-                                        when.defined(() => $(`[data-save-name="${ SAVE_NAME.replaceAll('"', '&quot;') }"i]`)).then(link => alert.silent(`
-                                            <video controller controls
-                                                title="Video Saved &mdash; ${ link.download }"
-                                                src="${ link.href }" style="max-width:-webkit-fill-available"
-                                            ></video>
-                                            `)
-                                        );
-                                    });
+                            SetQuality(VideoClips.quality, 'auto').then(() => {
+                                Recording.proxy(video, { name: EVENT_NAME, as: DEFAULT_CLIP_NAME, mimeType: `video/${ VideoClips.filetype }`, hidden: !Settings.show_stats });
                             });
                         } else {
                             const feed = $(`.tt-prompt[uuid="${ UUID.from(body).value }"i]`);
@@ -146,8 +137,9 @@ plugin({
 
                     $log("Saving current recording(s). Reason (keyboard shortcuts leave handler):", { hosting, raiding, raided, leaving: defined(from) }, "Moving onto:", next);
 
-                    for(const [guid, { recording }] of Recording.__RECORDERS__)
-                        recording?.stop()?.save();
+                    // What doesn't finish saving is offered again on the next page load (Recording.leftovers)
+                    for(const recording of Recording.list({ active: true }))
+                        recording.stop().save().catch($warn);
                 };
 
                 $.on('focusin', event => {
@@ -266,9 +258,9 @@ plugin({
             $.all('[tt-clip-timer]')
                 .map(element => {
                     const video = $(`video[uuid="${ element.dataset.connectedTo }"]`)
-                        , recorder = video.getRecording(EVENT_NAME);
+                        , recording = Recording.find(EVENT_NAME, video);
 
-                    element.closest('[icon]').setAttribute('icon', element.innerHTML = toTimeString((+new Date) - recorder?.creationTime, 'clock'));
+                    element.closest('[icon]').setAttribute('icon', element.innerHTML = toTimeString(recording?.duration ?? 0, 'clock'));
                 });
 
             // Gets the clip's dimensions
@@ -283,7 +275,7 @@ plugin({
             $.all('[tt-clip-typer]')
                 .map(element => {
                     const video = $(`video[uuid="${ element.dataset.connectedTo }"]`)
-                        , [type] = (video?.mimeType ?? 'video/x-unknown').split(';');
+                        , [type] = (Recording.find(EVENT_NAME, video)?.mimeType || 'video/x-unknown').split(';');
 
                     element.innerHTML =  `<code>${ MIME_Types.find(type) }</code> <code>${ type }</code>`;
                 });
@@ -292,20 +284,18 @@ plugin({
             $.all('[tt-clip-rater]')
                 .map(element => {
                     const video = $(`video[uuid="${ element.dataset.connectedTo }"]`)
-                        , recorder = video.getRecording(EVENT_NAME)
-                        , data = recorder?.blobs;
+                        , recording = Recording.find(EVENT_NAME, video);
 
-                    element.innerHTML = `<code>${ video.videoHeight }p</code> <code>${ ((data?.reduce((total, { size = 0 }) => total += size, 0) / data?.length) | 0).suffix('bps', false, 'data') }</code>`;
+                    element.innerHTML = `<code>${ video.videoHeight }p</code> <code>${ (recording?.bitrate ?? 0).suffix('bps', false, 'data') }</code>`;
                 });
 
             // Maintains the file size of the clip
             $.all('[tt-clip-watcher]')
                 .map(element => {
                     const video = $(`video[uuid="${ element.dataset.connectedTo }"]`)
-                        , recorder = video.getRecording(EVENT_NAME)
-                        , data = recorder?.blobs;
+                        , recording = Recording.find(EVENT_NAME, video);
 
-                    element.innerHTML = data?.reduce((total, { size = 0 }) => total += size, 0)?.suffix('B', 2);
+                    element.innerHTML = (recording?.size ?? 0).suffix('B', 2);
                 });
 
             // All unit targets
