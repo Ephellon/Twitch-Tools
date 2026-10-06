@@ -4,7 +4,7 @@
     "name": "TTV Tools",
     "description": "Adds extra features to Twitch",
 
-    "version": "5.35.4.3",
+    "version": "5.35.4.4",
     "minimum_chrome_version": "88",
     "homepage_url": "https://github.com/ephellon/twitch-tools",
 
@@ -45,6 +45,7 @@
             "js": [
                 "ext/localforage.js",
                 "ext/polyfill.js",
+                "ext/recording.js",
                 "ext/resemble.js",
                 "ext/glyphs.js",
                 "core.js",
@@ -81,6 +82,7 @@
             "js": [
                 "ext/localforage.js",
                 "ext/polyfill.js",
+                "ext/recording.js",
                 "ext/resemble.js",
                 "ext/sortable.js",
                 "ext/glyphs.js",
