@@ -6049,8 +6049,10 @@ let Initialize = async(START_OVER = false) => {
                                 if(!idle)
                                     AUTO_FOCUS_HELD = !AUTO_FOCUS_HELD;
 
-                                if(!AUTO_FOCUS_HELD)
+                                if(!AUTO_FOCUS_HELD) {
                                     $('#away-mode')?.removeAttribute('toggled-by');
+                                    TabLurk.release();
+                                }
 
                                 // Paused, no capture comes along to refresh the tooltip
                                 $('span#tt-auto-focus-stats').title = `${ ['Pause', 'Resume'][+AUTO_FOCUS_HELD] } Auto-Focus on this page`;
@@ -6197,6 +6199,36 @@ let Initialize = async(START_OVER = false) => {
      *                            __/ |
      *                           |___/
      */
+    // This tab's Lurk state, `{ enabled, by }`, kept in the tab's session storage: it survives a reload of the tab but isn't
+    // shared with other tabs (#65)
+    let TabLurk = {
+        key: 'tt-away-mode',
+
+        get() {
+            try {
+                return JSON.parse(sessionStorage.getItem(this.key) ?? 'null');
+            } catch(error) {
+                return null;
+            }
+        },
+
+        set(state) {
+            try {
+                sessionStorage.setItem(this.key, JSON.stringify(state));
+            } catch(error) {
+                // Storage blocked: the tab just won't remember
+            }
+        },
+
+        // Hands Lurk back to Auto-Focus in this tab (the readout's "Resume")
+        release() {
+            let state = this.get();
+
+            if(state?.by)
+                this.set({ ...state, by: 'auto' });
+        },
+    };
+
     let AwayModeButton,
         AwayModeStatus = false,
         AwayModeEnabled = false,
@@ -6208,6 +6240,11 @@ let Initialize = async(START_OVER = false) => {
 
     Handlers.away_mode = async() => {
         new StopWatch('away_mode');
+
+        // An offline channel has only "Auto": reading or changing the quality there opened and closed the player's menu
+        // forever, and could even leave the page (#63). VODs aren't "live", but have a player
+        if(!STREAMER.live && !/\/videos?\//i.test(location.pathname))
+            return StopWatch.stop('away_mode');
 
         let button = $('#away-mode'),
             currentQuality = (Handlers.away_mode.quality ??= await GetQuality());
@@ -6247,7 +6284,13 @@ let Initialize = async(START_OVER = false) => {
             return StopWatch.stop('away_mode');
         }
 
-        await Cache.load({ AwayModeEnabled }, cache => AwayModeEnabled = cache.AwayModeEnabled ?? false);
+        // Each tab keeps its own Lurk state (#65); the last state you chose is only the starting point for a new tab
+        let own = TabLurk.get();
+
+        if(defined(own))
+            AwayModeEnabled = own.enabled;
+        else
+            await Cache.load({ AwayModeEnabled }, cache => AwayModeEnabled = cache.AwayModeEnabled ?? false);
 
         let enabled = AwayModeStatus = AwayModeEnabled || (currentQuality.low && !(currentQuality.auto || currentQuality.high || currentQuality.source));
 
@@ -6325,6 +6368,10 @@ let Initialize = async(START_OVER = false) => {
             // button.tooltip.id = new UUID().toString().replace(/-/g, '');
             button.container.setAttribute('tt-away-mode-enabled', enabled);
 
+            // Twitch can rebuild the button; who toggled it last (Auto-Focus leaves a viewer's choice alone, #60) stays
+            if(own?.by)
+                button.container.setAttribute('toggled-by', own.by);
+
             button.icon ??= $('svg', container);
             button.icon.outerHTML = [
                 Glyphs.modify('show', { id: 'tt-away-mode--show', height: '20px', width: '20px' }).toString(),
@@ -6378,8 +6425,11 @@ let Initialize = async(START_OVER = false) => {
             container.setAttribute('tt-away-mode-enabled', enabled);
 
             // Who toggled: a viewer's click (or Alt + A) is theirs to keep; Auto-Focus clicks from script (#60)
-            container.setAttribute('toggled-by', (event.isTrusted || container.hasAttribute('user-toggle')) ? 'user' : 'auto');
+            let by = (event.isTrusted || container.hasAttribute('user-toggle'))? 'user': 'auto';
+
+            container.setAttribute('toggled-by', by);
             container.removeAttribute('user-toggle');
+            TabLurk.set({ enabled, by });
 
             tooltip.innerHTML = `${ ['Start','Stop'][+enabled] } Lurking (${ GetMacro('alt+a') })`;
             background?.modStyle(`background:${ [`var(--user-accent-color)`, 'var(--color-background-button-secondary-default)'][+enabled] } !important;`);
@@ -6429,7 +6479,11 @@ let Initialize = async(START_OVER = false) => {
                         ][+enabled])();
                 });
 
-            Cache.save({ AwayModeEnabled: (AwayModeStatus = enabled) });
+            AwayModeStatus = enabled;
+
+            // Only the viewer's own choice becomes the default for new tabs; Auto-Focus in one tab doesn't change others (#65)
+            if(by == 'user')
+                Cache.save({ AwayModeEnabled: enabled });
         };
 
         button.container.onmouseenter ??= event => {
