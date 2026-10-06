@@ -26,17 +26,27 @@ plugin({
                 if(!lock)
                     return;
 
-                for(const leftover of await Recording.leftovers())
+                for(const leftover of await Recording.leftovers()) {
+                    // A preview, so the viewer can tell what it is before keeping or discarding it
+                    const preview = URL.createObjectURL(await leftover.blob())
+                        , started = (leftover.creationTime ? new Date(leftover.creationTime).toLocaleString() : null);
+
                     await confirm.silent(`
                         <input hidden controller
                             icon="\uD83D\uDCBE\uFE0F" title="Unsaved recording"
                             okay="${ encodeHTML(Glyphs.modify('download', { height: '20px', width: '20px', style: 'vertical-align:bottom' })) } Save"
                             deny="${ encodeHTML(Glyphs.modify('trash', { height: '20px', width: '20px', style: 'vertical-align:bottom' })) } Discard"
                         />
-                        This recording wasn't saved before its tab closed: <strong>${ encodeHTML(leftover.as ?? leftover.name ?? 'Recording') }</strong> (${ leftover.size.suffix('B', 2) })`
+                        This recording wasn't saved before its tab closed: <strong>${ encodeHTML(leftover.as ?? leftover.name ?? 'Recording') }</strong> (${ leftover.size.suffix('B', 2) }${ started ? `, started ${ encodeHTML(started) }` : "" })
+                        <video controls preload=metadata
+                            title="Unsaved recording &mdash; ${ encodeHTML(leftover.as ?? leftover.name ?? 'Recording') }"
+                            src="${ preview }" style="max-width:-webkit-fill-available"
+                        ></video>`
                     )
                         .then(answer => answer === false ? leftover.discard() : answer ? leftover.save() : null)
-                        .catch($warn);
+                        .catch($warn)
+                        .finally(() => URL.revokeObjectURL(preview));
+                }
             }))
             .catch($warn);
 
@@ -119,7 +129,8 @@ plugin({
                                     when.nullish(() => $('[data-a-target*="ad-countdown"i]'))
                                         .then(() => {
                                             SetQuality(VideoClips.quality, 'auto').then(() => {
-                                                MASTER_VIDEO.DEFAULT_RECORDING = Recording.proxy(MASTER_VIDEO, { name: 'AUTO_DVR', as: DVR_CLIP_PRECOMP_NAME, mimeType: `video/${ VideoClips.filetype }`, hidden: !Settings.show_stats });
+                                                // A fresh name (not the previous recording's), so a leftover reads right
+                                                MASTER_VIDEO.DEFAULT_RECORDING = Recording.proxy(MASTER_VIDEO, { name: 'AUTO_DVR', as: DVRName(), mimeType: `video/${ VideoClips.filetype }`, hidden: !Settings.show_stats });
 
                                                 MASTER_VIDEO.DEFAULT_RECORDING.done.then(Handlers.__MASTER_AUTO_DVR_HANDLER__).catch($warn);
                                             });
@@ -157,7 +168,7 @@ plugin({
                     when.nullish(() => $('[data-a-target*="ad-countdown"i]'))
                         .then(() => {
                             SetQuality(VideoClips.quality, 'auto').then(() => {
-                                MASTER_VIDEO.DEFAULT_RECORDING = Recording.proxy(MASTER_VIDEO, { name: 'AUTO_DVR', mimeType: `video/${ VideoClips.filetype }`, hidden: !Settings.show_stats });
+                                MASTER_VIDEO.DEFAULT_RECORDING = Recording.proxy(MASTER_VIDEO, { name: 'AUTO_DVR', as: DVRName(), mimeType: `video/${ VideoClips.filetype }`, hidden: !Settings.show_stats });
 
                                 MASTER_VIDEO.DEFAULT_RECORDING.done.then(Handlers.__MASTER_AUTO_DVR_HANDLER__).catch($warn);
                             });
@@ -201,6 +212,26 @@ plugin({
 
         Timers.video_clips__dvr = -2_500;
 
+        /**
+         * The DVR file name for a recording: channel, date, and its length (or the hour, with statistics off or no data yet).
+         * Takes the recording itself: reading `MASTER_VIDEO.DEFAULT_RECORDING` named a new DVR after the previous one's
+         * length, and a saved file after whichever recording was current at the time.
+         * @param {Recording} [recording]
+         * @returns {string}
+         */
+        function DVRName(recording) {
+            const now = new Date;
+
+            return [
+                STREAMER.name,
+                now.toLocaleDateString().replace(/[\/\\:\*\?"<>\|]+/g, '-'),
+                `(${ ((recording?.size && parseBool(Settings.show_stats)) ? toTimeString(recording.duration, 'short') : ((now.getHours() % 12) || 12) + now.getMeridiem()).replace(/\b(0+[ydhms])+/ig, '') })`,
+            ]
+                .filter(s => s?.length)
+                .map(s => s.trim())
+                .join(' ');
+        }
+
         try {
             Object.defineProperties(top, {
                 DVR_CLIP_PRECOMP_NAME: {
@@ -210,17 +241,7 @@ plugin({
                         if(!recording?.size)
                             return new ClipName(2);
 
-                        const now = new Date;
-
-                        // File Name
-                        return [
-                            STREAMER.name,
-                            now.toLocaleDateString().replace(/[\/\\:\*\?"<>\|]+/g, '-'),
-                            `(${ (parseBool(Settings.show_stats) ? toTimeString(recording.duration, 'short') : ((now.getHours() % 12) || 12) + now.getMeridiem()).replace(/\b(0+[ydhms])+/ig, '') })`,
-                        ]
-                            .filter(s => s?.length)
-                            .map(s => s.trim())
-                            .join(' ');
+                        return DVRName(recording);
                     },
                 },
             });
@@ -250,7 +271,7 @@ plugin({
             recording ??= MASTER_VIDEO.DEFAULT_RECORDING;
 
             return recording
-                ?.save(DVR_CLIP_PRECOMP_NAME.replace(GetFileSystem().allIllegalFilenameCharacters, '-'))
+                ?.save(DVRName(recording).replace(GetFileSystem().allIllegalFilenameCharacters, '-'))
                 ?.then(link => alert.silent(`
                 <video controller controls
                     title="Video Saved &mdash; ${ link.download }"
@@ -459,7 +480,7 @@ plugin({
                                                 if(MASTER_VIDEO.hasRecording('AUTO_DVR'))
                                                     return;
 
-                                                MASTER_VIDEO.DEFAULT_RECORDING = Recording.proxy(MASTER_VIDEO, { name: 'AUTO_DVR', mimeType: `video/${ VideoClips.filetype }`, hidden: !Settings.show_stats });
+                                                MASTER_VIDEO.DEFAULT_RECORDING = Recording.proxy(MASTER_VIDEO, { name: 'AUTO_DVR', as: DVRName(), mimeType: `video/${ VideoClips.filetype }`, hidden: !Settings.show_stats });
 
                                                 MASTER_VIDEO.DEFAULT_RECORDING.done.then(Handlers.__MASTER_AUTO_DVR_HANDLER__).catch($warn);
                                             });

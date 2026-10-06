@@ -302,3 +302,48 @@ test('the old video methods wrap the module', async() => {
     video.removeRecording('R');
     assert.ok(!video.hasRecording('R'));
 });
+
+test('proxies on one video share one audio capture (a second capture took the first one\'s sound)', async() => {
+    const track = () => ({ readyState: 'live', clone: track, stop() {} });
+    const fakeStream = (tracks = []) => ({ addTrack: t => tracks.push(t), getTracks: () => tracks, getAudioTracks: () => tracks, getVideoTracks: () => [{}] });
+
+    globalThis.MediaStream = class { constructor(tracks = []) { this.tracks = tracks } };
+    globalThis.AudioContext = class {
+        state = 'running';
+        createMediaStreamDestination() { return { stream: fakeStream([track()]) } }
+        createMediaStreamSource() { return { connect() {}, disconnect() {} } }
+        async close() {}
+    };
+
+    const createElement = document.createElement;
+
+    document.createElement = () => ({ width: 0, height: 0, getContext: () => ({ drawImage() {} }), captureStream: () => fakeStream() });
+
+    let captures = 0;
+    class HTMLVideoElement extends EventTarget {
+        readyState = 4;
+        videoWidth = 2;
+        videoHeight = 2;
+        captureStream() { return ++captures, fakeStream([track()]) }
+    }
+
+    const video = new HTMLVideoElement;
+
+    const a = Recording.proxy(video, { name: 'A' }), b = Recording.proxy(video, { name: 'B' });
+
+    try {
+        await wait(600);
+        assert.equal(captures, 1, 'one capture for both recordings');
+
+        // A new source: one fresh capture, shared again
+        video.dispatchEvent(new Event('loadedmetadata'));
+        assert.equal(captures, 2);
+    } finally {
+        // Stops their draw timers even when an assertion fails
+        a.discard();
+        b.discard();
+        document.createElement = createElement;
+        delete globalThis.AudioContext;
+        delete globalThis.MediaStream;
+    }
+});

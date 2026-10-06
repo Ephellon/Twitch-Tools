@@ -66,6 +66,8 @@
         - Recover Frames continues the same file.
         - Saved files get the right type.
         - The player-frame DVR no longer starts a new recorder every half second.
+        - Two recordings of one video (for example Alt+Z during a DVR) both keep their sound.
+        - A new DVR file is named for its own channel, date and length. The "Unsaved recording" prompt shows a preview and when the recording started.
     - **Browser restart:** Up Next, Stay Live and Next Channel pick up again (the owner tab is reloaded on startup).
     - **Live Reminders:** the listing no longer errors or shows empty; with none saved, it says so.
     - **Settings:** plain one-sentence descriptions; Site Access lists readable site names.

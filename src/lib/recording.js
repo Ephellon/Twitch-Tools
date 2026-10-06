@@ -191,6 +191,27 @@ function ticker(ms, tick) {
     }
 }
 
+/** Element → `{ stream, event }`: the one audio capture its recordings share */
+const captures = new WeakMap;
+
+/**
+ * Clones of an element's captured audio tracks. Each `captureStream()` call takes the element's audio away from the
+ * captures made before it (a Trophy clip or Alt+Z during a DVR silenced the DVR), so one capture is shared and every
+ * recording gets its own clones. A new source (`loadedmetadata`) needs a fresh capture: every recording reacting to that
+ * same event gets the same one.
+ * @param {HTMLMediaElement} element
+ * @param {Event} [event] - The `loadedmetadata` event that asks for a fresh capture
+ * @returns {MediaStreamTrack[]}
+ */
+function captureAudio(element, event = null) {
+    let entry = captures.get(element);
+
+    if(!entry || (event && entry.event !== event) || !entry.stream.getAudioTracks().some(track => track.readyState == 'live'))
+        captures.set(element, entry = { stream: element.captureStream(), event });
+
+    return entry.stream.getAudioTracks().map(track => track.clone());
+}
+
 /**
  * Draws a video onto a canvas at `fps` and mixes its audio into one stable track.
  * The source can be swapped (`retarget`) while recording.
@@ -215,7 +236,7 @@ class FrameProxy {
         this.canvas = canvas ?? document.createElement('canvas');
         this.#context = this.canvas.getContext('2d');
         this.stream = this.canvas.captureStream(fps);
-        this.#listen = () => this.#connectAudio();
+        this.#listen = event => this.#connectAudio(event);
         this.#source = source;
         this.#source.addEventListener('loadedmetadata', this.#listen);
         this.#draw();
@@ -255,9 +276,9 @@ class FrameProxy {
         }
     }
 
-    #audioTracks() {
+    #audioTracks(event = null) {
         try {
-            return this.#source.captureStream().getAudioTracks();
+            return captureAudio(this.#source, event);
         } catch(error) {
             return [];
         }
@@ -293,11 +314,11 @@ class FrameProxy {
         this.#connectAudio();
     }
 
-    #connectAudio() {
+    #connectAudio(event = null) {
         if(!this.#audio)
             return;
 
-        const tracks = this.#audioTracks();
+        const tracks = this.#audioTracks(event);
 
         if(!tracks.length)
             return;
@@ -506,10 +527,12 @@ export class Recording extends EventTarget {
                 return this.#store = await Recording.storage(this.id);
 
             if(globalThis.navigator?.storage?.getDirectory) {
+                // Lock first: another tab's cleanup() would take a just-made (still empty) folder for a leftover
+                await Recording.#lock(this.id, this.done);
+
                 const store = await DiskStore.open(this.id);
 
                 await store.describe(this.#meta());
-                await Recording.#lock(this.id, this.done);
 
                 return this.#store = store;
             }

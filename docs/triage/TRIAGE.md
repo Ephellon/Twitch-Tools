@@ -219,6 +219,19 @@ About 40 candidates flag Twitch DOM that "may be null", brittle selectors, or `i
   - the News fetch logs an uncaught "Failed to fetch" (blocked by CORS, older than this round);
   - `twitchinsights` is still in `allowedSites` but is no longer used.
 
+## Recording rewrite (`lib/recording.js`)
+
+- Live verify (`ttv-live-recording`): 8 checks passed, 1 skipped (trophy clip; it needs channel points on @ephellon).
+  - Background tabs, muted tabs, the disk-backed DVR (11 min, memory not growing from the recording), leftover recovery (one prompt across 2 tabs), and the ad pause were all checked.
+  - Twitch's CSP allows the Worker timer.
+- ~~A second recording on one video silenced the first~~: each `captureStream()` takes the audio from the earlier captures. Recordings now share one capture and use cloned tracks (with a test).
+- ~~A new DVR was named after the previous recording~~: now uses `DVRName(recording)`. The leftover prompt shows a preview.
+- ~~Cleanup race~~: the Web Lock is taken before the folder is made.
+- Open:
+  - Files start with ~1–2 s at 284×160, because `SetQuality('auto')` runs right before recording.
+  - Recover Frames can't reach `retarget()`: the embedded player is a cross-origin iframe. This was already the case before the rewrite.
+  - The page heap grows ~7 MB/min on a busy channel, even with nothing recording.
+
 ## Planned tests (after 6.1 feedback)
 
 - **DSL on real pages:** every DSL query and host binding should work on a live channel, not just in unit tests. Run sample scripts that use each badge and role, each `jsPermissions` binding, and each trigger. Do it as a moderator, as a viewer, and on the owner's own channel (only posting on `@ephellon`). Check that each gives the page's answer. For example, `using [moderator]` should match the user's actual badge. Message badges are real-time, while `STREAMER.perm` holds until a refresh, so a lag in `perm` after gaining or losing VIP is expected.
