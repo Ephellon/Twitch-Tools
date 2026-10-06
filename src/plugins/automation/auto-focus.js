@@ -4,6 +4,7 @@
  */
 
 import { plugin } from '../../lib/plugins.js';
+import { TabLurk } from './lurking.js';
 
 // The feature's state; init() resets it whenever the page (re)initializes
 let CAPTURE_HISTORY, CAPTURE_INTERVAL, POLL_INTERVAL, STALLED_FRAMES, POSITIVE_TREND;
@@ -141,8 +142,10 @@ plugin({
                                 if(!idle)
                                     AUTO_FOCUS_HELD = !AUTO_FOCUS_HELD;
 
-                                if(!AUTO_FOCUS_HELD)
+                                if(!AUTO_FOCUS_HELD) {
                                     $('#away-mode')?.removeAttribute('toggled-by');
+                                    TabLurk.release();
+                                }
 
                                 // Paused, no capture comes along to refresh the tooltip
                                 $('span#tt-auto-focus-stats').title = `${ ['Pause', 'Resume'][+AUTO_FOCUS_HELD] } Auto-Focus on this page`;

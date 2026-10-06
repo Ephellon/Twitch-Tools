@@ -12,7 +12,7 @@ export default {
     },
     rows: [
         {
-            text: "What should TTV Tools do when a tab uses a lot of memory?",
+            text: "What should TTV Tools do when a tab's page memory gets high? (The browser's Task Manager shows more, because it counts the whole tab.)",
         },
         {
             extras: {

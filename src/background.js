@@ -999,12 +999,13 @@ Alarms.onAlarm.addListener(({ name }) => {
         auditMemory();
 });
 
+// The tiers the RAM Alarms settings show (500 MB, 1 GB, 2 GB), compared with the page's JavaScript memory: the only
+// number a page can read. It used to compare a guessed 400/600/800 MB, so "1 GB: Notify" fired at about 600 MB (#64).
+// The browser's Task Manager counts the whole tab (video, images, the browser's own work), so it shows more.
 const MEMORY_TIERS = {
-    // Can't fetch real RAM usage, but can guess:
-    //                          Real* / Heap
-    LOW:    0.4 * 1024 ** 3,  //  500MB / 400MB
-    MEDIUM: 0.6 * 1024 ** 3,  //  1GB   / 600MB
-    HIGH:   0.8 * 1024 ** 3,  //  2GB   / 800MB
+    LOW:    500 * 1024 ** 2,
+    MEDIUM: 1 * 1024 ** 3,
+    HIGH:   2 * 1024 ** 3,
 };
 
 /**
@@ -1073,13 +1074,13 @@ async function auditMemory() {
                 if(act === 'respawn') {
                     Container.tabs.sendMessage(id, {
                         action: 'notify',
-                        message: `<div title="RAM Overage - Respawn Pending" okay="Respawn" deny="Cancel" data-on-okay="${ onAccept }" data-on-time="${ onAccept }">This tab is at <strong style="color:var(--color-red)">${ Math.round(ramUsed / 1024 ** 2) }MB in RAM usage</strong>. This tab will not be respawned if you are actively using it.</div>`,
+                        message: `<div title="RAM Overage - Respawn Pending" okay="Respawn" deny="Cancel" data-on-okay="${ onAccept }" data-on-time="${ onAccept }">This tab's page memory is at <strong style="color:var(--color-red)">${ Math.round(ramUsed / 1024 ** 2) }MB</strong>. This tab will not be respawned if you are actively using it.</div>`,
                         onAccept, onIgnore,
                     })
                 } else if(act === 'notify') {
                     Container.tabs.sendMessage(id, {
                         action: 'notify',
-                        message: `<div title="RAM Warning" okay="Respawn" data-on-okay="${ onAccept }">This tab is at <strong style="color:var(--color-warn)">${ Math.round(ramUsed / 1024 ** 2) }MB in RAM usage</strong>.</div>`,
+                        message: `<div title="RAM Warning" okay="Respawn" data-on-okay="${ onAccept }">This tab's page memory is at <strong style="color:var(--color-warn)">${ Math.round(ramUsed / 1024 ** 2) }MB</strong>.</div>`,
                         onAccept,
                     })
                 }

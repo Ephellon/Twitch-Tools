@@ -60,6 +60,10 @@
     - **User Scripts:** editing or approving one script no longer restarts the others; `#id` is filled on every channel.
     - **Store Integration:** games with a price (Steam, PlayStation) get their card again.
     - **Parse Commands:** picking a command suggestion puts it in the chat box again.
+    - **Lurk:**
+        - Each tab keeps its own Lurk state. Auto-Focus or a toggle in one tab no longer changes another tab (#65).
+        - On offline channels, Lurk no longer opens and closes the quality menu over and over (#63).
+    - **RAM Alarms:** alerts now match the levels shown in Settings (500 MB, 1 GB, 2 GB). "1 GB: Notify" used to fire at about 600 MB (#64).
     - **Recording (rewritten; DVR, trophy clips, Alt+Z):**
         - Recordings are saved to disk as they go, so long DVRs don't use more memory over time. A recording a closed or crashed tab didn't save is offered on the next page load.
         - Clips keep their last seconds.

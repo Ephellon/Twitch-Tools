@@ -5,6 +5,38 @@
 
 import { plugin } from '../../lib/plugins.js';
 
+/**
+ * This tab's Lurk state, `{ enabled, by }`, kept in the tab's session storage: it survives a reload of the tab but isn't
+ * shared with other tabs (#65).
+ */
+export const TabLurk = {
+    key: 'tt-away-mode',
+
+    get() {
+        try {
+            return JSON.parse(sessionStorage.getItem(this.key) ?? 'null');
+        } catch(error) {
+            return null;
+        }
+    },
+
+    set(state) {
+        try {
+            sessionStorage.setItem(this.key, JSON.stringify(state));
+        } catch(error) {
+            // Storage blocked: the tab just won't remember
+        }
+    },
+
+    /** Hands Lurk back to Auto-Focus in this tab (the readout's "Resume") */
+    release() {
+        const state = this.get();
+
+        if(state?.by)
+            this.set({ ...state, by: 'auto' });
+    },
+};
+
 // The feature's state; init() resets it whenever the page (re)initializes
 let AwayModeButton, AwayModeEnabled, InitialQuality, InitialViewMode, NUMBER_OF_FAILED_QUALITY_FETCHES;
 
@@ -24,6 +56,10 @@ plugin({
         InitialViewMode = void null;
         MAINTAIN_VOLUME_CONTROL = true;
         NUMBER_OF_FAILED_QUALITY_FETCHES = 0;
+
+        // A quality read on the last channel isn't this one's (in-app navigation keeps `Handlers`)
+        if(Handlers.away_mode)
+            Handlers.away_mode.quality = void null;
     },
 
     /**
@@ -36,7 +72,8 @@ plugin({
 
         // Reading the quality opens the player's settings menu: on a channel whose stream has ended it failed every
         // tick, and the menu kept flickering open and shut (VODs aren't "live", but have a player)
-        if(!STREAMER.live && nullish(Handlers.away_mode.quality) && !/\/videos?\//i.test(location.pathname))
+        // An offline channel has only "Auto": don't touch the quality at all, even if Lurk was on for the last channel (#63)
+        if(!STREAMER.live && !/\/videos?\//i.test(location.pathname))
             return StopWatch.stop('away_mode');
 
         let button = $('#away-mode')
@@ -86,7 +123,13 @@ plugin({
             return StopWatch.stop('away_mode');
         }
 
-        await Cache.load({ AwayModeEnabled }, cache => AwayModeEnabled = cache.AwayModeEnabled ?? false);
+        // Each tab keeps its own Lurk state (#65); the last state you chose is only the starting point for a new tab
+        const own = TabLurk.get();
+
+        if(defined(own))
+            AwayModeEnabled = own.enabled;
+        else
+            await Cache.load({ AwayModeEnabled }, cache => AwayModeEnabled = cache.AwayModeEnabled ?? false);
 
         const enabled = AwayModeStatus = AwayModeEnabled || (currentQuality.low && !(currentQuality.auto || currentQuality.high || currentQuality.source));
 
@@ -167,6 +210,10 @@ plugin({
             // button.tooltip.id = new UUID().toString().replace(/-/g, '');
             button.container.setAttribute('tt-away-mode-enabled', enabled);
 
+            // Twitch can rebuild the button; who toggled it last (Auto-Focus leaves a viewer's choice alone, #60) stays
+            if(own?.by)
+                button.container.setAttribute('toggled-by', own.by);
+
             button.icon ??= $('svg', container);
             button.icon.outerHTML = [
                 Glyphs.modify('show', { id: 'tt-away-mode--show', height: '20px', width: '20px' }).toString(),
@@ -226,8 +273,11 @@ plugin({
             container.setAttribute('tt-away-mode-enabled', enabled);
 
             // Who toggled: a viewer's click (or Alt + A) is theirs to keep; Auto-Focus clicks from script (#60)
-            container.setAttribute('toggled-by', (event.isTrusted || container.hasAttribute('user-toggle')) ? 'user' : 'auto');
+            const by = (event.isTrusted || container.hasAttribute('user-toggle')) ? 'user' : 'auto';
+
+            container.setAttribute('toggled-by', by);
             container.removeAttribute('user-toggle');
+            TabLurk.set({ enabled, by });
 
             tooltip.innerHTML = `${ ['Start', 'Stop'][+enabled] } Lurking (${ GetMacro('alt+a') })`;
             background?.modStyle(`background:${ [`var(--user-accent-color)`, 'var(--color-background-button-secondary-default)'][+enabled] } !important;`);
@@ -277,7 +327,11 @@ plugin({
                         ][+enabled])();
                 });
 
-            Cache.save({ AwayModeEnabled: (AwayModeStatus = enabled) });
+            AwayModeStatus = enabled;
+
+            // Only the viewer's own choice becomes the default for new tabs; Auto-Focus in one tab doesn't change others (#65)
+            if(by == 'user')
+                Cache.save({ AwayModeEnabled: enabled });
         };
 
         button.container.onmouseenter ??= event => {
