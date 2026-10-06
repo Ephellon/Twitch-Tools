@@ -837,7 +837,7 @@ export class Recording extends EventTarget {
         if(name === Recording.ANY)
             return pool.find(recording => recording.active);
 
-        return pool.findLast(recording => recording.name == name);
+        return [...pool].reverse().find(recording => recording.name == name);
     }
 
     /**
