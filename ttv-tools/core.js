@@ -1677,8 +1677,10 @@ function fetchURL(url, options = {}) {
         return '?' + o.join('&');
     };
 
+    // `githubusercontent` (raw.githubusercontent.com) answers cross-origin requests itself: the store catalogs load from it
+    // directly. Sent through a proxy instead, every catalog got a 403 and no store card was placed
     let allowedHosts = 'static-cdn.jtvnw.net'.split(' '),
-        allowedSites = 'betterttv blerp github nightbot streamelements streamloots twitch twitchinsights twitchtokengenerator'.split(' '),
+        allowedSites = 'betterttv blerp github githubusercontent nightbot streamelements streamloots twitch twitchinsights twitchtokengenerator'.split(' '),
         allowedDomains = 'gd'.split(' ');
 
     // No CORS required

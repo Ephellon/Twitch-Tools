@@ -957,13 +957,13 @@ async function auditMemory() {
                 if(act === 'respawn') {
                     Container.tabs.sendMessage(id, {
                         action: 'notify',
-                        message: `<div title="RAM Overage - Respawn Pending" okay="Respawn" deny="Cancel" data-on-okay="${ onAccept }" data-on-time="${ onAccept }">This tab's page memory is at <strong style="color:var(--color-red)">${ Math.round(ramUsed / 1024 ** 2) }MB</strong>. This tab will not be respawned if you are actively using it.</div>`,
+                        message: `<div controller title="RAM Overage - Respawn Pending" okay="Respawn" deny="Cancel" data-on-okay="${ onAccept }" data-on-time="${ onAccept }">This tab's page memory is at <strong style="color:var(--color-red)">${ Math.round(ramUsed / 1024 ** 2) }MB</strong>. This tab will not be respawned if you are actively using it.</div>`,
                         onAccept, onIgnore,
                     });
                 } else if(act === 'notify') {
                     Container.tabs.sendMessage(id, {
                         action: 'notify',
-                        message: `<div title="RAM Warning" okay="Respawn" data-on-okay="${ onAccept }">This tab's page memory is at <strong style="color:var(--color-warn)">${ Math.round(ramUsed / 1024 ** 2) }MB</strong>.</div>`,
+                        message: `<div controller title="RAM Warning" okay="Respawn" data-on-okay="${ onAccept }">This tab's page memory is at <strong style="color:var(--color-warn)">${ Math.round(ramUsed / 1024 ** 2) }MB</strong>.</div>`,
                         onAccept,
                     });
                 }

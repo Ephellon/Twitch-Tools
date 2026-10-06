@@ -17851,7 +17851,8 @@ if(top == window) {
 
                 switch(request?.action) {
                     case 'heap-audit': {
-                        respond({ ok: true, results: [window.performance?.memory?.usedJSHeapSize | 0, window.performance?.now?.() | 0] });
+                        // Not `| 0`: it wraps 2 GB and up to a negative number, so the HIGH (2 GB) RAM Alarm could never fire
+                        respond({ ok: true, results: [Math.round(window.performance?.memory?.usedJSHeapSize ?? 0), Math.round(window.performance?.now?.() ?? 0)] });
                     } break;
 
                     case 'notify': {
@@ -18014,13 +18015,48 @@ if(top == window) {
         // Alerts for users
         DisplayNews:
         Cache.load('ReadNews', async({ ReadNews }) => {
-            let TTVToolsNewsURL = `https://github.com/Ephellon/Twitch-Tools/wiki/News?fetched-at=${ +new Date }`,
+            // The wiki page itself (github.com) can't be read from another site (no CORS); the wiki's raw Markdown can
+            let TTVToolsNewsURL = `https://raw.githubusercontent.com/wiki/Ephellon/Twitch-Tools/News.md?fetched-at=${ +new Date }`,
                 TTVToolsNewsArticles = ReadNews || [];
+
+            // The News page's Markdown → the HTML the wiki would show (headings, bullets, rules, links, code, bold)
+            let NewsToHTML = markdown => {
+                // Entities the page writes (`&mdash;`) stay; any other `&`, `<`, `>`, `"` is shown as text
+                let escape = text => text.replace(/&(?!#?\w+;)|[<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]),
+                    inline = text => escape(text)
+                        .replace(/`([^`]+)`/g, '<code>$1</code>')
+                        // Wiki links: [[Page]] or [[Text|Page]]
+                        .replace(/\[\[([^\]|]+)(?:\|([^\]]+))?\]\]/g, ($0, text, page = text) => `<a href="https://github.com/Ephellon/Twitch-Tools/wiki/${ page.trim().replace(/\s+/g, '-') }" target="_blank">${ text.trim() }</a>`)
+                        .replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>')
+                        .replace(/\[([^\]]+)\]\(([^)\s]+)\)/g, ($0, label, href) => `<a href="${ href.replace(/^\//, 'https://github.com/') }" target="_blank">${ label }</a>`),
+                    html = [], list = false;
+
+                for(let line of markdown.replace(/<!--[^]*?-->/g, '').split(/\r?\n/)) {
+                    let bullet = /^\s*[*-]\s+(.+)/.exec(line), heading = /^(#{1,6})\s+(.+)/.exec(line);
+
+                    if(!bullet && list)
+                        html.push('</ul>'), list = false;
+
+                    if(heading)
+                        html.push(`<h${ heading[1].length }>${ inline(heading[2].trim()) }</h${ heading[1].length }>`);
+                    else if(bullet)
+                        html.push((list? '': '<ul>') + `<li>${ inline(bullet[1]) }</li>`), list = true;
+                    else if(/^\s*-{3,}\s*$/.test(line))
+                        html.push('<hr>');
+                    else if(line.trim().length)
+                        html.push(`<p>${ inline(line.trim()) }</p>`);
+                }
+
+                if(list)
+                    html.push('</ul>');
+
+                return `<div id="wiki-body"><div>${ html.join('') }</div></div>`;
+            };
 
             fetchURL(TTVToolsNewsURL)
                 .then(r => r.text())
-                .then(html => {
-                    let dom = (new DOMParser).parseFromString(html, 'text/html');
+                .then(markdown => {
+                    let dom = (new DOMParser).parseFromString(NewsToHTML(markdown), 'text/html');
 
                     return $('#wiki-body', dom)?.children ?? [];
                 })
@@ -18066,7 +18102,9 @@ if(top == window) {
                     if(articles.length)
                         confirm.silent(`<input hidden controller icon="${ Glyphs.utf8.unread }" title="News" deny="Ignore"/> ${ articles.join('<br>') }`)
                             .then(ok => ok && Cache.save({ ReadNews: TTVToolsNewsArticles.isolate() }));
-                });
+                })
+                // Offline or blocked: no news this time
+                .catch($warn);
         });
 
         // Observe chat & whispers
