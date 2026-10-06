@@ -1691,8 +1691,11 @@ function fetchURL(url, options = {}) {
     let { href, domainPath = [], host, protocol, pathname } = parseURL(url);
     const [domain = unknown, site = unknown, ...subDomain] = domainPath;
 
+    // A query string from an object: { a: 1, b: 2 } → "?a=1&b=2"
+    const Q = object => '?' + Object.entries(object).map(([key, value]) => key + '=' + value?.toString?.()).join('&');
+
     const allowedHosts = 'static-cdn.jtvnw.net'.split(' ')
-        , allowedSites = 'betterttv blerp github githubusercontent nightbot streamelements streamloots twitch twitchinsights twitchtokengenerator'.split(' ')
+        , allowedSites = 'betterttv blerp github nightbot streamelements streamloots twitch twitchinsights twitchtokengenerator'.split(' ')
         , allowedDomains = 'gd'.split(' ');
 
     // No CORS required
@@ -1724,12 +1727,12 @@ function fetchURL(url, options = {}) {
         switch(foster) {
             // https://www.whateverorigin.org/get?url={ %URL }
             case fetchURL.origins.WHATEVER_ORIGIN: {
-                href = `https://www.whateverorigin.org/get?url=${ encodeURIComponent(href) }`;
+                href = `https://www.whateverorigin.org/get${ Q({ url: encodeURIComponent(href) }) }`;
             } break;
 
             // https://api.allorigins.win/raw?url={ %URL }
             case fetchURL.origins.ALL_ORIGINS: {
-                href = `https://api.allorigins.win/raw?url=${ encodeURIComponent(href) }`;
+                href = `https://api.allorigins.win/raw${ Q({ url: encodeURIComponent(href) }) }`;
             } break;
 
             // https://cors-anywhere.com/{ URL }
@@ -1738,30 +1741,9 @@ function fetchURL(url, options = {}) {
                 Object.assign(options.headers ?? {}, { Origin: location.origin });
             } break;
 
-            // https://corsproxy.io/?{ %URL }
+            // https://corsproxy.io/?key={ key }&ttl={ cacheTimeToLive }&url={ %URL }
             case fetchURL.origins.CORS_PROXY: {
-                href = `https://corsproxy.io/?${ encodeURIComponent(href) }`;
-            } break;
-
-            // https://alloworigin.com/get?url={ URL }
-            case fetchURL.origins.ALLOW_ORIGIN: {
-                href = `https://alloworigin.com/get?url=${ encodeURIComponent(href) }`;
-            } break;
-
-            // POST@https://cors-proxy.taskcluster.net/request
-            case fetchURL.origins.TASK_CLUSTER: {
-                Object.assign(options, {
-                    method: 'POST',
-                    headers: { 'content-type': 'application/json' },
-                    body: JSON.stringify({ url: href }),
-                });
-
-                href = `https://cors-proxy.taskcluster.net/request`;
-            } break;
-
-            // https://api.codetabs.com/v1/proxy?quest={ URL }
-            case fetchURL.origins.CODE_TABS: {
-                href = `https://api.codetabs.com/v1/proxy?quest=${ encodeURI(href) }`;
+                href = `https://corsproxy.io/${ Q({ key: 'b2087d06', ttl: 86400, url: encodeURIComponent(href) }) }`;
             } break;
 
             // https://proxy.corsfix.com/?{ URL }
@@ -1783,13 +1765,10 @@ function fetchURL(url, options = {}) {
         // Convert to TEXT/HTML
         if(true
             && [
-                fetchURL.origins.CORSFIX
-                , fetchURL.origins.CORS_PROXY
+                fetchURL.origins.CORS_PROXY
                 , fetchURL.origins.CORS_ANYWHERE
                 , fetchURL.origins.ALL_ORIGINS
-                , fetchURL.origins.ALLOW_ORIGIN
-                , fetchURL.origins.TASK_CLUSTER
-                , fetchURL.origins.CODE_TABS
+                , fetchURL.origins.CORSFIX
             ].contains(foster)
             && as.equals('json')
         )
@@ -1838,13 +1817,10 @@ function fetchURL(url, options = {}) {
     // Convert to TEXT/HTML
     if(true
         && [
-            fetchURL.origins.CORSFIX
-            , fetchURL.origins.CORS_PROXY
+            fetchURL.origins.CORS_PROXY
             , fetchURL.origins.CORS_ANYWHERE
             , fetchURL.origins.ALL_ORIGINS
-            , fetchURL.origins.ALLOW_ORIGIN
-            , fetchURL.origins.TASK_CLUSTER
-            , fetchURL.origins.CODE_TABS
+            , fetchURL.origins.CORSFIX
         ].contains(foster)
         && as.equals('json')
     )
@@ -2070,13 +2046,15 @@ Object.defineProperties(fetchURL, {
     origins: {
         value: {
             ALL_ORIGINS: Symbol('allorigins'),
-            CODE_TABS: Symbol('codetabs'),
             CORS_ANYWHERE: Symbol('cors-anywhere'),
             WHATEVER_ORIGIN: Symbol('whateverorigin'),
             CORS_PROXY: Symbol('corsproxy'),
+            CORSFIX: Symbol('corsfix'),
+
+            // Deprecated (the proxies are gone); kept so old references don't break
+            CODE_TABS: Symbol('codetabs'),
             ALLOW_ORIGIN: Symbol('alloworigin'),
             TASK_CLUSTER: Symbol('taskcluster'),
-            CORSFIX: Symbol('corsfix'),
         }
     },
 });
@@ -2105,13 +2083,10 @@ prevent_fetch_dragging: if(top == window) {
 
     Object.defineProperties(fetchURL.origins, {
         BEST: probe('BEST', () => Promise.any([
-            fetchURL.origins.CORSFIX
-            , fetchURL.origins.CORS_PROXY
+            fetchURL.origins.CORS_PROXY
             , fetchURL.origins.CORS_ANYWHERE
             , fetchURL.origins.ALL_ORIGINS
-            , fetchURL.origins.ALLOW_ORIGIN
-            , fetchURL.origins.TASK_CLUSTER
-            , fetchURL.origins.CODE_TABS
+            , fetchURL.origins.CORSFIX
         ].map(foster =>
             fetchURL.idempotent('https://example.org/', { foster, as: 'native', timeout: 3_000 })
                 .then(async r =>
@@ -2137,13 +2112,10 @@ prevent_fetch_dragging: if(top == window) {
         ).catch($ignore)),
 
         HTML_BEST: probe('HTML_BEST', () => Promise.any([
-            fetchURL.origins.CORSFIX
-            , fetchURL.origins.CORS_PROXY
+            fetchURL.origins.CORS_PROXY
             , fetchURL.origins.CORS_ANYWHERE
             , fetchURL.origins.ALL_ORIGINS
-            , fetchURL.origins.ALLOW_ORIGIN
-            , fetchURL.origins.TASK_CLUSTER
-            , fetchURL.origins.CODE_TABS
+            , fetchURL.origins.CORSFIX
         ].map(foster =>
             fetchURL.idempotent('https://example.org/', { foster, as: 'html', timeout: 1_000 })
                 .then(async r =>
