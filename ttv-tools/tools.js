@@ -18100,7 +18100,7 @@ if(top == window) {
                         .filter(defined);
 
                     if(articles.length)
-                        confirm.silent(`<input hidden controller icon="${ Glyphs.utf8.unread }" title="News" deny="Ignore"/> ${ articles.join('<br>') }`)
+                        alert.silent(`<input hidden controller icon="${ Glyphs.utf8.unread }" title="News"/> ${ articles.join('<br>') }`)
                             .then(ok => ok && Cache.save({ ReadNews: TTVToolsNewsArticles.isolate() }));
                 })
                 // Offline or blocked: no news this time

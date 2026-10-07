@@ -37,6 +37,7 @@
 ## Release History
 
 ### Version 5.35.\*
+- [`5.35.4.8`](https://github.com/Ephellon/Twitch-Tools/releases/tag/5.35.4.8) — Fixed #66 (News spam).
 - [`5.35.4.7`](https://github.com/Ephellon/Twitch-Tools/releases/tag/5.35.4.7) — Store cards load again (store catalogs are fetched directly, not through a proxy); RAM Alarms: a page over 2 GB now reaches the HIGH level (#64).
 - [`5.35.4.6`](https://github.com/Ephellon/Twitch-Tools/releases/tag/5.35.4.6) — Pruned obsolete CORS proxies.
 - [`5.35.4.5`](https://github.com/Ephellon/Twitch-Tools/releases/tag/5.35.4.5) — Fixed #63 (on offline channels, Lurk no longer opens and closes the quality menu over and over), #64 (RAM Alarms now match the levels shown in Settings: 500 MB, 1 GB, 2 GB) and #65 (each tab keeps its own Lurk state).
