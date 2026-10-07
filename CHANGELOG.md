@@ -60,6 +60,7 @@
     - **User Scripts:** editing or approving one script no longer restarts the others; `#id` is filled on every channel.
     - **Store Integration:** games with a price (Steam, PlayStation) get their card again.
     - **Parse Commands:** picking a command suggestion puts it in the chat box again.
+    - **News:** the News pop-up has one button and is marked read once closed, so it no longer comes back on every visit (#66).
     - **Lurk:**
         - Each tab keeps its own Lurk state. Auto-Focus or a toggle in one tab no longer changes another tab (#65).
         - On offline channels, Lurk no longer opens and closes the quality menu over and over (#63).
