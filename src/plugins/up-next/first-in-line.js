@@ -352,13 +352,14 @@ plugin({
      */
     async setup() {
         __FirstInLine__: {
-            await Cache.load(['ALL_FIRST_IN_LINE_JOBS', 'FIRST_IN_LINE_DUE_DATE', 'FIRST_IN_LINE_BOOST'], cache => {
+            await Cache.load(['ALL_FIRST_IN_LINE_JOBS', 'FIRST_IN_LINE_DUE_DATE', 'FIRST_IN_LINE_BOOST', 'FIRST_IN_LINE_NORMAL_LEFT', 'FIRST_IN_LINE_RUSH_ONCE'], cache => {
                 const oneMin = 60_000
                     , fiveMin = 5.5 * oneMin
                     , tenMin = 10 * oneMin;
 
                 [FIRST_IN_LINE_HREF] = ALL_FIRST_IN_LINE_JOBS = (cache.ALL_FIRST_IN_LINE_JOBS ?? []);
                 FIRST_IN_LINE_BOOST = parseBool(cache.FIRST_IN_LINE_BOOST) && parseBool(ALL_FIRST_IN_LINE_JOBS?.length);
+                RUSH_LOADED(cache);
                 FIRST_IN_LINE_DUE_DATE = (null
                     ?? cache.FIRST_IN_LINE_DUE_DATE
                     ?? (

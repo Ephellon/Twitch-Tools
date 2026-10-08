@@ -320,6 +320,23 @@ plugin({
             }
         };
 
+        /**
+         * Reads the "Rushing" state saved with the queue (#70); call right after `FIRST_IN_LINE_BOOST` is loaded.
+         * Rush once: when the rushed channel has left the queue (it was reached), rushing ends and the full wait starts.
+         * @param {Object} cache - The loaded `FIRST_IN_LINE_*` values (`FIRST_IN_LINE_DUE_DATE` may be replaced)
+         */
+        top.RUSH_LOADED =
+        function RUSH_LOADED(cache) {
+            RUSH_TIMER.normal = cache.FIRST_IN_LINE_NORMAL_LEFT ?? null;
+
+            if(FIRST_IN_LINE_BOOST && Settings.up_next__rushing == 'once' && defined(cache.FIRST_IN_LINE_RUSH_ONCE) && !ALL_FIRST_IN_LINE_JOBS.includes(cache.FIRST_IN_LINE_RUSH_ONCE)) {
+                FIRST_IN_LINE_BOOST = false;
+                cache.FIRST_IN_LINE_DUE_DATE = NEW_DUE_DATE(FIRST_IN_LINE_TIMER = FIRST_IN_LINE_WAIT_TIME * 60_000);
+
+                Cache.save({ FIRST_IN_LINE_BOOST, FIRST_IN_LINE_DUE_DATE: cache.FIRST_IN_LINE_DUE_DATE, FIRST_IN_LINE_RUSH_ONCE: null });
+            }
+        };
+
         top.GET_TIME_REMAINING =
         function GET_TIME_REMAINING() {
             if(!UP_NEXT_ALLOW_THIS_TAB)
@@ -1238,15 +1255,7 @@ plugin({
 
                         [FIRST_IN_LINE_HREF] = ALL_FIRST_IN_LINE_JOBS = (cache.ALL_FIRST_IN_LINE_JOBS ?? []);
                         FIRST_IN_LINE_BOOST = parseBool(cache.FIRST_IN_LINE_BOOST) && parseBool(ALL_FIRST_IN_LINE_JOBS?.length);
-                        RUSH_TIMER.normal = cache.FIRST_IN_LINE_NORMAL_LEFT ?? null;
-
-                        // Rush once (#70): the rushed channel has been reached (it left the queue), so rushing ends
-                        if(FIRST_IN_LINE_BOOST && Settings.up_next__rushing == 'once' && defined(cache.FIRST_IN_LINE_RUSH_ONCE) && !ALL_FIRST_IN_LINE_JOBS.includes(cache.FIRST_IN_LINE_RUSH_ONCE)) {
-                            FIRST_IN_LINE_BOOST = false;
-                            cache.FIRST_IN_LINE_DUE_DATE = NEW_DUE_DATE(FIRST_IN_LINE_TIMER = FIRST_IN_LINE_WAIT_TIME * oneMin);
-
-                            Cache.save({ FIRST_IN_LINE_BOOST, FIRST_IN_LINE_DUE_DATE: cache.FIRST_IN_LINE_DUE_DATE, FIRST_IN_LINE_RUSH_ONCE: null });
-                        }
+                        RUSH_LOADED(cache);
                         FIRST_IN_LINE_DUE_DATE = (null
                             ?? cache.FIRST_IN_LINE_DUE_DATE
                             ?? (
