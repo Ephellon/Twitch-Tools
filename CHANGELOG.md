@@ -37,6 +37,7 @@
 ## Release History
 
 ### Version 5.35.\*
+- [`5.35.4.11`](https://github.com/Ephellon/Twitch-Tools/releases/tag/5.35.4.11) — Fixed #66 for good (closing News marks it read); Keep Status no longer brings back an old pause when you turn it on (#69).
 - [`5.35.4.10`](https://github.com/Ephellon/Twitch-Tools/releases/tag/5.35.4.10) — Added **Rushing** to Up Next's Extras: choose what the countdown does when you start or stop rushing (Keep time left (default), Reset, Two timers, Scale, Rush once); the rush button's tooltip shows the time before you click (#70).
 - [`5.35.4.9`](https://github.com/Ephellon/Twitch-Tools/releases/tag/5.35.4.9) — Added **Keep Status** to Up Next's Extras (off by default): a pause stays when you go to another channel in the same tab (#69).
 - [`5.35.4.8`](https://github.com/Ephellon/Twitch-Tools/releases/tag/5.35.4.8) — Fixed #66 (News spam).

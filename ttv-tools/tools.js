@@ -8168,6 +8168,14 @@ let Initialize = async(START_OVER = false) => {
                         // Storage blocked: the tab just won't remember
                     }
                 },
+
+                clear() {
+                    try {
+                        sessionStorage.removeItem(this.key);
+                    } catch(error) {
+                        // Storage blocked: nothing was kept
+                    }
+                },
             };
 
             // Pause Button
@@ -8208,6 +8216,10 @@ let Initialize = async(START_OVER = false) => {
                     first_in_line_pause_button.setAttribute('paused-at', FIRST_IN_LINE_PAUSED_AT = +new Date);
                     first_in_line_pause_button.setAttribute('paused-by', kept.by || 'user');
                 }
+            } else {
+                // Off: the queue starts running on every channel, so a pause saved now is already dropped. Forget it, or
+                // turning Keep Status on later brings back a pause nobody made
+                UpNextStatus.clear();
             }
 
             // Live Reminders: Lists the live reminders onclick
@@ -18183,7 +18195,7 @@ if(top == window) {
 
                     if(articles.length)
                         alert.silent(`<input hidden controller icon="${ Glyphs.utf8.unread }" title="News"/> ${ articles.join('<br>') }`)
-                            .then(ok => ok && Cache.save({ ReadNews: TTVToolsNewsArticles.isolate() }));
+                            .then(() => Cache.save({ ReadNews: TTVToolsNewsArticles.isolate() })); // Closing it marks the news read (#66): `alert` resolves with nothing, so an `ok &&` never saved
                 })
                 // Offline or blocked: no news this time
                 .catch($warn);
