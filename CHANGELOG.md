@@ -60,6 +60,7 @@
     - **User Scripts:** editing or approving one script no longer restarts the others; `#id` is filled on every channel.
     - **Store Integration:** games with a price (Steam, PlayStation) get their card again.
     - **Parse Commands:** picking a command suggestion puts it in the chat box again.
+    - **Up Next → Rushing (new):** choose what the countdown does when you start or stop rushing: Keep time left (default), Reset (the old behavior), Two timers, Scale, or Rush once. The rush button's tooltip shows the time before you click (#70).
     - **Up Next → Keep Status (new, off by default):** a pause stays when you go to another channel in the same tab (#69).
     - **News:** the News pop-up has one button and is marked read once closed, so it no longer comes back on every visit (#66).
     - **Lurk:**

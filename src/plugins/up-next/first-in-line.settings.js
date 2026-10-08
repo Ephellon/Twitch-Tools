@@ -100,6 +100,20 @@ export default {
                 },
                 {
                     option: {
+                        title: "Rushing",
+                        tr: 'up-next:rushing',
+                    },
+                    rows: [
+                        {
+                            select: 'up_next__rushing',
+                        },
+                        {
+                            text: "What happens to the countdown when you start or stop rushing the queue.",
+                        },
+                    ],
+                },
+                {
+                    option: {
                         title: "<span class='live'>LIVE</span> Reminders",
                         tr: 'auto-follow:live-reminders',
                     },
@@ -186,6 +200,47 @@ export default {
         up_next__keep_status: {
             type: 'checkbox',
             default: false,
+        },
+        up_next__rushing: {
+            type: 'select',
+            options: [
+                {
+                    default: true,
+                    value: 'keep',
+                    label: "Keep time left",
+                    attrs: {
+                        title: "Starting lowers the countdown to 5 minutes if more is left; stopping keeps the time that is left.",
+                    },
+                },
+                {
+                    value: 'reset',
+                    label: "Reset",
+                    attrs: {
+                        title: "Stopping starts the full wait again.",
+                    },
+                },
+                {
+                    value: 'split',
+                    label: "Two timers",
+                    attrs: {
+                        title: "Stopping goes back to where the normal countdown was.",
+                    },
+                },
+                {
+                    value: 'scale',
+                    label: "Scale",
+                    attrs: {
+                        title: "The time left grows or shrinks by the same ratio as the wait.",
+                    },
+                },
+                {
+                    value: 'once',
+                    label: "Rush once",
+                    attrs: {
+                        title: "Rushing turns itself off after the next channel.",
+                    },
+                },
+            ],
         },
         live_reminders: {
             type: 'checkbox',
