@@ -27,6 +27,14 @@ const UpNextStatus = {
             // Storage blocked: the tab just won't remember
         }
     },
+
+    clear() {
+        try {
+            sessionStorage.removeItem(this.key);
+        } catch(error) {
+            // Storage blocked: nothing was kept
+        }
+    },
 };
 
 plugin({
@@ -721,6 +729,10 @@ plugin({
                             first_in_line_pause_button.setAttribute('paused-at', FIRST_IN_LINE_PAUSED_AT = +new Date);
                             first_in_line_pause_button.setAttribute('paused-by', kept.by || 'user');
                         }
+                    } else {
+                        // Off: the queue starts running on every channel, so a pause saved now is already dropped. Forget it,
+                        // or turning Keep Status on later brings back a pause nobody made
+                        UpNextStatus.clear();
                     }
 
                     // Live Reminders: Lists the live reminders onclick

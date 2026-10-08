@@ -4784,7 +4784,8 @@ if(top == window) {
 
                     if(articles.length)
                         alert.silent(`<input hidden controller icon="${ Glyphs.utf8.unread }" title="News"/> ${ articles.join('<br>') }`)
-                            .then(ok => ok && Cache.save({ ReadNews: TTVToolsNewsArticles.isolate() }));
+                            // Closing it marks the news read (#66): `alert` resolves with nothing, so an `ok &&` never saved
+                            .then(() => Cache.save({ ReadNews: TTVToolsNewsArticles.isolate() }));
                 });
         });
 
