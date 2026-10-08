@@ -86,6 +86,20 @@ export default {
                 },
                 {
                     option: {
+                        title: "Keep Status",
+                        tr: 'up-next:keep-status',
+                    },
+                    rows: [
+                        {
+                            toggle: 'up_next__keep_status',
+                        },
+                        {
+                            text: "If you pause <b>Up Next</b>, it stays paused when you go to another channel in the same tab.",
+                        },
+                    ],
+                },
+                {
+                    option: {
                         title: "<span class='live'>LIVE</span> Reminders",
                         tr: 'auto-follow:live-reminders',
                     },
@@ -166,6 +180,10 @@ export default {
             unit: 'min',
         },
         up_next__one_instance: {
+            type: 'checkbox',
+            default: false,
+        },
+        up_next__keep_status: {
             type: 'checkbox',
             default: false,
         },
