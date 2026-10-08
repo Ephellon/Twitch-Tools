@@ -105,6 +105,7 @@ let // These are option names. Anything else will be removed
             'first_in_line_all_time_minutes',
         'first_in_line_now',
         'up_next__one_instance',
+        'up_next__keep_status',
         // Greedy Raiding
         'greedy_raiding',
             'greedy_raiding_leave_before',

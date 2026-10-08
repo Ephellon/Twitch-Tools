@@ -8104,6 +8104,28 @@ let Initialize = async(START_OVER = false) => {
                 },
             });
 
+            // Up Next's pause, kept for this tab (Keep Status, #69): `{ paused, by }` in the tab's session storage. Moving to
+            // another channel in the same tab keeps it; a new tab starts fresh, and the browser clears it when the tab closes
+            let UpNextStatus = {
+                key: 'tt-up-next-status',
+
+                get() {
+                    try {
+                        return JSON.parse(sessionStorage.getItem(this.key) ?? 'null');
+                    } catch(error) {
+                        return null;
+                    }
+                },
+
+                set(state) {
+                    try {
+                        sessionStorage.setItem(this.key, JSON.stringify(state));
+                    } catch(error) {
+                        // Storage blocked: the tab just won't remember
+                    }
+                },
+            };
+
             // Pause Button
             let first_in_line_pause_button = FIRST_IN_LINE_BALLOON?.addButton({
                 attributes: {
@@ -8125,10 +8147,24 @@ let Initialize = async(START_OVER = false) => {
                     // Who paused: a viewer's click is trusted; Auto-Focus clicks the button from script (#56)
                     currentTarget.setAttribute('paused-by', paused? ['auto', 'user'][+event.isTrusted]: '');
 
+                    UpNextStatus.set({ paused, by: currentTarget.getAttribute('paused-by') });
+
                     if(defined(currentTarget.tooltip))
                         currentTarget.tooltip.innerHTML = `${ ['Pause','Resume'][+paused] } the queue`;
                 },
             });
+
+            // Keep Status (#69): a pause carries over when this tab moves to another channel
+            if(parseBool(Settings.up_next__keep_status) && defined(first_in_line_pause_button)) {
+                let kept = UpNextStatus.get();
+
+                if(kept?.paused) {
+                    first_in_line_pause_button.innerHTML = Glyphs.play;
+                    first_in_line_pause_button.setAttribute('paused', FIRST_IN_LINE_PAUSED = true);
+                    first_in_line_pause_button.setAttribute('paused-at', FIRST_IN_LINE_PAUSED_AT = +new Date);
+                    first_in_line_pause_button.setAttribute('paused-by', kept.by || 'user');
+                }
+            }
 
             // Live Reminders: Lists the live reminders onclick
             let live_reminders_catalog_button = FIRST_IN_LINE_BALLOON?.addButton({
@@ -8708,7 +8744,7 @@ let Initialize = async(START_OVER = false) => {
                 up_next_button?.setAttribute('speeding', parseBool(FIRST_IN_LINE_BOOST));
 
                 // Pause
-                first_in_line_pause_button.tooltip ??= new Tooltip(first_in_line_pause_button, `Pause the queue`);
+                first_in_line_pause_button.tooltip ??= new Tooltip(first_in_line_pause_button, `${ ['Pause','Resume'][+FIRST_IN_LINE_PAUSED] } the queue`);
             });
         }
 
