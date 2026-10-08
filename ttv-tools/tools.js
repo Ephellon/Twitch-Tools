@@ -7755,6 +7755,64 @@ let Initialize = async(START_OVER = false) => {
         );
     };
 
+    // The countdown (ms) when rushing turns on (`boost`) or off, by the "Rushing" setting (#70):
+    // - keep (default): starting caps the time left at about 5 min; stopping keeps the time left
+    // - reset: stopping starts the full wait again (the original behavior)
+    // - split: each mode keeps its own time left; stopping goes back to where the normal countdown was
+    // - scale: the time left changes by the same ratio as the wait (5 min <-> the normal wait)
+    // - once: like keep, and rushing turns itself off after the next channel
+    // `commit` is a real switch (not a preview): "split" stores the normal time left
+    top.RUSH_TIMER =
+    function RUSH_TIMER(boost, commit = false) {
+        let oneMin = 60_000,
+            fiveMin = 5.5 * oneMin,
+            tenMin = 10 * oneMin,
+            full = FIRST_IN_LINE_WAIT_TIME * oneMin,
+            left = Math.max(GET_TIME_REMAINING(), 0),
+            // While a channel has been live under 10 min, rushing waits until then too
+            cap = (STREAMER.time < tenMin? fiveMin + (tenMin - STREAMER.time): fiveMin);
+
+        switch(Settings.up_next__rushing) {
+            case 'reset':
+                return boost? (STREAMER.time < tenMin? cap: Math.min(left, fiveMin)): full;
+
+            case 'split': {
+                let normal = RUSH_TIMER.normal;
+
+                if(commit) {
+                    RUSH_TIMER.normal = (boost? left: null);
+                    Cache.save({ FIRST_IN_LINE_NORMAL_LEFT: RUSH_TIMER.normal });
+                }
+
+                return boost? Math.min(left, cap): (normal ?? left);
+            }
+
+            case 'scale':
+                return boost?
+                    Math.min(left, left * fiveMin / full):
+                Math.min(full, Math.max(left, left * full / fiveMin));
+
+            case 'once':
+            case 'keep':
+            default:
+                return boost? Math.min(left, cap): left;
+        }
+    };
+
+    // Reads the "Rushing" state saved with the queue (#70); call right after `FIRST_IN_LINE_BOOST` is loaded.
+    // Rush once: when the rushed channel has left the queue (it was reached), rushing ends and the full wait starts
+    top.RUSH_LOADED =
+    function RUSH_LOADED(cache) {
+        RUSH_TIMER.normal = cache.FIRST_IN_LINE_NORMAL_LEFT ?? null;
+
+        if(FIRST_IN_LINE_BOOST && Settings.up_next__rushing == 'once' && defined(cache.FIRST_IN_LINE_RUSH_ONCE) && !ALL_FIRST_IN_LINE_JOBS.includes(cache.FIRST_IN_LINE_RUSH_ONCE)) {
+            FIRST_IN_LINE_BOOST = false;
+            cache.FIRST_IN_LINE_DUE_DATE = NEW_DUE_DATE(FIRST_IN_LINE_TIMER = FIRST_IN_LINE_WAIT_TIME * 60_000);
+
+            Cache.save({ FIRST_IN_LINE_BOOST, FIRST_IN_LINE_DUE_DATE: cache.FIRST_IN_LINE_DUE_DATE, FIRST_IN_LINE_RUSH_ONCE: null });
+        }
+    };
+
     top.GET_TIME_REMAINING =
     function GET_TIME_REMAINING() {
         if(!UP_NEXT_ALLOW_THIS_TAB)
@@ -8047,6 +8105,12 @@ let Initialize = async(START_OVER = false) => {
                 attributes: {
                     id: 'up-next-boost',
                     contrast: THEME__PREFERRED_CONTRAST,
+
+                    // Shows what the countdown will be before you click (#70)
+                    onmouseenter: ({ currentTarget }) => {
+                        if(defined(currentTarget.tooltip) && ALL_FIRST_IN_LINE_JOBS?.length)
+                            currentTarget.tooltip.innerHTML = `${ ['Start','Stop'][+FIRST_IN_LINE_BOOST] } rushing the queue (${ toTimeString(RUSH_TIMER(!FIRST_IN_LINE_BOOST), 'clock') } left)`;
+                    },
                 },
 
                 icon: 'latest',
@@ -8069,32 +8133,12 @@ let Initialize = async(START_OVER = false) => {
                     up_next_button?.setAttribute('allowed', parseBool(UP_NEXT_ALLOW_THIS_TAB));
                     up_next_button?.setAttribute('speeding', parseBool(speeding));
 
-                    let oneMin = 60_000,
-                        fiveMin = 5.5 * oneMin,
-                        tenMin = 10 * oneMin;
+                    // The countdown follows the "Rushing" setting (#70)
+                    FIRST_IN_LINE_DUE_DATE = NEW_DUE_DATE(FIRST_IN_LINE_TIMER = RUSH_TIMER(FIRST_IN_LINE_BOOST, true));
 
-                    FIRST_IN_LINE_DUE_DATE = NEW_DUE_DATE(
-                        FIRST_IN_LINE_TIMER = (
-                            // If the streamer hasn't been on for longer than 10mins, wait until then
-                            STREAMER.time < tenMin?
-                                (
-                                    // Boost is enabled
-                                    FIRST_IN_LINE_BOOST?
-                                        fiveMin + (tenMin - STREAMER.time):
-                                    // Boost is disabled
-                                    FIRST_IN_LINE_WAIT_TIME * oneMin
-                                ):
-                            // Streamer has been live longer than 10mins
-                            (
-                                // Boost is enabled
-                                FIRST_IN_LINE_BOOST?
-                                    // Boost is enabled
-                                    Math.min(GET_TIME_REMAINING(), fiveMin):
-                                // Boost is disabled
-                                FIRST_IN_LINE_WAIT_TIME * oneMin
-                            )
-                        )
-                    );
+                    // Rush once: remember which channel ends the rush
+                    if(Settings.up_next__rushing == 'once')
+                        Cache.save({ FIRST_IN_LINE_RUSH_ONCE: (FIRST_IN_LINE_BOOST? ALL_FIRST_IN_LINE_JOBS[0]: null) });
 
                     REDO_FIRST_IN_LINE_QUEUE(ALL_FIRST_IN_LINE_JOBS[0]);
 
@@ -8686,13 +8730,14 @@ let Initialize = async(START_OVER = false) => {
             }, 1000);
 
             // Load cache
-            Cache.load(['ALL_FIRST_IN_LINE_JOBS', 'FIRST_IN_LINE_DUE_DATE', 'FIRST_IN_LINE_BOOST'], cache => {
+            Cache.load(['ALL_FIRST_IN_LINE_JOBS', 'FIRST_IN_LINE_DUE_DATE', 'FIRST_IN_LINE_BOOST', 'FIRST_IN_LINE_NORMAL_LEFT', 'FIRST_IN_LINE_RUSH_ONCE'], cache => {
                 let oneMin = 60_000,
                     fiveMin = 5.5 * oneMin,
                     tenMin = 10 * oneMin;
 
                 [FIRST_IN_LINE_HREF] = ALL_FIRST_IN_LINE_JOBS = (cache.ALL_FIRST_IN_LINE_JOBS ?? []);
                 FIRST_IN_LINE_BOOST = parseBool(cache.FIRST_IN_LINE_BOOST) && parseBool(ALL_FIRST_IN_LINE_JOBS?.length);
+                RUSH_LOADED(cache);
                 FIRST_IN_LINE_DUE_DATE = (null
                     ?? cache.FIRST_IN_LINE_DUE_DATE
                     ?? (
@@ -9379,13 +9424,14 @@ let Initialize = async(START_OVER = false) => {
 
     __FirstInLine__:
     if(parseBool(Settings.first_in_line) || parseBool(Settings.first_in_line_plus) || parseBool(Settings.first_in_line_all) || parseBool(Settings.first_in_line_now)) {
-        await Cache.load(['ALL_FIRST_IN_LINE_JOBS', 'FIRST_IN_LINE_DUE_DATE', 'FIRST_IN_LINE_BOOST'], cache => {
+        await Cache.load(['ALL_FIRST_IN_LINE_JOBS', 'FIRST_IN_LINE_DUE_DATE', 'FIRST_IN_LINE_BOOST', 'FIRST_IN_LINE_NORMAL_LEFT', 'FIRST_IN_LINE_RUSH_ONCE'], cache => {
             let oneMin = 60_000,
                 fiveMin = 5.5 * oneMin,
                 tenMin = 10 * oneMin;
 
             [FIRST_IN_LINE_HREF] = ALL_FIRST_IN_LINE_JOBS = (cache.ALL_FIRST_IN_LINE_JOBS ?? []);
             FIRST_IN_LINE_BOOST = parseBool(cache.FIRST_IN_LINE_BOOST) && parseBool(ALL_FIRST_IN_LINE_JOBS?.length);
+            RUSH_LOADED(cache);
             FIRST_IN_LINE_DUE_DATE = (null
                 ?? cache.FIRST_IN_LINE_DUE_DATE
                 ?? (

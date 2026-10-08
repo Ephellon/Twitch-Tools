@@ -286,6 +286,22 @@
                             </div>
                         </div>
 
+                        <div opt>
+                            <div class=title tr-id='up-next:rushing'>Rushing</div>
+                            <div class=summary>
+                                <select id=up_next__rushing>
+                                    <option value=keep selected title='Starting lowers the countdown to 5 minutes if more is left; stopping keeps the time that is left.'>Keep time left</option>
+                                    <option value=reset title='Stopping starts the full wait again.'>Reset</option>
+                                    <option value=split title='Stopping goes back to where the normal countdown was.'>Two timers</option>
+                                    <option value=scale title='The time left grows or shrinks by the same ratio as the wait.'>Scale</option>
+                                    <option value=once title='Rushing turns itself off after the next channel.'>Rush once</option>
+                                </select>
+                                <p tr-id>
+                                    What happens to the countdown when you start or stop rushing the queue.
+                                </p>
+                            </div>
+                        </div>
+
                         <div disabled opt>
                             <div class=title tr-id='auto-follow:live-reminders'><span class=live>LIVE</span> Reminders</div>
                             <div class=summary>

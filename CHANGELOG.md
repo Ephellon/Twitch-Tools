@@ -37,6 +37,7 @@
 ## Release History
 
 ### Version 5.35.\*
+- [`5.35.4.10`](https://github.com/Ephellon/Twitch-Tools/releases/tag/5.35.4.10) — Added **Rushing** to Up Next's Extras: choose what the countdown does when you start or stop rushing (Keep time left (default), Reset, Two timers, Scale, Rush once); the rush button's tooltip shows the time before you click (#70).
 - [`5.35.4.9`](https://github.com/Ephellon/Twitch-Tools/releases/tag/5.35.4.9) — Added **Keep Status** to Up Next's Extras (off by default): a pause stays when you go to another channel in the same tab (#69).
 - [`5.35.4.8`](https://github.com/Ephellon/Twitch-Tools/releases/tag/5.35.4.8) — Fixed #66 (News spam).
 - [`5.35.4.7`](https://github.com/Ephellon/Twitch-Tools/releases/tag/5.35.4.7) — Store cards load again (store catalogs are fetched directly, not through a proxy); RAM Alarms: a page over 2 GB now reaches the HIGH level (#64).
