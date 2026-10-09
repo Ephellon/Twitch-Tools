@@ -269,6 +269,9 @@ let // These are option names. Anything else will be removed
         'ram_onmedium',
         'ram_onlow',
         'ram_timescale',
+        'ram_low',
+        'ram_medium',
+        'ram_high',
         // Recover Ads
         'recover_ads',
         // Recover Frames
@@ -2643,6 +2646,39 @@ when.defined(() => SETTINGS)
             });
         });
     });
+
+// The RAM Alarms log: what the alarms did in the last day, so a page that kept reloading can still be explained (#67)
+when.defined(() => SETTINGS)
+    .then(() => Storage.get(['ramAlarmLog'], ({ ramAlarmLog = [] }) => {
+        let body = $('#ram-alarms--log tbody'),
+            since = +new Date - 86_400_000,
+            entries = ramAlarmLog.filter(({ time }) => time > since).reverse();
+
+        if(nullish(body) || !entries.length)
+            return;
+
+        let verbs = {
+            notify: 'Notice shown',
+            respawn: 'Respawn offered',
+            respawned: 'Respawned',
+            hold: 'Respawn skipped (page too new)',
+        };
+
+        let cell = text => Object.assign(document.createElement('td'), { textContent: text });
+
+        body.replaceChildren(...entries.map(({ time, action, url = '', ramUsed, tier, note }) => {
+            let row = document.createElement('tr');
+
+            row.append(
+                cell(new Date(time).toLocaleTimeString()),
+                cell(verbs[action] ?? action),
+                cell(url.replace(/^https?:\/\/(www\.)?twitch\.tv/i, '') || '/'),
+                cell([ramUsed && `${ Math.round(ramUsed / 1024 ** 2) }MB`, tier, note].filter(Boolean).join(' · ')),
+            );
+
+            return row;
+        }));
+    }));
 
 // Deprecated: v5.32.14.3
 async function Translate(language = 'en', container = document) {

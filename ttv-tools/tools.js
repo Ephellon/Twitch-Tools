@@ -3981,15 +3981,14 @@ let Initialize = async(START_OVER = false) => {
                 name: parseURL(GetNextStreamer.href).pathname.slice(1).split('/').shift(),
             };
 
-        if(defined(GetNextStreamer.pinnedStreamer) && ((ALL_FIRST_IN_LINE_JOBS?.length | 0) < 1) && !STREAMER?.live) {
-            Cache.remove(['PinnedStreamer']);
-
+        // Only a lookup: Stay Live and others ask every second, and clearing the pin here lost it on the next channel (#71).
+        // The pin is used up once its channel is reached (see First in Line)
+        if(defined(GetNextStreamer.pinnedStreamer) && ((ALL_FIRST_IN_LINE_JOBS?.length | 0) < 1) && !STREAMER?.live)
             return ({
                 from: 'GET_NEXT_STREAMER__PINNED',
                 href: `/${ GetNextStreamer.pinnedStreamer }`,
                 name: GetNextStreamer.pinnedStreamer,
             });
-        }
 
         // Next channel in "Up Next"
         if(ALL_FIRST_IN_LINE_JOBS?.length && !parseBool(Settings.first_in_line_none))
@@ -9164,6 +9163,16 @@ let Initialize = async(START_OVER = false) => {
      */
     let HANDLED_NOTIFICATIONS = [],
         STARTED_TIMERS = {};
+
+    // The pinned channel was reached: the pin is used up (#71). Asking for the next channel no longer clears it
+    Cache.load('PinnedStreamer', ({ PinnedStreamer }) => {
+        if(nullish(PinnedStreamer) || PinnedStreamer.unlike(STREAMER?.name ?? ''))
+            return;
+
+        delete top.GetNextStreamer?.pinnedStreamer;
+        Cache.remove(['PinnedStreamer']);
+        Runtime.sendMessage({ action: 'UPDATE_PINNED_STREAMER', oldValue: { name: PinnedStreamer } });
+    });
 
     Handlers.first_in_line = async(ActionableNotification, preferredPlace) => {
         new StopWatch('first_in_line');
