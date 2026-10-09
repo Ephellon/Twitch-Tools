@@ -2542,6 +2542,7 @@ when.defined(() => SETTINGS)
             respawn: 'Respawn offered',
             respawned: 'Respawned',
             hold: 'Respawn skipped (page too new)',
+            unresponsive: 'Respawned (not responding)',
         };
 
         const cell = text => Object.assign(document.createElement('td'), { textContent: text });

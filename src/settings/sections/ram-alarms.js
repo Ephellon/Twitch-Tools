@@ -23,7 +23,7 @@ export default {
             rows: [
                 {
                     html: `<div opt>
-                            <div tr-id='ram-alarms:low'>When above <span unit='MB'><input id='ram_low' type='number' min='100' step='50' value='500'></span> — LOW</div>
+                            <div tr-id='ram-alarms:low'>When above <span unit='MB'><input id='ram_low' type='number' min='100' step='any' value='500'></span> — LOW</div>
                             <select id='ram_onlow'>
                                 <option value='ignore' tr-id set='textContent→\\Glyphs.utf8.ignore \\this.textContent'>Ignore</option>
                                 <option value='notify' tr-id set='textContent→\\Glyphs.utf8.notify \\this.textContent'>Notify</option>
@@ -33,7 +33,7 @@ export default {
                 },
                 {
                     html: `<div opt>
-                            <div tr-id='ram-alarms:medium'>When above <span unit='GB'><input id='ram_medium' type='number' min='0.25' step='0.25' value='1'></span> — MEDIUM</div>
+                            <div tr-id='ram-alarms:medium'>When above <span unit='GB'><input id='ram_medium' type='number' min='0.25' step='any' value='1'></span> — MEDIUM</div>
                             <select id='ram_onmedium'>
                                 <option value='ignore' tr-id set='textContent→\\Glyphs.utf8.ignore \\this.textContent'>Ignore</option>
                                 <option value='notify' tr-id set='textContent→\\Glyphs.utf8.notify \\this.textContent'>Notify</option>
@@ -43,7 +43,7 @@ export default {
                 },
                 {
                     html: `<div opt>
-                            <div tr-id='ram-alarms:high'>When above <span unit='GB'><input id='ram_high' type='number' min='0.5' step='0.25' value='2'></span> — HIGH</div>
+                            <div tr-id='ram-alarms:high'>When above <span unit='GB'><input id='ram_high' type='number' min='0.5' step='any' value='2'></span> — HIGH</div>
                             <select id='ram_onhigh'>
                                 <option value='ignore' tr-id set='textContent→\\Glyphs.utf8.ignore \\this.textContent'>Ignore</option>
                                 <option value='notify' tr-id set='textContent→\\Glyphs.utf8.notify \\this.textContent'>Notify</option>
