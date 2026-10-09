@@ -4,7 +4,7 @@
  */
 
 import { plugin } from '../../lib/plugins.js';
-import { TabLurk } from './lurking.js';
+import { TabLurk, offlinePlayer } from './lurking.js';
 
 // The feature's state; init() resets it whenever the page (re)initializes
 let CAPTURE_HISTORY, CAPTURE_INTERVAL, POLL_INTERVAL, STALLED_FRAMES, POSITIVE_TREND;
@@ -199,6 +199,10 @@ plugin({
                                     if(button?.getAttribute('toggled-by') == 'user')
                                         break __AutoFocus_Disable_AwayMode__;
 
+                                    // The stream ended: an offline player has nothing to lurk on (#63)
+                                    if(offlinePlayer())
+                                        break __AutoFocus_Disable_AwayMode__;
+
                                     button?.click();
 
                                     changes.push('disabling lurking');
@@ -235,6 +239,10 @@ plugin({
 
                                     // The viewer started or stopped lurking themselves: leave it (#60)
                                     if(button?.getAttribute('toggled-by') == 'user')
+                                        break __AutoFocus_Enable_AwayMode__;
+
+                                    // The stream ended: an offline player has nothing to lurk on (#63)
+                                    if(offlinePlayer())
                                         break __AutoFocus_Enable_AwayMode__;
 
                                     button?.click();

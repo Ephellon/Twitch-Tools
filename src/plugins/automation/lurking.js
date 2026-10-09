@@ -37,6 +37,15 @@ export const TabLurk = {
     },
 };
 
+/**
+ * Whether this page's player can't change quality: the channel isn't live (VODs aren't "live", but have a player). An
+ * offline player has only "Auto", and setting the quality there opens and shuts its menu for nothing (#63).
+ * @returns {boolean}
+ */
+export function offlinePlayer() {
+    return !STREAMER.live && !/\/videos?\//i.test(location.pathname);
+}
+
 // The feature's state; init() resets it whenever the page (re)initializes
 let AwayModeButton, AwayModeEnabled, InitialQuality, InitialViewMode, NUMBER_OF_FAILED_QUALITY_FETCHES;
 
@@ -73,11 +82,15 @@ plugin({
         // Reading the quality opens the player's settings menu: on a channel whose stream has ended it failed every
         // tick, and the menu kept flickering open and shut (VODs aren't "live", but have a player)
         // An offline channel has only "Auto": don't touch the quality at all, even if Lurk was on for the last channel (#63)
-        if(!STREAMER.live && !/\/videos?\//i.test(location.pathname))
+        if(offlinePlayer())
             return StopWatch.stop('away_mode');
 
+        // With no picture (the stream just ended, or is still loading), reading the quality opens the settings menu:
+        // wait for a picture instead of opening it every tick (#63)
+        const picture = $.all('video').some(video => video.videoHeight > 0);
+
         let button = $('#away-mode')
-            , currentQuality = (Handlers.away_mode.quality ??= await GetQuality());
+            , currentQuality = (Handlers.away_mode.quality ??= (picture ? await GetQuality() : void null));
 
         // Alt + A | Opt + A
         if(nullish(GLOBAL_EVENT_LISTENERS.KEYDOWN_ALT_A))
@@ -315,7 +328,8 @@ plugin({
                     { size = 'auto' } break;
             } // switch size
 
-            await SetQuality([size, 'low'][+enabled])
+            // A stream that ended while you watched: switch Lurk, but leave the player's quality menu alone (#63)
+            await (offlinePlayer() ? Promise.resolve() : SetQuality([size, 'low'][+enabled]))
                 .then(() => {
                     if(parseBool(Settings.away_mode__volume_control))
                         SetVolume([InitialVolume, Settings.away_mode__volume][+enabled]);
