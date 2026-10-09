@@ -115,7 +115,8 @@ plugin({
             || /\/search\b/i.test(NORMALIZED_PATHNAME)
         ) {
             // If the quality controls have failed to load for 1min, leave the page
-            if(nullish(currentQuality) && ++NUMBER_OF_FAILED_QUALITY_FETCHES > 60) {
+            // No picture (the quality wasn't read) isn't a failed load: a stream that just ended stays put (#63)
+            if(nullish(currentQuality) && picture && ++NUMBER_OF_FAILED_QUALITY_FETCHES > 60) {
                 const scapeGoat = await GetNextStreamer();
 
                 $warn(`The following page failed to load correctly (no quality controls present): ${ STREAMER.name } @ ${ (new Date) }`);
