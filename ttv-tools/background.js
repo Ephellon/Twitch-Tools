@@ -784,6 +784,8 @@ let LAG_REPORTER = setInterval(() => {
         return;
 
     for(let [ID, createdAt] of REPORTS) {
+        // One hang-up timer per tab: an older one left running removed the tab even after it answered
+        clearTimeout(HANG_UP_CHECKER.get(ID));
         HANG_UP_CHECKER.set(ID,
             setTimeout((id = ID) => {
                 try {
@@ -791,6 +793,7 @@ let LAG_REPORTER = setInterval(() => {
                         .then(tab => {
                             console.warn(`Tab "${ tab.title }" (#${ tab.id }) timed out. Removing...`);
 
+                            logRamAlarm({ action: 'unresponsive', url: tab.url, note: 'no answer for 35s' });
                             GALLOWS.set(tab.id, +new Date);
                             REPORTS.delete(tab.id);
                             RemoveTab(tab, true);
@@ -818,12 +821,13 @@ let LAG_REPORTER = setInterval(() => {
                     let { audible, discarded, id, mutedInfo, status, title } = tab;
 
                     Container.tabs.sendMessage(id, { action: 'report-back' }, response => {
-                        let { ok = false, performance = 1, timestamp = +new Date - MAX_TIME_ALLOWED } = (response ?? {});
+                        let { ok = false, performance = 1, timestamp = +new Date - MAX_TIME_ALLOWED, hidden = false } = (response ?? {});
 
+                        // A hidden tab is throttled by the browser, and can be silent: that isn't a hung page (#67)
                         if(false
                             || ((+new Date - timestamp) > MAX_TIME_ALLOWED)
                             || (performance > 0.95)
-                            || (!audible && !mutedInfo.muted)
+                            || (!hidden && !audible && !mutedInfo.muted)
                         ) {
                             /* Continue... */
                         } else if(ok || discarded || status == LOADING) {
@@ -850,6 +854,7 @@ let LAG_REPORTER = setInterval(() => {
 
                             console.warn(`Tab "${ title }" (#${ id }) did not respond. Removing... Response Time → ${ (+new Date - timestamp) }ms · Memory Usage → ${ (100 * performance).toFixed(2).replace('.00', '') }%`);
 
+                            logRamAlarm({ action: 'unresponsive', url: tab.url, note: `answered in ${ Math.round((+new Date - timestamp) / 1000) }s, memory ${ Math.round(100 * performance) }%` });
                             clearTimeout(HANG_UP_CHECKER.get(id));
                             REPORTS.delete(id);
                             RemoveTab(tab, true);

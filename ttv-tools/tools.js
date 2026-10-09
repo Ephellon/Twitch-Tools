@@ -3986,7 +3986,8 @@ let Initialize = async(START_OVER = false) => {
         if(defined(GetNextStreamer.pinnedStreamer) && ((ALL_FIRST_IN_LINE_JOBS?.length | 0) < 1) && !STREAMER?.live)
             return ({
                 from: 'GET_NEXT_STREAMER__PINNED',
-                href: `/${ GetNextStreamer.pinnedStreamer }`,
+                // A full URL: `parseURL` can't read a bare path, and Stay Live then reloaded this channel instead
+                href: `${ location.origin }/${ GetNextStreamer.pinnedStreamer }`,
                 name: GetNextStreamer.pinnedStreamer,
             });
 
@@ -18003,7 +18004,11 @@ if(top == window) {
                     } break;
 
                     case 'report-back': {
-                        respond({ ok: true, performance: (performance.memory.usedJSHeapSize / performance.memory.totalJSHeapSize), timestamp: +new Date });
+                        // Memory against the page's limit: used/total is near 100% on any healthy page, so tabs were removed as
+                        // "unresponsive" (#67). A hidden tab is throttled; the background allows for that
+                        let { usedJSHeapSize = 0, jsHeapSizeLimit = 0 } = performance.memory ?? {};
+
+                        respond({ ok: true, performance: (jsHeapSizeLimit? usedJSHeapSize / jsHeapSizeLimit: 0), timestamp: +new Date, hidden: document.hidden });
                     } break;
 
                     case 'consume-up-next': {

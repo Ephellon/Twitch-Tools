@@ -37,6 +37,7 @@
 ## Release History
 
 ### Version 5.35.\*
+- [`5.35.4.15`](https://github.com/Ephellon/Twitch-Tools/releases/tag/5.35.4.15) — Background tabs are no longer respawned as "not responding" (wrong memory measure, quiet hidden tabs), and those respawns are logged (#67); Stay Live goes to the pinned channel instead of reloading the current one (#71)
 - [`5.35.4.14`](https://github.com/Ephellon/Twitch-Tools/releases/tag/5.35.4.14) — RAM Alarms: editable limits, no respawn loop for pages under 10 minutes old, and a one-day log in Settings (#67); a respawned tab keeps Up Next (#68); the Up Next pin is kept across channel changes (#71)
 - [`5.35.4.13`](https://github.com/Ephellon/Twitch-Tools/releases/tag/5.35.4.13) — A stream that ends while Twitch still shows the live page no longer makes Lurk leave the channel after a minute (#63)
 - [`5.35.4.12`](https://github.com/Ephellon/Twitch-Tools/releases/tag/5.35.4.12) — Lurk no longer opens and closes the quality menu when the channel you are watching goes offline, and Auto-Focus stops switching Lurk on an ended stream (#63)
