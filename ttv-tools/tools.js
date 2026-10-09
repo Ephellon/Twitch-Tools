@@ -7733,8 +7733,8 @@ let Initialize = async(START_OVER = false) => {
                         });
 
                         ALREADY_RESTORING_DEAD_CHANNEL = false;
+                        // The queue keeps URLs; the job already holds this one (it used to be replaced by `restored`)
                         ALL_CHANNELS = [...ALL_CHANNELS, restored].filter(defined).filter(uniqueChannels);
-                        ALL_FIRST_IN_LINE_JOBS[index] = restored;
                     })
                     .catch(error => {
                         ALL_FIRST_IN_LINE_JOBS = ALL_FIRST_IN_LINE_JOBS.map(url => url?.toLowerCase?.()).isolate().filter(url => url?.length).filter(url => parseURL(url).pathname != parseURL(FIRST_IN_LINE_HREF).pathname);
@@ -9004,7 +9004,7 @@ let Initialize = async(START_OVER = false) => {
                             subheader: `Coming up next`,
                             onremove: event => {
                                 let index = ALL_FIRST_IN_LINE_JOBS.findIndex(href => event.href == href),
-                                    [removed] = ALL_FIRST_IN_LINE_JOBS.splice(index, 1),
+                                    [removed] = (index < 0? []: ALL_FIRST_IN_LINE_JOBS.splice(index, 1)),
                                     purl = parseURL(removed),
                                     name = purl.pathname?.slice(1),
                                     redo = (purl.searchParameters?.redo ?? "");
@@ -9210,6 +9210,15 @@ let Initialize = async(START_OVER = false) => {
             if(DO_NOT_AUTO_ADD.contains(href) || RESERVED_TWITCH_PATHNAMES.test(href))
                 continue;
 
+            // Already on this channel's page: there's nothing to queue or redirect to (#55)
+            if(parseURL(href).pathname?.equals(`/${ STREAMER?.name }`))
+                continue;
+
+            // A notification that links to Twitch's home page names no channel (it showed up as a bare
+            // `https://www.twitch.tv/` job)
+            if((parseURL(href).pathname ?? '/').length < 2)
+                continue;
+
             if(true
                 && !/\blive\b/i.test(innerText)
                 && $.nullish('[class*="toast"i][class*="action"i]', notification)
@@ -9280,7 +9289,7 @@ let Initialize = async(START_OVER = false) => {
                     subheader: `Coming up next`,
                     onremove: event => {
                         let index = ALL_FIRST_IN_LINE_JOBS.findIndex(href => event.href == href),
-                            [removed] = ALL_FIRST_IN_LINE_JOBS.splice(index, 1),
+                            [removed] = (index < 0? []: ALL_FIRST_IN_LINE_JOBS.splice(index, 1)),
                             purl = parseURL(removed),
                             name = purl.pathname?.slice(1),
                             redo = (purl.searchParameters?.redo ?? "");
@@ -9586,13 +9595,13 @@ let Initialize = async(START_OVER = false) => {
                             name: streamer.name,
                         });
 
+                        // The queue keeps URLs; the job already holds this one (it used to be replaced by `restored`)
                         ALL_CHANNELS = [...ALL_CHANNELS, restored].filter(defined).filter(uniqueChannels);
-                        ALL_FIRST_IN_LINE_JOBS[index] = restored;
 
                         REDO_FIRST_IN_LINE_QUEUE(FIRST_IN_LINE_HREF = href);
                     })
                     .catch(error => {
-                        let [removed] = ALL_FIRST_IN_LINE_JOBS.splice(index, 1),
+                        let [removed] = (index < 0? []: ALL_FIRST_IN_LINE_JOBS.splice(index, 1)),
                             name = parseURL(removed).pathname.slice(1);
 
                             $notice(`Necromancy work:`, removed);
@@ -12580,7 +12589,7 @@ let Initialize = async(START_OVER = false) => {
                         });
 
                     let index = ALL_FIRST_IN_LINE_JOBS.indexOf(FIRST_IN_LINE_HREF),
-                        [removed] = ALL_FIRST_IN_LINE_JOBS.splice(index, 1);
+                        [removed] = (index < 0? []: ALL_FIRST_IN_LINE_JOBS.splice(index, 1));
 
                     if(UP_NEXT_ALLOW_THIS_TAB)
                         Cache.save({ ALL_FIRST_IN_LINE_JOBS, FIRST_IN_LINE_DUE_DATE });
@@ -12741,7 +12750,7 @@ let Initialize = async(START_OVER = false) => {
                 REDO_FIRST_IN_LINE_QUEUE( parseURL(FIRST_IN_LINE_HREF)?.addSearch?.({ from: STREAMER?.name })?.href );
 
                 let index = ALL_FIRST_IN_LINE_JOBS.indexOf(FIRST_IN_LINE_HREF),
-                    [removed] = ALL_FIRST_IN_LINE_JOBS.splice(index, 1);
+                    [removed] = (index < 0? []: ALL_FIRST_IN_LINE_JOBS.splice(index, 1));
 
                 if(UP_NEXT_ALLOW_THIS_TAB)
                     Cache.save({ ALL_FIRST_IN_LINE_JOBS, FIRST_IN_LINE_DUE_DATE }, () => goto(parseURL(next.href)?.addSearch?.({ obit: STREAMER?.name, tool: 'stay-live' })?.href ?? '?tool=stay-live'));
@@ -15978,7 +15987,7 @@ let Initialize = async(START_OVER = false) => {
 
                         if(defined(job) && name.unlike(STREAMER.name) && enabled) {
                             // Skip the queue!
-                            let [removed] = ALL_FIRST_IN_LINE_JOBS.splice(index, 1),
+                            let [removed] = (index < 0? []: ALL_FIRST_IN_LINE_JOBS.splice(index, 1)),
                                 name = parseURL(removed).pathname.slice(1);
 
                             $notice(`Skipper work:`, removed);
@@ -16846,6 +16855,10 @@ let Initialize = async(START_OVER = false) => {
 
     let DEFAULT_CLIP_NAME = new ClipName(2);
     let GLOBAL_CLIP_HANDLER = setInterval(() => {
+        // The Alt+Z recorder only exists while Extra Keyboard Shortcuts is on (#53)
+        if(nullish(GLOBAL_EVENT_LISTENERS.KEYDOWN_ALT_Z))
+            return;
+
         let EVENT_NAME = GLOBAL_EVENT_LISTENERS.KEYDOWN_ALT_Z.name;
 
         // Maintains a timer of the clip

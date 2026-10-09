@@ -37,6 +37,7 @@
 ## Release History
 
 ### Version 5.35.\*
+- [`5.35.5.1`](https://github.com/Ephellon/Twitch-Tools/releases/tag/5.35.5.1) — Up Next no longer queues (and reloads) the channel you are already on when it goes live, and removing a job can no longer drop the last one (#55); the Up Next preview stays muted (#49); stopped the repeating "reading 'name'" console error (#53)
 - [`5.35.5`](https://github.com/Ephellon/Twitch-Tools/releases/tag/5.35.5) — Release of the 5.35.4.x fixes (#54–#71): Lurk on offline and ended streams, RAM Alarms (editable limits, no reload loops, a one-day log), Up Next (Rushing, Keep Status, pin, tab ownership), News, Auto-Focus and the rewritten recording.
 - [`5.35.4.15`](https://github.com/Ephellon/Twitch-Tools/releases/tag/5.35.4.15) — Background tabs are no longer respawned as "not responding" (wrong memory measure, quiet hidden tabs), and those respawns are logged (#67); Stay Live goes to the pinned channel instead of reloading the current one (#71)
 - [`5.35.4.14`](https://github.com/Ephellon/Twitch-Tools/releases/tag/5.35.4.14) — RAM Alarms: editable limits, no respawn loop for pages under 10 minutes old, and a one-day log in Settings (#67); a respawned tab keeps Up Next (#68); the Up Next pin is kept across channel changes (#71)

@@ -283,6 +283,20 @@ let Player__Initialize = async(START_OVER = false) => {
 
             if(!controls && !muted)
                 $('figure[tt-svg-label~="unmute"i]')?.click();
+
+            // Embeds asked to be muted (e.g. the Up Next preview) can start with sound before the player
+            // applies `muted=true` (#49); keep the video muted until the viewer uses the player themselves
+            if(muted) {
+                let viewerTouched = false;
+                let silence = video => {
+                    video.muted = true;
+                    video.addEventListener('volumechange', () => viewerTouched || (video.muted = true));
+                };
+
+                document.addEventListener('pointerdown', ({ isTrusted }) => viewerTouched ||= isTrusted);
+                document.addEventListener('keydown', ({ isTrusted }) => viewerTouched ||= isTrusted);
+                when.defined(() => $('video')).then(silence);
+            }
         }
 
         __PopinButton__: {
