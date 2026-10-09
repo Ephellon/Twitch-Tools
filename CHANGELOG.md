@@ -67,7 +67,11 @@
         - Each tab keeps its own Lurk state. Auto-Focus or a toggle in one tab no longer changes another tab (#65).
         - On offline channels, Lurk no longer opens and closes the quality menu over and over (#63).
         - Lurk also leaves the quality menu alone when the channel you are watching goes offline, and Auto-Focus no longer switches Lurk on an ended stream (#63).
-    - **RAM Alarms:** alerts now match the levels shown in Settings (500 MB, 1 GB, 2 GB). "1 GB: Notify" used to fire at about 600 MB, and a page over 2 GB read as "normal" (#64).
+    - **RAM Alarms:**
+        - Alerts now match the levels shown in Settings (500 MB, 1 GB, 2 GB). "1 GB: Notify" used to fire at about 600 MB, and a page over 2 GB read as "normal" (#64).
+        - The three limits can be changed in Settings. A page under 10 minutes old is no longer respawned (that only looped); it gets a notice instead. Settings shows a log of the last day's alarms, so repeated reloads can be explained after the fact (#67).
+    - **Up Next → Pin:** a pin is no longer cleared just by changing channels; it is used up when you reach the pinned channel (#71).
+    - **Up Next:** a tab respawned by RAM Alarms or Recover Pages keeps Up Next, instead of it moving to another tab (#68).
     - **Recording (rewritten; DVR, trophy clips, Alt+Z):**
         - Recordings are saved to disk as they go, so long DVRs don't use more memory over time. A recording a closed or crashed tab didn't save is offered on the next page load.
         - Clips keep their last seconds.

@@ -1696,15 +1696,14 @@ let Initialize = async(START_OVER = false) => {
                 name: parseURL(GetNextStreamer.href).pathname.slice(1).split('/').shift(),
             };
 
-        if(defined(GetNextStreamer.pinnedStreamer) && ((ALL_FIRST_IN_LINE_JOBS?.length | 0) < 1) && !STREAMER?.live) {
-            Cache.remove(['PinnedStreamer']);
-
+        // Only a lookup: Stay Live and others ask every second, and clearing the pin here lost it on the next channel (#71).
+        // The pin is used up once its channel is reached (see First in Line's `init`)
+        if(defined(GetNextStreamer.pinnedStreamer) && ((ALL_FIRST_IN_LINE_JOBS?.length | 0) < 1) && !STREAMER?.live)
             return ({
                 from: 'GET_NEXT_STREAMER__PINNED',
                 href: `/${ GetNextStreamer.pinnedStreamer }`,
                 name: GetNextStreamer.pinnedStreamer,
             });
-        }
 
         // Next channel in "Up Next"
         if(ALL_FIRST_IN_LINE_JOBS?.length && !parseBool(Settings.first_in_line_none))

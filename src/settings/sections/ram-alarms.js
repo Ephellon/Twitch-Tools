@@ -23,7 +23,7 @@ export default {
             rows: [
                 {
                     html: `<div opt>
-                            <div tr-id='ram-alarms:low'>When above <span unit='MB'><input disabled id='ram_low' type='number' value='500'></span> — LOW</div>
+                            <div tr-id='ram-alarms:low'>When above <span unit='MB'><input id='ram_low' type='number' min='100' step='50' value='500'></span> — LOW</div>
                             <select id='ram_onlow'>
                                 <option value='ignore' tr-id set='textContent→\\Glyphs.utf8.ignore \\this.textContent'>Ignore</option>
                                 <option value='notify' tr-id set='textContent→\\Glyphs.utf8.notify \\this.textContent'>Notify</option>
@@ -33,7 +33,7 @@ export default {
                 },
                 {
                     html: `<div opt>
-                            <div tr-id='ram-alarms:medium'>When above <span unit='GB'><input disabled id='ram_medium' type='number' value='1'></span> — MEDIUM</div>
+                            <div tr-id='ram-alarms:medium'>When above <span unit='GB'><input id='ram_medium' type='number' min='0.25' step='0.25' value='1'></span> — MEDIUM</div>
                             <select id='ram_onmedium'>
                                 <option value='ignore' tr-id set='textContent→\\Glyphs.utf8.ignore \\this.textContent'>Ignore</option>
                                 <option value='notify' tr-id set='textContent→\\Glyphs.utf8.notify \\this.textContent'>Notify</option>
@@ -43,7 +43,7 @@ export default {
                 },
                 {
                     html: `<div opt>
-                            <div tr-id='ram-alarms:high'>When above <span unit='GB'><input disabled id='ram_high' type='number' value='2'></span> — HIGH</div>
+                            <div tr-id='ram-alarms:high'>When above <span unit='GB'><input id='ram_high' type='number' min='0.5' step='0.25' value='2'></span> — HIGH</div>
                             <select id='ram_onhigh'>
                                 <option value='ignore' tr-id set='textContent→\\Glyphs.utf8.ignore \\this.textContent'>Ignore</option>
                                 <option value='notify' tr-id set='textContent→\\Glyphs.utf8.notify \\this.textContent'>Notify</option>
@@ -62,6 +62,12 @@ export default {
                 },
             ],
         },
+        {
+            text: "What RAM Alarms did in the last day, newest first. A page that reloads over and over shows up here, even after it's gone.",
+        },
+        {
+            html: `<table id='ram-alarms--log'><tbody><tr><td>Nothing in the last day</td></tr></tbody></table>`,
+        },
     ],
     settings: {
         ram_onlow: {
@@ -78,15 +84,15 @@ export default {
         },
         ram_low: {
             type: 'custom',
-            store: false,
+            default: 500,
         },
         ram_medium: {
             type: 'custom',
-            store: false,
+            default: 1,
         },
         ram_high: {
             type: 'custom',
-            store: false,
+            default: 2,
         },
     },
 };

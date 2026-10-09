@@ -262,6 +262,12 @@ function RemoveTab(tab, duplicateTab = false, forced = true) {
         Container.tabs.create({ active: tab.active, index: tab.index, url: tab.url, windowId: tab.windowId }, _ => {
             if(tab.groupId > -1)
                 Container.tabs.group({ groupId: tab.groupId, tabIds: [_.id] });
+
+            // The new tab replaces this one: Up Next stays with it, instead of going to whichever tab claims first (#68)
+            Storage.get(['UP_NEXT_OWNER'], ({ UP_NEXT_OWNER = null }) => {
+                if(UP_NEXT_OWNER == tab.id)
+                    Storage.set({ UP_NEXT_OWNER: _.id });
+            });
         });
 
         RemoveTab.duplicatedTabs.set(tab.url, +new Date);
@@ -844,6 +850,7 @@ Runtime.onMessage.addListener((request, sender, respond) => {
                 Container.tabs.get(sender.tab.id, tab => {
                     if(tab && !tab.discarded)
                         try {
+                            logRamAlarm({ action: 'respawned', url: tab.url, note: (request.meta?.isOkay ? 'you chose Respawn' : 'no answer in time') });
                             RemoveTab(tab, true, true);
                             respond({ success: true });
                         } catch(e) {
@@ -1008,6 +1015,31 @@ const MEMORY_TIERS = {
     HIGH:   2 * 1024 ** 3,
 };
 
+// A page this young that's already over its tier will be over it again right after a respawn: respawning it only
+// loops (#67), so it gets a notice instead
+const RAM_RESPAWN_MIN_AGE = 10 * 60_000;
+
+/**
+ * Adds an entry to the RAM Alarms log (shown in Settings), keeping the last day, so the reason for a reload can still
+ * be read after the page is gone (#67).
+ * @param {Object} entry - What happened: `{ action, url, ramUsed?, tier?, note? }`
+ * @returns {Promise<void>}
+ */
+function logRamAlarm(entry) {
+    const time = +new Date;
+
+    // One write at a time: tabs answer the audit together, and parallel writes would drop entries
+    return logRamAlarm.queue = (logRamAlarm.queue ?? Promise.resolve())
+        .then(async() => {
+            const { ramAlarmLog = [] } = await Storage.get(['ramAlarmLog']);
+
+            await Storage.set({
+                ramAlarmLog: [...ramAlarmLog.filter(entry => time - entry.time < 86_400_000), { time, ...entry }].slice(-100),
+            });
+        })
+        .catch(error => console.warn(`Failed to log a RAM Alarm: ${ error }`));
+}
+
 /**
  * Audits RAM usage of Twitch tabs and triggers notifications or respawns based on configured memory tiers.
  * @returns {Promise<void>}
@@ -1016,8 +1048,16 @@ async function auditMemory() {
     const tabs = await Container.tabs.query({ url: '*://*.twitch.tv/*', discarded: false });
     const memoryAudit = [];
 
-    const { ram_onhigh = 'ignore', ram_onmedium = 'ignore', ram_onlow = 'ignore', ram_timescale = false } = await Storage.get(['ram_onhigh', 'ram_onmedium', 'ram_onlow', 'ram_timescale']);
+    const { ram_onhigh = 'ignore', ram_onmedium = 'ignore', ram_onlow = 'ignore', ram_timescale = false, ram_low, ram_medium, ram_high } = await Storage.get(['ram_onhigh', 'ram_onmedium', 'ram_onlow', 'ram_timescale', 'ram_low', 'ram_medium', 'ram_high']);
     const ram_ = { ram_onhigh, ram_onmedium, ram_onlow };
+
+    // The viewer's own tiers (#67): LOW in MB, MEDIUM and HIGH in GB; anything unset or invalid keeps the default
+    const tierOf = (value, unit, fallback) => (parseFloat(value) > 0 ? parseFloat(value) * unit : fallback);
+    const TIERS = {
+        LOW:    tierOf(ram_low, 1024 ** 2, MEMORY_TIERS.LOW),
+        MEDIUM: tierOf(ram_medium, 1024 ** 3, MEMORY_TIERS.MEDIUM),
+        HIGH:   tierOf(ram_high, 1024 ** 3, MEMORY_TIERS.HIGH),
+    };
 
     find_offenders: for(const { id, url, title, active, autoDiscardable, discarded, frozen } of tabs) {
         if(!url.startsWith('http'))
@@ -1051,16 +1091,31 @@ async function auditMemory() {
                     ramUsed *= 1 + (liveTime / (60 * 60 * 1e3));
 
                 const tier = (
-                    ramUsed >= MEMORY_TIERS.HIGH
+                    ramUsed >= TIERS.HIGH
                         ? 'high'
-                        : ramUsed >= MEMORY_TIERS.MEDIUM
+                        : ramUsed >= TIERS.MEDIUM
                             ? 'medium'
-                            : ramUsed >= MEMORY_TIERS.LOW
+                            : ramUsed >= TIERS.LOW
                                 ? 'low'
                                 : 'normal'
                 );
 
-                const act = ram_[`ram_on${ tier }`] ?? 'ignore';
+                let act = ram_[`ram_on${ tier }`] ?? 'ignore';
+
+                const MB = Math.round(ramUsed / 1024 ** 2);
+
+                // Just (re)opened and already over: a respawn won't bring it down, so say so instead of looping (#67)
+                if(act === 'respawn' && liveTime < RAM_RESPAWN_MIN_AGE) {
+                    act = 'hold';
+
+                    Container.tabs.sendMessage(id, {
+                        action: 'notify',
+                        message: `<div title="RAM Alarm - Respawn Skipped" okay="OK">This tab's page memory is at <strong style="color:var(--color-red)">${ MB }MB</strong>, but the page is only ${ Math.round(liveTime / 60_000) } min old. Respawning it would not help, so TTV Tools left it alone. If this keeps happening, raise the limit in Settings → RAM Alarms.</div>`,
+                    });
+                }
+
+                if(['respawn', 'notify', 'hold'].includes(act))
+                    logRamAlarm({ action: act, url, ramUsed, tier });
 
                 const onAccept = 'RESPAWN_THIS_TAB'
                     , onIgnore = (true
@@ -1074,13 +1129,13 @@ async function auditMemory() {
                 if(act === 'respawn') {
                     Container.tabs.sendMessage(id, {
                         action: 'notify',
-                        message: `<div title="RAM Overage - Respawn Pending" okay="Respawn" deny="Cancel" data-on-okay="${ onAccept }" data-on-time="${ onAccept }">This tab's page memory is at <strong style="color:var(--color-red)">${ Math.round(ramUsed / 1024 ** 2) }MB</strong>. This tab will not be respawned if you are actively using it.</div>`,
+                        message: `<div title="RAM Overage - Respawn Pending" okay="Respawn" deny="Cancel" data-on-okay="${ onAccept }" data-on-time="${ onAccept }">This tab's page memory is at <strong style="color:var(--color-red)">${ MB }MB</strong>. This tab will not be respawned if you are actively using it.</div>`,
                         onAccept, onIgnore,
                     })
                 } else if(act === 'notify') {
                     Container.tabs.sendMessage(id, {
                         action: 'notify',
-                        message: `<div title="RAM Warning" okay="Respawn" data-on-okay="${ onAccept }">This tab's page memory is at <strong style="color:var(--color-warn)">${ Math.round(ramUsed / 1024 ** 2) }MB</strong>.</div>`,
+                        message: `<div title="RAM Warning" okay="Respawn" data-on-okay="${ onAccept }">This tab's page memory is at <strong style="color:var(--color-warn)">${ MB }MB</strong>.</div>`,
                         onAccept,
                     })
                 }
