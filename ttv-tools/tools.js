@@ -6110,6 +6110,10 @@ let Initialize = async(START_OVER = false) => {
                                     if(button?.getAttribute('toggled-by') == 'user')
                                         break __AutoFocus_Disable_AwayMode__;
 
+                                    // The stream ended: an offline player has nothing to lurk on (#63)
+                                    if(LurkOfflinePlayer())
+                                        break __AutoFocus_Disable_AwayMode__;
+
                                     button?.click();
 
                                     changes.push('disabling lurking');
@@ -6146,6 +6150,10 @@ let Initialize = async(START_OVER = false) => {
 
                                     // The viewer started or stopped lurking themselves: leave it (#60)
                                     if(button?.getAttribute('toggled-by') == 'user')
+                                        break __AutoFocus_Enable_AwayMode__;
+
+                                    // The stream ended: an offline player has nothing to lurk on (#63)
+                                    if(LurkOfflinePlayer())
                                         break __AutoFocus_Enable_AwayMode__;
 
                                     button?.click();
@@ -6203,6 +6211,12 @@ let Initialize = async(START_OVER = false) => {
      *                            __/ |
      *                           |___/
      */
+    // Whether this page's player can't change quality: the channel isn't live (VODs aren't "live", but have a player).
+    // An offline player has only "Auto", and setting the quality there opens and shuts its menu for nothing (#63)
+    function LurkOfflinePlayer() {
+        return !STREAMER.live && !/\/videos?\//i.test(location.pathname);
+    }
+
     // This tab's Lurk state, `{ enabled, by }`, kept in the tab's session storage: it survives a reload of the tab but isn't
     // shared with other tabs (#65)
     let TabLurk = {
@@ -6247,11 +6261,15 @@ let Initialize = async(START_OVER = false) => {
 
         // An offline channel has only "Auto": reading or changing the quality there opened and closed the player's menu
         // forever, and could even leave the page (#63). VODs aren't "live", but have a player
-        if(!STREAMER.live && !/\/videos?\//i.test(location.pathname))
+        if(LurkOfflinePlayer())
             return StopWatch.stop('away_mode');
 
+        // With no picture (the stream just ended, or is still loading), reading the quality opens the settings menu:
+        // wait for a picture instead of opening it every tick (#63)
+        let picture = $.all('video').some(video => video.videoHeight > 0);
+
         let button = $('#away-mode'),
-            currentQuality = (Handlers.away_mode.quality ??= await GetQuality());
+            currentQuality = (Handlers.away_mode.quality ??= (picture? await GetQuality(): void null));
 
         // Alt + A | Opt + A
         if(nullish(GLOBAL_EVENT_LISTENERS.KEYDOWN_ALT_A))
@@ -6471,7 +6489,8 @@ let Initialize = async(START_OVER = false) => {
                     { size = 'auto' } break;
             }
 
-            await SetQuality([size,'low'][+enabled])
+            // A stream that ended while you watched: switch Lurk, but leave the player's quality menu alone (#63)
+            await (LurkOfflinePlayer()? Promise.resolve(): SetQuality([size,'low'][+enabled]))
                 .then(() => {
                     if(parseBool(Settings.away_mode__volume_control))
                         SetVolume([InitialVolume, Settings.away_mode__volume][+enabled]);
