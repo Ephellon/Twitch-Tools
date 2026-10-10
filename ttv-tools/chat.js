@@ -3500,9 +3500,11 @@ let Chat__Initialize_Safe_Mode = async({ banned = false, hidden = false }) => {
 
             face = face?.replace(/^(?:https?:.*?)?([\d]+\/[\w\-\.\/]+)$/i, '$1');
 
-            ChannelPoints[STREAMER.name] = [amount, fiat, face, notEarned, pointsToEarnNext].join('|');
+            let points = ChannelPoints[STREAMER.name] = [amount, fiat, face, notEarned, pointsToEarnNext].join('|');
 
-            Cache.save({ ChannelPoints });
+            // Save only this channel's entry onto the latest copy: saving the whole (older) copy undid other
+            // tabs' newer amounts, so Live Reminders showed stale balances
+            Cache.load(['ChannelPoints'], ({ ChannelPoints: latest }) => Cache.save({ ChannelPoints: { ...(latest ?? {}), [STREAMER.name]: points } }));
         });
     };
     Timers.point_watcher_helper = 15_000;

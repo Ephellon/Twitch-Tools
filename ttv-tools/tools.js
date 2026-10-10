@@ -7602,6 +7602,10 @@ let Initialize = async(START_OVER = false) => {
 
         [FIRST_IN_LINE_JOB, FIRST_IN_LINE_WARNING_JOB, FIRST_IN_LINE_WARNING_TEXT_UPDATE].forEach(clearInterval);
 
+        // A new job gets its own "Coming up next" prompt (the flag was never reset, so after a Skip
+        // the next channel switched without asking)
+        try { delete STARTED_TIMERS.WARNING } catch(error) { /* Not set up yet */ }
+
         FIRST_IN_LINE_HREF = href;
         GetNextStreamer.cachedStreamer = channel;
         name = (channel.name?.equals(name)? channel.name: name);
@@ -7647,39 +7651,37 @@ let Initialize = async(START_OVER = false) => {
                     if(nullish(action))
                         return /* The event timed out... */;
 
-                    let thisJob = ALL_FIRST_IN_LINE_JOBS.indexOf(FIRST_IN_LINE_HREF),
-                        [removed] = ALL_FIRST_IN_LINE_JOBS.splice(thisJob, 1),
-                        name = parseURL(removed).pathname.slice(1);
+                    // Find the job by channel: FIRST_IN_LINE_HREF carries the page's search string, so
+                    // `indexOf` could miss and `splice(-1)` would drop the last job instead (#52)
+                    let current = parseURL(FIRST_IN_LINE_HREF).pathname,
+                        thisJob = ALL_FIRST_IN_LINE_JOBS.findIndex(job => parseURL(job).pathname?.equals(current)),
+                        [removed = FIRST_IN_LINE_HREF] = (thisJob < 0? []: ALL_FIRST_IN_LINE_JOBS.splice(thisJob, 1)),
+                        name = parseURL(removed).pathname.slice(1),
+                        [next] = ALL_FIRST_IN_LINE_JOBS;
 
-                    $notice(`Heading to Up Next channel (confirmation):`, removed);
+                    $notice(`${ ['Skipping', 'Heading to'][+action] } Up Next channel (confirmation):`, removed);
 
+                    // Stop this channel's countdown before anything else, so it can't fire after a Skip (#52)
+                    [FIRST_IN_LINE_JOB, FIRST_IN_LINE_WARNING_JOB, FIRST_IN_LINE_WARNING_TEXT_UPDATE].forEach(clearInterval);
+                    FIRST_IN_LINE_HREF = undefined;
                     FIRST_IN_LINE_DUE_DATE = NEW_DUE_DATE(FIRST_IN_LINE_TIMER);
 
-                    // Confirmation OK
-                    REDO_FIRST_IN_LINE_QUEUE(ALL_FIRST_IN_LINE_JOBS[0], { redo: (parseURL(removed).searchParameters?.redo ?? "") });
+                    if(defined(next))
+                        REDO_FIRST_IN_LINE_QUEUE(next, { redo: (parseURL(removed).searchParameters?.redo ?? "") });
 
-                    // @FIXME: Pressing "Skip" may destroy the queue (logically)
                     Cache.save({ ALL_FIRST_IN_LINE_JOBS, FIRST_IN_LINE_DUE_DATE }, () => {
                         if(action) {
-                            // The user clicked "OK"
-
-                            goto(parseURL(FIRST_IN_LINE_HREF).addSearch({ tool: 'first-in-line--ok' }).href);
+                            // The user clicked "OK" (the channel just taken off the queue, not whatever is next)
+                            goto(parseURL(removed).addSearch({ tool: 'first-in-line--ok' }).href);
                         } else {
-                            // The user clicked "Cancel"
-                            $log('Canceled First in Line event', FIRST_IN_LINE_HREF);
+                            // The user clicked "Skip": it's already off the queue; drop its row
+                            $log('Canceled First in Line event', removed);
 
-                            let thisJob = ALL_FIRST_IN_LINE_JOBS.indexOf(FIRST_IN_LINE_HREF),
-                                [removed] = ALL_FIRST_IN_LINE_JOBS.splice(thisJob, 1),
-                                name = parseURL(removed).pathname.slice(1),
-                                balloonChild = $(`[id^="tt-balloon-job"i][href$="${ name }"i]`),
+                            let balloonChild = $(`[id^="tt-balloon-job"i][href$="/${ name }"i]`),
                                 animationID = (balloonChild?.getAttribute('animationID')) || -1;
-
-                            // $(`button[data-test-selector$="delete"i]`, balloonChild)?.click();
 
                             clearInterval(animationID);
                             balloonChild?.remove();
-
-                            REDO_FIRST_IN_LINE_QUEUE(ALL_FIRST_IN_LINE_JOBS[0]);
                         }
                     });
                 });
@@ -8382,7 +8384,9 @@ let Initialize = async(START_OVER = false) => {
                                     continue listing;
                             }
 
-                            let [amount, fiat, face, notEarned, pointsToEarnNext] = (ChannelPoints[name] ?? 0).toString().split('|'),
+                            // The name's case can differ from the one the points were saved under
+                            let pointsKey = (name in ChannelPoints? name: Object.keys(ChannelPoints).find(key => key.equals(name)) ?? name),
+                                [amount, fiat, face, notEarned, pointsToEarnNext] = (ChannelPoints[pointsKey] ?? 0).toString().split('|'),
                                 sole = face?.split('/')?.map(parseFloat)?.shift();
 
                             // Correct for changed usernames
@@ -9444,10 +9448,12 @@ let Initialize = async(START_OVER = false) => {
 
         FIRST_IN_LINE_BOOST &&= ALL_FIRST_IN_LINE_JOBS.length > 0;
 
-        let filb = $('[speeding]');
+        // The boost button itself: `[speeding]` matched the Up Next toggle button first (the boost button
+        // marks it too), so once rushing ended this clicked the panel open and shut every second (#44)
+        let filb = $('#up-next-boost');
 
-        if(parseBool(filb?.getAttribute('speeding')) != parseBool(FIRST_IN_LINE_BOOST))
-            filb?.click?.();
+        if(defined(filb) && parseBool(filb.getAttribute('speeding')) != parseBool(FIRST_IN_LINE_BOOST))
+            filb.click();
 
         StopWatch.stop('first_in_line');
     };
@@ -15038,9 +15044,11 @@ let Initialize = async(START_OVER = false) => {
 
                 face = face?.replace(/^(?:https?:.*?)?([\d]+\/[\w\-\.\/]+)$/i, '$1');
 
-                ChannelPoints[STREAMER.name] = [amount, fiat, face, notEarned, pointsToEarnNext].join('|');
+                let points = ChannelPoints[STREAMER.name] = [amount, fiat, face, notEarned, pointsToEarnNext].join('|');
 
-                Cache.save({ ChannelPoints });
+                // Save only this channel's entry onto the latest copy: saving the whole (older) copy undid other
+                // tabs' newer amounts, so Live Reminders showed stale balances
+                Cache.load(['ChannelPoints'], ({ ChannelPoints: latest }) => Cache.save({ ChannelPoints: { ...(latest ?? {}), [STREAMER.name]: points } }));
             }
 
             // @performance
