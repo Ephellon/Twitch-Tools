@@ -889,6 +889,7 @@ Runtime.onMessage.addListener((request, sender, respond) => {
 const REPORTS = new Map
     , GALLOWS = new Map
     , HANG_UP_CHECKER = new Map
+    , NO_RECEIVER = new Map
     , MAX_TIME_ALLOWED = 35_000;
 
 const LAG_REPORTER = setInterval(() => {
@@ -903,6 +904,10 @@ const LAG_REPORTER = setInterval(() => {
                 try {
                     Container.tabs.get(id)
                         .then(tab => {
+                            // The browser froze or discarded it (a hidden, silent tab): it can't answer, and isn't hung (#67)
+                            if(tab.frozen || tab.discarded)
+                                return REPORTS.set(tab.id, +new Date);
+
                             console.warn(`Tab "${ tab.title }" (#${ tab.id }) timed out. Removing...`);
 
                             logRamAlarm({ action: 'unresponsive', url: tab.url, note: 'no answer for 35s' });
@@ -930,7 +935,14 @@ const LAG_REPORTER = setInterval(() => {
 
             Container.tabs.get(ID)
                 .then(tab => {
-                    const { audible, discarded, id, mutedInfo, status, title } = tab;
+                    const { audible, discarded, frozen, id, mutedInfo, status, title } = tab;
+
+                    // A frozen tab answers nothing until the browser thaws it: leave it be (#67)
+                    if(frozen || discarded) {
+                        clearTimeout(HANG_UP_CHECKER.get(id));
+
+                        return REPORTS.set(id, +new Date);
+                    }
 
                     Container.tabs.sendMessage(id, { action: 'report-back' }, response => {
                         const { ok = false, performance = 1, timestamp = +new Date - MAX_TIME_ALLOWED, hidden = false } = (response ?? {});
@@ -944,6 +956,7 @@ const LAG_REPORTER = setInterval(() => {
                             /* Continue... */
                         } else if(ok || discarded || status == LOADING) {
                             clearTimeout(HANG_UP_CHECKER.get(id));
+                            NO_RECEIVER.delete(id);
 
                             return REPORTS.set(id, +new Date);
                         }
@@ -952,6 +965,8 @@ const LAG_REPORTER = setInterval(() => {
 
                         Container.tabs.sendMessage(id, { action: 'report-back' }, response => {
                             const { ok = false, performance = 1, timestamp = +new Date - MAX_TIME_ALLOWED } = (response ?? {});
+                            // Nothing listening: the page only starts answering once it's ready, which can take a while
+                            const noReceiver = /receiving end/i.test(Container.runtime.lastError?.message ?? '');
 
                             if(false
                                 || ((+new Date - timestamp) > MAX_TIME_ALLOWED * 1.5)
@@ -960,16 +975,38 @@ const LAG_REPORTER = setInterval(() => {
                                 /* Continue... */
                             } else if(ok || discarded || status == LOADING) {
                                 clearTimeout(HANG_UP_CHECKER.get(id));
+                                NO_RECEIVER.delete(id);
 
                                 return REPORTS.set(id, +new Date);
                             }
 
-                            console.warn(`Tab "${ title }" (#${ id }) did not respond. Removing... Response Time → ${ (+new Date - timestamp) }ms · Memory Usage → ${ (100 * performance).toFixed(2).replace('.00', '') }%`);
+                            // The hang-up timer already removed it: a late answer mustn't remove (and log) it twice
+                            if(!REPORTS.has(id))
+                                return;
 
-                            logRamAlarm({ action: 'unresponsive', url: tab.url, note: `answered in ${ Math.round((+new Date - timestamp) / 1000) }s, memory ${ Math.round(100 * performance) }%` });
-                            clearTimeout(HANG_UP_CHECKER.get(id));
-                            REPORTS.delete(id);
-                            RemoveTab(tab, true);
+                            // No answer from a page that's (re)loading: its content script isn't listening yet, it isn't hung (#67)
+                            Container.tabs.get(id)
+                                .then(tab => {
+                                    // ...or a new page that isn't ready yet (more so when hidden): give it 2 minutes before calling it dead
+                                    if(noReceiver && !NO_RECEIVER.has(id))
+                                        NO_RECEIVER.set(id, +new Date);
+
+                                    if(tab.status == LOADING || (noReceiver && (+new Date - NO_RECEIVER.get(id)) < 120_000)) {
+                                        clearTimeout(HANG_UP_CHECKER.get(id));
+
+                                        return REPORTS.set(id, +new Date);
+                                    }
+
+                                    NO_RECEIVER.delete(id);
+
+                                    console.warn(`Tab "${ title }" (#${ id }) did not respond. Removing... Response Time → ${ (+new Date - timestamp) }ms · Memory Usage → ${ (100 * performance).toFixed(2).replace('.00', '') }%`);
+
+                                    logRamAlarm({ action: 'unresponsive', url: tab.url, note: `answered in ${ Math.round((+new Date - timestamp) / 1000) }s, memory ${ Math.round(100 * performance) }%` });
+                                    clearTimeout(HANG_UP_CHECKER.get(id));
+                                    REPORTS.delete(id);
+                                    RemoveTab(tab, true);
+                                })
+                                .catch(error => REPORTS.delete(id));
                         });
                     });
                 })

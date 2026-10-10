@@ -70,7 +70,7 @@
     - **RAM Alarms:**
         - Alerts now match the levels shown in Settings (500 MB, 1 GB, 2 GB). "1 GB: Notify" used to fire at about 600 MB, and a page over 2 GB read as "normal" (#64).
         - The three limits can be changed in Settings. A page under 10 minutes old is no longer respawned (that only looped); it gets a notice instead. Settings shows a log of the last day's alarms, so repeated reloads can be explained after the fact (#67).
-        - **Automatic Tab Reloads:** background tabs are no longer respawned as "not responding". Memory was measured against the wrong number, so almost every page read as 100%, and quiet hidden tabs counted as stuck. These respawns now show in the RAM Alarms log too (#67).
+        - **Automatic Tab Reloads:** background tabs are no longer respawned as "not responding". Memory was measured against the wrong number, so almost every page read as 100%, and quiet hidden tabs counted as stuck. Frozen, reloading and not-yet-ready tabs are also left alone. These respawns now show in the RAM Alarms log too (#67).
         - RAM notices show their own title and buttons ("Respawn", "OK") instead of the generic "Please confirm… Cancel / OK".
     - **Up Next → Pin:** a pin is no longer cleared just by changing channels; it is used up when you reach the pinned channel. Stay Live now goes to the pinned channel instead of reloading the current one (#71).
     - **Up Next:** a tab respawned by RAM Alarms or Recover Pages keeps Up Next, instead of it moving to another tab (#68).
