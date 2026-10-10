@@ -202,7 +202,7 @@ plugin({
 
                 COUNTING_POINTS = setInterval(async() => {
                     let points_receipt = $('#tt-points-receipt')
-                        , balance = $.last('[data-test-selector*="balance-string"i]')
+                        , balance = $.last('[data-test-selector*="balance-string"i]:not([data-test-selector*="bits"i])')
                         , exact_debt = $('[data-test-selector^="prediction-checkout"i], [data-test-selector*="user-prediction"i][data-test-selector*="points"i], [data-test-selector*="user-prediction"i] p, [class*="points-icon"i] ~ p *:not(:empty)')
                         , exact_change = $('[class*="points"i][class*="summary"i][class*="add-text"i]');
 

@@ -35,7 +35,7 @@ plugin({
             return;
 
         // Color the balance text
-        const balance = $.last('[data-test-selector*="balance-string"i]');
+        const balance = $.last('[data-test-selector*="balance-string"i]:not([data-test-selector*="bits"i])');
 
         balance?.setAttribute('rainbow-border', await STREAMER.done);
         balance?.setAttribute('bottom-only', '');
@@ -57,6 +57,21 @@ plugin({
                 gTarget = rTarget;
             }
 
+            // Twitch's newer tooltip only has the stream's title: name the channel from the hovered link, and put the
+            // points under the title (the title is clamped, so anything inside it is cut off)
+            if(nullish(gTarget) && defined(title)) {
+                const link = $('.side-nav-section a[href]:hover');
+
+                if(nullish(link))
+                    break contextualizer;
+
+                name = parseURL(link.href).pathname.slice(1).split('/').shift();
+                game = null;
+                target = title.parentElement ?? title;
+
+                break contextualizer;
+            }
+
             if(nullish(title) || nullish(gTarget))
                 break contextualizer;
 
@@ -74,7 +89,10 @@ plugin({
         Cache.load(['ChannelPoints'], async({ ChannelPoints }) => {
             ChannelPoints ??= {};
 
-            let [amount, fiat, face, notEarned, pointsToEarnNext] = (ChannelPoints[name] ?? 0).toString().split('|')
+            // The name's case can differ from the one the points were saved under (a link's path is lowercase)
+            const pointsKey = (name in ChannelPoints ? name : Object.keys(ChannelPoints).find(key => key.equals(name ?? '')) ?? name);
+
+            let [amount, fiat, face, notEarned, pointsToEarnNext] = (ChannelPoints[pointsKey] ?? 0).toString().split('|')
                 , style = new CSSObject({ verticalAlign: 'bottom', height: '20px', width: '20px' })
                 , upNext = !!~(ALL_FIRST_IN_LINE_JOBS ?? []).findIndex(href => RegExp(`/${ name }\\b`, 'i').test(href));
 
@@ -175,7 +193,7 @@ plugin({
      * @returns {void}
      */
     setup() {
-        when.defined(() => $.last('[data-test-selector*="balance-string"i]')?.closest('button'))
+        when.defined(() => $.last('[data-test-selector*="balance-string"i]:not([data-test-selector*="bits"i])')?.closest('button'))
             .then(async balanceButton => {
                 RegisterJob('point_watcher_placement');
 

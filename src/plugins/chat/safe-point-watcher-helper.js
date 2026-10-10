@@ -33,7 +33,7 @@ plugin({
 
         Cache.load(['ChannelPoints'], ({ ChannelPoints }) => {
             let [amount, fiat, face, notEarned, pointsToEarnNext] = ((ChannelPoints ??= {})[context.STREAMER.name] ?? 0).toString().split('|')
-                , balance = $.last('[data-test-selector*="balance-string"i]')
+                , balance = $.last('[data-test-selector*="balance-string"i]:not([data-test-selector*="bits"i])')
                 , allRewards = ALL_CHANNEL_POINT_REWARDS;
 
             hasPointsEnabled ||= defined(balance);
@@ -92,7 +92,7 @@ plugin({
      * @param {Object} context - The plugin context
      */
     setup(context) {
-        when.defined(() => $.last('[data-test-selector*="balance-string"i]')?.closest('button')).then(async balanceButton => {
+        when.defined(() => $.last('[data-test-selector*="balance-string"i]:not([data-test-selector*="bits"i])')?.closest('button')).then(async balanceButton => {
             RegisterJob('point_watcher_helper');
 
             const jump = (context.STREAMER.jump?.[context.STREAMER.name?.toLowerCase?.()]?.stream?.points);

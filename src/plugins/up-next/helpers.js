@@ -1183,9 +1183,10 @@ plugin({
                                     else
                                         body.append(container);
 
-                                    // Update to the new date...
+                                    // Update to the new date (the entry is the date itself: setting `.time` on it threw, and the
+                                    // rest of the listing never showed)
                                     if(+real > +time)
-                                        LiveReminders[name].time = real;
+                                        LiveReminders[name] = real;
 
                                     // And remember kids, never ask a question on StackOverflow
                                     // If anyone besides me ever reads this, I answered my own question eventually

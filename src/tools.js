@@ -1988,7 +1988,7 @@ let Initialize = async(START_OVER = false) => {
 
         get coin() {
             const exact = STREAMER.jump?.[STREAMER?.name?.toLowerCase()]?.stream?.points?.balance
-                , current = parseCoin($.last('[data-test-selector*="balance-string"i]')?.textContent)
+                , current = parseCoin($.last('[data-test-selector*="balance-string"i]:not([data-test-selector*="bits"i])')?.textContent)
                 , _e = exact?.suffix('', 1, 'natural')?.replace('.0', '')
                 , _c = current?.suffix('', 1, 'natural')?.replace('.0', '');
 
@@ -2153,7 +2153,7 @@ let Initialize = async(START_OVER = false) => {
         },
 
         get face() {
-            const balance = $.last('[data-test-selector*="balance-string"i]');
+            const balance = $.last('[data-test-selector*="balance-string"i]:not([data-test-selector*="bits"i])');
 
             if(nullish(balance))
                 return PostOffice.get('points_receipt_placement')?.coin_face;
@@ -2165,7 +2165,7 @@ let Initialize = async(START_OVER = false) => {
         },
 
         get fiat() {
-            const balance = $.last('[data-test-selector*="balance-string"i]');
+            const balance = $.last('[data-test-selector*="balance-string"i]:not([data-test-selector*="bits"i])');
 
             if(nullish(balance))
                 return PostOffice.get('points_receipt_placement')?.coin_name;
@@ -3898,7 +3898,7 @@ if(top == window) {
                                             parseBool(Settings.auto_claim_bonuses)
                                                 ? (false
                                                     || $.defined('#tt-auto-claim-bonuses')
-                                                    || $.nullish('[data-test-selector*="balance-string"i]')
+                                                    || $.nullish('[data-test-selector*="balance-string"i]:not([data-test-selector*="bits"i])')
                                                     || parseBool(Settings.view_mode)
                                                     || STREAMER.veto
 

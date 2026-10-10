@@ -19,9 +19,9 @@ plugin({
         if((placement = Settings.points_receipt_placement ??= 'null').equals('null'))
             return;
 
-        const coin = $.last('[data-test-selector*="balance-string"i]')?.closest('button')?.querySelector('img[alt]');
+        const coin = $.last('[data-test-selector*="balance-string"i]:not([data-test-selector*="bits"i])')?.closest('button')?.querySelector('img[alt]');
 
-        const balance = $.last('[data-test-selector*="balance-string"i]')?.innerText
+        const balance = $.last('[data-test-selector*="balance-string"i]:not([data-test-selector*="bits"i])')?.innerText
             , exact_debt = $('[data-test-selector^="prediction-checkout"i], [data-test-selector*="user-prediction"i][data-test-selector*="points"i], [data-test-selector*="user-prediction"i] p')?.innerText
             , exact_change = $('[class*="points"i][class*="summary"i][class*="add-text"i]')?.innerText;
 

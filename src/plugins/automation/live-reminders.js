@@ -95,7 +95,8 @@ plugin({
 
                             if(notReminded) {
                                 message = `You'll be notified when <a href="/${ reminderName }">${ reminderName }</a> goes live.`;
-                                LiveReminders[reminderName] = (STREAMER.live ? new Date(STREAMER?.data?.actualStartTime) : STREAMER?.data?.lastSeen ?? new Date);
+                                // Without a start time, `new Date(undefined)` is saved as `null`: use now instead
+                                LiveReminders[reminderName] = (STREAMER.live ? new Date(STREAMER?.data?.actualStartTime ?? Date.now()) : STREAMER?.data?.lastSeen ?? new Date);
                             }
                             // Remove the reminder...
                             else {

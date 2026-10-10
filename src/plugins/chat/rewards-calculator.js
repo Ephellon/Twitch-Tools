@@ -79,7 +79,7 @@ plugin({
         const timeLeftInBroadcast = averageBroadcastTime - (context.STREAMER.time / 3_600_000);
 
         // Set the progress bar of the button
-        const have = parseFloat(parseCoin($.last('[data-test-selector*="balance-string"i]')?.innerText) | 0)
+        const have = parseFloat(parseCoin($.last('[data-test-selector*="balance-string"i]:not([data-test-selector*="bits"i])')?.innerText) | 0)
             , este = parseFloat(timeLeftInBroadcast * pointsEarnedPerHour * context.CHANNEL_POINTS_MULTIPLIER)
             , goal = parseFloat($('[data-test-selector*="required"i][data-test-selector*="points"i]')?.previousSibling?.textContent?.replace(/\D+/g, '') | 0)
             , need = goal - have;

@@ -45,7 +45,7 @@ plugin({
         Runtime.sendMessage({ action: 'LOG_RAID_EVENT', data: { from, to } }, async({ events }) => {
             $warn(`${ from } has raided ${ events } time${ (events != 1 ? "s" : "") } this week. Current raid: ${ to } @ ${ (new Date) }`);
 
-            const payable = $.defined('[data-test-selector*="balance-string"i]');
+            const payable = $.defined('[data-test-selector*="balance-string"i]:not([data-test-selector*="bits"i])');
 
             top.postMessage({ action: 'raid', from, to, events, payable }, location.origin);
         });
