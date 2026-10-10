@@ -72,6 +72,7 @@
         - The three limits can be changed in Settings. A page under 10 minutes old is no longer respawned (that only looped); it gets a notice instead. Settings shows a log of the last day's alarms, so repeated reloads can be explained after the fact (#67).
         - **Automatic Tab Reloads:** background tabs are no longer respawned as "not responding". Memory was measured against the wrong number, so almost every page read as 100%, and quiet hidden tabs counted as stuck. Frozen, reloading and not-yet-ready tabs are also left alone. These respawns now show in the RAM Alarms log too (#67).
         - RAM notices show their own title and buttons ("Respawn", "OK") instead of the generic "Please confirm… Cancel / OK".
+    - **Live Reminders:** channel point amounts stay current. Each tab saved its whole (older) copy of everyone's points, undoing newer amounts saved by other tabs; names are also matched regardless of case.
     - **Up Next → Pin:** a pin is no longer cleared just by changing channels; it is used up when you reach the pinned channel. Stay Live now goes to the pinned channel instead of reloading the current one (#71).
     - **Up Next:** a tab respawned by RAM Alarms or Recover Pages keeps Up Next, instead of it moving to another tab (#68).
     - **Recording (rewritten; DVR, trophy clips, Alt+Z):**

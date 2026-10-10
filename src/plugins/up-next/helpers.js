@@ -876,7 +876,9 @@ plugin({
                                             continue listing;
                                     }
 
-                                    const [amount, fiat, face, notEarned, pointsToEarnNext] = (ChannelPoints[name] ?? 0).toString().split('|')
+                                    // The name's case can differ from the one the points were saved under
+                                    const pointsKey = (name in ChannelPoints ? name : Object.keys(ChannelPoints).find(key => key.equals(name)) ?? name)
+                                        , [amount, fiat, face, notEarned, pointsToEarnNext] = (ChannelPoints[pointsKey] ?? 0).toString().split('|')
                                         , sole = face?.split('/')?.map(parseFloat)?.shift();
 
                                     // Correct for changed usernames

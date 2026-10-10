@@ -63,9 +63,11 @@ plugin({
 
             face = face?.replace(/^(?:https?:.*?)?([\d]+\/[\w\-\.\/]+)$/i, '$1');
 
-            ChannelPoints[context.STREAMER.name] = [amount, fiat, face, notEarned, pointsToEarnNext].join('|');
+            const points = ChannelPoints[context.STREAMER.name] = [amount, fiat, face, notEarned, pointsToEarnNext].join('|');
 
-            Cache.save({ ChannelPoints });
+            // Save only this channel's entry onto the latest copy: saving the whole (older) copy undid other
+            // tabs' newer amounts, so Live Reminders showed stale balances
+            Cache.load(['ChannelPoints'], ({ ChannelPoints: latest }) => Cache.save({ ChannelPoints: { ...(latest ?? {}), [context.STREAMER.name]: points } }));
         });
     },
 
