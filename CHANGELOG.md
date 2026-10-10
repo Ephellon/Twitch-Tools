@@ -37,6 +37,7 @@
 ## Release History
 
 ### Version 5.35.\*
+- [`5.35.5.4`](https://github.com/Ephellon/Twitch-Tools/releases/tag/5.35.5.4) — Live Reminders lists every reminder again (it could stop after the first); the Bits balance is no longer read as channel points; Point Watcher shows points in Twitch's new side-bar tooltip; a reminder added on a live channel saves its start time
 - [`5.35.5.3`](https://github.com/Ephellon/Twitch-Tools/releases/tag/5.35.5.3) — Up Next panel no longer flashes after rushing ends (#44); Skip stops the skipped countdown and removes only that channel, "Go now" goes to the right channel, and each new channel asks again (#52); Live Reminders shows current channel points
 - [`5.35.5.2`](https://github.com/Ephellon/Twitch-Tools/releases/tag/5.35.5.2) — Automatic Tab Reloads leaves frozen, reloading and not-yet-ready background tabs alone; they were respawned as "not responding", sometimes every few minutes (#67)
 - [`5.35.5.1`](https://github.com/Ephellon/Twitch-Tools/releases/tag/5.35.5.1) — Up Next no longer queues (and reloads) the channel you are already on when it goes live, and removing a job can no longer drop the last one (#55); the Up Next preview stays muted (#49); stopped the repeating "reading 'name'" console error (#53)

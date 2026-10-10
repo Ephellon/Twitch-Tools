@@ -2664,7 +2664,7 @@ let Chat__Initialize = async(START_OVER = false) => {
         let timeLeftInBroadcast = averageBroadcastTime - (STREAMER.time / 3_600_000);
 
         // Set the progress bar of the button
-        let have = parseFloat(parseCoin($.last('[data-test-selector*="balance-string"i]')?.innerText) | 0),
+        let have = parseFloat(parseCoin($.last('[data-test-selector*="balance-string"i]:not([data-test-selector*="bits"i])')?.innerText) | 0),
             este = parseFloat(timeLeftInBroadcast * pointsEarnedPerHour * CHANNEL_POINTS_MULTIPLIER),
             goal = parseFloat($('[data-test-selector*="required"i][data-test-selector*="points"i]')?.previousSibling?.textContent?.replace(/\D+/g, '') | 0),
             need = goal - have;
@@ -3117,9 +3117,9 @@ let Chat__Initialize = async(START_OVER = false) => {
         if((placement = Settings.points_receipt_placement ??= "null").equals("null"))
             return;
 
-        let coin = $.last('[data-test-selector*="balance-string"i]')?.closest('button')?.querySelector('img[alt]');
+        let coin = $.last('[data-test-selector*="balance-string"i]:not([data-test-selector*="bits"i])')?.closest('button')?.querySelector('img[alt]');
 
-        let balance = $.last('[data-test-selector*="balance-string"i]')?.innerText,
+        let balance = $.last('[data-test-selector*="balance-string"i]:not([data-test-selector*="bits"i])')?.innerText,
             exact_debt = $('[data-test-selector^="prediction-checkout"i], [data-test-selector*="user-prediction"i][data-test-selector*="points"i], [data-test-selector*="user-prediction"i] p')?.innerText,
             exact_change = $('[class*="points"i][class*="summary"i][class*="add-text"i]')?.innerText;
 
@@ -3425,7 +3425,7 @@ let Chat__Initialize_Safe_Mode = async({ banned = false, hidden = false }) => {
         Runtime.sendMessage({ action: 'LOG_RAID_EVENT', data: { from, to } }, async({ events }) => {
             $warn(`${ from } has raided ${ events } time${ (events != 1? 's': '') } this week. Current raid: ${ to } @ ${ (new Date) }`);
 
-            let payable = $.defined('[data-test-selector*="balance-string"i]');
+            let payable = $.defined('[data-test-selector*="balance-string"i]:not([data-test-selector*="bits"i])');
 
             top.postMessage({ action: 'raid', from, to, events, payable }, location.origin);
         });
@@ -3471,7 +3471,7 @@ let Chat__Initialize_Safe_Mode = async({ banned = false, hidden = false }) => {
 
         Cache.load(['ChannelPoints'], ({ ChannelPoints }) => {
             let [amount, fiat, face, notEarned, pointsToEarnNext] = ((ChannelPoints ??= {})[STREAMER.name] ?? 0).toString().split('|'),
-                balance = $.last('[data-test-selector*="balance-string"i]'),
+                balance = $.last('[data-test-selector*="balance-string"i]:not([data-test-selector*="bits"i])'),
                 allRewards = ALL_CHANNEL_POINT_REWARDS;
 
             hasPointsEnabled ||= defined(balance);
@@ -3516,7 +3516,7 @@ let Chat__Initialize_Safe_Mode = async({ banned = false, hidden = false }) => {
 
     __PointWatcherHelper__:
     if(parseBool(Settings.point_watcher_placement)) {
-        when.defined(() => $.last('[data-test-selector*="balance-string"i]')?.closest('button')).then(async balanceButton => {
+        when.defined(() => $.last('[data-test-selector*="balance-string"i]:not([data-test-selector*="bits"i])')?.closest('button')).then(async balanceButton => {
             RegisterJob('point_watcher_helper');
 
             let jump = (STREAMER.jump?.[STREAMER.name?.toLowerCase?.()]?.stream?.points);

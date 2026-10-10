@@ -4276,7 +4276,7 @@ let Initialize = async(START_OVER = false) => {
 
         get coin() {
             let exact = STREAMER.jump?.[STREAMER?.name?.toLowerCase()]?.stream?.points?.balance,
-                current = parseCoin($.last('[data-test-selector*="balance-string"i]')?.textContent),
+                current = parseCoin($.last('[data-test-selector*="balance-string"i]:not([data-test-selector*="bits"i])')?.textContent),
                 _e = exact?.suffix('', 1, 'natural')?.replace('.0',''),
                 _c = current?.suffix('', 1, 'natural')?.replace('.0','');
 
@@ -4435,7 +4435,7 @@ let Initialize = async(START_OVER = false) => {
         },
 
         get face() {
-            let balance = $.last('[data-test-selector*="balance-string"i]');
+            let balance = $.last('[data-test-selector*="balance-string"i]:not([data-test-selector*="bits"i])');
 
             if(nullish(balance))
                 return PostOffice.get('points_receipt_placement')?.coin_face;
@@ -4447,7 +4447,7 @@ let Initialize = async(START_OVER = false) => {
         },
 
         get fiat() {
-            let balance = $.last('[data-test-selector*="balance-string"i]');
+            let balance = $.last('[data-test-selector*="balance-string"i]:not([data-test-selector*="bits"i])');
 
             if(nullish(balance))
                 return PostOffice.get('points_receipt_placement')?.coin_name;
@@ -8689,7 +8689,7 @@ let Initialize = async(START_OVER = false) => {
 
                             // Update to the new date...
                             if(+real > +time)
-                                LiveReminders[name].time = real;
+                                LiveReminders[name] = real; // The entry is the date itself (setting `.time` on a `null` one threw, and the rest of the listing never showed)
 
                             // And remember kids, never ask a question on StackOverflow
                             // If anyone besides me ever reads this, I answered my own question eventually
@@ -9862,7 +9862,8 @@ let Initialize = async(START_OVER = false) => {
                             let message;
                             if(notReminded) {
                                 message = `You'll be notified when <a href="/${ reminderName }">${ reminderName }</a> goes live.`;
-                                LiveReminders[reminderName] = (STREAMER.live? new Date(STREAMER?.data?.actualStartTime): STREAMER?.data?.lastSeen ?? new Date);
+                                // Without a start time, `new Date(undefined)` is saved as `null`: use now instead
+                                LiveReminders[reminderName] = (STREAMER.live? new Date(STREAMER?.data?.actualStartTime ?? Date.now()): STREAMER?.data?.lastSeen ?? new Date);
                             }
                             // Remove the reminder...
                             else {
@@ -14752,7 +14753,7 @@ let Initialize = async(START_OVER = false) => {
 
             COUNTING_POINTS = setInterval(async() => {
                 let points_receipt = $('#tt-points-receipt'),
-                    balance = $.last('[data-test-selector*="balance-string"i]'),
+                    balance = $.last('[data-test-selector*="balance-string"i]:not([data-test-selector*="bits"i])'),
                     exact_debt = $('[data-test-selector^="prediction-checkout"i], [data-test-selector*="user-prediction"i][data-test-selector*="points"i], [data-test-selector*="user-prediction"i] p, [class*="points-icon"i] ~ p *:not(:empty)'),
                     exact_change = $('[class*="points"i][class*="summary"i][class*="add-text"i]');
 
@@ -14934,7 +14935,7 @@ let Initialize = async(START_OVER = false) => {
             return;
 
         // Color the balance text
-        let balance = $.last('[data-test-selector*="balance-string"i]');
+        let balance = $.last('[data-test-selector*="balance-string"i]:not([data-test-selector*="bits"i])');
 
         balance?.setAttribute('rainbow-border', await STREAMER.done);
         balance?.setAttribute('bottom-only', '');
@@ -14956,6 +14957,21 @@ let Initialize = async(START_OVER = false) => {
                 gTarget = rTarget;
             }
 
+            // Twitch's newer tooltip only has the stream's title: name the channel from the hovered link, and put the
+            // points under the title (the title is clamped, so anything inside it is cut off)
+            if(nullish(gTarget) && defined(title)) {
+                let link = $('.side-nav-section a[href]:hover');
+
+                if(nullish(link))
+                    break contextualizer;
+
+                name = parseURL(link.href).pathname.slice(1).split('/').shift();
+                game = null;
+                target = title.parentElement ?? title;
+
+                break contextualizer;
+            }
+
             if(nullish(title) || nullish(gTarget))
                 break contextualizer;
 
@@ -14973,7 +14989,10 @@ let Initialize = async(START_OVER = false) => {
         Cache.load(['ChannelPoints'], async({ ChannelPoints }) => {
             ChannelPoints ??= {};
 
-            let [amount, fiat, face, notEarned, pointsToEarnNext] = (ChannelPoints[name] ?? 0).toString().split('|'),
+            // The name's case can differ from the one the points were saved under (a link's path is lowercase)
+            let pointsKey = (name in ChannelPoints? name: Object.keys(ChannelPoints).find(key => key.equals(name ?? '')) ?? name);
+
+            let [amount, fiat, face, notEarned, pointsToEarnNext] = (ChannelPoints[pointsKey] ?? 0).toString().split('|'),
                 style = new CSSObject({ verticalAlign: 'bottom', height: '20px', width: '20px' }),
                 upNext = !!~(ALL_FIRST_IN_LINE_JOBS ?? []).findIndex(href => RegExp(`/${ name }\\b`, 'i').test(href));
 
@@ -15066,7 +15085,7 @@ let Initialize = async(START_OVER = false) => {
 
     __PointWatcherPlacement__:
     if(parseBool(Settings.point_watcher_placement)) {
-        when.defined(() => $.last('[data-test-selector*="balance-string"i]')?.closest('button'))
+        when.defined(() => $.last('[data-test-selector*="balance-string"i]:not([data-test-selector*="bits"i])')?.closest('button'))
             .then(async balanceButton => {
                 RegisterJob('point_watcher_placement');
 
@@ -17359,7 +17378,7 @@ if(top == window) {
                                             parseBool(Settings.auto_claim_bonuses)?
                                                 (false
                                                     || $.defined('#tt-auto-claim-bonuses')
-                                                    || $.nullish('[data-test-selector*="balance-string"i]')
+                                                    || $.nullish('[data-test-selector*="balance-string"i]:not([data-test-selector*="bits"i])')
                                                     || parseBool(Settings.view_mode)
                                                     || STREAMER.veto
 
