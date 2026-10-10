@@ -23,11 +23,17 @@
     - Fix irregular ordering (Sortable `onUpdate` logic).
     - Prevent dead channels from being re-added.
     - Resolve "Up Next Owner" tab synchronization and URL mimicking.
+    - `GetNextStreamer.href` (set by a mousedown on any Twitch link) is checked before the pin, so a stray click can send Stay Live to the current channel instead of the pinned one.
 - [ ] **Performance:**
     - Fix background script stalls when tabs disappear.
     - Resolve memory leaks related to Hardware Acceleration and excessive iframes.
     - Fix CPU spikes (>100%) during memory cleanup.
-    - Add ability to change RAM alarm thresholds: `[400MB, 800MB)`, `[800MB, 1.5GB)`, `[1.5GB, ∞)`.
+    - The lag reporter's hang-up timer fires only 100 ms before the next check; a delayed timer gives a hung tab another round. It also logs "did not respond" for tabs that answered but are silent.
+    - Recover Pages reloads hidden pages that aren't ready yet every 5 minutes (harmless, but churn).
+    - A respawned tab (Recover Pages, RAM Alarms) is a new tab, so per-tab state is lost: the tab's own Lurk state (#65) and a Keep Status pause.
+- [ ] **Search:** a cached lookup returns the already-converted result, so callers that chain `.then(Search.convertResults)` get `{ ok: false }`.
+- [ ] **Point Watcher:** right after a page loads, the points button can briefly show the Watch Streak; a save in that moment stores it as points (fixed by the next save, 15 s later).
+- [ ] **Auto-Focus:** still pauses and resumes Up Next on an offline player.
 - [ ] **Recording:** Fix recording failures when pre-roll ads play.
 - [ ] **Chat:** Fix chat bullets not registering in the main catcher/reflector.
 - [ ] **Documentation:** Complete JSDoc for `polyfills.js`, `tools.js`, `chat.js`, `player.js`, `glyphs.js`, and `settings.js`.
@@ -37,6 +43,7 @@
 ## Release History
 
 ### Version 5.35.\*
+- [`5.35.5.5`](https://github.com/Ephellon/Twitch-Tools/releases/tag/5.35.5.5) — Lurk puts its volume back when Twitch resets it (player reload, ad break) (#26, #65); a hidden tab waits until it is visible before reloading (#40); a tab is reloaded or respawned at most once every 2 minutes, and never while it is still loading (#18, #43)
 - [`5.35.5.4`](https://github.com/Ephellon/Twitch-Tools/releases/tag/5.35.5.4) — Live Reminders lists every reminder again (it could stop after the first); the Bits balance is no longer read as channel points; Point Watcher shows points in Twitch's new side-bar tooltip; a reminder added on a live channel saves its start time
 - [`5.35.5.3`](https://github.com/Ephellon/Twitch-Tools/releases/tag/5.35.5.3) — Up Next panel no longer flashes after rushing ends (#44); Skip stops the skipped countdown and removes only that channel, "Go now" goes to the right channel, and each new channel asks again (#52); Live Reminders shows current channel points
 - [`5.35.5.2`](https://github.com/Ephellon/Twitch-Tools/releases/tag/5.35.5.2) — Automatic Tab Reloads leaves frozen, reloading and not-yet-ready background tabs alone; they were respawned as "not responding", sometimes every few minutes (#67)

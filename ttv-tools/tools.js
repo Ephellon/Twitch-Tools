@@ -2536,6 +2536,20 @@ async function ReloadPage(onlineOnly = true) {
         )
     ) return;
 
+    // A hidden tab may never finish loading, so wait until it's visible (#40)
+    if(document.visibilityState == 'hidden') {
+        if(!ReloadPage.deferred) {
+            ReloadPage.deferred = true;
+
+            document.addEventListener('visibilitychange', () => {
+                ReloadPage.deferred = false;
+                ReloadPage(onlineOnly);
+            }, { once: true });
+        }
+
+        return;
+    }
+
     await top.beforeleaving?.(new CustomEvent('locationchange', { from: location.pathname, to: location.pathname, persisted: document.readyState.unlike('unloading') }));
 
     location.reload();
@@ -6302,6 +6316,15 @@ let Initialize = async(START_OVER = false) => {
                     // .toNativeStack();
 
                 goto(parseURL(scapeGoat.href).addSearch({ tool: 'away-mode--scape-goat' }).href);
+            }
+
+            // Twitch can reset the volume (player reload, ad break) without the viewer touching it (#26, #65);
+            // while Lurking still owns the volume, put it back
+            if(defined(button) && AwayModeStatus && MAINTAIN_VOLUME_CONTROL && parseBool(Settings.away_mode__volume_control)) {
+                let target = parseFloat(Settings.away_mode__volume);
+
+                if(!Number.isNaN(target) && Math.abs(GetVolume() - target) > 0.01)
+                    SetVolume(target);
             }
 
             return StopWatch.stop('away_mode');
