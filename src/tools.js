@@ -1678,7 +1678,17 @@ let Initialize = async(START_OVER = false) => {
             .filter(a => !RESERVED_TWITCH_PATHNAMES.test(a.href))
             .map(a => {
                 GLOBAL_ANCHORS.set(a, (function(event) {
+                    // The channel the viewer is heading to, for a few seconds only: it used to stay for the whole page, so a
+                    // stray click on a link (even to this channel) later beat the pin and sent Stay Live back here
+                    const channel = parseURL(this.href).pathname?.slice(1).split('/').shift();
+
+                    if(!channel?.length || channel.equals(location.pathname.slice(1).split('/').shift()))
+                        return;
+
                     GetNextStreamer.href = this.href;
+
+                    clearTimeout(GetNextStreamer.hrefTimer);
+                    GetNextStreamer.hrefTimer = setTimeout(() => delete GetNextStreamer.href, 15_000);
                 }).bind(a));
 
                 a.addEventListener('mousedown', GLOBAL_ANCHORS.get(a));
