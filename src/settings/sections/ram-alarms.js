@@ -63,10 +63,18 @@ export default {
             ],
         },
         {
-            text: "What RAM Alarms did in the last day, newest first. A page that reloads over and over shows up here, even after it's gone.",
-        },
-        {
-            html: `<table id='ram-alarms--log'><tbody><tr><td>Nothing in the last day</td></tr></tbody></table>`,
+            // What RAM Alarms did in the last day, newest first: a page that reloads over and over shows up here, even
+            // after it's gone (#67)
+            extras: {
+                title: "Logged Alarms",
+                tr: 'ram-alarm-daily',
+                subtitle: 'RAM Alarms over the last 24 hours',
+            },
+            rows: [
+                {
+                    html: `<table id='ram-alarms--log' opt><tbody><tr><td>Nothing in the last day</td></tr></tbody></table>`,
+                },
+            ],
         },
     ],
     settings: {
