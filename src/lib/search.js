@@ -280,6 +280,10 @@ class Search {
                             // another search by the time a caller converts it
                             parseType: 'pure',
 
+                            // The channel this lookup already converted: `convertResults` returns it, so every caller shares
+                            // one object (with its live-status lease) instead of a copy
+                            [Search.CONVERTED]: channelData,
+
                             async arrayBuffer() {
                                 return new Blob([JSON.stringify(json, null, 0)], { type: 'application/json' }).arrayBuffer();
                             },
@@ -490,9 +494,12 @@ class Search {
     }
 
     static async convertResults(response) {
-        // Already converted (a cached lookup): converting it again read it as an empty response, `{ ok: false }`
-        if(response?.[Search.CONVERTED])
-            return response;
+        // Already converted (a cached lookup): converting it again read it as an empty response, `{ ok: false }`. A
+        // lookup's response carries its converted channel: return that, not a copy without the live-status lease
+        const converted = response?.[Search.CONVERTED];
+
+        if(converted)
+            return (converted === true ? response : converted);
 
         let json = (null
             ?? (await response?.json?.())
