@@ -16,6 +16,7 @@
 - [ ] **Chat & Interaction:**
     - Add option to handle chat commands/messages via a dedicated bot extension.
     - Parse and handle phone numbers.
+- [ ] **Streak Saver:** keep the channel's Watch Streak going automatically (needs research; Twitch shows the streak near Stories).
 - [ ] **General:** Garner user feedback ([JotForm](https://form.jotform.com/222442891146153)).
 
 ### Bug Fixes & Technical Debt
@@ -36,6 +37,7 @@
 - [ ] **Auto-Focus:** still pauses and resumes Up Next on an offline player.
 - [ ] **VODs:** TTV Tools doesn't start on `/videos/…` pages (the ready check waits for a chat message container that VOD chat replay doesn't have).
 - [ ] **Live Reminders:** the "Send to miniplayer / Add to Live Reminders" hint can cover the points line in the side-bar tooltip.
+- [ ] **Tooltips:** sometimes stay on screen after the pointer leaves.
 - [ ] **Recording:** Fix recording failures when pre-roll ads play.
 - [ ] **Chat:** Fix chat bullets not registering in the main catcher/reflector.
 - [ ] **Documentation:** Complete JSDoc for `polyfills.js`, `tools.js`, `chat.js`, `player.js`, `glyphs.js`, and `settings.js`.
