@@ -633,7 +633,26 @@ class LZW {
  */
 class Tooltip {
     static #TOOLTIPS = new Map()
-    static #CLEANER = setInterval(() => $.all('[tt-remove-me="true"i]').map(tooltip => tooltip.closest('.tooltip-layer').remove()), 100)
+    static #CLEANER = setInterval(() => {
+        $.all('[tt-remove-me="true"i]').map(tooltip => tooltip.closest('.tooltip-layer')?.remove());
+
+        // A tooltip whose element is gone, or no longer under the pointer, stays put when its `mouseleave` never fires
+        // (Twitch replaced or hid the element while it was hovered): take it down after a short grace
+        let now = +new Date;
+
+        for(let layer of $.all('.tt-tooltip-layer')) {
+            let owner = $('[role="tooltip"i]', layer)?.owner;
+
+            if(owner?.isConnected && owner.matches(':hover')) {
+                delete layer.dataset.unhovered;
+
+                continue;
+            }
+
+            if(now - (layer.dataset.unhovered ??= now) > 300)
+                layer.remove();
+        }
+    }, 100)
 
     /** @constructor
      *
@@ -672,6 +691,9 @@ class Tooltip {
 
         parent.setAttribute('tt-tooltip-id', tooltip.id = uuid);
 
+        // The element this tooltip belongs to (read by the cleaner)
+        tooltip.owner = parent;
+
         parent.addEventListener('mouseenter', (function(event) {
             let { currentTarget } = event,
                 offset = getOffset(currentTarget),
@@ -682,6 +704,10 @@ class Tooltip {
             let from = fineTuning.from.replace(/^[^]+--(up|down|left|right)$/i, '$1').toLowerCase();
 
             let container;
+
+            // A layer from a hover whose `mouseleave` never came: one layer per tooltip
+            this.closest('.tooltip-layer')?.remove();
+
             $.queryBy('#root > *, body').first.append(
                 container = furnish(`.tt-tooltip-layer.tooltip-layer[for="${ groupID }"]`,
                     {
@@ -730,10 +756,12 @@ class Tooltip {
 
         parent.addEventListener('mouseleave', ({ currentTarget }) => {
             let tipID = currentTarget.getAttribute('tt-tooltip-id');
-            let tooltip = $(`[id="${ tipID }"i]`)?.closest('[show]');
+            // This tooltip's own layer: looking it up by ID could find another tooltip with the same ID, and leave
+            // this one on screen
+            let wrapper = tooltip.closest('[show]');
 
-            tooltip?.setAttribute('show', false);
-            tooltip?.setAttribute('tt-remove-me', true);
+            wrapper?.setAttribute('show', false);
+            wrapper?.setAttribute('tt-remove-me', true);
 
             RemoveCustomCSSBlock(`tooltip#${ tipID }`);
         });
