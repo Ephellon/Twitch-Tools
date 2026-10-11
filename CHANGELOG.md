@@ -24,7 +24,6 @@
     - Fix irregular ordering (Sortable `onUpdate` logic).
     - Prevent dead channels from being re-added.
     - Resolve "Up Next Owner" tab synchronization and URL mimicking.
-    - `GetNextStreamer.href` (set by a mousedown on any Twitch link) is checked before the pin, so a stray click can send Stay Live to the current channel instead of the pinned one.
 - [ ] **Performance:**
     - Fix background script stalls when tabs disappear.
     - Resolve memory leaks related to Hardware Acceleration and excessive iframes.
@@ -32,7 +31,6 @@
     - The lag reporter's hang-up timer fires only 100 ms before the next check; a delayed timer gives a hung tab another round. It also logs "did not respond" for tabs that answered but are silent.
     - Recover Pages reloads hidden pages that aren't ready yet every 5 minutes (harmless, but churn).
     - A respawned tab (Recover Pages, RAM Alarms) is a new tab, so per-tab state is lost: the tab's own Lurk state (#65) and a Keep Status pause.
-- [ ] **Search:** a cached lookup returns the already-converted result, so callers that chain `.then(Search.convertResults)` get `{ ok: false }`.
 - [ ] **Point Watcher:** right after a page loads, the points button can briefly show the Watch Streak; a save in that moment stores it as points (fixed by the next save, 15 s later).
 - [ ] **Auto-Focus:** still pauses and resumes Up Next on an offline player.
 - [ ] **VODs:** TTV Tools doesn't start on `/videos/…` pages (the ready check waits for a chat message container that VOD chat replay doesn't have).
@@ -85,7 +83,8 @@
     - **Store Integration:** the store buttons wrap inside the game card instead of running past it; each store's grey box fits its price and link, and a "Mature" label no longer pushes the other stores down.
     - **Live Reminders:** the list shows every reminder again; it stopped after the first one (so most channels and their points never showed). Channel point amounts stay current: each tab saved its whole (older) copy of everyone's points, undoing newer amounts saved by other tabs; names are matched regardless of case, and the Bits balance is no longer read as points. A reminder added on a live channel saves its start time.
     - **Point Watcher:** points show again in Twitch's new side-bar tooltip.
-    - **Up Next → Pin:** a pin is no longer cleared just by changing channels; it is used up when you reach the pinned channel. Stay Live now goes to the pinned channel instead of reloading the current one (#71).
+    - **Up Next → Pin:** a pin is no longer cleared just by changing channels; it is used up when you reach the pinned channel. Stay Live now goes to the pinned channel instead of reloading the current one, and a stray click on a channel link no longer overrides the pin (#71).
+    - **Search:** looking up a channel a second time no longer comes back empty (the cached result was converted twice); Up Next, Live Reminders, Auto DVR and BTTV emotes rely on it.
     - **Up Next:** a tab respawned by RAM Alarms or Recover Pages keeps Up Next, instead of it moving to another tab (#68).
     - **Recording (rewritten; DVR, trophy clips, Alt+Z):**
         - Recordings are saved to disk as they go, so long DVRs don't use more memory over time. A recording a closed or crashed tab didn't save is offered on the next page load.
