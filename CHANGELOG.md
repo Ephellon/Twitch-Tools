@@ -37,7 +37,6 @@
 - [ ] **Auto-Focus:** still pauses and resumes Up Next on an offline player.
 - [ ] **VODs:** TTV Tools doesn't start on `/videos/…` pages (the ready check waits for a chat message container that VOD chat replay doesn't have).
 - [ ] **Live Reminders:** the "Send to miniplayer / Add to Live Reminders" hint can cover the points line in the side-bar tooltip.
-- [ ] **Tooltips:** sometimes stay on screen after the pointer leaves.
 - [ ] **Recording:** Fix recording failures when pre-roll ads play.
 - [ ] **Chat:** Fix chat bullets not registering in the main catcher/reflector.
 - [ ] **Documentation:** Complete JSDoc for `polyfills.js`, `tools.js`, `chat.js`, `player.js`, `glyphs.js`, and `settings.js`.
@@ -82,6 +81,7 @@
         - The three limits can be changed in Settings. A page under 10 minutes old is no longer respawned (that only looped); it gets a notice instead. Settings shows a log of the last day's alarms, so repeated reloads can be explained after the fact (#67).
         - **Automatic Tab Reloads:** background tabs are no longer respawned as "not responding". Memory was measured against the wrong number, so almost every page read as 100%, and quiet hidden tabs counted as stuck. Frozen, reloading and not-yet-ready tabs are also left alone. These respawns now show in the RAM Alarms log too (#67).
         - RAM notices show their own title and buttons ("Respawn", "OK") instead of the generic "Please confirm… Cancel / OK".
+    - **Tooltips:** no longer stay on screen. A tooltip is taken down when its element is gone or no longer under the pointer (Twitch can replace an element mid-hover, so it never got `mouseleave`), each tooltip keeps one layer, and leaving an element removes its own tooltip (an ID lookup could pick another one).
     - **Store Integration:** the store buttons wrap inside the game card instead of running past it; each store's grey box fits its price and link, and a "Mature" label no longer pushes the other stores down.
     - **Live Reminders:** the list shows every reminder again; it stopped after the first one (so most channels and their points never showed). Channel point amounts stay current: each tab saved its whole (older) copy of everyone's points, undoing newer amounts saved by other tabs; names are matched regardless of case, and the Bits balance is no longer read as points. A reminder added on a live channel saves its start time.
     - **Point Watcher:** points show again in Twitch's new side-bar tooltip.
