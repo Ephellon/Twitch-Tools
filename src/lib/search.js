@@ -29,6 +29,8 @@ class Search {
     static anonID = 'kimne78kx3ncx6brgo4mv6wki5h1ko';
 
     static #cache = new Map;
+    // Marks a channel object `convertResults` already made (see there)
+    static CONVERTED = Symbol('Search.converted');
     static #users = new Map;
     static cacheLeaseTime = 300_000 * (parseInt(Settings.low_data_mode) || 1);
 
@@ -248,6 +250,9 @@ class Search {
                         Search.parseType = 'pure';
 
                         const channelData = await Search.convertResults({ async json() { return json } });
+
+                        // Marks it as converted: a later lookup returns this cached object, and its callers convert it again
+                        Object.defineProperty(channelData, Search.CONVERTED, { value: true });
 
                         // Live status changes: after 5 min a read re-fetches in the background and updates this object in place,
                         // so every holder (SEARCH_CACHE, ALL_CHANNELS, Up Next rows) sees it; it used to last the whole page
@@ -485,6 +490,10 @@ class Search {
     }
 
     static async convertResults(response) {
+        // Already converted (a cached lookup): converting it again read it as an empty response, `{ ok: false }`
+        if(response?.[Search.CONVERTED])
+            return response;
+
         let json = (null
             ?? (await response?.json?.())
             ?? ({})
