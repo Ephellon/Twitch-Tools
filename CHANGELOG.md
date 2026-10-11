@@ -41,6 +41,7 @@
 ## Release History
 
 ### Version 5.35.\*
+- [`5.35.5.10`](https://github.com/Ephellon/Twitch-Tools/releases/tag/5.35.5.10) — A repeated channel lookup returns the same channel (whose live status keeps updating), not a copy; Logged Alarms table columns are spaced
 - [`5.35.5.9`](https://github.com/Ephellon/Twitch-Tools/releases/tag/5.35.5.9) — "Buy when available" no longer opens and closes the rewards menu over and over (#48); looking up a channel a second time no longer comes back empty; a stray click on a channel link no longer overrides the Up Next pin (#71)
 - [`5.35.5.8`](https://github.com/Ephellon/Twitch-Tools/releases/tag/5.35.5.8) — Made Logged RAM Alarms UI pretty
 - [`5.35.5.7`](https://github.com/Ephellon/Twitch-Tools/releases/tag/5.35.5.7) — Tooltips no longer stay on screen after the pointer leaves (or the element is replaced while hovered)

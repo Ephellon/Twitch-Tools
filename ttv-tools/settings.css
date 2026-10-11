@@ -2230,3 +2230,13 @@ body.popup [pad-bottom] {
 #store_integration__epic + label {
     background: linear-gradient(to right, #a040f0 5%, #9a29e9 95%) !important;
 }
+
+/* RAM Alarms: the Logged Alarms table; its columns ran together */
+#ram-alarms--log td {
+    padding: 0.125rem 0.75rem 0.125rem 0;
+    vertical-align: top;
+}
+
+#ram-alarms--log td:last-child {
+    padding-right: 0;
+}
