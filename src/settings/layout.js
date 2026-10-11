@@ -16,6 +16,7 @@ import parseCommands10 from '../plugins/automation/parse-commands.settings.js';
 import preventRaiding11 from '../plugins/automation/prevent-raiding.settings.js';
 import primeSubscription12 from '../plugins/automation/claim-prime.settings.js';
 import stayLive13 from '../plugins/automation/stay-live.settings.js';
+import streakSaver from '../plugins/up-next/streak-saver.settings.js';
 import timeZones14 from '../plugins/automation/time-zones.settings.js';
 import viewMode15 from '../plugins/automation/view-mode.settings.js';
 import accessibility16 from '../plugins/chat/simplify-chat.settings.js';
@@ -90,6 +91,7 @@ export default [
             preventRaiding11,
             primeSubscription12,
             stayLive13,
+            streakSaver,
             timeZones14,
             viewMode15,
         ],

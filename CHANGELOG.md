@@ -16,7 +16,6 @@
 - [ ] **Chat & Interaction:**
     - Add option to handle chat commands/messages via a dedicated bot extension.
     - Parse and handle phone numbers.
-- [ ] **Streak Saver:** keep the channel's Watch Streak going automatically (needs research; Twitch shows the streak near Stories).
 - [ ] **General:** Garner user feedback ([JotForm](https://form.jotform.com/222442891146153)).
 
 ### Bug Fixes & Technical Debt
@@ -80,6 +79,7 @@
         - **Automatic Tab Reloads:** background tabs are no longer respawned as "not responding". Memory was measured against the wrong number, so almost every page read as 100%, and quiet hidden tabs counted as stuck. Frozen, reloading and not-yet-ready tabs are also left alone. These respawns now show in the RAM Alarms log too (#67).
         - RAM notices show their own title and buttons ("Respawn", "OK") instead of the generic "Please confirm… Cancel / OK".
     - **Tooltips:** no longer stay on screen. A tooltip is taken down when its element is gone or no longer under the pointer (Twitch can replace an element mid-hover, so it never got `mouseleave`), each tooltip keeps one layer, and leaving an element removes its own tooltip (an ID lookup could pick another one).
+    - **Streak Saver (new, off by default):** Up Next lists the Watch Streaks you can still save (a missed stream, within 24 hours), with a one-click **Save**: a live channel goes to the front of Up Next; otherwise Twitch's own save page opens and closes itself once the streak is saved. The result is checked against Twitch's list, since Twitch's "No Content Eligible" can be wrong.
     - **Store Integration:** the store buttons wrap inside the game card instead of running past it; each store's grey box fits its price and link, and a "Mature" label no longer pushes the other stores down.
     - **Live Reminders:** the list shows every reminder again; it stopped after the first one (so most channels and their points never showed). Channel point amounts stay current: each tab saved its whole (older) copy of everyone's points, undoing newer amounts saved by other tabs; names are matched regardless of case, and the Bits balance is no longer read as points. A reminder added on a live channel saves its start time.
     - **Point Watcher:** points show again in Twitch's new side-bar tooltip.
