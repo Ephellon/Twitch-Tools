@@ -19,10 +19,10 @@ export default {
             text: "Missed a stream? Twitch lets you save your <b>Watch Streak</b> for 24 hours. Up Next gets a list of the streaks you can still save, with a <b>Save</b> button for each.",
         },
         {
-            text: "A live channel is added to the front of Up Next (watching it saves the streak). Otherwise, Twitch's own save page opens in a new tab; it plays a recent clip and closes itself once the streak is saved.",
+            text: "A live channel is added to the front of Up Next (watching it saves the streak). Otherwise, Twitch's own save page plays a recent clip in a small popup, muted.",
         },
         {
-            text: "Twitch sometimes says \"No Content Eligible\" even when a streak can be saved. The list shows what really happened.",
+            text: "Twitch needs a clip from the last day to save a streak (VODs don't count). Without one, watch the channel live before the streak resets.",
             attrs: {
                 'warning-text': '',
             },
