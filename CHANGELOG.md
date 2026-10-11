@@ -23,7 +23,6 @@
     - Fix irregular ordering (Sortable `onUpdate` logic).
     - Prevent dead channels from being re-added.
     - Resolve "Up Next Owner" tab synchronization and URL mimicking.
-    - `GetNextStreamer.href` (set by a mousedown on any Twitch link) is checked before the pin, so a stray click can send Stay Live to the current channel instead of the pinned one.
 - [ ] **Performance:**
     - Fix background script stalls when tabs disappear.
     - Resolve memory leaks related to Hardware Acceleration and excessive iframes.
@@ -31,7 +30,6 @@
     - The lag reporter's hang-up timer fires only 100 ms before the next check; a delayed timer gives a hung tab another round. It also logs "did not respond" for tabs that answered but are silent.
     - Recover Pages reloads hidden pages that aren't ready yet every 5 minutes (harmless, but churn).
     - A respawned tab (Recover Pages, RAM Alarms) is a new tab, so per-tab state is lost: the tab's own Lurk state (#65) and a Keep Status pause.
-- [ ] **Search:** a cached lookup returns the already-converted result, so callers that chain `.then(Search.convertResults)` get `{ ok: false }`.
 - [ ] **Point Watcher:** right after a page loads, the points button can briefly show the Watch Streak; a save in that moment stores it as points (fixed by the next save, 15 s later).
 - [ ] **Auto-Focus:** still pauses and resumes Up Next on an offline player.
 - [ ] **Recording:** Fix recording failures when pre-roll ads play.
@@ -43,6 +41,7 @@
 ## Release History
 
 ### Version 5.35.\*
+- [`5.35.5.9`](https://github.com/Ephellon/Twitch-Tools/releases/tag/5.35.5.9) — "Buy when available" no longer opens and closes the rewards menu over and over (#48); looking up a channel a second time no longer comes back empty; a stray click on a channel link no longer overrides the Up Next pin (#71)
 - [`5.35.5.8`](https://github.com/Ephellon/Twitch-Tools/releases/tag/5.35.5.8) — Made Logged RAM Alarms UI pretty
 - [`5.35.5.7`](https://github.com/Ephellon/Twitch-Tools/releases/tag/5.35.5.7) — Tooltips no longer stay on screen after the pointer leaves (or the element is replaced while hovered)
 - [`5.35.5.6`](https://github.com/Ephellon/Twitch-Tools/releases/tag/5.35.5.6) — Store buttons wrap inside the game card instead of running past it; each store's grey box fits its price and link, and a "Mature" label no longer pushes the other stores down

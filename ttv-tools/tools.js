@@ -1091,6 +1091,8 @@ class Search {
     static anonID = 'kimne78kx3ncx6brgo4mv6wki5h1ko';
 
     static #cache = new Map;
+    // Marks a channel object `convertResults` already made (see there)
+    static CONVERTED = Symbol('Search.converted');
     static #users = new Map;
     static cacheLeaseTime = 300_000 * (parseInt(Settings.low_data_mode) || 1);
 
@@ -1309,6 +1311,9 @@ class Search {
 
                         let channelData = await Search.convertResults({ async json() { return json } });
 
+                        // Marks it as converted: a later lookup returns this cached object, and its callers convert it again
+                        Object.defineProperty(channelData, Search.CONVERTED, { value: true });
+
                         SEARCH_CACHE.set(display_name.toLowerCase(), channelData);
                         // A failed lookup (`ok: false`) isn't a known channel
                         if(channelData.ok !== false)
@@ -1523,6 +1528,10 @@ class Search {
     }
 
     static async convertResults(response) {
+        // Already converted (a cached lookup): converting it again read it as an empty response, `{ ok: false }`
+        if(response?.[Search.CONVERTED])
+            return response;
+
         let json = (null
                 ?? (await response?.json?.())
                 ?? ({})
@@ -3977,7 +3986,17 @@ let Initialize = async(START_OVER = false) => {
             .filter(a => !RESERVED_TWITCH_PATHNAMES.test(a.href))
             .map(a => {
                 GLOBAL_ANCHORS.set(a, (function(event) {
+                    // The channel the viewer is heading to, for a few seconds only: it used to stay for the whole page, so a
+                    // stray click on a link (even to this channel) later beat the pin and sent Stay Live back here
+                    let channel = parseURL(this.href).pathname?.slice(1).split('/').shift();
+
+                    if(!channel?.length || channel.equals(location.pathname.slice(1).split('/').shift()))
+                        return;
+
                     GetNextStreamer.href = this.href;
+
+                    clearTimeout(GetNextStreamer.hrefTimer);
+                    GetNextStreamer.hrefTimer = setTimeout(() => delete GetNextStreamer.href, 15_000);
                 }).bind(a));
 
                 a.addEventListener('mousedown', GLOBAL_ANCHORS.get(a));
@@ -6787,6 +6806,7 @@ let Initialize = async(START_OVER = false) => {
 
     let DISPLAY_WALLET_BUTTONS,
         REWARDS_ON_COOLDOWN = new Map,
+        CLAIMING_REWARD = false,
         TEXT_BOX_ALREADY_FOCUSED,
         USER_INVOKED_PAUSE = true;
 
@@ -6894,6 +6914,13 @@ let Initialize = async(START_OVER = false) => {
         return true;
     };
 
+    // Waits for `condition` to return an element; resolves `null` after `timeout` ms
+    let WaitForElement = (condition, timeout = 10_000, ms = 100) => {
+        let deadline = +new Date + timeout;
+
+        return when.defined(() => condition() ?? (+new Date > deadline? when.null: null), ms);
+    };
+
     Handlers.claim_reward = () => {
         if(top.TWITCH_INTEGRITY_FAIL)
             return;
@@ -6931,7 +6958,11 @@ let Initialize = async(START_OVER = false) => {
                                             return;
                                         if($.defined('#tt_saved_input_for_redemption'))
                                             return;
+                                        // A purchase is still in progress; clicking again would close the menu (#48)
+                                        if(CLAIMING_REWARD)
+                                            return;
 
+                                        CLAIMING_REWARD = true;
                                         rewardsMenuButton.click();
 
                                         $log(`Purchasing "${ title }" for ${ cost } ${ fiat }...`);
@@ -6970,19 +7001,30 @@ let Initialize = async(START_OVER = false) => {
                                         }
 
                                         // Purchase and remove
-                                        await when.defined(() => $('.rewards-list')?.getElementByText(title, 'i')?.closest('.reward-list-item')?.querySelector('button'))
+                                        await WaitForElement(() => $('.rewards-list')?.getElementByText(title, 'i')?.closest('.reward-list-item')?.querySelector('button'))
                                             .then(async rewardButton => {
                                                 let { coin, fiat } = STREAMER;
 
                                                 $notice(`Can "${ title }" be bought yet? ${ ['No', 'Yes'][+(coin >= cost)] }`);
 
-                                                if(coin < cost)
-                                                    return;
+                                                // Not listed (or not listed yet): close the menu, then try again later (#48)
+                                                if(nullish(rewardButton) || coin < cost || rewardButton.disabled) {
+                                                    if(nullish(rewardButton) || rewardButton.disabled)
+                                                        REWARDS_ON_COOLDOWN.set(id, +(new Date) + 60_000);
+
+                                                    rewardsMenuButton.click();
+                                                    return CLAIMING_REWARD = false;
+                                                }
 
                                                 rewardButton.click();
 
-                                                when.defined(() => $('.reward-center-body [data-test-selector*="required"i][data-test-selector*="points"i]')?.closest('button'), 500)
+                                                await WaitForElement(() => $('.reward-center-body [data-test-selector*="required"i][data-test-selector*="points"i]')?.closest('button'), 10_000, 500)
                                                     .then(purchaseButton => {
+                                                        if(nullish(purchaseButton) || purchaseButton.disabled) {
+                                                            $log(`Unable to purchase "${ title }" right now. Waiting ${ toTimeString(60_000) }`);
+                                                            return REWARDS_ON_COOLDOWN.set(id, +(new Date) + 60_000);
+                                                        }
+
                                                         let cooldown = parseTime(purchaseButton.previousElementSibling?.getElementByText(parseTime.pattern)?.textContent);
 
                                                         if(cooldown > 0) {
@@ -7014,6 +7056,7 @@ let Initialize = async(START_OVER = false) => {
                                                         });
                                                     }).finally(() => {
                                                         rewardsMenuButton.click();
+                                                        CLAIMING_REWARD = false;
                                                     });
                                             });
                                     });
