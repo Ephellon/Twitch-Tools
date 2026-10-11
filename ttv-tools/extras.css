@@ -1648,6 +1648,88 @@ caption {
 	content: "Mature 🔞️";
 }
 
+/* Store buttons: the row wraps inside the game card instead of running past it (it sits in a `.tt-ellipsis` box),
+   each store's grey box fits its price and link, and a "Mature" label no longer pushes the other stores down */
+#tt-purchase-container {
+	-webkit-box-align: end;
+	-ms-flex-align: end;
+			align-items: flex-end;
+	display: -webkit-box;
+	display: -ms-flexbox;
+	display: flex;
+	-ms-flex-wrap: wrap;
+		flex-wrap: wrap;
+	gap: 0.5rem 0.25rem;
+	overflow: visible;
+	white-space: normal;
+
+	padding: 0.5rem 0 0;
+}
+
+#tt-purchase-container > br {
+	display: none;
+}
+
+.tt-store-purchase--container {
+	-webkit-box-align: stretch;
+	-ms-flex-align: stretch;
+			align-items: stretch;
+	display: -webkit-inline-box;
+	display: -ms-inline-flexbox;
+	display: inline-flex;
+	-ms-flex-wrap: wrap;
+		flex-wrap: wrap;
+	position: relative;
+	white-space: nowrap;
+
+	margin: 0;
+}
+
+.tt-store-purchase--price, .tt-store-purchase--handler {
+	float: none;
+
+	height: auto;
+}
+
+.tt-store-purchase--price {
+	-webkit-box-align: center;
+	-ms-flex-align: center;
+			align-items: center;
+	display: -webkit-box;
+	display: -ms-flexbox;
+	display: flex;
+
+	margin-left: 0;
+}
+
+.tt-store-purchase--handler {
+	display: -webkit-box;
+	display: -ms-flexbox;
+	display: flex;
+}
+
+.tt-store-purchase--handler a {
+	height: auto;
+}
+
+:is([data-mature-content], [data-version-name])::before {
+	-webkit-transform: none;
+	   -moz-transform: none;
+		-ms-transform: none;
+			transform: none;
+
+	left: 0;
+	top: 0;
+}
+
+[name][data-good-match="false"i]::after {
+	-ms-flex-preferred-size: 100%;
+		flex-basis: 100%;
+	-webkit-box-ordinal-group: 2;
+	-ms-flex-order: 1;
+			order: 1;
+}
+
 /* Custom details container */
 .details {
 	background-color: var(--color-background-base);

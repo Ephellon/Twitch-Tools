@@ -43,6 +43,7 @@
 ## Release History
 
 ### Version 5.35.\*
+- [`5.35.5.6`](https://github.com/Ephellon/Twitch-Tools/releases/tag/5.35.5.6) — Store buttons wrap inside the game card instead of running past it; each store's grey box fits its price and link, and a "Mature" label no longer pushes the other stores down
 - [`5.35.5.5`](https://github.com/Ephellon/Twitch-Tools/releases/tag/5.35.5.5) — Lurk puts its volume back when Twitch resets it (player reload, ad break) (#26, #65); a hidden tab waits until it is visible before reloading (#40); a tab is reloaded or respawned at most once every 2 minutes, and never while it is still loading (#18, #43)
 - [`5.35.5.4`](https://github.com/Ephellon/Twitch-Tools/releases/tag/5.35.5.4) — Live Reminders lists every reminder again (it could stop after the first); the Bits balance is no longer read as channel points; Point Watcher shows points in Twitch's new side-bar tooltip; a reminder added on a live channel saves its start time
 - [`5.35.5.3`](https://github.com/Ephellon/Twitch-Tools/releases/tag/5.35.5.3) — Up Next panel no longer flashes after rushing ends (#44); Skip stops the skipped countdown and removes only that channel, "Go now" goes to the right channel, and each new channel asks again (#52); Live Reminders shows current channel points
