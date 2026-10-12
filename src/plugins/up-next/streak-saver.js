@@ -148,7 +148,8 @@ export const StreakSaver = {
 
         // Read the frame's page until Twitch answers (or the time runs out)
         let deadline = +new Date + SAVE_TIMEOUT
-            , gated = false;
+            , gated = false
+            , pressed = +new Date;
 
         const answer = await when.defined(() => {
             if(+new Date > deadline || !popup.isConnected)
@@ -169,6 +170,19 @@ export const StreakSaver = {
             // Muted through the video, so the clip still plays
             for(const video of page.querySelectorAll('video'))
                 video.muted = true;
+
+            // In a frame, Twitch's player can stop on its play button before the clip starts: press it (muted above). Not
+            // while another video (an ad) plays: the clip waits for it
+            const videos = [...page.querySelectorAll('video')]
+                , stalled = videos.find(video => video.paused && video.currentTime < 1 && video.readyState > 0);
+
+            if(defined(stalled) && !videos.some(video => !video.paused) && +new Date - pressed > 3_000) {
+                pressed = +new Date;
+
+                // The player's own button keeps its state right; `play()` covers hidden controls (it does nothing once playing)
+                $('[data-a-target="player-play-pause-button"i][aria-label^="Play"i]', page)?.click();
+                stalled.play().catch(error => $warn("[Streak Saver] The clip didn't start:", error));
+            }
 
             if([...page.querySelectorAll('.tw-snackbar-message')].some(message => /\bstreak\b.*\bsaved\b/i.test(message.textContent)))
                 return 'saved';
