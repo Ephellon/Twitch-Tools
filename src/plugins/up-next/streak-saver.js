@@ -319,7 +319,7 @@ plugin({
         if(defined(FIRST_IN_LINE_BALLOON) && $.nullish('#streak-saver-catalog')) {
             const button = FIRST_IN_LINE_BALLOON.addButton({
                 attributes: { id: 'streak-saver-catalog', contrast: THEME__PREFERRED_CONTRAST },
-                icon: 'trophy',
+                icon: 'fire',
                 left: true,
                 onclick: toggleList,
             });

@@ -5,7 +5,7 @@
 export default {
     title: "Streak Saver",
     tr: 'streak-saver',
-    glyph: 'trophy',
+    glyph: 'fire',
     flags: ['small'],
     badges: {
         new: '6.1',
@@ -16,13 +16,10 @@ export default {
             toggle: 'streak_saver',
         },
         {
-            text: "Missed a stream? Twitch lets you save your <b>Watch Streak</b> for 24 hours. Up Next gets a list of the streaks you can still save, with a <b>Save</b> button for each.",
+            text: "Lists the <b>Watch Streaks</b> you can still save in Up Next, each with a one-click <b>Save</b>.",
         },
         {
-            text: "A live channel is added to the front of Up Next (watching it saves the streak). Otherwise, Twitch's own save page plays a recent clip in a small popup, muted.",
-        },
-        {
-            text: "Twitch needs a clip from the last day to save a streak (VODs don't count). Without one, watch the channel live before the streak resets.",
+            text: "Twitch needs a clip from the last day to save a streak; without one, watch the channel live.",
             attrs: {
                 'warning-text': '',
             },
