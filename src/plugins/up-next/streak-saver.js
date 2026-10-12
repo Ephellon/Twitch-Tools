@@ -258,7 +258,7 @@ async function toggleList(event) {
 
     head.innerHTML = "Save Your Streaks";
 
-    const body = f('#tt-streak-listing', { style: 'padding:0.5rem 1rem' }).with(f('p.tt-c-text-alt-2').with('Reading your streaks...'));
+    const body = f('#tt-streak-listing', { style: 'padding:0.5rem 1rem; background:var(--color-background-base)' }).with(f('p.tt-c-text-alt-2').with('Reading your streaks...'));
 
     parent.insertBefore(body, $('[up-next--body] > :nth-child(2)'));
 
@@ -293,7 +293,7 @@ async function toggleList(event) {
                 ].filter(defined).join(' · '))
             ),
             f('button.tt-streak-save', {
-                disabled: !canSave,
+                ...(canSave ? {} : { disabled: '' }), // Any `disabled` attribute disables it, even `disabled="false"`
                 style: `flex:none; padding:0.25rem 1rem; border-radius:var(--ttv-radius-xs); background:var(--user-accent-color, var(--color-background-button-primary-default)); color:var(--color-text-button-primary); opacity:${ canSave ? 1 : 0.5 }`,
                 title: (live ? "Go to the live stream (Up Next): watching it saves the streak" : canSave ? "Play a recent clip with Twitch's save page" : "Twitch can only save it with a clip from the last day"),
                 onclick: async({ currentTarget }) => {
@@ -345,6 +345,12 @@ plugin({
             if(defined(button))
                 button.tooltip ??= new Tooltip(button, 'Save Your Streaks');
         }
+
+        // Right of the help button (it can be added after this one)
+        const help = $('#up-next-help'), catalog = $('#streak-saver-catalog');
+
+        if(defined(help) && defined(catalog) && help.nextElementSibling !== catalog)
+            help.after(catalog);
 
         if(UP_NEXT_ALLOW_THIS_TAB && !(+new Date - (LAST_POLL ?? 0) < POLL_EVERY)) {
             LAST_POLL = +new Date;
