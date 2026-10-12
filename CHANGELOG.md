@@ -34,7 +34,7 @@
 - [ ] **Auto-Focus:** still pauses and resumes Up Next on an offline player.
 - [ ] **VODs:** TTV Tools doesn't start on `/videos/…` pages (the ready check waits for a chat message container that VOD chat replay doesn't have).
 - [ ] **Live Reminders:** the "Send to miniplayer / Add to Live Reminders" hint can cover the points line in the side-bar tooltip.
-- [ ] **Streak Saver:** a successful save (a channel with a clip from the last day) and the live **Watch** route are untested; they need user feedback.
+- [ ] **Streak Saver:** a real save works (verified once, after play was pressed by hand); the popup now presses play itself, which still needs a real stalled save to confirm.
 - [ ] **Recording:** Fix recording failures when pre-roll ads play.
 - [ ] **Chat:** Fix chat bullets not registering in the main catcher/reflector.
 - [ ] **Documentation:** Complete JSDoc for `polyfills.js`, `tools.js`, `chat.js`, `player.js`, `glyphs.js`, and `settings.js`.
