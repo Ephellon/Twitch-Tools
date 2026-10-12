@@ -12890,7 +12890,7 @@ let Initialize = async(START_OVER = false) => {
     const POLL_EVERY = 15 * 60_000      // How often the list is read in the background (for the button's count)
         , SAVE_TIMEOUT = 90_000         // How long the save page gets to answer
         , LOG_FOR = 86_400_000          // How long results are kept
-        , GATE = '[data-a-target^="content-classification-gate"i], [data-a-target="player-overlay-mature-accept"i]'; // Twitch's content warnings
+        , GATE = ':is([data-a-target*="mature"i], [data-a-target*="class"i]):is([data-a-target*="overlay"i], [data-a-target*="accept"i])'; // Twitch's content warnings (as Auto-Join finds them)
 
     /**
      * Runs a GQL query as the signed-in viewer.
@@ -13038,9 +13038,15 @@ let Initialize = async(START_OVER = false) => {
                 if([...page.querySelectorAll('.tw-modal h2')].some(header => /no content eligible/i.test(header.textContent)))
                     return 'none';
 
-                // A content warning ("Intended for...") stops the clip until the viewer confirms it: theirs to confirm, so
-                // the popup grows to show it and waits longer
+                // A content warning ("Intended for...") stops the clip until it's confirmed: Auto-Join confirms it, as it
+                // does on the channel's page; otherwise it's the viewer's to confirm, so the popup grows to show it and waits longer
                 const gate = $.defined(GATE, page);
+
+                if(gate && parseBool(Settings.auto_accept_mature)) {
+                    $(`${ GATE } button, button${ GATE }`, page)?.click();
+
+                    return null;
+                }
 
                 if(gate && !gated) {
                     gated = true;
