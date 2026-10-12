@@ -12576,7 +12576,7 @@ let Initialize = async(START_OVER = false) => {
     Timers.prevent_hosting = 5000;
 
     __PreventHosting__:
-    if(Settings.prevent_hosting.unlike("none")) {
+    if((Settings.prevent_hosting ?? "none").unlike("none")) {
         RegisterJob('prevent_hosting');
     }
 
@@ -12696,7 +12696,7 @@ let Initialize = async(START_OVER = false) => {
     Timers.prevent_raiding = 10_000;
 
     __PreventRaiding__:
-    if(Settings.prevent_raiding.unlike("none")) {
+    if((Settings.prevent_raiding ?? "none").unlike("none")) {
         RegisterJob('prevent_raiding');
 
         Cache.load('LastRaid', ({ LastRaid }) => {
@@ -12889,7 +12889,8 @@ let Initialize = async(START_OVER = false) => {
 
     const POLL_EVERY = 15 * 60_000      // How often the list is read in the background (for the button's count)
         , SAVE_TIMEOUT = 90_000         // How long the save page gets to answer
-        , LOG_FOR = 86_400_000;         // How long results are kept
+        , LOG_FOR = 86_400_000          // How long results are kept
+        , GATE = '[data-a-target^="content-classification-gate"i], [data-a-target="player-overlay-mature-accept"i]'; // Twitch's content warnings
 
     /**
      * Runs a GQL query as the signed-in viewer.
@@ -13009,7 +13010,8 @@ let Initialize = async(START_OVER = false) => {
             $.body.append(popup);
 
             // Read the frame's page until Twitch answers (or the time runs out)
-            const deadline = +new Date + SAVE_TIMEOUT;
+            let deadline = +new Date + SAVE_TIMEOUT
+                , gated = false;
 
             const answer = await when.defined(() => {
                 if(+new Date > deadline || !popup.isConnected)
@@ -13035,6 +13037,21 @@ let Initialize = async(START_OVER = false) => {
                     return 'saved';
                 if([...page.querySelectorAll('.tw-modal h2')].some(header => /no content eligible/i.test(header.textContent)))
                     return 'none';
+
+                // A content warning ("Intended for...") stops the clip until the viewer confirms it: theirs to confirm, so
+                // the popup grows to show it and waits longer
+                const gate = $.defined(GATE, page);
+
+                if(gate && !gated) {
+                    gated = true;
+                    deadline = +new Date + 2 * SAVE_TIMEOUT;
+                    popup.style.width = 'min(64rem, calc(100vw - 3rem))';
+                    popup.style.height = 'min(46rem, calc(100vh - 3rem))';
+                    status.textContent = `Twitch shows a content warning for ${ display }: confirm it below to save the streak.`;
+                } else if(!gate && gated) {
+                    gated = false;
+                    status.textContent = `Saving your streak with ${ display }...`;
+                }
 
                 return null;
             }, 500).then(answer => answer, () => null);
@@ -13067,12 +13084,12 @@ let Initialize = async(START_OVER = false) => {
                     ? 'not-saved'
                     : 'unknown';
 
-            await StreakSaver.log({ name, action: result, note: ({ saved: 'Twitch: saved', none: 'Twitch: No Content Eligible' })[answer] ?? 'no answer from Twitch' });
+            await StreakSaver.log({ name, action: result, note: ({ saved: 'Twitch: saved', none: 'Twitch: No Content Eligible' })[answer] ?? (gated ? 'content warning not confirmed' : 'no answer from Twitch') });
 
             status.textContent = ({
                 saved: `Your streak with ${ display } is saved!`,
                 'not-saved': `${ display }'s streak couldn't be saved (no eligible clip). Watch them live before it resets.`,
-                unknown: `No answer from Twitch about ${ display }. Try again later.`,
+                unknown: (gated ? `The content warning for ${ display } wasn't confirmed. Try again to confirm it.` : `No answer from Twitch about ${ display }. Try again later.`),
             })[result];
 
             wait(result == 'saved' ? 4_000 : 10_000).then(() => popup.remove());
@@ -13167,23 +13184,39 @@ let Initialize = async(START_OVER = false) => {
 
                         currentTarget.textContent = ({ queued: 'Queued', saved: 'Saved', 'not-saved': 'Not saved', unknown: 'Try again' })[result] ?? "Done";
                         currentTarget.disabled = (result != 'unknown');
+
+                        // Show the result under "Recent" now, not the next time the list opens
+                        const StreakSaverLog = (await Cache.load('StreakSaverLog'))?.StreakSaverLog ?? [];
+
+                        body.querySelector('.tt-streak-recent')?.replaceChildren(...recentOf(StreakSaverLog));
                     },
                 }).with(live ? 'Watch' : 'Save')
             );
         });
 
-        const recent = StreakSaverLog
-            .filter(entry => +new Date - entry.time < LOG_FOR && ['saved', 'not-saved', 'unknown', 'queued'].includes(entry.action))
-            .slice(-5)
-            .reverse()
-            .map(({ time, name, action, note }) => f('p.tt-c-text-alt-2', { style: 'font-size:smaller' }).with(
-                `${ new Date(time).toLocaleTimeString(top.LANGUAGE, { timeStyle: 'short' }) } · ${ name } · ${ ({ saved: 'Saved', 'not-saved': 'Not saved', unknown: 'Unknown', queued: 'Watching live' })[action] } (${ note })`
-            ));
-
         body.replaceChildren(
             ...(rows.length ? rows : [f('p.tt-c-text-alt-2').with('No streaks to save right now.')]),
-            ...(recent.length ? [f('h5', { style: 'margin-top:0.75rem' }).with('Recent'), ...recent] : [])
+            f('.tt-streak-recent').with(...recentOf(StreakSaverLog))
         );
+    }
+
+    /**
+     * The list's "Recent" section: the last five results from the past day, newest first.
+     * @param {Array<{ time: number, name: string, action: string, note: string }>} StreakSaverLog
+     * @returns {Element[]} Nothing when there's no result to show
+     */
+    function recentOf(StreakSaverLog) {
+        const f = furnish
+            , recent = StreakSaverLog
+                .filter(entry => +new Date - entry.time < LOG_FOR && ['saved', 'not-saved', 'unknown', 'queued'].includes(entry.action))
+                .slice(-5)
+                .reverse()
+                .map(({ time, name, action, note }) => f('p.tt-c-text-alt-2', { style: 'font-size:smaller' }).with(
+                    `${ new Date(time).toLocaleTimeString(top.LANGUAGE, { timeStyle: 'short' }) } · ${ name } · ${ ({ saved: 'Saved', 'not-saved': 'Not saved', unknown: 'Unknown', queued: 'Watching live' })[action] } (${ note })`
+                ));
+
+        // Up Next colors its headings for its accent background (`--user-contrast-color`); this list has the page's background
+        return (recent.length ? [f('h5', { style: 'margin-top:0.75rem; --color:var(--color-text-base) !important; color:var(--color-text-base)' }).with('Recent'), ...recent] : []);
     }
 
     Handlers.streak_saver = async() => {

@@ -42,6 +42,7 @@
 ## Release History
 
 ### Version 5.35.\*
+- [`5.35.5.13`](https://github.com/Ephellon/Twitch-Tools/releases/tag/5.35.5.13) — **Streak Saver:** "Recent" updates as soon as a save finishes; when Twitch shows a content warning, the popup grows and asks you to confirm it. A fresh install (no saved settings) no longer stops every feature after Prevent Hosting from starting
 - [`5.35.5.12`](https://github.com/Ephellon/Twitch-Tools/releases/tag/5.35.5.12) — **Streak Saver:** the **Save** buttons work, the list has a solid background, and its button sits right of the help button at the same size
 - [`5.35.5.11`](https://github.com/Ephellon/Twitch-Tools/releases/tag/5.35.5.11) — Added **Streak Saver** (off by default; testing): Up Next lists the Watch Streaks you can still save, each with a one-click **Save** (a live channel goes to the front of Up Next; otherwise Twitch's save page plays a recent clip in a small muted popup)
 - [`5.35.5.10`](https://github.com/Ephellon/Twitch-Tools/releases/tag/5.35.5.10) — A repeated channel lookup returns the same channel (whose live status keeps updating), not a copy; Logged Alarms table columns are spaced
