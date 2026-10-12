@@ -41,6 +41,7 @@
 ## Release History
 
 ### Version 5.35.\*
+- [`5.35.5.11`](https://github.com/Ephellon/Twitch-Tools/releases/tag/5.35.5.11) — Added **Streak Saver** (off by default; testing): Up Next lists the Watch Streaks you can still save, each with a one-click **Save** (a live channel goes to the front of Up Next; otherwise Twitch's save page plays a recent clip in a small muted popup)
 - [`5.35.5.10`](https://github.com/Ephellon/Twitch-Tools/releases/tag/5.35.5.10) — A repeated channel lookup returns the same channel (whose live status keeps updating), not a copy; Logged Alarms table columns are spaced
 - [`5.35.5.9`](https://github.com/Ephellon/Twitch-Tools/releases/tag/5.35.5.9) — "Buy when available" no longer opens and closes the rewards menu over and over (#48); looking up a channel a second time no longer comes back empty; a stray click on a channel link no longer overrides the Up Next pin (#71)
 - [`5.35.5.8`](https://github.com/Ephellon/Twitch-Tools/releases/tag/5.35.5.8) — Made Logged RAM Alarms UI pretty

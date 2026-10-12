@@ -93,6 +93,8 @@ let // These are option names. Anything else will be removed
         // Keep Watching
         'stay_live',
             'stay_live__ignore_channel_reruns',
+        // Streak Saver
+        'streak_saver',
             // Up Next Preference
             'next_channel_preference',
         // First in Line
