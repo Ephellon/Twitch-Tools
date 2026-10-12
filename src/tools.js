@@ -3597,6 +3597,9 @@ let Initialize = async(START_OVER = false) => {
     // Stay Live → src/plugins/automation/stay-live.js
     await TTV.run('stay_live', PLUGIN_CONTEXT);
 
+    // Streak Saver → src/plugins/up-next/streak-saver.js
+    await TTV.run('streak_saver', PLUGIN_CONTEXT);
+
     // Time Zones → src/plugins/automation/time-zones.js
     await TTV.run('time_zones', PLUGIN_CONTEXT);
 

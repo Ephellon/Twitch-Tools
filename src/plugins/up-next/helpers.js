@@ -748,6 +748,10 @@ plugin({
                             let { currentTarget } = event
                                 , parent = currentTarget.closest('[id^="tt-balloon-container"i]');
 
+                            // One list at a time: Streak Saver's list takes the same place
+                            if($.defined('#tt-streak-listing'))
+                                $('#streak-saver-catalog')?.click();
+
                             Cache.load(['LiveReminders', 'ChannelPoints', 'DVRChannels'], async({ LiveReminders = null, ChannelPoints = {}, DVRChannels = null }) => {
                                 // A key never saved loads as `null` (not `undefined`), so the default above doesn't apply
                                 ChannelPoints ??= {};

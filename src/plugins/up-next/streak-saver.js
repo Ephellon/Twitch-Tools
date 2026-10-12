@@ -18,7 +18,8 @@ export const STREAK_QUERIES = {
     // The streaks that can still be saved, with their deadline (the missed stream's end + 24 h)
     suspended: `query { suspendedWatchStreaks { expiresAt channel { name displayName } } }`,
     // Every streak's count, and whether the channel is live
-    streaks: `query { batchGetWatchStreaks(filter: ALL) { value channel { stream { id } owner { login profileImageURL } } } }`,
+    // (`profileImageURL` needs a width in a plain query: without it, the whole query fails)
+    streaks: `query { batchGetWatchStreaks(filter: ALL) { value channel { stream { id } owner { login profileImageURL(width: 70) } } } }`,
     // A channel's clips from the last day: what the save page plays
     clips: `query($login: String!) { user(login: $login) { clips(first: 1, criteria: { period: LAST_DAY }) { edges { node { slug } } } } }`,
 };
@@ -175,6 +176,19 @@ export const StreakSaver = {
             return null;
         }, 500).then(answer => answer, () => null);
 
+        // Twitch goes on to play the channel's video (and an ad) after answering: keep the frame muted until the popup closes
+        const muting = setInterval(() => {
+            if(!popup.isConnected)
+                return clearInterval(muting);
+
+            try {
+                for(const video of frame.contentDocument?.querySelectorAll('video') ?? [])
+                    video.muted = true;
+            } catch {
+                clearInterval(muting);
+            }
+        }, 250);
+
         // Twitch's answer isn't the last word: the list is
         let stillListed = null;
 
@@ -234,9 +248,13 @@ async function toggleList(event) {
         return;
     }
 
-    // One list at a time: Live Reminders' list takes the same place
-    if($.defined('#tt-reminder-listing'))
+    // One list at a time: Live Reminders' list takes the same place. It closes (and resets the title) after a moment, so
+    // wait for it before setting the title
+    if($.defined('#tt-reminder-listing')) {
         $('#live-reminders-catalog')?.click();
+
+        await when.defined(() => ($.nullish('#tt-reminder-listing') || null), 50);
+    }
 
     head.innerHTML = "Save Your Streaks";
 
