@@ -27,7 +27,9 @@ export const STREAK_QUERIES = {
 const POLL_EVERY = 15 * 60_000      // How often the list is read in the background (for the button's count)
     , SAVE_TIMEOUT = 90_000         // How long the save page gets to answer
     , LOG_FOR = 86_400_000          // How long results are kept
-    , GATE = ':is([data-a-target*="mature"i], [data-a-target*="class"i]):is([data-a-target*="overlay"i], [data-a-target*="accept"i])'; // Twitch's content warnings (as Auto-Join finds them)
+    // Twitch's content warnings (as Auto-Join finds them), but not the "Intended for certain audiences" label
+    // (`content-classification-warning-disclosure-overlay`): it blocks nothing and hides itself
+    , GATE = ':is([data-a-target*="mature"i], [data-a-target*="class"i]):is([data-a-target*="overlay"i], [data-a-target*="accept"i]):not([data-a-target*="disclosure"i])';
 
 /**
  * Runs a GQL query as the signed-in viewer.
