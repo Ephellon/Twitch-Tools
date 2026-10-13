@@ -32,7 +32,7 @@
     - A respawned tab (Recover Pages, RAM Alarms) is a new tab, so per-tab state is lost: the tab's own Lurk state (#65) and a Keep Status pause.
 - [ ] **Point Watcher:** right after a page loads, the points button can briefly show the Watch Streak; a save in that moment stores it as points (fixed by the next save, 15 s later).
 - [ ] **Auto-Focus:** still pauses and resumes Up Next on an offline player.
-- [ ] **Streak Saver:** a real save works (verified once, after play was pressed by hand); the popup now presses play itself, which still needs a real stalled save to confirm.
+- [ ] **Streak Saver:** a real save works hands-off in v6 (the popup presses play itself; v5 has the same code but no real save yet); the live **Watch** route is only tested on a faked row, not on a real streak.
 - [ ] **Recording:** Fix recording failures when pre-roll ads play.
 - [ ] **Chat:** Fix chat bullets not registering in the main catcher/reflector.
 - [ ] **Documentation:** Complete JSDoc for `polyfills.js`, `tools.js`, `chat.js`, `player.js`, `glyphs.js`, and `settings.js`.
@@ -42,6 +42,7 @@
 ## Release History
 
 ### Version 5.35.\*
+- [`5.35.5.16`](https://github.com/Ephellon/Twitch-Tools/releases/tag/5.35.5.16) — **Streak Saver:** the "Intended for certain audiences" label no longer makes the Save popup ask you to confirm a content warning
 - [`5.35.5.15`](https://github.com/Ephellon/Twitch-Tools/releases/tag/5.35.5.15) — **Streak Saver:** the Save popup presses play when Twitch's player stops before the clip (the first real save worked once play was pressed)
 - [`5.35.5.14`](https://github.com/Ephellon/Twitch-Tools/releases/tag/5.35.5.14) — **Streak Saver:** with **Auto-Join** on, the Save popup confirms Twitch's content warning by itself
 - [`5.35.5.13`](https://github.com/Ephellon/Twitch-Tools/releases/tag/5.35.5.13) — **Streak Saver:** "Recent" updates as soon as a save finishes; when Twitch shows a content warning, the popup grows and asks you to confirm it. A fresh install (no saved settings) no longer stops every feature after Prevent Hosting from starting
