@@ -177,7 +177,8 @@ plugin({
                 // closing it forever when Twitch's panel has changed (#75)
                 let chat_emote_scroll;
 
-                for(let tries = 8; tries > 0 && nullish(chat_emote_scroll = $('.emote-picker .simplebar-scroll-content')); --tries)
+                // Twitch's panel scrolls itself now (`emote-picker__scroll-container`); older panels used SimpleBar
+                for(let tries = 8; tries > 0 && nullish(chat_emote_scroll = $('.emote-picker :is(.emote-picker__scroll-container, .simplebar-scroll-content)')); --tries)
                     await wait(250);
 
                 if(nullish(chat_emote_scroll)) {
@@ -196,10 +197,13 @@ plugin({
                 // Grab locked emotes when the page loads
                 wait(250).then(() => {
                     // Collect the emotes
-                    $.all('.emote-button [data-test-selector*="lock"i] ~ img:not(.bttv)')
+                    // Each emote: `button[data-test-selector="emote-button-clickable"] > figure > (lock?, img)` (was `.emote-button`)
+                    const EMOTE_BUTTON = ':is(.emote-button, [data-test-selector="emote-button-clickable"i])';
+
+                    $.all(`${ EMOTE_BUTTON } [data-test-selector*="lock"i] ~ img:not(.bttv)`)
                         .map(img => CAPTURED_EMOTES.set(img.alt, shrt(img.src)));
 
-                    $.all('.emote-button img:not(.bttv)')
+                    $.all(`${ EMOTE_BUTTON } img:not(.bttv)`)
                         .filter(img => !CAPTURED_EMOTES.has(img.alt))
                         .map(img => OWNED_EMOTES.set(img.alt, shrt(img.src)));
 
@@ -225,13 +229,15 @@ plugin({
             Chat.get().map(Chat.onmessage = async line => {
                 let regexp;
 
-                for(const emote in line.emotes)
-                    if(!OWNED_EMOTES.has(emote) && !CAPTURED_EMOTES.has(emote) && !context.BTTV_EMOTES.has(emote)) {
+                // `line.emotes` lists the emotes' names (their images are in `Chat.__allemotes__`). Walked with `in`, it gave
+                // indices and Array.prototype's extras ("contains", "random"...), which then replaced those words in chat
+                for(const emote of line.emotes ?? [])
+                    if(Chat.__allemotes__.has(emote) && !OWNED_EMOTES.has(emote) && !CAPTURED_EMOTES.has(emote) && !context.BTTV_EMOTES.has(emote)) {
                         // $log(`Adding emote "${ emote }"`);
 
-                        CAPTURED_EMOTES.set(emote, line.emotes[emote]);
+                        CAPTURED_EMOTES.set(emote, Chat.__allemotes__.get(emote));
 
-                        const capturedEmote = CONVERT_TO_CAPTURED_EMOTE({ name: emote, src: line.emotes[emote] });
+                        const capturedEmote = CONVERT_TO_CAPTURED_EMOTE({ name: emote, src: Chat.__allemotes__.get(emote) });
 
                         if(defined(capturedEmote))
                             $('#tt-captured-emotes-container')?.append?.(capturedEmote);
