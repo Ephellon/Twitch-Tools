@@ -12997,8 +12997,9 @@ let Initialize = async(START_OVER = false) => {
         },
 
         /**
-         * Loads `/save-streak/<channel>` in a popup on this page (same origin, so this page can read it; TTV Tools doesn't run
-         * inside frames), mutes it, waits for Twitch's answer, then checks the streak list.
+         * Loads `/save-streak/<channel>` in a hidden frame on this page (same origin, so this page can read it; TTV Tools
+         * doesn't run inside frames), mutes it, waits for Twitch's answer, then checks the streak list. The frame only shows
+         * when the viewer is needed: a content warning to confirm, or no answer after a while.
          * @param {{ name: string, display: string }} streak
          * @returns {Promise<string>} `saved`, `not-saved` or `unknown`
          */
@@ -13008,23 +13009,37 @@ let Initialize = async(START_OVER = false) => {
 
             $('#tt-streak-saver-popup')?.remove();
 
-            const frame = f(`iframe[src="https://www.twitch.tv/save-streak/${ name }"][allow="autoplay"]`, { style: 'width:100%; height:calc(100% - 2.5rem); border:0; border-radius:0 0 var(--ttv-radius-xs) var(--ttv-radius-xs)' })
-                , status = f('span').with(`Saving your streak with ${ display }...`)
+            // Hidden, not removed: the clip has to keep playing (an invisible frame still plays and counts)
+            const frame = f(`iframe[src="https://www.twitch.tv/save-streak/${ name }"][allow="autoplay"]`, { style: 'width:100%; flex:1; border:0' })
+                , status = f('h3', { style: 'text-align:center; padding:0.5rem 1rem' }).with(`Saving ${ s(display) } streak...`)
                 , popup = f('#tt-streak-saver-popup', {
-                    style: 'position:fixed; right:1.5rem; bottom:1.5rem; width:48rem; height:30rem; z-index:99999; background:var(--color-background-base); border:1px solid var(--color-border-base); border-radius:var(--ttv-radius-xs); box-shadow:0 0 2rem #0008; display:flex; flex-direction:column',
+                    style: 'position:fixed; right:0; bottom:0; width:48rem; height:27rem; opacity:0; pointer-events:none; display:flex; flex-direction:column',
                 },
-                    f('.tt-flex.tt-align-items-center', { style: 'justify-content:space-between; height:2.5rem; padding:0 1rem' },
+                    f('.tt-flex.tt-align-items-center', { style: 'justify-content:space-between' },
                         status,
-                        f('button', { title: "Close", style: 'background:none; color:inherit', onclick: () => popup.remove() }).with('✕')
+                        f('button', { title: "Close", style: 'background:none; color:inherit; padding:0 1rem', onclick: () => popup.remove() }).with('✕')
                     ),
                     frame
                 );
+
+            // Shows the frame in the middle of the screen, sized and layered like Stream Preview
+            const reveal = message => {
+                const scale = parseFloat(Settings.stream_preview_scale) || 1;
+
+                status.textContent = message;
+                popup.setAttribute('style', [
+                    'position:fixed; top:50%; left:50%; transform:translate(-50%, -50%); display:flex; flex-direction:column',
+                    `width:calc(26.75rem * ${ scale } + 16rem); height:calc(15rem * ${ scale } + 13rem); z-index:${ '9'.repeat(1 + parseInt(Settings.stream_preview_position ?? 3)) }`,
+                    'background:var(--color-background-base); border:3px solid var(--user-accent-color, #9147ff); border-radius:var(--ttv-radius-xs); box-shadow:0 0 2rem #0008',
+                ].join('; '));
+            };
 
             $.body.append(popup);
 
             // Read the frame's page until Twitch answers (or the time runs out)
             let deadline = +new Date + SAVE_TIMEOUT
                 , gated = false
+                , shown = false
                 , pressed = +new Date;
 
             const answer = await when.defined(() => {
@@ -13065,8 +13080,8 @@ let Initialize = async(START_OVER = false) => {
                 if([...page.querySelectorAll('.tw-modal h2')].some(header => /no content eligible/i.test(header.textContent)))
                     return 'none';
 
-                // A content warning ("Intended for...") stops the clip until it's confirmed: Auto-Join confirms it, as it
-                // does on the channel's page; otherwise it's the viewer's to confirm, so the popup grows to show it and waits longer
+                // A content warning stops the clip until it's confirmed: Auto-Join confirms it, as it does on the channel's
+                // page; otherwise it's the viewer's to confirm, so the frame shows and waits longer
                 const gate = $.defined(GATE, page);
 
                 if(gate && parseBool(Settings.auto_accept_mature)) {
@@ -13076,14 +13091,18 @@ let Initialize = async(START_OVER = false) => {
                 }
 
                 if(gate && !gated) {
-                    gated = true;
+                    gated = shown = true;
                     deadline = +new Date + 2 * SAVE_TIMEOUT;
-                    popup.style.width = 'min(64rem, calc(100vw - 3rem))';
-                    popup.style.height = 'min(46rem, calc(100vh - 3rem))';
-                    status.textContent = `Content Warning for ${ display }: confirm below to save streak.`;
+                    reveal(`Content Warning for ${ display }: confirm below to save streak.`);
                 } else if(!gate && gated) {
                     gated = false;
                     status.textContent = `Saving ${ s(display) } streak...`;
+                }
+
+                // No answer while hidden: show the frame, so the viewer can see (and fix) what's holding it
+                if(!shown && +new Date > deadline - SAVE_TIMEOUT / 2) {
+                    shown = true;
+                    reveal(`Saving ${ s(display) } streak...`);
                 }
 
                 return null;
@@ -13125,7 +13144,8 @@ let Initialize = async(START_OVER = false) => {
                 unknown: (gated ? `Content warning for ${ display }. Try again to save.` : `Twitch Integrity Fail for ${ display }. Try again later.`),
             })[result];
 
-            wait(result == 'saved' ? 4_000 : 10_000).then(() => popup.remove());
+            // Hidden, it goes at once (the list shows the result); shown, the result stays a moment
+            wait(!shown ? 0 : result == 'saved' ? 4_000 : 10_000).then(() => popup.remove());
 
             return result;
         },

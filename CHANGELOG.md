@@ -42,6 +42,7 @@
 ## Release History
 
 ### Version 5.35.\*
+- [`5.35.5.19`](https://github.com/Ephellon/Twitch-Tools/releases/tag/5.35.5.19) — **Streak Saver:** saves out of sight; the frame only shows (centered) when you're needed
 - [`5.35.5.18`](https://github.com/Ephellon/Twitch-Tools/releases/tag/5.35.5.18) — Up Next: **Redo** re-queues channels again
 - [`5.35.5.17`](https://github.com/Ephellon/Twitch-Tools/releases/tag/5.35.5.17) — **Streak Saver:** changed logs and messages to be easier for humans to read. "Recent Saves" is a statistic, now hidden if the **Show Stats** setting is *disabled*.
 - [`5.35.5.16`](https://github.com/Ephellon/Twitch-Tools/releases/tag/5.35.5.16) — **Streak Saver:** the "Intended for certain audiences" label no longer makes the Save popup ask you to confirm a content warning
