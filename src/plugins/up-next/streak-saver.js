@@ -107,7 +107,7 @@ export const StreakSaver = {
     async save({ name, display, live }) {
         if(live && UP_NEXT_ALLOW_THIS_TAB) {
             Handlers.first_in_line?.({ href: `https://www.twitch.tv/${ name }`, innerText: `${ display } is live [Streak Saver]` }, 'start');
-            await StreakSaver.log({ name, action: 'queued', note: 'live: watching it saves the streak' });
+            await StreakSaver.log({ name, action: 'queued', note: 'live: watched to save streak' });
 
             return 'queued';
         }
@@ -124,33 +124,49 @@ export const StreakSaver = {
     },
 
     /**
-     * Loads `/save-streak/<channel>` in a popup on this page (same origin, so this page can read it; TTV Tools doesn't run
-     * inside frames), mutes it, waits for Twitch's answer, then checks the streak list.
+     * Loads `/save-streak/<channel>` in a hidden frame on this page (same origin, so this page can read it; TTV Tools
+     * doesn't run inside frames), mutes it, waits for Twitch's answer, then checks the streak list. The frame only shows
+     * when the viewer is needed: a content warning to confirm, or no answer after a while.
      * @param {{ name: string, display: string }} streak
      * @returns {Promise<string>} `saved`, `not-saved` or `unknown`
      */
     async popup({ name, display }) {
-        const f = furnish;
+        const f = furnish
+            , s = string => string.replace(/$/, "'").replace(/(?<!s)'$/, "'s");
 
         $('#tt-streak-saver-popup')?.remove();
 
-        const frame = f(`iframe[src="https://www.twitch.tv/save-streak/${ name }"][allow="autoplay"]`, { style: 'width:100%; height:calc(100% - 2.5rem); border:0; border-radius:0 0 var(--ttv-radius-xs) var(--ttv-radius-xs)' })
-            , status = f('span').with(`Saving your streak with ${ display }...`)
+        // Hidden, not removed: the clip has to keep playing (an invisible frame still plays and counts)
+        const frame = f(`iframe[src="https://www.twitch.tv/save-streak/${ name }"][allow="autoplay"]`, { style: 'width:100%; flex:1; border:0' })
+            , status = f('h3', { style: 'text-align:center; padding:0.5rem 1rem' }).with(`Saving ${ s(display) } streak...`)
             , popup = f('#tt-streak-saver-popup', {
-                style: 'position:fixed; right:1.5rem; bottom:1.5rem; width:48rem; height:30rem; z-index:99999; background:var(--color-background-base); border:1px solid var(--color-border-base); border-radius:var(--ttv-radius-xs); box-shadow:0 0 2rem #0008; display:flex; flex-direction:column',
+                style: 'position:fixed; right:0; bottom:0; width:48rem; height:27rem; opacity:0; pointer-events:none; display:flex; flex-direction:column',
             },
-                f('.tt-flex.tt-align-items-center', { style: 'justify-content:space-between; height:2.5rem; padding:0 1rem' },
+                f('.tt-flex.tt-align-items-center', { style: 'justify-content:space-between' },
                     status,
-                    f('button', { title: "Close", style: 'background:none; color:inherit', onclick: () => popup.remove() }).with('✕')
+                    f('button', { title: "Close", style: 'background:none; color:inherit; padding:0 1rem', onclick: () => popup.remove() }).with('✕')
                 ),
                 frame
             );
+
+        // Shows the frame in the middle of the screen, sized and layered like Stream Preview
+        const reveal = message => {
+            const scale = parseFloat(Settings.stream_preview_scale) || 1;
+
+            status.textContent = message;
+            popup.setAttribute('style', [
+                'position:fixed; top:50%; left:50%; transform:translate(-50%, -50%); display:flex; flex-direction:column',
+                `width:calc(26.75rem * ${ scale } + 16rem); height:calc(15rem * ${ scale } + 13rem); z-index:${ '9'.repeat(1 + parseInt(Settings.stream_preview_position ?? 3)) }`,
+                'background:var(--color-background-base); border:3px solid var(--user-accent-color, #9147ff); border-radius:var(--ttv-radius-xs); box-shadow:0 0 2rem #0008',
+            ].join('; '));
+        };
 
         $.body.append(popup);
 
         // Read the frame's page until Twitch answers (or the time runs out)
         let deadline = +new Date + SAVE_TIMEOUT
             , gated = false
+            , shown = false
             , pressed = +new Date;
 
         const answer = await when.defined(() => {
@@ -191,8 +207,8 @@ export const StreakSaver = {
             if([...page.querySelectorAll('.tw-modal h2')].some(header => /no content eligible/i.test(header.textContent)))
                 return 'none';
 
-            // A content warning ("Intended for...") stops the clip until it's confirmed: Auto-Join confirms it, as it
-            // does on the channel's page; otherwise it's the viewer's to confirm, so the popup grows to show it and waits longer
+            // A content warning stops the clip until it's confirmed: Auto-Join confirms it, as it does on the channel's
+            // page; otherwise it's the viewer's to confirm, so the frame shows and waits longer
             const gate = $.defined(GATE, page);
 
             if(gate && parseBool(Settings.auto_accept_mature)) {
@@ -202,14 +218,18 @@ export const StreakSaver = {
             }
 
             if(gate && !gated) {
-                gated = true;
+                gated = shown = true;
                 deadline = +new Date + 2 * SAVE_TIMEOUT;
-                popup.style.width = 'min(64rem, calc(100vw - 3rem))';
-                popup.style.height = 'min(46rem, calc(100vh - 3rem))';
-                status.textContent = `Twitch shows a content warning for ${ display }: confirm it below to save the streak.`;
+                reveal(`Content Warning for ${ display }: confirm below to save streak.`);
             } else if(!gate && gated) {
                 gated = false;
-                status.textContent = `Saving your streak with ${ display }...`;
+                status.textContent = `Saving ${ s(display) } streak...`;
+            }
+
+            // No answer while hidden: show the frame, so the viewer can see (and fix) what's holding it
+            if(!shown && +new Date > deadline - SAVE_TIMEOUT / 2) {
+                shown = true;
+                reveal(`Saving ${ s(display) } streak...`);
             }
 
             return null;
@@ -243,15 +263,16 @@ export const StreakSaver = {
                 ? 'not-saved'
                 : 'unknown';
 
-        await StreakSaver.log({ name, action: result, note: ({ saved: 'Twitch: saved', none: 'Twitch: No Content Eligible' })[answer] ?? (gated ? 'content warning not confirmed' : 'no answer from Twitch') });
+        await StreakSaver.log({ name, action: result, note: ({ saved: 'Saved', none: 'No Content Eligible' })[answer] ?? (gated ? 'Content Warning' : 'Twitch Integrity Fail') });
 
         status.textContent = ({
-            saved: `Your streak with ${ display } is saved!`,
-            'not-saved': `${ display }'s streak couldn't be saved (no eligible clip). Watch them live before it resets.`,
-            unknown: (gated ? `The content warning for ${ display } wasn't confirmed. Try again to confirm it.` : `No answer from Twitch about ${ display }. Try again later.`),
+            saved: `${ s(display) } streak is saved!`,
+            'not-saved': `Watch ${ s(display) } stream live to save`,
+            unknown: (gated ? `Content warning for ${ display }. Try again to save.` : `Twitch Integrity Fail for ${ display }. Try again later.`),
         })[result];
 
-        wait(result == 'saved' ? 4_000 : 10_000).then(() => popup.remove());
+        // Hidden, it goes at once (the list shows the result); shown, the result stays a moment
+        wait(!shown ? 0 : result == 'saved' ? 4_000 : 10_000).then(() => popup.remove());
 
         return result;
     },
@@ -328,13 +349,13 @@ async function toggleList(event) {
                     (value ? `${ value }-stream streak` : 'Streak'),
                     (live ? 'live now' : null),
                     `resets in ${ hours ? `${ hours }h ` : '' }${ minutes }m`,
-                    (canSave ? null : 'no clip from the last day yet: watch live to save it'),
+                    (canSave ? null : 'Watch live to save streak'),
                 ].filter(defined).join(' · '))
             ),
             f('button.tt-streak-save', {
                 ...(canSave ? {} : { disabled: '' }), // Any `disabled` attribute disables it, even `disabled="false"`
                 style: `flex:none; padding:0.25rem 1rem; border-radius:var(--ttv-radius-xs); background:var(--user-accent-color, var(--color-background-button-primary-default)); color:var(--color-text-button-primary); opacity:${ canSave ? 1 : 0.5 }`,
-                title: (live ? "Go to the live stream (Up Next): watching it saves the streak" : canSave ? "Play a recent clip with Twitch's save page" : "Twitch can only save it with a clip from the last day"),
+                title: (live ? "Watch the live stream to save the streak" : canSave ? "Watch a recent video to save this streak" : "Only a recent video can save this streak"),
                 onclick: async({ currentTarget }) => {
                     currentTarget.disabled = true;
                     currentTarget.textContent = (live ? "Queued" : "Saving...");
@@ -366,16 +387,19 @@ async function toggleList(event) {
  */
 function recentOf(StreakSaverLog) {
     const f = furnish
-        , recent = StreakSaverLog
-            .filter(entry => +new Date - entry.time < LOG_FOR && ['saved', 'not-saved', 'unknown', 'queued'].includes(entry.action))
-            .slice(-5)
-            .reverse()
-            .map(({ time, name, action, note }) => f('p.tt-c-text-alt-2', { style: 'font-size:smaller' }).with(
-                `${ new Date(time).toLocaleTimeString(top.LANGUAGE, { timeStyle: 'short' }) } · ${ name } · ${ ({ saved: 'Saved', 'not-saved': 'Not saved', unknown: 'Unknown', queued: 'Watching live' })[action] } (${ note })`
-            ));
+        // Only with "Display Statistics" on
+        , recent = (parseBool(Settings.show_stats)
+            ? StreakSaverLog
+                .filter(entry => +new Date - entry.time < LOG_FOR && ['saved', 'not-saved', 'unknown', 'queued'].includes(entry.action))
+                .slice(-5)
+                .reverse()
+                .map(({ time, name, action, note }) => f('p.tt-c-text-alt-2', { style: 'font-size:smaller' }).with(
+                    `${ new Date(time).toLocaleTimeString(top.LANGUAGE, { timeStyle: 'short' }) } · ${ name } · ${ ({ saved: 'Saved', 'not-saved': 'Not saved', unknown: 'Unknown', queued: 'Watching live' })[action] } (${ note })`
+                ))
+            : []);
 
     // Up Next colors its headings for its accent background (`--user-contrast-color`); this list has the page's background
-    return (recent.length ? [f('h5', { style: 'margin-top:0.75rem; --color:var(--color-text-base) !important; color:var(--color-text-base)' }).with('Recent'), ...recent] : []);
+    return (recent.length ? [f('h5', { style: 'margin-top:0.75rem; --color:var(--color-text-base) !important; color:var(--color-text-base)' }).with('Recent Saves'), ...recent] : []);
 }
 
 plugin({
