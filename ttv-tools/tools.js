@@ -379,13 +379,18 @@ class Balloon {
                                                                                     url = parseURL(thisJob.href).addSearch({ redo });
 
                                                                                 thisJob.setAttribute('new-href', url.href);
-                                                                                ALL_FIRST_IN_LINE_JOBS.map((job, index) => {
-                                                                                    if(parseURL(job).pathname.equals(url.pathname))
-                                                                                        if(index)
-                                                                                            Cache.save({ ALL_FIRST_IN_LINE_JOBS: ALL_FIRST_IN_LINE_JOBS.splice(index, 1, url.href) });
-                                                                                        else
-                                                                                            REDO_FIRST_IN_LINE_QUEUE(job, { redo });
-                                                                                });
+
+                                                                                // The queue keeps the change for every job, the first included: "Go now" and reloads read the queue
+                                                                                const index = ALL_FIRST_IN_LINE_JOBS.findIndex(job => parseURL(job).pathname.equals(url.pathname));
+
+                                                                                if(index < 0)
+                                                                                    return;
+
+                                                                                ALL_FIRST_IN_LINE_JOBS.splice(index, 1, url.href);
+                                                                                Cache.save({ ALL_FIRST_IN_LINE_JOBS });
+
+                                                                                if(!index)
+                                                                                    REDO_FIRST_IN_LINE_QUEUE(url.href, { redo });
                                                                             },
                                                                         },
                                                                         f('span.tt-button-icon__icon').with(
@@ -613,13 +618,18 @@ class Balloon {
                                                             url = parseURL(thisJob.href).addSearch({ redo });
 
                                                         thisJob.setAttribute('new-href', url.href);
-                                                        ALL_FIRST_IN_LINE_JOBS.map((job, index) => {
-                                                            if(parseURL(job).pathname.equals(url.pathname))
-                                                                if(index)
-                                                                    Cache.save({ ALL_FIRST_IN_LINE_JOBS: ALL_FIRST_IN_LINE_JOBS.splice(index, 1, url.href) });
-                                                                else
-                                                                    REDO_FIRST_IN_LINE_QUEUE(job, { redo });
-                                                        });
+
+                                                        // The queue keeps the change for every job, the first included: "Go now" and reloads read the queue
+                                                        const index = ALL_FIRST_IN_LINE_JOBS.findIndex(job => parseURL(job).pathname.equals(url.pathname));
+
+                                                        if(index < 0)
+                                                            return;
+
+                                                        ALL_FIRST_IN_LINE_JOBS.splice(index, 1, url.href);
+                                                        Cache.save({ ALL_FIRST_IN_LINE_JOBS });
+
+                                                        if(!index)
+                                                            REDO_FIRST_IN_LINE_QUEUE(url.href, { redo });
                                                     },
                                                 },
                                                 f('span.tt-button-icon__icon').with(
