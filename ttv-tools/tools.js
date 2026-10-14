@@ -12970,7 +12970,7 @@ let Initialize = async(START_OVER = false) => {
         async save({ name, display, live }) {
             if(live && UP_NEXT_ALLOW_THIS_TAB) {
                 Handlers.first_in_line?.({ href: `https://www.twitch.tv/${ name }`, innerText: `${ display } is live [Streak Saver]` }, 'start');
-                await StreakSaver.log({ name, action: 'queued', note: 'live: watching it saves the streak' });
+                await StreakSaver.log({ name, action: 'queued', note: 'live: watched to save streak' });
 
                 return 'queued';
             }
@@ -12993,7 +12993,8 @@ let Initialize = async(START_OVER = false) => {
          * @returns {Promise<string>} `saved`, `not-saved` or `unknown`
          */
         async popup({ name, display }) {
-            const f = furnish;
+            const f = furnish
+                , s = string => string.replace(/$/, "'").replace(/(?<!s)'$/, "'s");
 
             $('#tt-streak-saver-popup')?.remove();
 
@@ -13069,10 +13070,10 @@ let Initialize = async(START_OVER = false) => {
                     deadline = +new Date + 2 * SAVE_TIMEOUT;
                     popup.style.width = 'min(64rem, calc(100vw - 3rem))';
                     popup.style.height = 'min(46rem, calc(100vh - 3rem))';
-                    status.textContent = `Twitch shows a content warning for ${ display }: confirm it below to save the streak.`;
+                    status.textContent = `Content Warning for ${ display }: confirm below to save streak.`;
                 } else if(!gate && gated) {
                     gated = false;
-                    status.textContent = `Saving your streak with ${ display }...`;
+                    status.textContent = `Saving ${ s(display) } streak...`;
                 }
 
                 return null;
@@ -13106,12 +13107,12 @@ let Initialize = async(START_OVER = false) => {
                     ? 'not-saved'
                     : 'unknown';
 
-            await StreakSaver.log({ name, action: result, note: ({ saved: 'Twitch: saved', none: 'Twitch: No Content Eligible' })[answer] ?? (gated ? 'content warning not confirmed' : 'no answer from Twitch') });
+            await StreakSaver.log({ name, action: result, note: ({ saved: 'Saved', none: 'No Content Eligible' })[answer] ?? (gated ? 'Content Warning' : 'Twitch Integrity Fail') });
 
             status.textContent = ({
-                saved: `Your streak with ${ display } is saved!`,
-                'not-saved': `${ display }'s streak couldn't be saved (no eligible clip). Watch them live before it resets.`,
-                unknown: (gated ? `The content warning for ${ display } wasn't confirmed. Try again to confirm it.` : `No answer from Twitch about ${ display }. Try again later.`),
+                saved: `${ s(display) } streak is saved!`,
+                'not-saved': `Watch ${ s(display) } stream live to save`,
+                unknown: (gated ? `Content warning for ${ display }. Try again to save.` : `Twitch Integrity Fail for ${ display }. Try again later.`),
             })[result];
 
             wait(result == 'saved' ? 4_000 : 10_000).then(() => popup.remove());
@@ -13191,13 +13192,13 @@ let Initialize = async(START_OVER = false) => {
                         (value ? `${ value }-stream streak` : 'Streak'),
                         (live ? 'live now' : null),
                         `resets in ${ hours ? `${ hours }h ` : '' }${ minutes }m`,
-                        (canSave ? null : 'no clip from the last day yet: watch live to save it'),
+                        (canSave ? null : 'Watch live to save streak'),
                     ].filter(defined).join(' · '))
                 ),
                 f('button.tt-streak-save', {
                     ...(canSave ? {} : { disabled: '' }), // Any `disabled` attribute disables it, even `disabled="false"`
                     style: `flex:none; padding:0.25rem 1rem; border-radius:var(--ttv-radius-xs); background:var(--user-accent-color, var(--color-background-button-primary-default)); color:var(--color-text-button-primary); opacity:${ canSave ? 1 : 0.5 }`,
-                    title: (live ? "Go to the live stream (Up Next): watching it saves the streak" : canSave ? "Play a recent clip with Twitch's save page" : "Twitch can only save it with a clip from the last day"),
+                    title: (live ? "Watch the live stream to save the streak" : canSave ? "Watch a recent video to save this streak" : "Only a recent video can save this streak"),
                     onclick: async({ currentTarget }) => {
                         currentTarget.disabled = true;
                         currentTarget.textContent = (live ? "Queued" : "Saving...");
@@ -13229,16 +13230,20 @@ let Initialize = async(START_OVER = false) => {
      */
     function recentOf(StreakSaverLog) {
         const f = furnish
-            , recent = StreakSaverLog
-                .filter(entry => +new Date - entry.time < LOG_FOR && ['saved', 'not-saved', 'unknown', 'queued'].includes(entry.action))
-                .slice(-5)
-                .reverse()
-                .map(({ time, name, action, note }) => f('p.tt-c-text-alt-2', { style: 'font-size:smaller' }).with(
-                    `${ new Date(time).toLocaleTimeString(top.LANGUAGE, { timeStyle: 'short' }) } · ${ name } · ${ ({ saved: 'Saved', 'not-saved': 'Not saved', unknown: 'Unknown', queued: 'Watching live' })[action] } (${ note })`
-                ));
+            , recent = Settings.show_stats
+                ? StreakSaverLog
+                    .filter(entry => +new Date - entry.time < LOG_FOR && ['saved', 'not-saved', 'unknown', 'queued'].includes(entry.action))
+                    .slice(-5)
+                    .reverse()
+                    .map(({ time, name, action, note }) => f('p.tt-c-text-alt-2', { style: 'font-size:smaller' }).with(
+                        `${ new Date(time).toLocaleTimeString(top.LANGUAGE, { timeStyle: 'short' }) } · ${ name } · ${ ({ saved: 'Saved', 'not-saved': 'Not saved', unknown: 'Unknown', queued: 'Watching live' })[action] } (${ note })`
+                    ))
+                : [];
 
         // Up Next colors its headings for its accent background (`--user-contrast-color`); this list has the page's background
-        return (recent.length ? [f('h5', { style: 'margin-top:0.75rem; --color:var(--color-text-base) !important; color:var(--color-text-base)' }).with('Recent'), ...recent] : []);
+        return recent.length
+            ? [f('h5', { style: 'margin-top:0.75rem; --color:var(--color-text-base) !important; color:var(--color-text-base)' }).with('Recent Saves'), ...recent]
+            : [];
     }
 
     Handlers.streak_saver = async() => {
