@@ -159,6 +159,13 @@ export const StreakSaver = {
                 `width:calc(26.75rem * ${ scale } + 16rem); height:calc(15rem * ${ scale } + 13rem); z-index:${ '9'.repeat(1 + parseInt(Settings.stream_preview_position ?? 3)) }`,
                 'background:var(--color-background-base); border:3px solid var(--user-accent-color, #9147ff); border-radius:var(--ttv-radius-xs); box-shadow:0 0 2rem #0008',
             ].join('; '));
+
+            // Not over Up Next: below its panel when they'd meet
+            const panel = $('[up-next--body]')?.closest('[id^="tt-balloon-container"i]')?.getBoundingClientRect()
+                , box = popup.getBoundingClientRect();
+
+            if(panel?.height && box.left < panel.right && box.right > panel.left && box.top < panel.bottom && box.bottom > panel.top)
+                popup.style.top = `${ Math.min(panel.bottom + 8 + box.height / 2, innerHeight - box.height / 2) }px`;
         };
 
         $.body.append(popup);
@@ -393,9 +400,14 @@ function recentOf(StreakSaverLog) {
                 .filter(entry => +new Date - entry.time < LOG_FOR && ['saved', 'not-saved', 'unknown', 'queued'].includes(entry.action))
                 .slice(-5)
                 .reverse()
-                .map(({ time, name, action, note }) => f('p.tt-c-text-alt-2', { style: 'font-size:smaller' }).with(
-                    `${ new Date(time).toLocaleTimeString(top.LANGUAGE, { timeStyle: 'short' }) } · ${ name } · ${ ({ saved: 'Saved', 'not-saved': 'Not saved', unknown: 'Unknown', queued: 'Watching live' })[action] } (${ note })`
-                ))
+                .map(({ time, name, action, note }) => {
+                    const label = ({ saved: 'Saved', 'not-saved': 'Not saved', unknown: 'Unknown', queued: 'Watching live' })[action];
+
+                    // The note only when it adds something: not "Saved (Saved)"
+                    return f('p.tt-c-text-alt-2', { style: 'font-size:smaller' }).with(
+                        `${ new Date(time).toLocaleTimeString(top.LANGUAGE, { timeStyle: 'short' }) } · ${ name } · ${ label }${ (!note || note.equals(label)) ? '' : ` (${ note })` }`
+                    );
+                })
             : []);
 
     // Up Next colors its headings for its accent background (`--user-contrast-color`); this list has the page's background
