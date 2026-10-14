@@ -12999,7 +12999,7 @@ let Initialize = async(START_OVER = false) => {
         /**
          * Loads `/save-streak/<channel>` in a hidden frame on this page (same origin, so this page can read it; TTV Tools
          * doesn't run inside frames), mutes it, waits for Twitch's answer, then checks the streak list. The frame only shows
-         * when the viewer is needed: a content warning to confirm, or no answer after a while.
+         * when the viewer is needed: a content warning to confirm (with Auto-Join off).
          * @param {{ name: string, display: string }} streak
          * @returns {Promise<string>} `saved`, `not-saved` or `unknown`
          */
@@ -13106,11 +13106,6 @@ let Initialize = async(START_OVER = false) => {
                     status.textContent = `Saving ${ s(display) } streak...`;
                 }
 
-                // No answer while hidden: show the frame, so the viewer can see (and fix) what's holding it
-                if(!shown && +new Date > deadline - SAVE_TIMEOUT / 2) {
-                    shown = true;
-                    reveal(`Saving ${ s(display) } streak...`);
-                }
 
                 return null;
             }, 500).then(answer => answer, () => null);
