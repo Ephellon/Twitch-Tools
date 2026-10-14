@@ -42,6 +42,7 @@
 ## Release History
 
 ### Version 5.35.\*
+- [`5.35.5.21`](https://github.com/Ephellon/Twitch-Tools/releases/tag/5.35.5.21) — **Convert Emotes** no longer flashes the emote panel ([#75](https://github.com/Ephellon/Twitch-Tools/issues/75))
 - [`5.35.5.20`](https://github.com/Ephellon/Twitch-Tools/releases/tag/5.35.5.20) — **Streak Saver:** the shown frame stays clear of Up Next; Recent Saves skips repeated notes
 - [`5.35.5.19`](https://github.com/Ephellon/Twitch-Tools/releases/tag/5.35.5.19) — **Streak Saver:** saves out of sight; the frame only shows (centered) when you're needed
 - [`5.35.5.18`](https://github.com/Ephellon/Twitch-Tools/releases/tag/5.35.5.18) — Up Next: **Redo** re-queues channels again

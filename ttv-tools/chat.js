@@ -1039,14 +1039,21 @@ let Chat__Initialize = async(START_OVER = false) => {
         if(nullish(chat_emote_button))
             break __ConvertEmotes__;
 
-        function CollectEmotes() {
+        async function CollectEmotes() {
             chat_emote_button.click();
 
-            let chat_emote_scroll = $('.emote-picker .simplebar-scroll-content');
+            // Twitch draws the panel after the click: wait a moment for it, then give up (once) instead of opening and
+            // closing it forever when Twitch's panel has changed (#75)
+            let chat_emote_scroll;
+
+            for(let tries = 8; tries > 0 && nullish(chat_emote_scroll = $('.emote-picker .simplebar-scroll-content')); --tries)
+                await wait(250);
 
             if(nullish(chat_emote_scroll)) {
-                chat_emote_button.click();
-                return wait(250).then(CollectEmotes);
+                if($.defined('[class*="emote-picker"i]:not(button)'))
+                    chat_emote_button.click();
+
+                return $warn("[Convert Emotes] Twitch's emote panel has changed: emotes are only collected from chat");
             }
 
             // Set the ID to display the "Hold on..." message
