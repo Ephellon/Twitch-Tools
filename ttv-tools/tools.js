@@ -9301,8 +9301,8 @@ let Initialize = async(START_OVER = false) => {
             if(DO_NOT_AUTO_ADD.contains(href) || RESERVED_TWITCH_PATHNAMES.test(href))
                 continue;
 
-            // Already on this channel's page: there's nothing to queue or redirect to (#55)
-            if(parseURL(href).pathname?.equals(`/${ STREAMER?.name }`))
+            // Already on this channel's page: there's nothing to queue or redirect to (#55); a redo job re-queues itself here
+            if(parseURL(href).pathname?.equals(`/${ STREAMER?.name }`) && !/\[Entry Redo\]/.test(innerText))
                 continue;
 
             // A notification that links to Twitch's home page names no channel (it showed up as a bare
@@ -9616,7 +9616,8 @@ let Initialize = async(START_OVER = false) => {
             && top.location.pathname.equals(`/${ STREAMER.name }`)
             && STREAMER.live
         )
-            Handlers.first_in_line({ href: top.location.href, innerText: `${ STREAMER.name } is live [Entry Redo]` });
+            // Queued without this visit's `tool` (how it got here): kept, every later visit read as a timeout
+            Handlers.first_in_line({ href: parseURL(top.location).delSearch(['tool']).href, innerText: `${ STREAMER.name } is live [Entry Redo]` });
 
         // Put a rainbow around repeating entries...
         setInterval(() =>
