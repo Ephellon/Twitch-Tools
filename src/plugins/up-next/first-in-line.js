@@ -19,14 +19,12 @@ plugin({
         HANDLED_NOTIFICATIONS = [];
         STARTED_TIMERS = {};
 
-        // The pinned channel was reached: the pin is used up (#71). Asking for the next channel no longer clears it
-        Cache.load('PinnedStreamer', ({ PinnedStreamer }) => {
-            if(nullish(PinnedStreamer) || PinnedStreamer.unlike(STREAMER?.name ?? ''))
-                return;
+        // A pinned channel was reached: that pin is used up (#71); the others stay. Asking for the next channel doesn't clear it
+        Cache.load(['PinnedStreamers', 'PinnedStreamer'], ({ PinnedStreamers, PinnedStreamer }) => {
+            const pins = [...(PinnedStreamers ?? []), PinnedStreamer].filter(name => name?.length);
 
-            delete top.GetNextStreamer?.pinnedStreamer;
-            Cache.remove(['PinnedStreamer']);
-            Runtime.sendMessage({ action: 'UPDATE_PINNED_STREAMER', oldValue: { name: PinnedStreamer } });
+            if(pins.some(name => name.equals(STREAMER?.name ?? '')))
+                when.defined(() => top.SET_PINNED_STREAMERS).then(set => set(pins.filter(name => name.unlike(STREAMER.name))));
         });
     },
 
