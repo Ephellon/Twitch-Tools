@@ -4032,14 +4032,19 @@ let Initialize = async(START_OVER = false) => {
             };
 
         // Only a lookup: Stay Live and others ask every second, and clearing the pin here lost it on the next channel (#71).
-        // The pin is used up once its channel is reached (see First in Line)
-        if(defined(GetNextStreamer.pinnedStreamer) && ((ALL_FIRST_IN_LINE_JOBS?.length | 0) < 1) && !STREAMER?.live)
+        // Pins are a list: the first live one goes (else the first); each is used up once its channel is reached (see First in Line)
+        const pins = GetNextStreamer.pinnedStreamers ?? [];
+
+        if(pins.length && ((ALL_FIRST_IN_LINE_JOBS?.length | 0) < 1) && !STREAMER?.live) {
+            const pin = pins.find(name => parseBool(ALL_CHANNELS?.find(channel => channel?.name?.equals(name))?.live)) ?? pins[0];
+
             return ({
                 from: 'GET_NEXT_STREAMER__PINNED',
                 // A full URL: `parseURL` can't read a bare path, and Stay Live then reloaded this channel instead
-                href: `${ location.origin }/${ GetNextStreamer.pinnedStreamer }`,
-                name: GetNextStreamer.pinnedStreamer,
+                href: `${ location.origin }/${ pin }`,
+                name: pin,
             });
+        }
 
         // Next channel in "Up Next"
         if(ALL_FIRST_IN_LINE_JOBS?.length && !parseBool(Settings.first_in_line_none))
@@ -4190,8 +4195,52 @@ let Initialize = async(START_OVER = false) => {
         return when.defined(() => GetNextStreamer.cachedStreamer);
     };
 
-    Cache.load('PinnedStreamer', ({ PinnedStreamer }) => {
-        GetNextStreamer.pinnedStreamer = PinnedStreamer;
+    // Pinned channels (#71): a list in priority order. With Up Next empty and the stream over, the first live pin is the next
+    // channel (else the first pin); a pin is used up once its channel is reached
+    GetNextStreamer.pinnedStreamers = [];
+
+    top.SET_PINNED_STREAMERS =
+    // Saves the pins and shows them; `share` tells the other tabs (off for a change another tab sent)
+        // SET_PINNED_STREAMERS(list:array<string>, share:boolean?) → undefined
+    function SET_PINNED_STREAMERS(list, share = true) {
+        const imgSize = '70px';
+
+        list = list.filter(name => name?.length).filter((name, index, all) => all.findIndex(other => other.equals(name)) == index);
+        GetNextStreamer.pinnedStreamers = list;
+
+        Cache.save({ PinnedStreamers: list });
+        Cache.remove(['PinnedStreamer']);
+
+        // The button shows the first pin
+        const [first] = list
+            , button = $('#pinned-streamer');
+
+        if(defined(button))
+            button.innerHTML = (nullish(first)
+                ? Glyphs.pinned
+                : furnish('.tt-border-radius-rounded').with(furnish.img({
+                    src: (ALL_CHANNELS?.find(channel => channel?.name?.equals(first))?.icon ?? 'https://static-cdn.jtvnw.net/ttv-static-metadata/twitch_logo3.jpg'),
+                    style: `min-width:calc(${ imgSize }/2); border-radius:${ imgSize }`,
+                })).outerHTML
+            );
+
+        // An open list: each row shows its place
+        for(const row of $.all('.tt-pinnable [data-name]')) {
+            const place = list.findIndex(name => name.equals(row.dataset.name)) + 1;
+
+            row.dataset.pinned = (place > 0);
+            row.closest('.tt-pinnable')?.modStyle(`background:var(--color-background-${ place ? 'chat' : 'base' });`);
+            $('strong', row)?.modStyle(place ? 'color:var(--color-amazon)' : 'color:!delete');
+            $('strong', row)?.html(`${ row.dataset.name } &bull; ${ place ? `Pin #${ place }. Click to unpin` : 'Click to pin 📌' }`);
+        }
+
+        if(share)
+            Runtime.sendMessage({ action: 'UPDATE_PINNED_STREAMER', list });
+    };
+
+    Cache.load(['PinnedStreamers', 'PinnedStreamer'], ({ PinnedStreamers, PinnedStreamer }) => {
+        // A single pin (from before the list) joins the list
+        GetNextStreamer.pinnedStreamers = [...(PinnedStreamers ?? []), PinnedStreamer].filter(name => name?.length);
     });
 
     if(true
@@ -8061,7 +8110,7 @@ let Initialize = async(START_OVER = false) => {
 
                         let _name = name.toLowerCase();
                         let { icon, live } = channel;
-                        let pinned = parseBool(GetNextStreamer.pinnedStreamer?.equals(name));
+                        let pinned = (GetNextStreamer.pinnedStreamers ?? []).some(pin => pin.equals(name));
                         let wanted = WantedNames.has(name);
                         let current = name.equals(STREAMER.name);
 
@@ -8100,45 +8149,11 @@ let Initialize = async(START_OVER = false) => {
                                                             event.preventDefault(true);
 
                                                             let { currentTarget } = event;
-                                                            let pinned = parseBool(currentTarget.dataset.pinned);
-                                                            let oldValue, newValue;
+                                                            const { name } = currentTarget.dataset
+                                                                , pins = GetNextStreamer.pinnedStreamers ?? [];
 
-                                                            unpin: if(defined(GetNextStreamer.pinnedStreamer)) {
-                                                                let pidged = $(`.tt-pinnable [data-name="${ GetNextStreamer.pinnedStreamer }"i]`);
-
-                                                                if(nullish(pidged))
-                                                                    break unpin;
-
-                                                                oldValue = { ...pidged.dataset };
-                                                                pidged.dataset.pinned = false;
-                                                                pidged.closest('.tt-pinnable').modStyle(`background:var(--color-background-base);`);
-                                                                $('.tt-balloon-message strong', pidged).modStyle(`color:!delete`);
-                                                                $('strong', pidged).html(`${ name } &bull; Click to pin \uD83D\uDCCC`);
-
-                                                                pidged.closest('form')?.insertAdjacentElement('afterend', pidged.closest('.tt-pinnable'));
-                                                            }
-
-                                                            if(pinned) {
-                                                                delete GetNextStreamer.pinnedStreamer;
-                                                                $('#pinned-streamer').innerHTML = Glyphs.pinned;
-
-                                                                Cache.remove(['PinnedStreamer']);
-                                                            } else {
-                                                                newValue = { ...currentTarget.dataset };
-                                                                pinned = currentTarget.dataset.pinned = true;
-                                                                GetNextStreamer.pinnedStreamer = currentTarget.dataset.name;
-                                                                $('#pinned-streamer').innerHTML = furnish(`.tt-border-radius-rounded`).with(furnish.img({ src: currentTarget.dataset.icon, style: `min-width:calc(${ imgSize }/2); border-radius:${ imgSize }` })).outerHTML;
-
-                                                                currentTarget.closest('.tt-pinnable').modStyle(`background:var(--color-background-chat);`);
-                                                                $('.tt-balloon-message strong', currentTarget).modStyle(`color:var(--color-amazon)`);
-                                                                $('strong', currentTarget).html(`${ name } &bull; Pinned. Click to unpin`);
-
-                                                                currentTarget.closest('[id$="listing"i]').querySelector('form')?.insertAdjacentElement('beforeend', currentTarget.closest('.tt-pinnable'));
-
-                                                                Cache.save({ PinnedStreamer: GetNextStreamer.pinnedStreamer });
-                                                            }
-
-                                                            Runtime.sendMessage({ action: `UPDATE_PINNED_STREAMER`, oldValue, newValue  });
+                                                            // A list (#71): a new pin goes last; clicking a pin removes it
+                                                            SET_PINNED_STREAMERS(parseBool(currentTarget.dataset.pinned) ? pins.filter(pin => pin.unlike(name)) : [...pins, name]);
                                                         },
                                                     },
                                                     f('.persistent-notification__area.tt-flex.tt-flex-nowrap.tt-pd-b-1.tt-pd-l-1.tt-pd-r-3.tt-pd-t-1').with(
@@ -8156,7 +8171,7 @@ let Initialize = async(START_OVER = false) => {
                                                                 f('span.tt-c-text-alt').with(
                                                                     f('p.tt-balloon-message').with(
                                                                         f.span(
-                                                                            f(`strong`, { innerHTML: `${ name } &bull; ${pinned? "Pinned. Click to unpin": "Click to pin \uD83D\uDCCC"}`, style: (pinned? 'color:var(--color-amazon)': '') })
+                                                                            f(`strong`, { innerHTML: `${ name } &bull; ${ pinned ? `Pin #${ (GetNextStreamer.pinnedStreamers ?? []).findIndex(pin => pin.equals(name)) + 1 }. Click to unpin` : "Click to pin \uD83D\uDCCC" }`, style: (pinned? 'color:var(--color-amazon)': '') })
                                                                         )
                                                                     )
                                                                 )
@@ -8191,19 +8206,8 @@ let Initialize = async(START_OVER = false) => {
                 },
             });
 
-            pinned_button.tooltip = new Tooltip(pinned_button, 'Pin a user to go to when the queue is <em>empty</em> and <em>offline</em>');
-            if(defined(GetNextStreamer.pinnedStreamer))
-                when.sated(() => ALL_CHANNELS).then(A_C =>
-                    pinned_button.innerHTML = furnish(`.tt-border-radius-rounded`).with(
-                        furnish.img({
-                            src: (null
-                                ?? A_C.find(c => c.name.equals(GetNextStreamer.pinnedStreamer))?.icon
-                                ?? `https://static-cdn.jtvnw.net/ttv-static-metadata/twitch_logo3.jpg`
-                            ),
-                            style: `min-width:calc(${ imgSize }/2); border-radius:${ imgSize }`,
-                        })
-                    ).outerHTML
-                );
+            pinned_button.tooltip = new Tooltip(pinned_button, 'Pin channels to go to when Up Next is <em>empty</em> and this stream <em>ends</em>');
+            when.sated(() => ALL_CHANNELS).then(() => SET_PINNED_STREAMERS(GetNextStreamer.pinnedStreamers ?? [], false));
 
             // Up Next Boost Button
             let first_in_line_boost_button = FIRST_IN_LINE_BALLOON?.addButton({
@@ -9256,14 +9260,12 @@ let Initialize = async(START_OVER = false) => {
     let HANDLED_NOTIFICATIONS = [],
         STARTED_TIMERS = {};
 
-    // The pinned channel was reached: the pin is used up (#71). Asking for the next channel no longer clears it
-    Cache.load('PinnedStreamer', ({ PinnedStreamer }) => {
-        if(nullish(PinnedStreamer) || PinnedStreamer.unlike(STREAMER?.name ?? ''))
-            return;
+    // A pinned channel was reached: that pin is used up (#71); the others stay. Asking for the next channel doesn't clear it
+    Cache.load(['PinnedStreamers', 'PinnedStreamer'], ({ PinnedStreamers, PinnedStreamer }) => {
+        const pins = [...(PinnedStreamers ?? []), PinnedStreamer].filter(name => name?.length);
 
-        delete top.GetNextStreamer?.pinnedStreamer;
-        Cache.remove(['PinnedStreamer']);
-        Runtime.sendMessage({ action: 'UPDATE_PINNED_STREAMER', oldValue: { name: PinnedStreamer } });
+        if(pins.some(name => name.equals(STREAMER?.name ?? '')))
+            when.defined(() => top.SET_PINNED_STREAMERS).then(set => set(pins.filter(name => name.unlike(STREAMER.name))));
     });
 
     Handlers.first_in_line = async(ActionableNotification, preferredPlace) => {
@@ -18650,47 +18652,8 @@ if(top == window) {
                     case 'update-pinned-streamer': {
                         $log("Updating pinned streamer...", request);
 
-                        when.defined(() => top.GetNextStreamer).then(_ => {
-                            let imgSize = '70px';
-
-                            unpin: if(defined(request.oldValue?.name)) {
-                                let pidged = $(`.tt-pinnable [data-name="${ request.oldValue.name }"i]`);
-
-                                delete _.pinnedStreamer;
-                                $('#pinned-streamer').innerHTML = Glyphs.pinned;
-
-                                if(nullish(pidged))
-                                    break unpin;
-
-                                pidged.dataset.pinned = false;
-                                pidged.closest('.tt-pinnable').modStyle(`background:var(--color-background-base);`);
-                                $('.tt-balloon-message strong', pidged).modStyle(`color:!delete`);
-                                $('strong', pidged).html(`${ name } &bull; Click to pin \uD83D\uDCCC`);
-
-                                pidged.closest('form')?.insertAdjacentElement('afterend', pidged.closest('.tt-pinnable'));
-                            }
-
-                            pin: if(defined(request.newValue?.name)) {
-                                let currentTarget = $(`.tt-pinnable [data-name="${ request.newValue.name }"i]`);
-
-                                _.pinnedStreamer = request.newValue.name;
-                                $('#pinned-streamer')?.html(furnish(`.tt-border-radius-rounded`).with(furnish.img({ src: request.newValue.icon, style: `min-width:calc(${ imgSize }/2); border-radius:${ imgSize }` })).outerHTML);
-
-                                if(nullish(currentTarget))
-                                    break pin;
-
-                                pinned = currentTarget.dataset.pinned = true;
-                                currentTarget.closest('.tt-pinnable').modStyle(`background:var(--color-background-chat);`);
-                                $('.tt-balloon-message strong', currentTarget).modStyle(`color:var(--color-amazon)`);
-                                $('strong', currentTarget).html(`${ name } &bull; Pinned. Click to unpin`);
-
-                                currentTarget.closest('[id$="listing"i]').querySelector('form')?.insertAdjacentElement('beforeend', currentTarget.closest('.tt-pinnable'));
-
-                                Cache.save({ PinnedStreamer: _.pinnedStreamer });
-                            } else {
-                                Cache.remove(['PinnedStreamer']);
-                            }
-                        });
+                        // Another tab changed the pins: the whole list comes along
+                        when.defined(() => top.SET_PINNED_STREAMERS).then(set => set(request.list ?? [], false));
                     } break;
                 }
             });

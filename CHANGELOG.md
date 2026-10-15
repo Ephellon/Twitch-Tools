@@ -42,6 +42,7 @@
 ## Release History
 
 ### Version 5.35.\*
+- [`5.35.5.25`](https://github.com/Ephellon/Twitch-Tools/releases/tag/5.35.5.25) — Up Next: **Pin** several channels, in order; the first live one is used when the queue is empty and the stream ends ([#71](https://github.com/Ephellon/Twitch-Tools/issues/71))
 - [`5.35.5.24`](https://github.com/Ephellon/Twitch-Tools/releases/tag/5.35.5.24) — Up Next: **Redo** channels re-queue when Up Next reaches them
 - [`5.35.5.23`](https://github.com/Ephellon/Twitch-Tools/releases/tag/5.35.5.23) — **Streak Saver** stays hidden while Twitch is slow to answer
 - [`5.35.5.22`](https://github.com/Ephellon/Twitch-Tools/releases/tag/5.35.5.22) — **Convert Emotes** works with Twitch's new emote panel, and no longer turns words like "random" into emotes ([#75](https://github.com/Ephellon/Twitch-Tools/issues/75))
