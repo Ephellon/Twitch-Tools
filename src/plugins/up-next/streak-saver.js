@@ -233,7 +233,6 @@ export const StreakSaver = {
                 status.textContent = `Saving ${ s(display) } streak...`;
             }
 
-
             return null;
         }, 500).then(answer => answer, () => null);
 

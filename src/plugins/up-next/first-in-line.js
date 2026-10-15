@@ -410,7 +410,8 @@ plugin({
                 && top.location.pathname.equals(`/${ STREAMER.name }`)
                 && STREAMER.live
             )
-                Handlers.first_in_line({ href: top.location.href, innerText: `${ STREAMER.name } is live [Entry Redo]` });
+                // Queued without this visit's `tool` (how it got here): kept, every later visit read as a timeout
+                Handlers.first_in_line({ href: parseURL(top.location).delSearch(['tool']).href, innerText: `${ STREAMER.name } is live [Entry Redo]` });
 
             // Put a rainbow around repeating entries...
             setInterval(() =>
