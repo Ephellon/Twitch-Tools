@@ -1844,7 +1844,7 @@ $('#sync-settings--upload-json-input').onchange = async event => {
                 } break;
 
                 case 'simplify_chat_font': {
-                    $(`#${ id }`).setAttribute('style', `font-family:${ value } !important`);
+                    $(`#${ ID }`).setAttribute('style', `font-family:${ value } !important`);
 
                     assignValue(element, value);
                 } break;
