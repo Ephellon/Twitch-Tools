@@ -1812,7 +1812,7 @@ $('#sync-settings--upload-json-input').onchange = async event => {
 
             let value = data[ID];
 
-            switch(id) {
+            switch(ID) {
                 case 'filter_rules': {
                     RedoRuleElements(value, 'filter');
                 } break;
