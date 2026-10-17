@@ -44,6 +44,7 @@
 ## Release History
 
 ### Version 5.35.\*
+- [`5.35.5.26`](https://github.com/Ephellon/Twitch-Tools/releases/tag/5.35.5.26) — Settings: JSON restores are fixed
 - [`5.35.5.25`](https://github.com/Ephellon/Twitch-Tools/releases/tag/5.35.5.25) — Up Next: **Pin** several channels, in order; the first live one is used when the queue is empty and the stream ends ([#71](https://github.com/Ephellon/Twitch-Tools/issues/71))
 - [`5.35.5.24`](https://github.com/Ephellon/Twitch-Tools/releases/tag/5.35.5.24) — Up Next: **Redo** channels re-queue when Up Next reaches them
 - [`5.35.5.23`](https://github.com/Ephellon/Twitch-Tools/releases/tag/5.35.5.23) — **Streak Saver** stays hidden while Twitch is slow to answer
