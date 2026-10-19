@@ -44,6 +44,7 @@
 ## Release History
 
 ### Version 5.35.\*
+- [`5.35.5.28`](https://github.com/Ephellon/Twitch-Tools/releases/tag/5.35.5.28) — Up Next: the **Pin** list includes your Live Reminders again
 - [`5.35.5.27`](https://github.com/Ephellon/Twitch-Tools/releases/tag/5.35.5.27) — Settings: JSON restores are fixed
 - [`5.35.5.26`](https://github.com/Ephellon/Twitch-Tools/releases/tag/5.35.5.26) — Settings: JSON restores are fixed
 - [`5.35.5.25`](https://github.com/Ephellon/Twitch-Tools/releases/tag/5.35.5.25) — Up Next: **Pin** several channels, in order; the first live one is used when the queue is empty and the stream ends ([#71](https://github.com/Ephellon/Twitch-Tools/issues/71))

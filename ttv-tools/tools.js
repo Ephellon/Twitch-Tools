@@ -8082,7 +8082,8 @@ let Initialize = async(START_OVER = false) => {
                             LiveReminders ??= {};
                         }
 
-                        for(let { name } in LiveReminders) {
+                        // The keys are the names (destructured, `name` was always undefined, so reminders never joined the list)
+                        for(let name in LiveReminders) {
                             SearchableNames.add(name);
                             WantedNames.add(name);
                         }
