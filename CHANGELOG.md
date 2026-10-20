@@ -24,6 +24,7 @@
     - Prevent dead channels from being re-added.
     - Resolve "Up Next Owner" tab synchronization and URL mimicking.
     - The Pin list can show a channel twice when its name's case differs ("qilin" and "Qilin"); unpinned names are hard to read (dark on dark).
+    - Pins missing from the channel list (`ALL_CHANNELS`) count as offline, so an offline pin can be chosen over a live one.
 - [ ] **Performance:**
     - Fix background script stalls when tabs disappear.
     - Resolve memory leaks related to Hardware Acceleration and excessive iframes.
@@ -35,7 +36,7 @@
 - [ ] **Auto-Focus:** still pauses and resumes Up Next on an offline player.
 - [ ] **VODs:** TTV Tools doesn't start on `/videos/…` pages (the ready check waits for a chat message container that VOD chat replay doesn't have).
 - [ ] **Live Reminders:** the "Send to miniplayer / Add to Live Reminders" hint can cover the points line in the side-bar tooltip.
-- [ ] **Streak Saver:** a real save works hands-off (the popup presses play itself); the live **Watch** route is only tested on a faked row, not on a real streak.
+- [ ] **Streak Saver:** a real save works hands-off (the popup presses play itself); the live **Watch** route is only tested on a faked row, not on a real streak. Any save Twitch doesn't answer is logged as "Twitch Integrity Fail", whatever the cause.
 - [ ] **Recording:** Fix recording failures when pre-roll ads play.
 - [ ] **Chat:** Fix chat bullets not registering in the main catcher/reflector.
 - [ ] **Documentation:** Complete JSDoc for `polyfills.js`, `tools.js`, `chat.js`, `player.js`, `glyphs.js`, and `settings.js`.
