@@ -34,7 +34,7 @@
     - A respawned tab (Recover Pages, RAM Alarms) is a new tab, so per-tab state is lost: the tab's own Lurk state (#65) and a Keep Status pause.
 - [ ] **Point Watcher:** right after a page loads, the points button can briefly show the Watch Streak; a save in that moment stores it as points (fixed by the next save, 15 s later).
 - [ ] **Auto-Focus:** still pauses and resumes Up Next on an offline player.
-- [ ] **Streak Saver:** a real save works hands-off in v6 (the popup presses play itself; v5 has the same code but no real save yet); the live **Watch** route is only tested on a faked row, not on a real streak.
+- [ ] **Streak Saver:** a real save works hands-off in v6 (the popup presses play itself; v5 has the same code but no real save yet); the live **Watch** route is only tested on a faked row, not on a real streak. Any save Twitch doesn't answer is logged as "Twitch Integrity Fail", whatever the cause.
 - [ ] **Recording:** Fix recording failures when pre-roll ads play.
 - [ ] **Chat:** Fix chat bullets not registering in the main catcher/reflector.
 - [ ] **Documentation:** Complete JSDoc for `polyfills.js`, `tools.js`, `chat.js`, `player.js`, `glyphs.js`, and `settings.js`.
