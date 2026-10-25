@@ -16,6 +16,7 @@ import './automation/prevent-raiding.js';
 import './automation/greedy-raiding.js';
 import './automation/stay-live.js';
 import './up-next/streak-saver.js';
+import './up-next/search-actions.js';
 import './automation/time-zones.js';
 import './customization/block-banners.js';
 import './customization/point-watcher.js';
