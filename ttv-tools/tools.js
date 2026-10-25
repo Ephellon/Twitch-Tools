@@ -12940,6 +12940,9 @@ let Initialize = async(START_OVER = false) => {
         // (`content-classification-warning-disclosure-overlay`): it blocks nothing and hides itself
         , GATE = ':is([data-a-target*="mature"i], [data-a-target*="class"i]):is([data-a-target*="overlay"i], [data-a-target*="accept"i]):not([data-a-target*="disclosure"i])';
 
+    // One save at a time: each save page replaces the last, so saves started together all failed but the last (#80)
+    let STREAK_SAVING = Promise.resolve();
+
     /**
      * Runs a GQL query as the signed-in viewer.
      * @param {string} query
@@ -13011,9 +13014,10 @@ let Initialize = async(START_OVER = false) => {
         /**
          * Saves a streak: a live channel goes to the front of Up Next; otherwise Twitch's save page runs in a popup.
          * @param {{ name: string, display: string, live: boolean }} streak
+         * @param {{ onstart?: function }} [options] - `onstart` runs when a queued save's page starts loading
          * @returns {Promise<string>} What happened: `queued`, `saved`, `not-saved` or `unknown`
          */
-        async save({ name, display, live }) {
+        async save({ name, display, live }, { onstart } = {}) {
             if(live && UP_NEXT_ALLOW_THIS_TAB) {
                 Handlers.first_in_line?.({ href: `https://www.twitch.tv/${ name }`, innerText: `${ display } is live [Streak Saver]` }, 'start');
                 await StreakSaver.log({ name, action: 'queued', note: 'live: watched to save streak' });
@@ -13029,7 +13033,11 @@ let Initialize = async(START_OVER = false) => {
                 return 'queued';
             }
 
-            return StreakSaver.popup({ name, display });
+            let result = STREAK_SAVING.then(() => (onstart?.(), StreakSaver.popup({ name, display })));
+
+            STREAK_SAVING = result.catch(error => $warn("[Streak Saver] Save failed:", error));
+
+            return result;
         },
 
         /**
@@ -13269,9 +13277,9 @@ let Initialize = async(START_OVER = false) => {
                     title: (live ? "Watch the live stream to save the streak" : canSave ? "Watch a recent video to save this streak" : "Only a recent video can save this streak"),
                     onclick: async({ currentTarget }) => {
                         currentTarget.disabled = true;
-                        currentTarget.textContent = (live ? "Queued" : "Saving...");
+                        currentTarget.textContent = (live ? "Queued" : "Waiting...");
 
-                        const result = await StreakSaver.save(streak);
+                        const result = await StreakSaver.save(streak, { onstart: () => currentTarget.textContent = "Saving..." });
 
                         currentTarget.textContent = ({ queued: 'Queued', saved: 'Saved', 'not-saved': 'Not saved', unknown: 'Try again' })[result] ?? "Done";
                         currentTarget.disabled = (result != 'unknown');
