@@ -44,6 +44,7 @@
 ## Release History
 
 ### Version 5.35.\*
+- [`5.35.5.29`](https://github.com/Ephellon/Twitch-Tools/releases/tag/5.35.5.29) — Stay Live: leaves offline channels you open yourself alone (#82)
 - [`5.35.5.28`](https://github.com/Ephellon/Twitch-Tools/releases/tag/5.35.5.28) — Up Next: the **Pin** list includes your Live Reminders again
 - [`5.35.5.27`](https://github.com/Ephellon/Twitch-Tools/releases/tag/5.35.5.27) — Settings: JSON restores are fixed
 - [`5.35.5.26`](https://github.com/Ephellon/Twitch-Tools/releases/tag/5.35.5.26) — Settings: JSON restores are fixed

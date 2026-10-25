@@ -12802,7 +12802,20 @@ let Initialize = async(START_OVER = false) => {
      *                       __/ |
      *                      |___/
      */
-    let ClearIntent;
+    let ClearIntent,
+        USER_INTENT,        // A channel the viewer chose themselves
+        WATCHED_LIVE;       // The channel seen live during this visit
+
+    // A reload of a dead page must not forget it (Stay Live would treat the channel as one the viewer opened); kept per
+    // tab, and only briefly, so it never moves the viewer off a channel they return to
+    try {
+        let { name, at } = JSON.parse(sessionStorage.getItem('ttv-tools:watched-live') ?? '{}');
+
+        if(name && (+new Date - at) < 600_000)
+            WATCHED_LIVE = name;
+    } catch(error) {
+        // No storage: remember this visit only
+    }
 
     let twitch_pathnames = [
         USERNAME,
@@ -12819,13 +12832,25 @@ let Initialize = async(START_OVER = false) => {
 
         try {
             await Cache.load('UserIntent', async({ UserIntent }) => {
+                // `reserved_twitch_pathnames` was built from a copy of TWITCH_PATHNAMES, so pushing here never
+                // counted; remember the intent and check it below (#50, #82)
                 if(parseBool(UserIntent))
-                    TWITCH_PATHNAMES.push(UserIntent);
+                    TWITCH_PATHNAMES.push(USER_INTENT = UserIntent);
 
                 Cache.remove('UserIntent');
             });
         } catch(error) {
             return StopWatch.stop('stay_live'), Cache.remove('UserIntent');
+        }
+
+        if(STREAMER.live && !(parseBool(Settings.stay_live__ignore_channel_reruns) && STREAMER.redo)) {
+            WATCHED_LIVE = STREAMER.name;
+
+            try {
+                sessionStorage.setItem('ttv-tools:watched-live', JSON.stringify({ name: WATCHED_LIVE, at: +new Date }));
+            } catch(error) {
+                // No storage: remember this visit only
+            }
         }
 
         NotLive:
@@ -12840,6 +12865,13 @@ let Initialize = async(START_OVER = false) => {
                 break NotLive;
 
             if(!RegExp(STREAMER?.name, 'i').test(PATHNAME))
+                break NotLive;
+
+            // Only move on when the stream ended while being watched, or the extension brought the viewer here; a
+            // channel the viewer opened while it was offline is theirs to look at (#50, #82)
+            let broughtHere = defined(parseURL(location).searchParameters?.tool);
+
+            if(USER_INTENT?.equals?.(STREAMER?.name) || !(WATCHED_LIVE?.equals?.(STREAMER?.name) || broughtHere))
                 break NotLive;
 
             if(defined(next)) {
