@@ -71,9 +71,11 @@ plugin({
                 return;
             }
 
-            const video = $.all('video').pop();
+            // The stream's own player only (#83): the MiniPlayer and Twitch's picture-by-picture (ads) add videos after it
+            const video = $('[data-a-target="video-player"i] video');
 
-            if(nullish(video))
+            // No frame yet: skip this tick instead of comparing blank captures
+            if(nullish(video) || !video.videoHeight)
                 return;
 
             const frame = video.captureFrame(`image/${ imageType }`)
