@@ -6081,9 +6081,11 @@ let Initialize = async(START_OVER = false) => {
                 return;
             }
 
-            let video = $.all('video').pop();
+            // The stream's own player only (#83): the MiniPlayer and Twitch's picture-by-picture (ads) add videos after it
+            let video = $('[data-a-target="video-player"i] video');
 
-            if(nullish(video))
+            // No frame yet: skip this tick instead of comparing blank captures
+            if(nullish(video) || !video.videoHeight)
                 return;
 
             let frame = video.captureFrame(`image/${ imageType }`),
@@ -13378,6 +13380,187 @@ let Initialize = async(START_OVER = false) => {
         $remark('Adding Streak Saver...');
 
         RegisterJob('streak_saver');
+    }
+
+    /*** Search Actions
+     * Small Live Reminder, Pin and DVR buttons on the channels in Twitch's search results, so a channel can be set up
+     * without opening its page (#79). Each button shows only while its feature is on; Up Next takes the channel by
+     * drag-and-drop, as before. Ported from v6 (src/plugins/up-next/search-actions.js).
+     */
+    // A channel row in Twitch's search tray; its parent holds the buttons
+    const SEARCH_ACTIONS_RESULT = '[id^="search-result"i] a[data-tray-item][href^="/"]';
+
+    // The channel a search result opens, or nothing for other results (games, categories, searches)
+        // SearchActionsChannelOf(link:HTMLAnchorElement) → string|undefined
+    function SearchActionsChannelOf(link) {
+        let [name, ...rest] = parseURL(link.href).pathname.split('/').filter(defined).filter(part => part.length);
+
+        if(nullish(name) || rest.length || [USERNAME, ...TWITCH_PATHNAMES].some(path => path?.equals?.(name)))
+            return;
+
+        return name;
+    }
+
+    // Reads a cached object (`LiveReminders`, `DVRChannels`), stored as JSON or as an object
+        // SearchActionsLoad(key:string) → Promise<object>
+    async function SearchActionsLoad(key) {
+        let value = (await Cache.load(key))?.[key];
+
+        try {
+            return JSON.parse(value || '{}');
+        } catch(error) {
+            // Probably an object already...
+            return value ?? {};
+        }
+    }
+
+    // The buttons: each reads its state, flips it, and saves it the way the channel page's own button does.
+    // `on()` says whether the button is shown (its feature is on)
+    const SEARCH_ACTIONS = {
+        reminder: {
+            on: () => nullish(Settings.live_reminders) || parseBool(Settings.live_reminders),
+            glyph: active => (active? 'notify': 'inform'),
+            title: (name, active) => (active? `Remove the Live Reminder for ${ name }`: `Remind me when ${ name } goes live`),
+
+            async active(name) {
+                let LiveReminders = await SearchActionsLoad('LiveReminders');
+
+                return Object.keys(LiveReminders).some(key => key.equals(name));
+            },
+
+            async toggle(name) {
+                let LiveReminders = await SearchActionsLoad('LiveReminders'),
+                    realName = Object.keys(LiveReminders).find(key => key.equals(name));
+
+                if(defined(realName))
+                    delete LiveReminders[realName];
+                else
+                    LiveReminders[name] = new Date;
+
+                await Cache.save({ LiveReminders });
+                await Settings.set({ LIVE_REMINDERS: Object.keys(LiveReminders) });
+
+                return nullish(realName);
+            },
+        },
+
+        pin: {
+            on: () => parseBool(Settings.first_in_line) || parseBool(Settings.first_in_line_plus) || parseBool(Settings.first_in_line_all) || parseBool(Settings.first_in_line_now),
+            glyph: () => 'pinned',
+            title: (name, active) => (active? `Unpin ${ name }`: `Pin ${ name } (Up Next goes there when the queue is empty and this stream ends)`),
+
+            async active(name) {
+                return (GetNextStreamer.pinnedStreamers ?? []).some(pin => pin.equals(name));
+            },
+
+            async toggle(name) {
+                let pins = GetNextStreamer.pinnedStreamers ?? [],
+                    pinned = pins.some(pin => pin.equals(name));
+
+                top.SET_PINNED_STREAMERS?.(pinned? pins.filter(pin => !pin.equals(name)): [...pins, name]);
+
+                return !pinned;
+            },
+        },
+
+        dvr: {
+            on: () => parseBool(Settings.video_clips__dvr),
+            glyph: active => (active? 'clip': 'host'),
+            title: (name, active) => (active? `Stop recording ${ name }`: `Record ${ name } when live (DVR)`),
+
+            async active(name) {
+                return parseBool((await SearchActionsLoad('DVRChannels'))[name.toLowerCase()]?.length);
+            },
+
+            async toggle(name) {
+                let DVRChannels = await SearchActionsLoad('DVRChannels'),
+                    DVR_ID = name.toLowerCase(),
+                    enabled = !parseBool(DVRChannels[DVR_ID]?.length);
+
+                // Any name marks the channel (`DVR_CLIP_PRECOMP_NAME` names this page's stream, not that channel's); the
+                // recording starts when the channel goes live, as with its own button
+                if(enabled)
+                    DVRChannels[DVR_ID] = name;
+                else
+                    delete DVRChannels[DVR_ID];
+
+                await Cache.save({ DVRChannels });
+                await Settings.set({ DVR_CHANNELS: Object.keys(DVRChannels) });
+
+                return enabled;
+            },
+        },
+    };
+
+    // Draws one button in its state
+        // SearchActionsPaint(button:HTMLButtonElement, action:object, name:string, active:boolean) → undefined
+    function SearchActionsPaint(button, action, name, active) {
+        button.dataset.active = active;
+        button.innerHTML = Glyphs.modify(action.glyph(active), { height: '16px', width: '16px', style: 'fill:currentcolor' });
+        button.modStyle(`color:${ active? 'var(--color-text-link)': 'var(--color-text-alt-2)' }`);
+        button.tooltip ??= new Tooltip(button, action.title(name, active));
+        button.tooltip.innerHTML = action.title(name, active);
+    }
+
+    Handlers.search_actions = () => {
+        new StopWatch('search_actions');
+
+        let f = furnish;
+
+        for(let link of $.all(SEARCH_ACTIONS_RESULT)) {
+            let row = link.parentElement,
+                name = SearchActionsChannelOf(link);
+
+            if(nullish(name) || defined($('.tt-search-actions', row)))
+                continue;
+
+            row.modStyle('display:flex; align-items:center');
+            link.modStyle('flex:1; min-width:0');
+
+            let buttons = Object.entries(SEARCH_ACTIONS)
+                .filter(([, action]) => action.on())
+                .map(([type, action]) => {
+                    let button = f('button.tt-search-action', {
+                        'data-action': type,
+                        style: 'display:inline-flex; align-items:center; justify-content:center; width:28px; height:28px; padding:0; border-radius:4px; background:none',
+
+                        // Keep the search box focused: the tray closes when it loses focus
+                        onmousedown: event => event.preventDefault(),
+
+                        onclick: async event => {
+                            event.preventDefault();
+                            event.stopPropagation();
+
+                            let { currentTarget } = event;
+
+                            currentTarget.disabled = true;
+                            SearchActionsPaint(currentTarget, action, name, await action.toggle(name).catch($warn) ?? await action.active(name));
+                            currentTarget.disabled = false;
+                        },
+                    });
+
+                    action.active(name).then(active => SearchActionsPaint(button, action, name, active));
+
+                    return button;
+                });
+
+            if(buttons.length)
+                row.append(f('.tt-search-actions', { style: 'display:flex; gap:2px; flex:none; padding-right:0.5rem' }).with(...buttons));
+        }
+
+        StopWatch.stop('search_actions');
+    };
+    Timers.search_actions = 500;
+
+    Unhandlers.search_actions = () => {
+        $.all('.tt-search-actions').map(actions => actions.remove());
+    };
+
+    __SearchActions__:
+    if(Object.values(SEARCH_ACTIONS).some(action => action.on())) {
+        $remark('Adding Search Actions...');
+
+        RegisterJob('search_actions');
     }
 
     /*** Time Zones
