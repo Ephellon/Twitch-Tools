@@ -9064,7 +9064,8 @@ let Initialize = async(START_OVER = false) => {
                         FIRST_IN_LINE_DUE_DATE = NEW_DUE_DATE(time);
                     }
 
-                    REDO_FIRST_IN_LINE_QUEUE(ALL_FIRST_IN_LINE_JOBS[0].href);
+                    // The queue holds URLs (strings), not channels: `.href` was undefined, so a reorder started no job
+                    REDO_FIRST_IN_LINE_QUEUE(ALL_FIRST_IN_LINE_JOBS[0]);
                     // $log('Redid First in Line queue [Sorting Handler]...', { ALL_FIRST_IN_LINE_JOBS, FIRST_IN_LINE_DUE_DATE, FIRST_IN_LINE_WAIT_TIME, FIRST_IN_LINE_HREF });
 
                     Cache.save({ ALL_FIRST_IN_LINE_JOBS, FIRST_IN_LINE_DUE_DATE });
@@ -9613,6 +9614,11 @@ let Initialize = async(START_OVER = false) => {
         });
 
         RegisterJob('first_in_line');
+
+        // Start the first job: the queue comes back from the cache without one, and the balloon only starts a job while
+        // FIRST_IN_LINE_HREF is empty, so the "Timer overdue" fallback (5 s late) did all the moving on
+        if(defined(FIRST_IN_LINE_HREF))
+            REDO_FIRST_IN_LINE_QUEUE(FIRST_IN_LINE_HREF);
 
         // Redo entries
         if(true
