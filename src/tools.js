@@ -4743,7 +4743,7 @@ if(top == window) {
                     .then(channel => {
                         $warn(`${ location.pathname.slice(1) } is not available: ${ ErrorMessage }\nHeading to ${ channel.href }`);
 
-                        goto(channel.href);
+                        goto(parseURL(channel.href).addSearch({ tool: 'anti-time-machine' }).href);
                     });
             });
 

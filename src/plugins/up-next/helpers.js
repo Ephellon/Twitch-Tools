@@ -1583,7 +1583,8 @@ plugin({
                                                         $warn(`Timer overdue [animation:first-in-line-balloon--initializer] » ${ FIRST_IN_LINE_HREF }`);
                                                         // .toNativeStack();
 
-                                                        goto(FIRST_IN_LINE_HREF);
+                                                        // Tagged: Stay Live moves on from an offline channel only when the extension brought the viewer there
+                                                        goto(parseURL(FIRST_IN_LINE_HREF).addSearch({ tool: 'first-in-line--overdue' }).href);
                                                     });
 
                                                     return clearInterval(intervalID);
