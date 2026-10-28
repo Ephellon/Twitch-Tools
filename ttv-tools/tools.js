@@ -9211,7 +9211,8 @@ let Initialize = async(START_OVER = false) => {
                                                 $warn(`Timer overdue [animation:first-in-line-balloon--initializer] » ${ FIRST_IN_LINE_HREF }`)
                                                     // .toNativeStack();
 
-                                                goto(FIRST_IN_LINE_HREF);
+                                                // Tagged: Stay Live moves on from an offline channel only when the extension brought the viewer there
+                                                goto(parseURL(FIRST_IN_LINE_HREF).addSearch({ tool: 'first-in-line--overdue' }).href);
                                             });
 
                                             return clearInterval(intervalID);
@@ -9494,7 +9495,8 @@ let Initialize = async(START_OVER = false) => {
                                         $warn(`Timer overdue [animation:first-in-line-balloon] » ${ FIRST_IN_LINE_HREF }`)
                                             // .toNativeStack();
 
-                                        goto(FIRST_IN_LINE_HREF);
+                                        // Tagged: Stay Live moves on from an offline channel only when the extension brought the viewer there
+                                        goto(parseURL(FIRST_IN_LINE_HREF).addSearch({ tool: 'first-in-line--overdue' }).href);
                                     });
 
                                     return clearInterval(intervalID);
@@ -18898,7 +18900,7 @@ if(top == window) {
                     .then(channel => {
                         $warn(`${ location.pathname.slice(1) } is not available: ${ ErrorMessage }\nHeading to ${ channel.href }`);
 
-                        goto(channel.href);
+                        goto(parseURL(channel.href).addSearch({ tool: 'anti-time-machine' }).href);
                     })
             });
 

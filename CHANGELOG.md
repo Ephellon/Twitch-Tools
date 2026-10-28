@@ -46,6 +46,7 @@
 ## Release History
 
 ### Version 5.35.\*
+- [`5.35.5.31`](https://github.com/Ephellon/Twitch-Tools/releases/tag/5.35.5.31) — Up Next: moves on from offline channels again instead of waiting out the timer
 - [`5.35.5.30`](https://github.com/Ephellon/Twitch-Tools/releases/tag/5.35.5.30) — Auto-Focus watches only the stream (#83); Streak Saver saves wait their turn (#80); Live Reminder, Pin and DVR buttons on Twitch search results (#79)
 - [`5.35.5.29`](https://github.com/Ephellon/Twitch-Tools/releases/tag/5.35.5.29) — Stay Live: leaves offline channels you open yourself alone (#82)
 - [`5.35.5.28`](https://github.com/Ephellon/Twitch-Tools/releases/tag/5.35.5.28) — Up Next: the **Pin** list includes your Live Reminders again
