@@ -46,6 +46,7 @@
 ## Release History
 
 ### Version 5.35.\*
+- [`5.35.5.33`](https://github.com/Ephellon/Twitch-Tools/releases/tag/5.35.5.33) — Block Banners: works in tabs you aren't using, not only after a click
 - [`5.35.5.32`](https://github.com/Ephellon/Twitch-Tools/releases/tag/5.35.5.32) — Up Next: the timer moves on right on time after a page load or a reorder
 - [`5.35.5.31`](https://github.com/Ephellon/Twitch-Tools/releases/tag/5.35.5.31) — Up Next: moves on from offline channels again instead of waiting out the timer
 - [`5.35.5.30`](https://github.com/Ephellon/Twitch-Tools/releases/tag/5.35.5.30) — Auto-Focus watches only the stream (#83); Streak Saver saves wait their turn (#80); Live Reminder, Pin and DVR buttons on Twitch search results (#79)

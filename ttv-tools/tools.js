@@ -15346,6 +15346,7 @@ let Initialize = async(START_OVER = false) => {
     Timers.block_banners = 2_500;
 
     Unhandlers.block_banners = () => {
+        clearInterval(window.BANNER_CHECK);
         RemoveCustomCSSBlock('Remove Banner Ads');
     };
 
@@ -15356,6 +15357,11 @@ let Initialize = async(START_OVER = false) => {
         $.body.addEventListener('mouseup', listener);
 
         listener();
+
+        // Banners load whether or not the viewer clicks: clicks alone left them up in a tab nobody was using (kept on
+        // `window` so a re-initialized page replaces the check instead of adding one)
+        clearInterval(window.BANNER_CHECK);
+        window.BANNER_CHECK = setInterval(() => Handlers.block_banners?.(), 5_000);
     }
 
     /*** Points Receipt & Ranking
