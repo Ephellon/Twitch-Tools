@@ -6,7 +6,7 @@
 import { plugin } from '../../lib/plugins.js';
 
 // The feature's state; init() resets it whenever the page (re)initializes
-let UNWANTED_BANNER_AD_SELECTOR;
+let UNWANTED_BANNER_AD_SELECTOR, BANNER_CHECK;
 
 // Rules already reported as unusable, so the job (every 2.5s) warns once
 const SKIPPED_RULES = new Set;
@@ -110,11 +110,12 @@ plugin({
      * Undoes banner blocking by removing the associated custom CSS block.
      */
     unhandler: () => {
+        clearInterval(BANNER_CHECK);
         RemoveCustomCSSBlock('Remove Banner Ads');
     },
 
     /**
-     * Sets up a delayed event listener on mouse-up to trigger banner blocking.
+     * Runs the banner check now, after each click (delayed), and every 5 seconds.
      */
     setup() {
         const listener = DelayJob('block_banners');
@@ -122,5 +123,9 @@ plugin({
         $.body.addEventListener('mouseup', listener);
 
         listener();
+
+        // Banners load whether or not the viewer clicks: clicks alone left them up in a tab nobody was using
+        clearInterval(BANNER_CHECK);
+        BANNER_CHECK = setInterval(() => Handlers.block_banners?.(), 5_000);
     },
 });
