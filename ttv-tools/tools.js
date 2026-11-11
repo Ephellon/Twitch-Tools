@@ -1082,6 +1082,39 @@ class ContextMenu {
  * { data:object, extensions:object }
  */
 class Search {
+    static #queue = [];
+    static #active = 0;
+    static #backoff = 0;
+
+    static async #processQueue() {
+        if (this.#active >= 3 || this.#backoff > Date.now()) return;
+        if (!this.#queue.length) return;
+
+        const { task, resolve, reject } = this.#queue.shift();
+        this.#active++;
+
+        try {
+            const result = await task();
+            resolve(result);
+        } catch (error) {
+            if (error?.status === 429 || error?.message?.includes('429')) {
+                this.#backoff = Date.now() + (this.#backoff === 0 ? 2000 : Math.min(this.#backoff * 2, 30000));
+                $warn(`API Rate Limit hit. Backing off for ${ (this.#backoff - Date.now()) / 1000 }s`);
+            }
+            reject(error);
+        } finally {
+            this.#active--;
+            this.#processQueue();
+        }
+    }
+
+    static enqueue(task) {
+        return new Promise((resolve, reject) => {
+            this.#queue.push({ task, resolve, reject });
+            this.#processQueue();
+        });
+    }
+
     static cookies = {
         ...((cookies = []) => {
             let object = ({});
@@ -1107,6 +1140,7 @@ class Search {
     static cacheLeaseTime = 300_000 * (parseInt(Settings.low_data_mode) || 1);
 
     constructor(ID = null, type = 'channel', as = null) {
+        return Search.enqueue(async () => {
         let spadeEndpoint = `https://spade.twitch.tv/track`,
             twilightBuildID = '5fc26188-666b-4bf4-bdeb-19bd4a9e13a4';
 
@@ -1271,12 +1305,12 @@ class Search {
                 let name = channelName?.toLowerCase();
 
                 if(nullish(name) || type.unlike('channel'))
-                    break;
+                    return null;
 
                 if(SEARCH_CACHE.has(name))
-                    return Promise.resolve(SEARCH_CACHE.get(name));
+                    return SEARCH_CACHE.get(name);
 
-                searchResults = fetchURL.idempotent(`./${ name }`)
+                searchResults = await fetchURL.idempotent(`./${ name }`)
                     .then(response => response.text())
                     .then(html => (new DOMParser).parseFromString(html, 'text/html'))
                     .then(async doc => {
@@ -1372,6 +1406,7 @@ class Search {
         }
 
         let body, results;
+        }); // Close Search.enqueue async block
         switch(type) {
             case 'vod': {
                 body = JSON.stringify({
@@ -3871,6 +3906,56 @@ const TWITCH_PATHNAMES = [
  *                                                                           | |
  *                                                                           |_|
  */;
+class UpNextController {
+    #accruedTime = 0;
+    #targetTime = 0;
+    #timer = null;
+    #lastTick = 0;
+
+    constructor(targetMinutes = 0) {
+        this.#targetTime = targetMinutes * 60_000;
+    }
+
+    setTarget(minutes) {
+        this.#targetTime = minutes * 60_000;
+    }
+
+    get remaining() {
+        return Math.max(0, this.#targetTime - this.#accruedTime);
+    }
+
+    get progress() {
+        return this.#accruedTime / this.#targetTime;
+    }
+
+    tick(multiplier = 1) {
+        const now = Date.now();
+        const delta = now - this.#lastTick;
+        this.#lastTick = now;
+
+        // Only accrue time if the video is actually playing
+        if (this.#isPlayerActive()) {
+            this.#accruedTime += delta * multiplier;
+        }
+    }
+
+    #isPlayerActive() {
+        const video = document.querySelector('video');
+        return video && !video.paused && !video.ended && video.readyState >= 3;
+    }
+
+    reset() {
+        this.#accruedTime = 0;
+        this.#lastTick = Date.now();
+    }
+
+    isDue() {
+        return this.#accruedTime >= this.#targetTime;
+    }
+}
+
+const UP_NEXT_CTRL = new UpNextController();
+
 let FIRST_IN_LINE_JOB = null,           // The current job (interval)
     FIRST_IN_LINE_HREF = '#',           // The upcoming HREF
     FIRST_IN_LINE_BOOST,                // The "Up Next Boost" toggle
@@ -6323,17 +6408,18 @@ let Initialize = async(START_OVER = false) => {
     let TabLurk = {
         key: 'tt-away-mode',
 
-        get() {
+        async get() {
             try {
-                return JSON.parse(sessionStorage.getItem(this.key) ?? 'null');
+                const { away_mode } = await Cache.load({ away_mode: null });
+                return away_mode;
             } catch(error) {
                 return null;
             }
         },
 
-        set(state) {
+        async set(state) {
             try {
-                sessionStorage.setItem(this.key, JSON.stringify(state));
+                await Cache.save({ away_mode: state });
             } catch(error) {
                 // Storage blocked: the tab just won't remember
             }
@@ -6418,7 +6504,7 @@ let Initialize = async(START_OVER = false) => {
         }
 
         // Each tab keeps its own Lurk state (#65); the last state you chose is only the starting point for a new tab
-        let own = TabLurk.get();
+        let own = await TabLurk.get();
 
         if(defined(own))
             AwayModeEnabled = own.enabled;
@@ -7744,10 +7830,11 @@ let Initialize = async(START_OVER = false) => {
         GetNextStreamer.cachedStreamer = channel;
         name = (channel.name?.equals(name)? channel.name: name);
 
-        if(!ALL_FIRST_IN_LINE_JOBS.filter(href => href?.length).length)
-            FIRST_IN_LINE_DUE_DATE = NEW_DUE_DATE();
+        // Initialize Controller
+        UP_NEXT_CTRL.setTarget(FIRST_IN_LINE_WAIT_TIME);
+        UP_NEXT_CTRL.reset();
 
-        $log(`[Queue Redo] Waiting ${ toTimeString(GET_TIME_REMAINING() | 0) } before leaving for "${ name }" → ${ href }`, new Date);
+        $log(`[Queue Redo] Waiting ${ toTimeString(UP_NEXT_CTRL.remaining | 0) } before leaving for "${ name }" → ${ href }`, new Date);
 
         FIRST_IN_LINE_WARNING_JOB = setInterval(async() => {
             let timeRemaining = GET_TIME_REMAINING();
@@ -7828,19 +7915,20 @@ let Initialize = async(START_OVER = false) => {
         }, 1000);
 
         FIRST_IN_LINE_JOB = setInterval(() => {
+            // Update the accumulator
+            let multiplier = 1;
+            if(FIRST_IN_LINE_BOOST) {
+                // Rushing: a simplified multiplier (e.g., 5x speed)
+                multiplier = 5; 
+            }
+            UP_NEXT_CTRL.tick(multiplier);
+
+            let timeRemaining = UP_NEXT_CTRL.remaining;
+
             // If the channel disappears (or goes offline), kill the job for it
             // @FIXME: Reanimating First in Line jobs may cause reloading issues?
             let index = ALL_CHANNELS.findIndex(channel => RegExp(parseURL(channel.href).pathname + '\\b', 'i').test(FIRST_IN_LINE_HREF)),
-                channel = ALL_CHANNELS[index],
-                timeRemaining = GET_TIME_REMAINING();
-
-            timeRemaining = timeRemaining < 0? 0: timeRemaining;
-
-            // The timer is paused
-            if(!UP_NEXT_ALLOW_THIS_TAB)
-                return;
-            if(FIRST_IN_LINE_PAUSED)
-                return; // Cache.save({ FIRST_IN_LINE_DUE_DATE: FIRST_IN_LINE_DUE_DATE = NEW_DUE_DATE(timeRemaining + 1000) });
+                channel = ALL_CHANNELS[index];
 
             if(nullish(channel) && !ALREADY_RESTORING_DEAD_CHANNEL) {
                 if(nullish(FIRST_IN_LINE_HREF))
@@ -7890,7 +7978,7 @@ let Initialize = async(START_OVER = false) => {
 
             /* After above is `false` */
 
-            Cache.save({ FIRST_IN_LINE_DUE_DATE: FIRST_IN_LINE_DUE_DATE = NEW_DUE_DATE(), ALL_FIRST_IN_LINE_JOBS: ALL_FIRST_IN_LINE_JOBS = ALL_FIRST_IN_LINE_JOBS.filter(url => parseURL(url).pathname.toLowerCase() != parseURL(FIRST_IN_LINE_HREF).pathname.toLowerCase()) }, (href = parseURL(channel?.href ?? FIRST_IN_LINE_HREF).addSearch({ ...(parseURL(FIRST_IN_LINE_HREF).searchParameters ?? {}) }).href) => {
+            Cache.save({ ALL_FIRST_IN_LINE_JOBS: ALL_FIRST_IN_LINE_JOBS = ALL_FIRST_IN_LINE_JOBS.filter(url => parseURL(url).pathname.toLowerCase() != parseURL(FIRST_IN_LINE_HREF).pathname.toLowerCase()) }, (href = parseURL(channel?.href ?? FIRST_IN_LINE_HREF).addSearch({ ...(parseURL(FIRST_IN_LINE_HREF).searchParameters ?? {}) }).href) => {
                 $log('Heading to stream now [Job Interval]', href);
 
                 [FIRST_IN_LINE_JOB, FIRST_IN_LINE_WARNING_JOB, FIRST_IN_LINE_WARNING_TEXT_UPDATE].forEach(clearInterval);
@@ -8265,25 +8353,26 @@ let Initialize = async(START_OVER = false) => {
             let UpNextStatus = {
                 key: 'tt-up-next-status',
 
-                get() {
+                async get() {
                     try {
-                        return JSON.parse(sessionStorage.getItem(this.key) ?? 'null');
+                        const { up_next_status } = await Cache.load({ up_next_status: null });
+                        return up_next_status;
                     } catch(error) {
                         return null;
                     }
                 },
 
-                set(state) {
+                async set(state) {
                     try {
-                        sessionStorage.setItem(this.key, JSON.stringify(state));
+                        await Cache.save({ up_next_status: state });
                     } catch(error) {
                         // Storage blocked: the tab just won't remember
                     }
                 },
 
-                clear() {
+                async clear() {
                     try {
-                        sessionStorage.removeItem(this.key);
+                        await Cache.save({ up_next_status: null });
                     } catch(error) {
                         // Storage blocked: nothing was kept
                     }
@@ -8320,7 +8409,7 @@ let Initialize = async(START_OVER = false) => {
 
             // Keep Status (#69): a pause carries over when this tab moves to another channel
             if(parseBool(Settings.up_next__keep_status) && defined(first_in_line_pause_button)) {
-                let kept = UpNextStatus.get();
+                let kept = await UpNextStatus.get();
 
                 if(kept?.paused) {
                     first_in_line_pause_button.innerHTML = Glyphs.play;
@@ -16961,6 +17050,7 @@ let Initialize = async(START_OVER = false) => {
      *
      */
     let SECONDS_VIDEO_PAUSED_UNSAFELY = 0,
+        LAST_RECOVERY_TIME = 0,
         VIDEO_CREATION_TIME,
         TOTAL_VIDEO_FRAMES,
         PAGE_HAS_FOCUS = document.visibilityState.equals("visible"),
@@ -17014,7 +17104,8 @@ let Initialize = async(START_OVER = false) => {
             if(SECONDS_VIDEO_PAUSED_UNSAFELY > 0 && !(SECONDS_VIDEO_PAUSED_UNSAFELY % 5))
                 $warn(`The video has been stalling for ${ SECONDS_VIDEO_PAUSED_UNSAFELY }s`, { VIDEO_CREATION_TIME, TOTAL_VIDEO_FRAMES, SECONDS_VIDEO_PAUSED_UNSAFELY }, 'Frames fallen behind:', totalVideoFrames - TOTAL_VIDEO_FRAMES);
 
-            if(SECONDS_VIDEO_PAUSED_UNSAFELY > 5 && !(SECONDS_VIDEO_PAUSED_UNSAFELY % 3)) {
+            if(Date.now() - LAST_RECOVERY_TIME > 10_000 && SECONDS_VIDEO_PAUSED_UNSAFELY > 5 && !(SECONDS_VIDEO_PAUSED_UNSAFELY % 3)) {
+                LAST_RECOVERY_TIME = Date.now();
                 __RecoverFrames_Embed__:
                 if(parseBool(Settings.recover_frames__allow_embed)) {
                     $warn(`Attempting to override the video`);
@@ -17406,6 +17497,8 @@ let Initialize = async(START_OVER = false) => {
         RECOVER_PAGE_FROM_LAG__EXACT = +(new Date);
 
         RECOVER_PAGE_FROM_LAG = setInterval(() => {
+            if(document.visibilityState === 'hidden') return;
+
             let now = +(new Date),
                 span = (now - RECOVER_PAGE_FROM_LAG__EXACT);
 

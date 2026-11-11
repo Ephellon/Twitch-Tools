@@ -231,7 +231,7 @@
         ready;
 
         #source;
-        #context;
+        #worker = null;
         #stop;
         #audio = null;
         #input = null;
@@ -241,14 +241,35 @@
 
         constructor(source, { fps = 30, canvas } = {}) {
             this.canvas = canvas ?? document.createElement('canvas');
-            this.#context = this.canvas.getContext('2d');
             this.stream = this.canvas.captureStream(fps);
             this.#listen = event => this.#connectAudio(event);
             this.#source = source;
             this.#source.addEventListener('loadedmetadata', this.#listen);
+            
+            this.#initWorker();
             this.#draw();
             this.#stop = ticker(1000 / fps, () => this.#draw());
             this.ready = this.#route();
+        }
+
+        #initWorker() {
+            if(!this.canvas.transferControlToOffscreen) return;
+
+            const offscreen = this.canvas.transferControlToOffscreen();
+            const blob = new Blob([`
+                let ctx;
+                self.onmessage = (e) => {
+                    if(e.data.type === 'init') ctx = e.data.canvas.getContext('2d');
+                    else if(e.data.type === 'draw' && ctx) {
+                        const { bitmap } = e.data;
+                        ctx.drawImage(bitmap, 0, 0);
+                        bitmap.close();
+                    }
+                };
+            `], { type: 'text/javascript' });
+
+            this.#worker = new Worker(URL.createObjectURL(blob));
+            this.#worker.postMessage({ type: 'init', canvas: offscreen }, [offscreen]);
         }
 
         get source() {
@@ -263,7 +284,7 @@
             this.#connectAudio();
         }
 
-        #draw() {
+        async #draw() {
             const video = this.#source, canvas = this.canvas;
 
             if(!video || video.readyState < 2)
@@ -276,10 +297,19 @@
                 canvas.height = height;
             }
 
-            try {
-                this.#context.drawImage(video, 0, 0, canvas.width, canvas.height);
-            } catch(error) {
-                // The frame isn't drawable yet
+            if(this.#worker) {
+                try {
+                    const bitmap = await createImageBitmap(video);
+                    this.#worker.postMessage({ type: 'draw', bitmap }, [bitmap]);
+                } catch(error) {
+                    // Frame not ready or bitmap creation failed
+                }
+            } else {
+                // Fallback for browsers without OffscreenCanvas
+                const ctx = canvas.getContext('2d');
+                if(ctx) {
+                    try { ctx.drawImage(video, 0, 0, canvas.width, canvas.height); } catch(e) {}
+                }
             }
         }
 
@@ -835,7 +865,7 @@
         /**
          * Finds a recording by name, or the first running one (`Recording.ANY`).
          * @param {string|symbol} name
-         * @param {Element} [element] - Only look under this element
+         * @param {Element} element = null
          * @returns {Recording|undefined}
          */
         static find(name, element = null) {
@@ -985,7 +1015,7 @@
                 return !!Recording.find(key, this)?.active;
             },
             removeRecording(key = 'DEFAULT_RECORDING') {
-                for(const recording of key === Recording.ALL ? [...Recording.of(this).values()] : pick(this, key))
+                for(const recording of key === Recording.ALL ? [...Recording.of(element).values()] : pick(this, key))
                     recording.discard();
 
                 return this;
