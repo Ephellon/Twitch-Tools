@@ -5065,6 +5065,8 @@ let Initialize = async(START_OVER = false) => {
     ].filter(uniqueChannels);
 
     // Expand the left-hand panel until the last live channel is visible
+    let SIDENAV_OPENED_ONCE = false;
+
     __GetAllChannels__:
     if(!ALREADY_EXPANDED) {
         ALREADY_EXPANDED = true;
@@ -5076,8 +5078,11 @@ let Initialize = async(START_OVER = false) => {
             sidenav = $('[data-a-target="side-nav-arrow"i]');
 
         // Open the Side Nav
-        if(!alreadyOpen) // Only open it if it isn't already
+        // Only open it if it isn't already
+        if(!alreadyOpen && !SIDENAV_OPENED_ONCE) {
+            SIDENAV_OPENED_ONCE = true;
             sidenav?.click();
+        }
 
         // Click "show more" as many times as possible
         show_more: while(true
@@ -5239,7 +5244,7 @@ let Initialize = async(START_OVER = false) => {
             element.click();
 
         // Close the Side Nav
-        if(!alreadyOpen) // Only close it if it wasn't open in the first place
+        if(!alreadyOpen && SIDENAV_OPENED_ONCE) // Only close it if it wasn't open in the first place
             wait().then(() => sidenav?.click());
     }
 
