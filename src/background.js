@@ -892,15 +892,27 @@ const REPORTS = new Map
     , NO_RECEIVER = new Map
     , MAX_TIME_ALLOWED = 35_000;
 
+/**
+ * Stops a tab's hang-up timer (it answered, or is frozen or loading).
+ * @param {number} id - The tab's ID
+ */
+function DisarmHangUp(id) {
+    clearTimeout(HANG_UP_CHECKER.get(id));
+    HANG_UP_CHECKER.delete(id);
+}
+
 const LAG_REPORTER = setInterval(() => {
     if(IGNORE_REPORTS)
         return;
 
     for(const [ID, createdAt] of REPORTS) {
-        // One hang-up timer per tab: an older one left running removed the tab even after it answered
-        clearTimeout(HANG_UP_CHECKER.get(ID));
-        HANG_UP_CHECKER.set(ID,
+        // One hang-up timer per tab, armed until it fires or the tab answers: re-arming it every round let a late
+        // (throttled) timer give a hung tab another round
+        if(!HANG_UP_CHECKER.has(ID))
+            HANG_UP_CHECKER.set(ID,
             setTimeout((id = ID) => {
+                HANG_UP_CHECKER.delete(id);
+
                 try {
                     Container.tabs.get(id)
                         .then(tab => {
@@ -927,7 +939,7 @@ const LAG_REPORTER = setInterval(() => {
                     console.error(error);
                 }
             }, MAX_TIME_ALLOWED - 100)
-        );
+            );
 
         try {
             if(GALLOWS.has(ID))
@@ -939,29 +951,27 @@ const LAG_REPORTER = setInterval(() => {
 
                     // A frozen tab answers nothing until the browser thaws it: leave it be (#67)
                     if(frozen || discarded) {
-                        clearTimeout(HANG_UP_CHECKER.get(id));
+                        DisarmHangUp(id);
 
                         return REPORTS.set(id, +new Date);
                     }
 
                     Container.tabs.sendMessage(id, { action: 'report-back' }, response => {
                         const { ok = false, performance = 1, timestamp = +new Date - MAX_TIME_ALLOWED, hidden = false } = (response ?? {});
-
                         // A hidden tab is throttled by the browser, and can be silent: that isn't a hung page (#67)
-                        if(false
-                            || ((+new Date - timestamp) > MAX_TIME_ALLOWED)
-                            || (performance > 0.95)
-                            || (!hidden && !audible && !mutedInfo.muted)
-                        ) {
-                            /* Continue... */
-                        } else if(ok || discarded || status == LOADING) {
-                            clearTimeout(HANG_UP_CHECKER.get(id));
+                        const late = (+new Date - timestamp) > MAX_TIME_ALLOWED
+                            , busy = performance > 0.95
+                            , silent = !hidden && !audible && !mutedInfo.muted;
+
+                        if(!(late || busy || silent) && (ok || discarded || status == LOADING)) {
+                            DisarmHangUp(id);
                             NO_RECEIVER.delete(id);
 
                             return REPORTS.set(id, +new Date);
                         }
 
-                        console.warn(`Tab "${ title }" (#${ id }) did not respond. Contacting again... Response Time → ${ (+new Date - timestamp) }ms · Memory Usage → ${ (100 * performance).toFixed(2).replace('.00', '') }% · Bad Audio → ${ (!audible && !mutedInfo.muted) } { Audible=${ audible }; Muted=${ mutedInfo.muted } }`);
+                        // A tab that answered in time but plays no sound isn't "not responding"
+                        console.warn(`Tab "${ title }" (#${ id }) ${ (ok && !late && !busy) ? "is silent" : "did not respond" }. Contacting again... Response Time → ${ (+new Date - timestamp) }ms · Memory Usage → ${ (100 * performance).toFixed(2).replace('.00', '') }% · Bad Audio → ${ (!audible && !mutedInfo.muted) } { Audible=${ audible }; Muted=${ mutedInfo.muted } }`);
 
                         Container.tabs.sendMessage(id, { action: 'report-back' }, response => {
                             const { ok = false, performance = 1, timestamp = +new Date - MAX_TIME_ALLOWED } = (response ?? {});
@@ -974,7 +984,7 @@ const LAG_REPORTER = setInterval(() => {
                             ) {
                                 /* Continue... */
                             } else if(ok || discarded || status == LOADING) {
-                                clearTimeout(HANG_UP_CHECKER.get(id));
+                                DisarmHangUp(id);
                                 NO_RECEIVER.delete(id);
 
                                 return REPORTS.set(id, +new Date);
@@ -992,7 +1002,7 @@ const LAG_REPORTER = setInterval(() => {
                                         NO_RECEIVER.set(id, +new Date);
 
                                     if(tab.status == LOADING || (noReceiver && (+new Date - NO_RECEIVER.get(id)) < 120_000)) {
-                                        clearTimeout(HANG_UP_CHECKER.get(id));
+                                        DisarmHangUp(id);
 
                                         return REPORTS.set(id, +new Date);
                                     }
@@ -1002,7 +1012,7 @@ const LAG_REPORTER = setInterval(() => {
                                     console.warn(`Tab "${ title }" (#${ id }) did not respond. Removing... Response Time → ${ (+new Date - timestamp) }ms · Memory Usage → ${ (100 * performance).toFixed(2).replace('.00', '') }%`);
 
                                     logRamAlarm({ action: 'unresponsive', url: tab.url, note: `answered in ${ Math.round((+new Date - timestamp) / 1000) }s, memory ${ Math.round(100 * performance) }%` });
-                                    clearTimeout(HANG_UP_CHECKER.get(id));
+                                    DisarmHangUp(id);
                                     REPORTS.delete(id);
                                     RemoveTab(tab, true);
                                 })

@@ -29,7 +29,6 @@
     - Fix background script stalls when tabs disappear.
     - Resolve memory leaks related to Hardware Acceleration and excessive iframes.
     - Fix CPU spikes (>100%) during memory cleanup.
-    - The lag reporter's hang-up timer fires only 100 ms before the next check; a delayed timer gives a hung tab another round. It also logs "did not respond" for tabs that answered but are silent.
     - Recover Pages reloads hidden pages that aren't ready yet every 5 minutes (harmless, but churn).
     - A respawned tab (Recover Pages, RAM Alarms) is a new tab, so per-tab state is lost: the tab's own Lurk state (#65) and a Keep Status pause.
 - [ ] **Point Watcher:** right after a page loads, the points button can briefly show the Watch Streak; a save in that moment stores it as points (fixed by the next save, 15 s later).
