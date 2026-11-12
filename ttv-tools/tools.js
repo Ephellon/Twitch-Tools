@@ -15713,7 +15713,9 @@ let Initialize = async(START_OVER = false) => {
      *
      *
      */
-    let POINT_WATCHER_COUNTER = 0,
+    // First save 8 s in (32 ticks), then every 15 s: right after a load the points button can briefly show the
+    // Watch Streak, and a save then stored it as points
+    let POINT_WATCHER_COUNTER = 60 - 32,
         HAS_POINTS_BALANCE = false;
 
     Handlers.point_watcher_placement = async() => {
@@ -18229,7 +18231,8 @@ if(top == window) {
                                     RestartJob(job, 'FAILED_TO_ACTIVATE');
 
                             if(parseBool(Settings.recover_pages)) {
-                                if(++RECOVERY_TRIALS > 10)
+                                // A hidden page is throttled and loads slowly: reload it once it's seen, not in the background
+                                if(++RECOVERY_TRIALS > 10 && !document.hidden)
                                     addReport(NOT_LOADED_CORRECTLY.map(fail => ({ [`fail-to-load-${ fail }`]: true })), true);
                                 return false;
                             }
