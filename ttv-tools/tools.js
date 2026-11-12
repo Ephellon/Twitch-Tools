@@ -6191,7 +6191,8 @@ let Initialize = async(START_OVER = false) => {
                                     let button = $('#up-next-control'),
                                         paused = parseBool(button?.getAttribute('paused'));
 
-                                    if(paused)
+                                    // The stream ended: Up Next should move on, not wait on the offline player's picture
+                                    if(paused || LurkOfflinePlayer())
                                         break __AutoFocus_Pause_UpNext__;
 
                                     button?.click();
@@ -18095,6 +18096,9 @@ if(top == window) {
                 && (false
                     // There is a message container
                     || $.defined('[data-test-selector$="message-container"i]')
+
+                    // A VOD with its player: chat replay has no message container
+                    || (/\/videos?\//i.test(location.pathname) && $.defined('[data-a-target="video-player"i] video'))
 
                     // There is an ongoing search
                     || (true

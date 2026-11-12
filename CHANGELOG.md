@@ -32,7 +32,6 @@
     - Recover Pages reloads hidden pages that aren't ready yet every 5 minutes (harmless, but churn).
     - A respawned tab (Recover Pages, RAM Alarms) is a new tab, so per-tab state is lost: the tab's own Lurk state (#65) and a Keep Status pause.
 - [ ] **Point Watcher:** right after a page loads, the points button can briefly show the Watch Streak; a save in that moment stores it as points (fixed by the next save, 15 s later).
-- [ ] **Auto-Focus:** still pauses and resumes Up Next on an offline player.
 - [ ] **Search Actions (#79):** after a change from the search bar, the channel page's own Reminder and DVR buttons show the old state until a reload.
 - [ ] **Streak Saver:** a real save works hands-off in v6 (the popup presses play itself; v5 has the same code but no real save yet); the live **Watch** route is only tested on a faked row, not on a real streak. Any save Twitch doesn't answer is logged as "Twitch Integrity Fail", whatever the cause.
 - [ ] **Recording:** Fix recording failures when pre-roll ads play.
@@ -44,6 +43,7 @@
 ## Release History
 
 ### Version 5.35.\*
+- [`5.35.5.38`](https://github.com/Ephellon/Twitch-Tools/releases/tag/5.35.5.38) — Auto-Focus: doesn't pause Up Next on an offline player; TTV Tools starts on VOD pages; no more "hasRecording" console spam
 - [`5.35.5.37`](https://github.com/Ephellon/Twitch-Tools/releases/tag/5.35.5.37) — Pin list: one row per channel when names differ only in case; the console no longer shows "Cannot redefine property: MiniPlayer"
 - [`5.35.5.36`](https://github.com/Ephellon/Twitch-Tools/releases/tag/5.35.5.36) — Lag reporter: a hung tab no longer gets extra rounds; silent tabs are logged as silent, not "did not respond"
 - [`5.35.5.35`](https://github.com/Ephellon/Twitch-Tools/releases/tag/5.35.5.35) — Search Actions: no buttons on Twitch's "Go to <name>" row
