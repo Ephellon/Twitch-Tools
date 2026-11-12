@@ -2673,9 +2673,14 @@ __STATIC__: {
         if(JobReason?.unlike('default'))
             console.log(`Registering job (${ JobName }): ${ JobReason }`);
 
+        const handler = Handlers[JobName];
+
+        if(typeof handler !== 'function')
+            throw new TypeError(`Job Handler for "${ JobName }" is not "function": received "${ typeof handler }"`);
+
         return Jobs[JobName] ??= Timers[JobName] > 0?
-            setInterval(Handlers[JobName], Timers[JobName]):
-        -setTimeout(Handlers[JobName], -Timers[JobName]);
+            setInterval(handler, Timers[JobName]):
+        -setTimeout(handler, -Timers[JobName]);
     }
     Handlers.__reasons__.set('RegisterJob', UUID.from(RegisterJob).value);
 

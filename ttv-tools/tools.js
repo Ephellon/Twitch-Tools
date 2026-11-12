@@ -10019,6 +10019,7 @@ let Initialize = async(START_OVER = false) => {
     __Live_Reminders__:
     // On by Default (ObD; v5.15) -- only on the tab that has Up Next enabled
     if(true
+        && !location.pathname.toLowerCase().includes('/videos')
         && (false
             || nullish(Settings.live_reminders)
             || parseBool(Settings.live_reminders)
