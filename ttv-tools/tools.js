@@ -2360,7 +2360,7 @@ async function SetQuality(quality = 'auto', backup = 'source') {
 
     return new Promise((resolve, reject) => {
         let checker = setInterval(() => {
-            video = $.all('video').pop(),
+            video = $('[data-a-target="video-player"i] video'),
             computed = (video?.videoHeight | 0) + 'p';
 
             if(desired !== computed) {
@@ -3474,7 +3474,7 @@ try {
                 text: GLOBAL_EVENT_LISTENERS.KEYDOWN_ALT_SHIFT_X.toTitle(),
                 icon: 'loot',
                 shortcut: (defined(GLOBAL_EVENT_LISTENERS.KEYDOWN_ALT_SHIFT_X)? 'alt+shift+x': ''),
-                action: event => $.all('video').pop().copyFrame(),
+                action: event => $('[data-a-target="video-player"i] video').copyFrame(),
             },{
                 text: `Record the next ${ toTimeString(VideoClips.length) }`,
                 icon: 'video',
@@ -6926,7 +6926,7 @@ let Initialize = async(START_OVER = false) => {
         }
 
         // Begin recording...
-        let video = $.all('video').pop();
+        let video = $('[data-a-target="video-player"i] video');
         let time = parseInt(Settings.video_clips__trophy_length) * 1000;
         let name = [STREAMER.name, `${ title } (${ (new Date).toLocaleDateString(top.LANGUAGE, { dateStyle: 'short' }).replace(GetFileSystem().allIllegalFilenameCharacters, '-') })`].join(' - ');
 
@@ -17444,7 +17444,7 @@ let Initialize = async(START_OVER = false) => {
         if(nullish(GLOBAL_EVENT_LISTENERS.KEYDOWN_ALT_SHIFT_X))
             $.on('keydown', GLOBAL_EVENT_LISTENERS.KEYDOWN_ALT_SHIFT_X = function Take_a_Screenshot({ key = '', altKey, ctrlKey, metaKey, shiftKey }) {
                 if(!(ctrlKey || metaKey) && altKey && shiftKey && key.equals('x'))
-                    $.all('video').pop().copyFrame()
+                    $('[data-a-target="video-player"i] video').copyFrame()
                         .then(async copied => await alert.timed(`Screenshot saved to clipboard!<p tt-x>${ (new UUID).value }</p>`, 5000))
                         .catch(async error => await alert.timed(`Failed to take screenshot: ${ error }<p tt-x>${ (new UUID).value }</p>`, 7000));
             });
