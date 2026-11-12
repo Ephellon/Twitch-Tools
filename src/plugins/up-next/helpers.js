@@ -485,10 +485,15 @@ plugin({
 
                             parent.insertBefore(body, $('[up-next--body] > :nth-child(2)'));
 
+                            // Names come from several lists in different case ("qilin", "Qilin"): one row per channel
+                            const listed = new Set;
+
                             listing:
                             for(const name of SearchableNames) {
-                                if(nullish(name))
+                                if(nullish(name) || listed.has(name.toLowerCase()))
                                     continue listing;
+
+                                listed.add(name.toLowerCase());
 
                                 const channel = (null
                                     ?? ALL_CHANNELS.find(c => c.name.equals(name))
@@ -501,7 +506,7 @@ plugin({
                                 const _name = name.toLowerCase();
                                 const { icon, live } = channel;
                                 const pinned = (GetNextStreamer.pinnedStreamers ?? []).some(pin => pin.equals(name));
-                                const wanted = WantedNames.has(name);
+                                const wanted = [...WantedNames].some(other => other?.equals?.(name));
                                 const current = name.equals(STREAMER.name);
 
                                 const desc = (STREAMER.jump?.[_name]?.title ?? '');

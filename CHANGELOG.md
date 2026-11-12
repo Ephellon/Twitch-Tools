@@ -23,7 +23,7 @@
     - Fix irregular ordering (Sortable `onUpdate` logic).
     - Prevent dead channels from being re-added.
     - Resolve "Up Next Owner" tab synchronization and URL mimicking.
-    - The Pin list can show a channel twice when its name's case differs ("qilin" and "Qilin"); unpinned names are hard to read (dark on dark).
+    - The Pin list's unpinned names are hard to read (dark on dark).
     - Pins missing from the channel list (`ALL_CHANNELS`) count as offline, so an offline pin can be chosen over a live one.
 - [ ] **Performance:**
     - Fix background script stalls when tabs disappear.
