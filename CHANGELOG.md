@@ -24,7 +24,7 @@
     - Prevent dead channels from being re-added.
     - Resolve "Up Next Owner" tab synchronization and URL mimicking.
     - The Pin list's unpinned names are hard to read (dark on dark); not reproduced in a live test, needs a screenshot and the theme used.
-    - The Pin list can show a stream title, or an empty name, as a channel.
+    - A name that isn't a channel (once, a stream title) can be added to the channel list by a lookup, and then shows in the Pin list.
     - Pins missing from the channel list (`ALL_CHANNELS`) count as offline, so an offline pin can be chosen over a live one.
 - [ ] **Performance:**
     - Fix background script stalls when tabs disappear.
@@ -32,6 +32,7 @@
     - Fix CPU spikes (>100%) during memory cleanup.
     - A respawned tab (Recover Pages, RAM Alarms) is a new tab, so per-tab state is lost: the tab's own Lurk state (#65) and a Keep Status pause.
 - [ ] **Search Actions (#79):** after a change from the search bar, the channel page's own Reminder and DVR buttons show the old state until a reload.
+- [ ] **VODs:** on a VOD page the channel reads as live.
 - [ ] **Streak Saver:** a real save works hands-off (the popup presses play itself); the live **Watch** route is only tested on a faked row, not on a real streak. Any save Twitch doesn't answer is logged as "Twitch Integrity Fail", whatever the cause.
 - [ ] **Recording:** Fix recording failures when pre-roll ads play.
 - [ ] **Chat:** Fix chat bullets not registering in the main catcher/reflector.
