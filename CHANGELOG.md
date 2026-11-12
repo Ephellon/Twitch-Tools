@@ -23,7 +23,7 @@
     - Fix irregular ordering (Sortable `onUpdate` logic).
     - Prevent dead channels from being re-added.
     - Resolve "Up Next Owner" tab synchronization and URL mimicking.
-    - The Pin list can show a channel twice when its name's case differs ("qilin" and "Qilin"); unpinned names are hard to read (dark on dark).
+    - The Pin list's unpinned names are hard to read (dark on dark).
     - The channel list (`ALL_CHANNELS`) can hold only a few channels and one without a name, so Pins can't tell which channels are live (the first pin is used even when offline) and show no avatars.
 - [ ] **Performance:**
     - Fix background script stalls when tabs disappear.
@@ -44,6 +44,7 @@
 ## Release History
 
 ### Version 5.35.\*
+- [`5.35.5.37`](https://github.com/Ephellon/Twitch-Tools/releases/tag/5.35.5.37) — Pin list: one row per channel when names differ only in case; the console no longer shows "Cannot redefine property: MiniPlayer"
 - [`5.35.5.36`](https://github.com/Ephellon/Twitch-Tools/releases/tag/5.35.5.36) — Lag reporter: a hung tab no longer gets extra rounds; silent tabs are logged as silent, not "did not respond"
 - [`5.35.5.35`](https://github.com/Ephellon/Twitch-Tools/releases/tag/5.35.5.35) — Search Actions: no buttons on Twitch's "Go to <name>" row
 - [`5.35.5.34`](https://github.com/Ephellon/Twitch-Tools/releases/tag/5.35.5.34) — Player: Lurk's quality check, Claim Reward and Copy Frame use the stream's own video, not the MiniPlayer's

@@ -3614,9 +3614,9 @@ try {
         passive: false,
     });
 } catch(error) {
-    // Most likely in a child frame...
+    // Most likely in a child frame... or this page already ran it: "Cannot redefine property" is that once-a-page guard, not a fault
     // $remark("Moving to chat child frame...");
-    if(!parseBool(parseURL(location).searchParameters?.hidden))
+    if(!parseBool(parseURL(location).searchParameters?.hidden) && !/cannot redefine property/i.test(error?.message))
         $warn(error);
 }
 
@@ -8098,10 +8098,15 @@ let Initialize = async(START_OVER = false) => {
 
                     parent.insertBefore(body, $('[up-next--body] > :nth-child(2)'));
 
+                    // Names come from several lists in different case ("qilin", "Qilin"): one row per channel
+                    let listed = new Set;
+
                     listing:
                     for(let name of SearchableNames) {
-                        if(nullish(name))
+                        if(nullish(name) || listed.has(name.toLowerCase()))
                             continue listing;
+
+                        listed.add(name.toLowerCase());
 
                         let channel = (null
                             ?? ALL_CHANNELS.find(c => c.name.equals(name))
@@ -8114,7 +8119,7 @@ let Initialize = async(START_OVER = false) => {
                         let _name = name.toLowerCase();
                         let { icon, live } = channel;
                         let pinned = (GetNextStreamer.pinnedStreamers ?? []).some(pin => pin.equals(name));
-                        let wanted = WantedNames.has(name);
+                        let wanted = [...WantedNames].some(other => other?.equals?.(name));
                         let current = name.equals(STREAMER.name);
 
                         let desc = (STREAMER.jump?.[_name]?.title ?? '');
