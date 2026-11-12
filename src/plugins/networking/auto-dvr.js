@@ -292,7 +292,7 @@ plugin({
             if(nullish(top.titleInterval))
                 top.titleInterval = setInterval(() => {
                     document.title = (
-                        MASTER_VIDEO.hasRecording(Recording.ANY)
+                        MASTER_VIDEO?.hasRecording(Recording.ANY)
                             ? `\u{1f534} ${ STREAMER.name } - ${ toTimeString(Recording.find(Recording.ANY, MASTER_VIDEO)?.duration, 'clock') }`
                             : `${ STREAMER.name } - Twitch`
                     );
