@@ -3887,6 +3887,9 @@ if(top == window) {
                         // There is a message container
                         || $.defined('[data-test-selector$="message-container"i]')
 
+                        // A VOD with its player: chat replay has no message container
+                        || (/\/videos?\//i.test(location.pathname) && $.defined('[data-a-target="video-player"i] video'))
+
                         // There is an ongoing search
                         || (true
                             && $.defined('[data-test-selector*="search-result"i][data-test-selector$="name"i]')
