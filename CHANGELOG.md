@@ -23,7 +23,8 @@
     - Fix irregular ordering (Sortable `onUpdate` logic).
     - Prevent dead channels from being re-added.
     - Resolve "Up Next Owner" tab synchronization and URL mimicking.
-    - The Pin list's unpinned names are hard to read (dark on dark).
+    - The Pin list's unpinned names are hard to read (dark on dark); not reproduced in a live test, needs a screenshot and the theme used.
+    - The Pin list can show a stream title, or an empty name, as a channel.
     - The channel list (`ALL_CHANNELS`) can hold only a few channels and one without a name, so Pins can't tell which channels are live (the first pin is used even when offline) and show no avatars.
 - [ ] **Performance:**
     - Fix background script stalls when tabs disappear.
@@ -41,6 +42,7 @@
 ## Release History
 
 ### Version 5.35.\*
+- [`5.35.5.40`](https://github.com/Ephellon/Twitch-Tools/releases/tag/5.35.5.40) — TTV Tools starts on VOD pages (for real this time); Stream Preview names the hovered channel, not a word from its title; the preview hint no longer covers the tooltip; the Pin list and MiniPlayer fixes from 5.35.5.37 are back
 - [`5.35.5.39`](https://github.com/Ephellon/Twitch-Tools/releases/tag/5.35.5.39) — Point Watcher no longer saves the Watch Streak as points right after a load; Recover Pages waits until a hidden page is seen before reloading it
 - [`5.35.5.38`](https://github.com/Ephellon/Twitch-Tools/releases/tag/5.35.5.38) — Auto-Focus: doesn't pause Up Next on an offline player; TTV Tools starts on VOD pages; no more "hasRecording" console spam
 - [`5.35.5.37`](https://github.com/Ephellon/Twitch-Tools/releases/tag/5.35.5.37) — Pin list: one row per channel when names differ only in case; the console no longer shows "Cannot redefine property: MiniPlayer"

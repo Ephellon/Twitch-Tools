@@ -3614,9 +3614,9 @@ try {
         passive: false,
     });
 } catch(error) {
-    // Most likely in a child frame...
+    // Most likely in a child frame... or this page already ran it: "Cannot redefine property" is that once-a-page guard, not a fault
     // $remark("Moving to chat child frame...");
-    if(!parseBool(parseURL(location).searchParameters?.hidden))
+    if(!parseBool(parseURL(location).searchParameters?.hidden) && !/cannot redefine property/i.test(error?.message))
         $warn(error);
 }
 
@@ -8099,10 +8099,15 @@ let Initialize = async(START_OVER = false) => {
 
                     parent.insertBefore(body, $('[up-next--body] > :nth-child(2)'));
 
+                    // Names come from several lists in different case ("qilin", "Qilin"): one row per channel
+                    let listed = new Set;
+
                     listing:
                     for(let name of SearchableNames) {
-                        if(nullish(name))
+                        if(nullish(name) || listed.has(name.toLowerCase()))
                             continue listing;
+
+                        listed.add(name.toLowerCase());
 
                         let channel = (null
                             ?? ALL_CHANNELS.find(c => c.name.equals(name))
@@ -8115,7 +8120,7 @@ let Initialize = async(START_OVER = false) => {
                         let _name = name.toLowerCase();
                         let { icon, live } = channel;
                         let pinned = (GetNextStreamer.pinnedStreamers ?? []).some(pin => pin.equals(name));
-                        let wanted = WantedNames.has(name);
+                        let wanted = [...WantedNames].some(other => other?.equals?.(name));
                         let current = name.equals(STREAMER.name);
 
                         let desc = (STREAMER.jump?.[_name]?.title ?? '');
@@ -16004,7 +16009,10 @@ let Initialize = async(START_OVER = false) => {
 
         alias = alias?.trim();
 
-        let name = (null
+        // Twitch's newer tooltip has only the stream's title, not the channel's name: take the name from the hovered link
+        let hovered = $('.side-nav-section a[href]:hover');
+
+        let name = (defined(hovered)? parseURL(hovered.href).pathname.slice(1).split('/').shift(): null) ?? (null
             ?? ALL_CHANNELS.find(({ name }) => (
                 (name.contains('(') && name.contains(')'))?
                     name.contains(alias):
@@ -17992,8 +18000,8 @@ if(top == window) {
             $error(`The current runtime (v${ Manifest.version }) is not correct (v${ version })`)
                 .toNativeStack():
         setInterval(WAIT_FOR_PAGE = async() => {
-            // Do NOT run on unsafe pages
-            if(UNSAFE_TWITCH_PATHNAMES.test(location.pathname))
+            // Do NOT run on unsafe pages; a VOD (/videos/<id>) is a watch page, unlike the channel's video list
+            if(UNSAFE_TWITCH_PATHNAMES.test(location.pathname) && !/^\/videos?\/\d+/i.test(location.pathname))
                 return false;
 
             let sadOverlay = $('[data-test-selector*="sad"i][data-test-selector*="overlay"i]');
@@ -18721,6 +18729,11 @@ if(top == window) {
 
                     .tt-stream-preview[data-vods="false"i][data-position="above"i]::after, .tt-stream-preview[data-vods="false"i][data-position="below"i]::before {
                         content: "Send to miniplayer (z) \\b7  Add to Live Reminders (r)";
+                    }
+
+                    /* Above the tooltip: keep the hint inside the preview's top edge; at the bottom it hung over the tooltip */
+                    .tt-stream-preview[data-vods][data-position="above"i]::after {
+                        top: .5rem;
                     }
 
                     :is(video, [class*="video"i][class*="render"i]) ~ * .player-controls :is([data-a-target*="mute"i] svg, [data-test-selector*="fill-value"i], [data-a-target$="slider"i]::-webkit-slider-thumb, [data-a-target$="slider"i]::-moz-range-thumb) {
