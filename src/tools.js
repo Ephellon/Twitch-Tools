@@ -4032,6 +4032,10 @@ if(top == window) {
                                         if(++RECOVERY_TRIALS <= 10)
                                             return false;
 
+                                        // A hidden page is throttled and loads slowly: reload it once it's seen, not in the background
+                                        if(document.hidden)
+                                            return false;
+
                                         // Reload once per page every 5 minutes at most; a page that still can't load its
                                         // features after that would otherwise reload forever
                                         const RELOADED = JSON.parse(sessionStorage.getItem('ttv-tools:reinit-reload') || '{}');

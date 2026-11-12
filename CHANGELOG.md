@@ -29,7 +29,6 @@
     - Fix background script stalls when tabs disappear.
     - Resolve memory leaks related to Hardware Acceleration and excessive iframes.
     - Fix CPU spikes (>100%) during memory cleanup.
-    - Recover Pages reloads hidden pages that aren't ready yet every 5 minutes (harmless, but churn).
     - A respawned tab (Recover Pages, RAM Alarms) is a new tab, so per-tab state is lost: the tab's own Lurk state (#65) and a Keep Status pause.
 - [ ] **Search Actions (#79):** after a change from the search bar, the channel page's own Reminder and DVR buttons show the old state until a reload.
 - [ ] **Live Reminders:** the "Send to miniplayer / Add to Live Reminders" hint can cover the points line in the side-bar tooltip.
