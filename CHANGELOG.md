@@ -43,7 +43,8 @@
 ## Release History
 
 ### Version 5.35.\*
-- [`5.35.5.43`](https://github.com/Ephellon/Twitch-Tools/releases/tag/5.35.5.42) — Fixed #90, VODs are no longer affected by Live Reminders; fixed CSP issue in core.js
+- [`5.35.5.44`](https://github.com/Ephellon/Twitch-Tools/releases/tag/5.35.5.44) — More robust fix for #90, all reserved pages are ignored
+- [`5.35.5.43`](https://github.com/Ephellon/Twitch-Tools/releases/tag/5.35.5.43) — Fixed #90, VODs are no longer affected by Live Reminders; fixed CSP issue in core.js
 - [`5.35.5.42`](https://github.com/Ephellon/Twitch-Tools/releases/tag/5.35.5.42) — Fixed #89, the sidenav may open up to once per page load
 - [`5.35.5.41`](https://github.com/Ephellon/Twitch-Tools/releases/tag/5.35.5.41) — Followed channels in the side bar count again (Twitch dropped their names from the avatars, so all of them merged into one nameless channel); on a VOD, the channel is its owner, not "videos"
 - [`5.35.5.40`](https://github.com/Ephellon/Twitch-Tools/releases/tag/5.35.5.40) — TTV Tools starts on VOD pages (for real this time); Stream Preview names the hovered channel, not a word from its title; the preview hint no longer covers the tooltip; the Pin list and MiniPlayer fixes from 5.35.5.37 are back
