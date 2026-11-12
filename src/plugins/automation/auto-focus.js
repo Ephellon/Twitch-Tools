@@ -181,7 +181,8 @@ plugin({
                                     const button = $('#up-next-control')
                                         , paused = parseBool(button?.getAttribute('paused'));
 
-                                    if(paused)
+                                    // The stream ended: Up Next should move on, not wait on the offline player's picture
+                                    if(paused || offlinePlayer())
                                         break __AutoFocus_Pause_UpNext__;
 
                                     button?.click();
