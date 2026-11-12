@@ -3656,7 +3656,7 @@ async function update() {
 
                         return live;
                     },
-                    name: ($('img', element)?.alt ?? parseURL(element.href).pathname.slice(1)).split(/\s/).shift(),
+                    name: ($('img', element)?.alt || parseURL(element.href).pathname.slice(1)).split(/\s/).shift(),
                 };
 
                 element.setAttribute('draggable', true);
@@ -3696,7 +3696,7 @@ async function update() {
 
                         return live;
                     },
-                    name: ($('img', element)?.alt ?? parseURL(element.href).pathname.slice(1)).split(/\s/).shift(),
+                    name: ($('img', element)?.alt || parseURL(element.href).pathname.slice(1)).split(/\s/).shift(),
                 };
 
                 element.setAttribute('draggable', true);
@@ -3734,7 +3734,7 @@ async function update() {
 
                         return live;
                     },
-                    name: ($('img', element)?.alt ?? parseURL(element.href).pathname.slice(1)).split(/\s/).shift(),
+                    name: ($('img', element)?.alt || parseURL(element.href).pathname.slice(1)).split(/\s/).shift(),
                 };
 
                 element.setAttribute('draggable', true);
@@ -4310,7 +4310,7 @@ let Initialize = async(START_OVER = false) => {
 
                         return live;
                     },
-                    name: ($('img', element)?.alt ?? parseURL(element.href).pathname.slice(1)).split(/\s/).shift(),
+                    name: ($('img', element)?.alt || parseURL(element.href).pathname.slice(1)).split(/\s/).shift(),
                 };
 
                 element.setAttribute('draggable', true);
@@ -4677,7 +4677,10 @@ let Initialize = async(START_OVER = false) => {
         },
 
         get name() {
-            return ($(`[class*="channel-info"i] a[href$="${ NORMALIZED_PATHNAME }"i]${ ['', ' h1'][+NORMAL_MODE] }`)?.textContent ?? LIVE_CACHE.get('name') ?? top.location.pathname.slice(1).split('/').shift()).split(/\s/).shift()
+            // A VOD (/videos/<id>): no channel link ends with that path, and the path's first part is "videos"; the owner's name is the heading
+            let vod = (/^\/videos?\/\d+/i.test(top.location.pathname) ? ($('[class*="channel-info"i] h1')?.textContent || null) : null)
+
+            return (vod ?? $(`[class*="channel-info"i] a[href$="${ NORMALIZED_PATHNAME }"i]${ ['', ' h1'][+NORMAL_MODE] }`)?.textContent ?? LIVE_CACHE.get('name') ?? top.location.pathname.slice(1).split('/').shift()).split(/\s/).shift()
         },
 
         get paid() {
@@ -5118,7 +5121,7 @@ let Initialize = async(START_OVER = false) => {
 
                                 return live;
                             },
-                            name: ($('img', element)?.alt ?? parseURL(element.href).pathname.slice(1)).split(/\s/).shift(),
+                            name: ($('img', element)?.alt || parseURL(element.href).pathname.slice(1)).split(/\s/).shift(),
                         };
 
                         element.setAttribute('draggable', true);
@@ -5162,7 +5165,7 @@ let Initialize = async(START_OVER = false) => {
 
                                 return live;
                             },
-                            name: ($('img', element)?.alt ?? parseURL(element.href).pathname.slice(1)).split(/\s/).shift(),
+                            name: ($('img', element)?.alt || parseURL(element.href).pathname.slice(1)).split(/\s/).shift(),
                         };
 
                         element.setAttribute('draggable', true);
@@ -5203,7 +5206,7 @@ let Initialize = async(START_OVER = false) => {
 
                                 return live;
                             },
-                            name: ($('img', element)?.alt ?? parseURL(element.href).pathname.slice(1)).split(/\s/).shift(),
+                            name: ($('img', element)?.alt || parseURL(element.href).pathname.slice(1)).split(/\s/).shift(),
                         };
 
                         element.setAttribute('draggable', true);
@@ -18000,7 +18003,7 @@ if(top == window) {
             $error(`The current runtime (v${ Manifest.version }) is not correct (v${ version })`)
                 .toNativeStack():
         setInterval(WAIT_FOR_PAGE = async() => {
-            // Do NOT run on unsafe pages; a VOD (/videos/<id>) is a watch page, unlike the channel's video list
+            // Do NOT run on unsafe pages; a VOD (/videos/<id>) is a watch page, not one of them
             if(UNSAFE_TWITCH_PATHNAMES.test(location.pathname) && !/^\/videos?\/\d+/i.test(location.pathname))
                 return false;
 

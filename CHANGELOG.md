@@ -24,7 +24,7 @@
     - Prevent dead channels from being re-added.
     - Resolve "Up Next Owner" tab synchronization and URL mimicking.
     - The Pin list's unpinned names are hard to read (dark on dark); not reproduced in a live test, needs a screenshot and the theme used.
-    - The Pin list can show a stream title, or an empty name, as a channel.
+    - The Pin list can show a stream title (from a lookup) as a channel.
     - The channel list (`ALL_CHANNELS`) can hold only a few channels and one without a name, so Pins can't tell which channels are live (the first pin is used even when offline) and show no avatars.
 - [ ] **Performance:**
     - Fix background script stalls when tabs disappear.
@@ -32,6 +32,7 @@
     - Fix CPU spikes (>100%) during memory cleanup.
     - A respawned tab (Recover Pages, RAM Alarms) is a new tab, so per-tab state is lost: the tab's own Lurk state (#65) and a Keep Status pause.
 - [ ] **Search Actions (#79):** after a change from the search bar, the channel page's own Reminder and DVR buttons show the old state until a reload.
+- [ ] **VODs:** on a VOD page the channel reads as live.
 - [ ] **Streak Saver:** a real save works hands-off in v6 (the popup presses play itself; v5 has the same code but no real save yet); the live **Watch** route is only tested on a faked row, not on a real streak. Any save Twitch doesn't answer is logged as "Twitch Integrity Fail", whatever the cause.
 - [ ] **Recording:** Fix recording failures when pre-roll ads play.
 - [ ] **Chat:** Fix chat bullets not registering in the main catcher/reflector.
@@ -42,6 +43,7 @@
 ## Release History
 
 ### Version 5.35.\*
+- [`5.35.5.41`](https://github.com/Ephellon/Twitch-Tools/releases/tag/5.35.5.41) — Followed channels in the side bar count again (Twitch dropped their names from the avatars, so all of them merged into one nameless channel); on a VOD, the channel is its owner, not "videos"
 - [`5.35.5.40`](https://github.com/Ephellon/Twitch-Tools/releases/tag/5.35.5.40) — TTV Tools starts on VOD pages (for real this time); Stream Preview names the hovered channel, not a word from its title; the preview hint no longer covers the tooltip; the Pin list and MiniPlayer fixes from 5.35.5.37 are back
 - [`5.35.5.39`](https://github.com/Ephellon/Twitch-Tools/releases/tag/5.35.5.39) — Point Watcher no longer saves the Watch Streak as points right after a load; Recover Pages waits until a hidden page is seen before reloading it
 - [`5.35.5.38`](https://github.com/Ephellon/Twitch-Tools/releases/tag/5.35.5.38) — Auto-Focus: doesn't pause Up Next on an offline player; TTV Tools starts on VOD pages; no more "hasRecording" console spam
