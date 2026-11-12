@@ -31,7 +31,6 @@
     - Fix CPU spikes (>100%) during memory cleanup.
     - Recover Pages reloads hidden pages that aren't ready yet every 5 minutes (harmless, but churn).
     - A respawned tab (Recover Pages, RAM Alarms) is a new tab, so per-tab state is lost: the tab's own Lurk state (#65) and a Keep Status pause.
-- [ ] **Point Watcher:** right after a page loads, the points button can briefly show the Watch Streak; a save in that moment stores it as points (fixed by the next save, 15 s later).
 - [ ] **Search Actions (#79):** after a change from the search bar, the channel page's own Reminder and DVR buttons show the old state until a reload.
 - [ ] **Live Reminders:** the "Send to miniplayer / Add to Live Reminders" hint can cover the points line in the side-bar tooltip.
 - [ ] **Streak Saver:** a real save works hands-off (the popup presses play itself); the live **Watch** route is only tested on a faked row, not on a real streak. Any save Twitch doesn't answer is logged as "Twitch Integrity Fail", whatever the cause.

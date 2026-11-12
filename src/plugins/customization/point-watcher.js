@@ -18,7 +18,9 @@ plugin({
      * @returns {void}
      */
     init() {
-        POINT_WATCHER_COUNTER = 0;
+        // First save 8 s in (32 ticks), then every 15 s: right after a load the points button can briefly show the
+        // Watch Streak, and a save then stored it as points
+        POINT_WATCHER_COUNTER = 60 - 32;
         HAS_POINTS_BALANCE = false;
     },
 
