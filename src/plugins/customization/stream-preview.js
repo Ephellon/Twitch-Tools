@@ -56,7 +56,10 @@ plugin({
 
         alias = alias?.trim();
 
-        const name = (null
+        // Twitch's newer tooltip has only the stream's title, not the channel's name: take the name from the hovered link
+        const hovered = $('.side-nav-section a[href]:hover');
+
+        const name = (defined(hovered) ? parseURL(hovered.href).pathname.slice(1).split('/').shift() : null) ?? (null
             ?? ALL_CHANNELS.find(({ name }) => (
                 (name.contains('(') && name.contains(')'))
                     ? name.contains(alias)

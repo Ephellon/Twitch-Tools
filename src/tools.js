@@ -3780,8 +3780,8 @@ if(top == window) {
             ? $error(`The current runtime (v${ Manifest.version }) is not correct (v${ version })`)
                 .toNativeStack()
             : setInterval(WAIT_FOR_PAGE = async() => {
-                // Do NOT run on unsafe pages
-                if(UNSAFE_TWITCH_PATHNAMES.test(location.pathname))
+                // Do NOT run on unsafe pages; a VOD (/videos/<id>) is a watch page, unlike the channel's video list
+                if(UNSAFE_TWITCH_PATHNAMES.test(location.pathname) && !/^\/videos?\/\d+/i.test(location.pathname))
                     return false;
 
                 const sadOverlay = $('[data-test-selector*="sad"i][data-test-selector*="overlay"i]');
@@ -4551,6 +4551,11 @@ if(top == window) {
 
                     .tt-stream-preview[data-vods="false"i][data-position="above"i]::after, .tt-stream-preview[data-vods="false"i][data-position="below"i]::before {
                         content: "Send to miniplayer (z) \\b7  Add to Live Reminders (r)";
+                    }
+
+                    /* Above the tooltip: keep the hint inside the preview's top edge; at the bottom it hung over the tooltip */
+                    .tt-stream-preview[data-vods][data-position="above"i]::after {
+                        top: .5rem;
                     }
 
                     :is(video, [class*="video"i][class*="render"i]) ~ * .player-controls :is([data-a-target*="mute"i] svg, [data-test-selector*="fill-value"i], [data-a-target$="slider"i]::-webkit-slider-thumb, [data-a-target$="slider"i]::-moz-range-thumb) {
