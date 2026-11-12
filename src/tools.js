@@ -1207,9 +1207,9 @@ try {
         passive: false,
     });
 } catch(error) {
-    // Most likely in a child frame...
+    // Most likely in a child frame... or this page already ran it: "Cannot redefine property" is that once-a-page guard, not a fault
     // $remark("Moving to chat child frame...");
-    if(!parseBool(parseURL(location).searchParameters?.hidden))
+    if(!parseBool(parseURL(location).searchParameters?.hidden) && !/cannot redefine property/i.test(error?.message))
         $warn(error);
 }
 
