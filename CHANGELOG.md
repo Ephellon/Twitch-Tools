@@ -29,7 +29,6 @@
     - Fix background script stalls when tabs disappear.
     - Resolve memory leaks related to Hardware Acceleration and excessive iframes.
     - Fix CPU spikes (>100%) during memory cleanup.
-    - The lag reporter's hang-up timer fires only 100 ms before the next check; a delayed timer gives a hung tab another round. It also logs "did not respond" for tabs that answered but are silent.
     - Recover Pages reloads hidden pages that aren't ready yet every 5 minutes (harmless, but churn).
     - A respawned tab (Recover Pages, RAM Alarms) is a new tab, so per-tab state is lost: the tab's own Lurk state (#65) and a Keep Status pause.
 - [ ] **Point Watcher:** right after a page loads, the points button can briefly show the Watch Streak; a save in that moment stores it as points (fixed by the next save, 15 s later).
@@ -45,6 +44,7 @@
 ## Release History
 
 ### Version 5.35.\*
+- [`5.35.5.36`](https://github.com/Ephellon/Twitch-Tools/releases/tag/5.35.5.36) — Lag reporter: a hung tab no longer gets extra rounds; silent tabs are logged as silent, not "did not respond"
 - [`5.35.5.35`](https://github.com/Ephellon/Twitch-Tools/releases/tag/5.35.5.35) — Search Actions: no buttons on Twitch's "Go to <name>" row
 - [`5.35.5.34`](https://github.com/Ephellon/Twitch-Tools/releases/tag/5.35.5.34) — Player: Lurk's quality check, Claim Reward and Copy Frame use the stream's own video, not the MiniPlayer's
 - [`5.35.5.33`](https://github.com/Ephellon/Twitch-Tools/releases/tag/5.35.5.33) — Block Banners: works in tabs you aren't using, not only after a click
