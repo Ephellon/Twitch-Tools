@@ -87,7 +87,7 @@ plugin({
             }
 
             // Begin recording...
-            const video = $.all('video').pop();
+            const video = $('[data-a-target="video-player"i] video');
             const time = parseInt(Settings.video_clips__trophy_length) * 1000;
             const name = [STREAMER.name, `${ title } (${ (new Date).toLocaleDateString(top.LANGUAGE, { dateStyle: 'short' }).replace(GetFileSystem().allIllegalFilenameCharacters, '-') })`].join(' - ');
 

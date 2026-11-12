@@ -34,7 +34,6 @@
     - A respawned tab (Recover Pages, RAM Alarms) is a new tab, so per-tab state is lost: the tab's own Lurk state (#65) and a Keep Status pause.
 - [ ] **Point Watcher:** right after a page loads, the points button can briefly show the Watch Streak; a save in that moment stores it as points (fixed by the next save, 15 s later).
 - [ ] **Auto-Focus:** still pauses and resumes Up Next on an offline player.
-- [ ] **Player:** Lurk's quality check, Claim Reward and Copy Frame take the last video on the page, so with the MiniPlayer open they read its empty video (0p). Auto-Focus has the fix (#83).
 - [ ] **Search Actions (#79):** after a change from the search bar, the channel page's own Reminder and DVR buttons show the old state until a reload; Twitch's "Go to <name>" row gets buttons even when the name isn't a channel.
 - [ ] **MiniPlayer:** "Cannot redefine property: MiniPlayer" in the console on each page change.
 - [ ] **VODs:** TTV Tools doesn't start on `/videos/…` pages (the ready check waits for a chat message container that VOD chat replay doesn't have).

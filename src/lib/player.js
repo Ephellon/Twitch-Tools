@@ -167,7 +167,7 @@ async function SetQuality(quality = 'auto', backup = 'source') {
 
     return new Promise((resolve, reject) => {
         const checker = setInterval(() => {
-            const video = $.all('video').pop()
+            const video = $('[data-a-target="video-player"i] video')
                 , computed = (video?.videoHeight | 0) + 'p';
 
             if(desired !== computed) {

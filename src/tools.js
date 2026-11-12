@@ -1065,7 +1065,7 @@ try {
                 text: GLOBAL_EVENT_LISTENERS.KEYDOWN_ALT_SHIFT_X.toTitle(),
                 icon: 'loot',
                 shortcut: (defined(GLOBAL_EVENT_LISTENERS.KEYDOWN_ALT_SHIFT_X) ? 'alt+shift+x' : ''),
-                action: event => $.all('video').pop().copyFrame(),
+                action: event => $('[data-a-target="video-player"i] video').copyFrame(),
             }, {
                 text: `Record the next ${ toTimeString(VideoClips.length) }`,
                 icon: 'video',

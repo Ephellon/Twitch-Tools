@@ -20,7 +20,7 @@ plugin({
             if(nullish(GLOBAL_EVENT_LISTENERS.KEYDOWN_ALT_SHIFT_X))
                 $.on('keydown', GLOBAL_EVENT_LISTENERS.KEYDOWN_ALT_SHIFT_X = function Take_a_Screenshot({ key = '', altKey, ctrlKey, metaKey, shiftKey }) {
                     if(!(ctrlKey || metaKey) && altKey && shiftKey && key.equals('x'))
-                        $.all('video').pop().copyFrame()
+                        $('[data-a-target="video-player"i] video').copyFrame()
                             .then(async copied => await alert.timed(`Screenshot saved to clipboard!<p tt-x>${ (new UUID).value }</p>`, 5000))
                             .catch(async error => await alert.timed(`Failed to take screenshot: ${ error }<p tt-x>${ (new UUID).value }</p>`, 7000));
                 });
