@@ -7916,74 +7916,50 @@ let Initialize = async(START_OVER = false) => {
 
         FIRST_IN_LINE_JOB = setInterval(() => {
             // Update the accumulator
-            let multiplier = 1;
-            if(FIRST_IN_LINE_BOOST) {
-                // Rushing: a simplified multiplier (e.g., 5x speed)
-                multiplier = 5; 
-            }
+            let multiplier = FIRST_IN_LINE_BOOST ? 5 : 1;
             UP_NEXT_CTRL.tick(multiplier);
 
             let timeRemaining = UP_NEXT_CTRL.remaining;
 
-            // If the channel disappears (or goes offline), kill the job for it
-            // @FIXME: Reanimating First in Line jobs may cause reloading issues?
-            let index = ALL_CHANNELS.findIndex(channel => RegExp(parseURL(channel.href).pathname + '\\b', 'i').test(FIRST_IN_LINE_HREF)),
-                channel = ALL_CHANNELS[index];
+            // Periodic status check: Only validate target every 30s or when close to due date
+            // This eliminates the "poll-storm" while keeping the queue fresh
+            if ((+new Date % 30_000 < 1000) || timeRemaining < 60_000) {
+                let index = ALL_CHANNELS.findIndex(channel => RegExp(parseURL(channel.href).pathname + '\\b', 'i').test(FIRST_IN_LINE_HREF)),
+                    channel = ALL_CHANNELS[index];
 
-            if(nullish(channel) && !ALREADY_RESTORING_DEAD_CHANNEL) {
-                if(nullish(FIRST_IN_LINE_HREF))
-                    return;
+                if(nullish(channel) && !ALREADY_RESTORING_DEAD_CHANNEL) {
+                    let { href, pathname } = parseURL(FIRST_IN_LINE_HREF);
+                    if(nullish(pathname)) return;
+                    
+                    ALREADY_RESTORING_DEAD_CHANNEL = true;
+                    $log('[Queue] Validating target status...', pathname);
 
-                $log('Restoring dead channel (interval)...', FIRST_IN_LINE_HREF);
-
-                let { href, pathname } = parseURL(FIRST_IN_LINE_HREF),
-                    channelID = UUID.from(pathname).value;
-
-                if(nullish(pathname))
-                    return;
-                ALREADY_RESTORING_DEAD_CHANNEL = true;
-
-                let name = pathname.slice(1);
-
-                new Search(name)
-                    .then(Search.convertResults)
-                    .then(streamer => {
-                        let restored = ({
-                            from: 'SEARCH',
-                            href,
-                            icon: (typeof streamer.icon == 'string'? Object.assign(new String(streamer.icon), parseURL(streamer.icon)): null),
-                            live: parseBool(streamer.live),
-                            name: streamer.name,
+                    new Search(pathname.slice(1))
+                        .then(Search.convertResults)
+                        .then(streamer => {
+                            ALREADY_RESTORING_DEAD_CHANNEL = false;
+                            if(!parseBool(streamer.live)) throw `Channel offline`;
+                            
+                            ALL_CHANNELS = [...ALL_CHANNELS, streamer].filter(defined).filter(uniqueChannels);
+                        })
+                        .catch(error => {
+                            ALREADY_RESTORING_DEAD_CHANNEL = false;
+                            $warn(`[Queue] Target ${ pathname } is dead/offline. Skipping...`);
+                            
+                            ALL_FIRST_IN_LINE_JOBS = ALL_FIRST_IN_LINE_JOBS.filter(url => parseURL(url).pathname !== pathname);
+                            Cache.save({ ALL_FIRST_IN_LINE_JOBS }, () => {
+                                REDO_FIRST_IN_LINE_QUEUE(ALL_FIRST_IN_LINE_JOBS[0]);
+                            });
                         });
-
-                        ALREADY_RESTORING_DEAD_CHANNEL = false;
-                        // The queue keeps URLs; the job already holds this one (it used to be replaced by `restored`)
-                        ALL_CHANNELS = [...ALL_CHANNELS, restored].filter(defined).filter(uniqueChannels);
-                    })
-                    .catch(error => {
-                        ALL_FIRST_IN_LINE_JOBS = ALL_FIRST_IN_LINE_JOBS.map(url => url?.toLowerCase?.()).isolate().filter(url => url?.length).filter(url => parseURL(url).pathname != parseURL(FIRST_IN_LINE_HREF).pathname);
-                        FIRST_IN_LINE_DUE_DATE = NEW_DUE_DATE();
-
-                        Cache.save({ ALL_FIRST_IN_LINE_JOBS, FIRST_IN_LINE_DUE_DATE }, () => {
-                            REDO_FIRST_IN_LINE_QUEUE(ALL_FIRST_IN_LINE_JOBS[0]);
-
-                            $warn(error);
-                        });
-                    });
+                }
             }
 
-            // Don't act until 1sec is left
-            if(timeRemaining > 1000)
-                return;
+            if(timeRemaining > 1000) return;
 
-            /* After above is `false` */
-
-            Cache.save({ ALL_FIRST_IN_LINE_JOBS: ALL_FIRST_IN_LINE_JOBS = ALL_FIRST_IN_LINE_JOBS.filter(url => parseURL(url).pathname.toLowerCase() != parseURL(FIRST_IN_LINE_HREF).pathname.toLowerCase()) }, (href = parseURL(channel?.href ?? FIRST_IN_LINE_HREF).addSearch({ ...(parseURL(FIRST_IN_LINE_HREF).searchParameters ?? {}) }).href) => {
+            Cache.save({ ALL_FIRST_IN_LINE_JOBS: ALL_FIRST_IN_LINE_JOBS = ALL_FIRST_IN_LINE_JOBS.filter(url => parseURL(url).pathname.toLowerCase() != parseURL(FIRST_IN_LINE_HREF).pathname.toLowerCase()) }, (href = parseURL(FIRST_IN_LINE_HREF).addSearch({ tool: 'first-in-line--timeout' }).href) => {
                 $log('Heading to stream now [Job Interval]', href);
-
                 [FIRST_IN_LINE_JOB, FIRST_IN_LINE_WARNING_JOB, FIRST_IN_LINE_WARNING_TEXT_UPDATE].forEach(clearInterval);
-
-                goto(parseURL(href).addSearch({ tool: 'first-in-line--timeout' }).href);
+                goto(href);
             });
         }, 1000);
     };
