@@ -17,7 +17,8 @@ const RESULT = '[id^="search-result"i] a[data-tray-item][href^="/"]';
 function channelOf(link) {
     const [name, ...rest] = parseURL(link.href).pathname.split('/').filter(defined).filter(part => part.length);
 
-    if(nullish(name) || rest.length || [USERNAME, ...TWITCH_PATHNAMES].some(path => path?.equals?.(name)))
+    // Twitch's "Go to <name>" row has no avatar: the name may not be a channel
+    if(nullish(name) || rest.length || nullish($('img', link)) || [USERNAME, ...TWITCH_PATHNAMES].some(path => path?.equals?.(name)))
         return;
 
     return name;
