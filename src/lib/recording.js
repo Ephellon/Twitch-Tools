@@ -29,7 +29,18 @@ const registry = new WeakMap;
 /** Every recording not yet removed, for `Recording.ANY` / `Recording.ALL` across elements */
 const everything = new Set;
 
+/**
+ * Calls `fn` after `ms` milliseconds.
+ * @param {number} ms - The delay
+ * @param {function} fn - What to call
+ * @returns {number} The timer, for `clearTimeout`
+ */
 const later = (ms, fn) => setTimeout(fn, ms);
+
+/**
+ * A new unique id: a random UUID, or a time-and-random string where `crypto.randomUUID` isn't available.
+ * @returns {string} The id
+ */
 const newID = () => globalThis.crypto?.randomUUID?.() ?? `${ Date.now().toString(36) }-${ Math.random().toString(36).slice(2) }`;
 
 /**
@@ -141,6 +152,13 @@ class DiskStore {
     }
 }
 
+/**
+ * Writes `data` to the file `name` in `dir`, creating or replacing it.
+ * @param {FileSystemDirectoryHandle} dir - The folder
+ * @param {string} name - The file's name
+ * @param {string|Blob} data - What to write
+ * @returns {Promise<void>}
+ */
 async function write(dir, name, data) {
     const file = await dir.getFileHandle(name, { create: true });
     const stream = await file.createWritable();
@@ -149,7 +167,11 @@ async function write(dir, name, data) {
     await stream.close();
 }
 
-/** The segment files of a recording's folder, in order */
+/**
+ * The segment files of a recording's folder, in order.
+ * @param {FileSystemDirectoryHandle} dir - The recording's folder
+ * @returns {Promise<File[]>} Its `.part` files, sorted by name
+ */
 async function segments(dir) {
     const files = [];
 
@@ -375,13 +397,26 @@ function updateStatus() {
     globalThis.document?.querySelector?.('[data-a-player-state]')?.setAttribute('data-recording-status', active);
 }
 
-/** The first supported type: the asked-for one, else a fallback */
+/**
+ * The first type this browser can record: the asked-for one, else a fallback.
+ * @param {string} mimeType - The type asked for
+ * @returns {string} A supported type, or `''` when none is
+ */
 function supportedType(mimeType) {
+    /**
+     * Whether the browser can record `type` (assumed yes when it can't say).
+     * @param {string} type - A MIME type
+     * @returns {boolean}
+     */
     const supported = type => globalThis.MediaRecorder?.isTypeSupported?.(type) ?? true;
 
     return [mimeType, ...FALLBACK_TYPES].find(type => type && supported(type)) ?? '';
 }
 
+/**
+ * One recording of a video element, saved in segments as it goes. Look recordings up with `Recording.find`/`Recording.of`.
+ * @extends EventTarget
+ */
 export class Recording extends EventTarget {
     static ANY = Symbol('Any');
     static ALL = Symbol('All');
@@ -487,7 +522,10 @@ export class Recording extends EventTarget {
         recorder.onerror = ({ error }) => this.#fail(error ?? new Error("MediaRecorder error"));
         recorder.onstop = () => this.#finish();
 
-        // Wait for a video track (a fresh capture can take a moment), then go
+        /**
+         * Waits for a video track (a fresh capture can take a moment), then starts recording.
+         * @param {number} [tries=0] - Checks made so far
+         */
         const begin = (tries = 0) => {
             if(this.state != 'starting')
                 return;
@@ -886,6 +924,10 @@ export class Recording extends EventTarget {
             const files = await segments(dir);
             const type = String(meta.mimeType ?? 'video/webm').split(';')[0];
 
+            /**
+             * The recording as one file, built from its segments when asked for.
+             * @returns {Blob}
+             */
             const blob = () => new Blob(files, { type });
 
             found.push({
@@ -955,12 +997,18 @@ export class Recording extends EventTarget {
 
 /**
  * The old per-video methods, kept as thin wrappers. `key` is a name, `Recording.ANY` or `Recording.ALL`.
+ * @param {typeof HTMLVideoElement} [Video=globalThis.HTMLVideoElement] - The class to add them to
  */
 export function installVideoMethods(Video = globalThis.HTMLVideoElement) {
     if(!Video)
         return;
 
-    // Recording.ANY → the first running one; a name → the latest under it
+    /**
+     * The recordings `key` names: `Recording.ALL` → every running one; `Recording.ANY` → the first running one; a name → the latest under it.
+     * @param {HTMLVideoElement} element - The video
+     * @param {string|symbol} key - A name, `Recording.ANY` or `Recording.ALL`
+     * @returns {Recording[]} The matches (none, one, or all)
+     */
     const pick = (element, key) =>
         key === Recording.ALL
             ? [...Recording.of(element).values()].filter(recording => recording.active)
