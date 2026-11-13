@@ -14,6 +14,21 @@ const SEMICOLON_STATEMENTS = new Set([
 ]);
 
 /*
+ * simplyParams
+ * The parameter names in a `@simply name(a:type, b:object<{ x:number }>?) → result` line: the part before `→`, with
+ * `<…>`, `{…}` and `[…]` type details taken out so their keys aren't read as parameters.
+ */
+function* simplyParams(line) {
+    let signature = line.split('→')[0];
+
+    for(let before; before != signature;)
+        [before, signature] = [signature, signature.replace(/<[^<>]*>|\{[^{}]*\}|\[[^[\]]*\]/g, '')];
+
+    for(const [, name] of signature.matchAll(/[(,]\s*(?:\.\.\.)?([\w$]+)\??(?=\s*[:,)?])/g))
+        yield name;
+}
+
+/*
  * lineIndent
  * The leading whitespace of the line `node` starts on.
  */
@@ -801,6 +816,13 @@ const rules = {
              * The `/** … *\/` comment right before `node` or the statement that declares it, if any.
              */
             const jsdocOf = node => {
+                // `top.NAME =` / `const NAME =`, then the header, then the function
+                const value = node.right ?? node.init;
+                const inner = value && sourceCode.getCommentsBefore(value).at(-1);
+
+                if(inner?.type == 'Block' && inner.value.startsWith('*'))
+                    return inner;
+
                 for(let target = node; target; target = CARRIERS.has(target.parent?.type) ? target.parent : null) {
                     let comments = sourceCode.getCommentsBefore(target);
 
@@ -872,7 +894,11 @@ const rules = {
                     return;
 
                 // `@param {type} name`, `[name=default]` or `name.key` (a destructured part)
-                const listed = [...doc.value.matchAll(/@param\s+(?:\{[^}]*\}\s*)?\[?([\w$]+)/g)].map(([, param]) => param)
+                // …or named in a `@simply name(param:type, …) → result` signature line
+                const listed = [
+                    ...[...doc.value.matchAll(/@param\s+(?:\{[^}]*\}\s*)?\[?(?:\.\.\.)?([\w$]+)/g)].map(([, param]) => param),
+                    ...[...doc.value.matchAll(/@simply\s+(.+)/g)].flatMap(([, line]) => [...simplyParams(line)]),
+                ]
                     , taken = paramNames(fn);
 
                 for(const param of taken)

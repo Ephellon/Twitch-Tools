@@ -38,6 +38,11 @@ let Queue = top.Queue = { balloons: [], bullets: [], bttv_emotes: [], emotes: []
     , NORMAL_MODE = !SPECIAL_MODE
     // Hmm...
     , JUMPED_FRAMES = false
+    /**
+     * What Twitch's own page data says about channels, by lowercase name (`JUMP_DATA[name].stream`, `.title`, …); read
+     * through `STREAMER.jump`, and saved as `JumpedData`.
+     * @type {Object<string, object>}
+     */
     , JUMP_DATA = {}
     , STASH_SAVED = false
     , UP_NEXT_ALLOW_THIS_TAB;
@@ -74,6 +79,10 @@ when.defined(() => {
         Runtime.sendMessage({ action: 'POST_SHARED_DATA', data: { USERNAME, THEME, ANTITHEME, ACTIVITY } });
     });
 
+/**
+ * Records that the page is going away (`top.WINDOW_STATE = 'unloading'`), unless it's only going into the back/forward cache.
+ * @param {PageTransitionEvent} event - Its `persisted` is `true` for the back/forward cache
+ */
 top.onpagehide = ({ persisted }) => {
     top.WINDOW_STATE = (persisted ? document.readyState : 'unloading');
 };
@@ -1551,9 +1560,11 @@ function UnlistedLive(pathname) {
     return SEARCH_CACHE.get(name)?.live ?? false;
 }
 
-// Intializes the extension
-    // Initialize(START_OVER:boolean) → undefined
-// Shared between features and their plugins (src/plugins/); Initialize() assigns them
+/**
+ * Intializes the extension
+ * @simply Initialize(START_OVER:boolean) → undefined
+ * Shared between features and their plugins (src/plugins/); Initialize() assigns them
+ */
 let GLOBAL_EVENT_LISTENERS, EXACT_POINTS_SPENT, LIVE_REMINDERS__LISTING_INTERVAL, STARTED_TIMERS, NOTIFICATION_EVENTS, NOTIFICATION_SOUND, NOTIFIED, AwayModeStatus, InitialVolume, MAINTAIN_VOLUME_CONTROL, STARTED_WATCHING, CURRENT_WATCHTIME_NAME, GET_WATCH_TIME, VideoClips, MASTER_VIDEO;
 
 /**
@@ -1631,6 +1642,12 @@ let Initialize = async(START_OVER = false) => {
 
     const GLOBAL_TWITCH_API = (window.GLOBAL_TWITCH_API ??= {});
 
+    /**
+     * The extension's keyboard and page listeners, by name (`KEYDOWN_ALT_SHIFT_X`, …), kept so each is added once and
+     * can be removed. Starts with Twitch's own shortcuts, which only mark their keys as taken.
+     * @prop {function} KEYDOWN_ALT_X - Twitch's clip shortcut (managed by Twitch)
+     * @prop {function} KEYDOWN_ALT_T - Twitch's theatre-mode shortcut (managed by Twitch)
+     */
     GLOBAL_EVENT_LISTENERS = (window.GLOBAL_EVENT_LISTENERS ??= {
         KEYDOWN_ALT_X: function Clip() {/* Managed by Twitch */},
         KEYDOWN_ALT_T: function Toggle_Theatre_Mode() {/* Managed by Twitch */},
@@ -1696,8 +1713,10 @@ let Initialize = async(START_OVER = false) => {
     }, 250);
 
     top.GetNextStreamer =
-    // Gets the next available channel (streamer)
-        // GetNextStreamer(except:string?) → Object<Channel>
+    /**
+     * Gets the next available channel (streamer)
+     * @simply GetNextStreamer(except:string?) → Object<Channel>
+     */
     function GetNextStreamer(except = '') {
         if(defined(GetNextStreamer.href))
             return {
@@ -1871,8 +1890,10 @@ let Initialize = async(START_OVER = false) => {
     GetNextStreamer.pinnedStreamers = [];
 
     top.SET_PINNED_STREAMERS =
-    // Saves the pins and shows them; `share` tells the other tabs (off for a change another tab sent)
-        // SET_PINNED_STREAMERS(list:array<string>, share:boolean?) → undefined
+    /**
+     * Saves the pins and shows them; `share` tells the other tabs (off for a change another tab sent)
+     * @simply SET_PINNED_STREAMERS(list:array<string>, share:boolean?) → undefined
+     */
     function SET_PINNED_STREAMERS(list, share = true) {
         const imgSize = '70px';
 
@@ -3068,6 +3089,11 @@ let Initialize = async(START_OVER = false) => {
                                     const data = { dailyBroadcastTime: 0, activeDaysPerWeek: 0, usualStartTime: '00:00', usualStopTime: '00:00', daysStreaming: [], dailyStartTimes: {}, dailyStopTimes: {} }
                                         , today = new Date;
 
+                                    /**
+                                     * Day numbers (0 = Sunday) to sorted short names: `getWeekDays(1, 0)` → `['Sun', 'Mon']`.
+                                     * @param {...number} days - The days
+                                     * @returns {string[]}
+                                     */
                                     const getWeekDays = (...days) => days.sort().map(day => ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'][day]);
 
                                     const avgStartTime = [], avgStreamSpan = [], avgStopTime = [], dlyStartTime = {}, dlyStopTime = {};
@@ -4258,6 +4284,9 @@ if(top == window) {
                     }, 1000);
                 } // :SectionLabeling
 
+                /**
+                 * Runs when Twitch moves to another page without a reload: turns the page's features off and starts them again for the new page.
+                 */
                 top.onlocationchange = () => {
                     $warn("[Parent] Re-initializing...");
 

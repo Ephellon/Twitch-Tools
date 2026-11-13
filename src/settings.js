@@ -540,6 +540,10 @@ class CommandMaker {
     }
 }
 
+/**
+ * The Settings page's icons, by name: Twitch's own (from `top.Glyphs`) plus the page's extras, as SVG markup.
+ * @type {Object<string, string>}
+ */
 let Glyphs = {
     // Twitch
     ...top.Glyphs,
@@ -671,17 +675,17 @@ function RedoTimeElements(schedules, scheduleType) {
         // Add buttons per day
         if(defined(days))
             for(const day of days)
-                /**
-                 * Creates and appends a UI element for a single scheduled time slot.
-                 * @param {Object} self - The schedule details containing day, time, duration, and status.
-                 * @param {string} scheduleType - The category of the schedule.
-                 */
                 CreateTimeElement(({ day, time, duration, status }), scheduleType);
         else
             CreateTimeElement(schedule, scheduleType);
     }
 }
 
+/**
+ * Adds the button for one scheduled time slot to its schedule (once: an existing slot is left alone).
+ * @param {object} self - The slot: `day`, `time`, `duration` and `status`
+ * @param {string} scheduleType - Which schedule it belongs to (its `#<type>_schedule` container)
+ */
 function CreateTimeElement(self, scheduleType) {
     let { day, time, duration, status } = self
         , scheduleID = UUID.from(self).value;
@@ -1900,7 +1904,10 @@ $.all('[glyph]').map(element => {
         glyph.setAttribute('style', 'height: inherit; width: inherit; vertical-align: text-bottom');
 });
 
-// Getting the version information
+/**
+ * The latest release's details, fetched once for the version notice (`wasFetched` turns `true` when they arrive).
+ * @type {{ wasFetched: boolean }}
+ */
 let FETCHED_DATA = { wasFetched: false };
 
 (async function(installedFromWebstore) {
@@ -2477,6 +2484,12 @@ when.defined(() => SETTINGS)
                 table.append(tbody);
 
                 const current = [settBytes, liveBytes, dvrBytes, miscBytes].map(B => PERC_IN_USE * (B / total))
+                    /**
+                     * Sums two numbers (for `reduce`).
+                     * @param {number} a - One
+                     * @param {number} b - The other
+                     * @returns {number}
+                     */
                     , add = (a, b) => (a + b)
                     , colors = 'baby-blue live-red baby-gold purple igor-pink'
                         .split(' ')
@@ -2545,6 +2558,11 @@ when.defined(() => SETTINGS)
             unresponsive: 'Respawned (not responding)',
         };
 
+        /**
+         * A table cell holding `text`.
+         * @param {string} text - What it shows
+         * @returns {HTMLTableCellElement}
+         */
         const cell = text => Object.assign(document.createElement('td'), { textContent: text });
 
         body.replaceChildren(...entries.map(({ time, action, url = '', ramUsed, tier, note }) => {
@@ -2804,6 +2822,11 @@ document.body.onload = async() => {
                     return;
 
                 const margin = ['.5rem']
+                    /**
+                     * An element's computed height, in pixels.
+                     * @param {Element} element - The element
+                     * @returns {number}
+                     */
                     , getHeight = element => {
                         let style = getComputedStyle(element)
                             , attributes = ['height']
@@ -2911,10 +2934,12 @@ document.body.onload = async() => {
 
                     Observing:
                     for(const provider of providers) {
-                        // Apply the false status to `dependent` when the `provider` is set to false
-                            // when(provider.checked === false) → dependent.checked = false
-                        // Also apply the changes to `provider` in the opposing manner when `dependent` is set to true
-                            // when(dependent.checked === true) → provider.checked = true
+                        /**
+                         * Apply the false status to `dependent` when the `provider` is set to false
+                         * @simply when(provider.checked === false) → dependent.checked = false
+                         * Also apply the changes to `provider` in the opposing manner when `dependent` is set to true
+                         * @simply when(dependent.checked === true) → provider.checked = true
+                         */
                         const dependents = (provider.getAttribute('dependents') ?? '').split(',');
 
                         provider.setAttribute('dependents', [...dependents, `#${ dependent.id }`].filter(string => string.length).join(','));
