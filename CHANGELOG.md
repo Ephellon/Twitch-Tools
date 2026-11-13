@@ -33,7 +33,6 @@
     - A respawned tab (Recover Pages, RAM Alarms) is a new tab, so per-tab state is lost: the tab's own Lurk state (#65) and a Keep Status pause.
 - [ ] **Search Actions (#79):** after a change from the search bar, the channel page's own Reminder and DVR buttons show the old state until a reload.
 - [ ] **VODs:** on a VOD page the channel reads as live.
-- [ ] **Auto-Claim:** its indicator never changes colour with Twitch's integrity check: a second `top.onintegritychange` (the tooltip's points per hour) replaces the first right away.
 - [ ] **Streak Saver:** a real save works hands-off in v6 (the popup presses play itself; v5 has the same code but no real save yet); the live **Watch** route is only tested on a faked row, not on a real streak. Any save Twitch doesn't answer is logged as "Twitch Integrity Fail", whatever the cause.
 - [ ] **Recording:** Fix recording failures when pre-roll ads play.
 - [ ] **Chat:** Fix chat bullets not registering in the main catcher/reflector.
@@ -44,6 +43,7 @@
 ## Release History
 
 ### Version 5.35.\*
+- [`5.35.5.45`](https://github.com/Ephellon/Twitch-Tools/releases/tag/5.35.5.45) — Auto-Claim's indicator changes colour with Twitch's integrity check again
 - [`5.35.5.44`](https://github.com/Ephellon/Twitch-Tools/releases/tag/5.35.5.44) — More robust fix for #90, all reserved pages are ignored
 - [`5.35.5.43`](https://github.com/Ephellon/Twitch-Tools/releases/tag/5.35.5.43) — Fixed #90, VODs are no longer affected by Live Reminders; fixed CSP issue in core.js
 - [`5.35.5.42`](https://github.com/Ephellon/Twitch-Tools/releases/tag/5.35.5.42) — Fixed #89, the sidenav may open up to once per page load

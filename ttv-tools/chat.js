@@ -235,11 +235,12 @@ let Chat__Initialize = async(START_OVER = false) => {
                 button.tooltip.innerHTML = Glyphs.modify('channelpoints', { style: `height: 1.5rem; width: 1.5rem; vertical-align: bottom` }) + ` ${ ((120 + (200 * +enabled)) * CHANNEL_POINTS_MULTIPLIER) | 0 } / h`;
             };
 
-            top.onintegritychange = okay =>
+            // Follows Twitch's integrity check: the indicator's colour and the tooltip's points per hour, in one handler
+            // (a second assignment used to replace the first, so the indicator never changed colour)
+            top.onintegritychange = okay => {
                 $('#tt-auto-claim-indicator')?.modStyle(`background-color:${ ['#ff4f4d','#00ad96'][+okay] }`);
-
-            top.onintegritychange = okay =>
                 button.tooltip.innerHTML = Glyphs.modify('channelpoints', { style: `height: 1.5rem; width: 1.5rem; vertical-align: bottom` }) + ` ${ ((120 + (200 * +okay)) * CHANNEL_POINTS_MULTIPLIER) | 0 } / h`;
+            };
 
             button.container.onmouseenter ??= event => {
                 button.icon?.setAttribute('hover', true);
