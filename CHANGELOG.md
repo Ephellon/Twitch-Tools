@@ -21,12 +21,16 @@
 ### Bug Fixes & Technical Debt
 - [ ] **Up Next:**
     - Fix irregular ordering (Sortable `onUpdate` logic).
+    - The followed-channels list stays empty: Twitch's side bar no longer marks its "followed" section, so Up Next can't pick from it.
+    - Up Next goes to an offline channel at the head of the queue first; Stay Live then moves on to the next live one.
     - Prevent dead channels from being re-added.
     - Resolve "Up Next Owner" tab synchronization and URL mimicking.
     - The Pin list's unpinned names are hard to read (dark on dark); not reproduced in a live test, needs a screenshot and the theme used.
     - The Pin list can show a stream title (from a lookup) as a channel.
     - The channel list (`ALL_CHANNELS`) can hold only a few channels and one without a name, so Pins can't tell which channels are live (the first pin is used even when offline) and show no avatars.
 - [ ] **Performance:**
+    - Auto-Focus: after a job restart its capture timers stack (up to ~20 captures a second), and its capture history grows without limit.
+    - Clicking a tab on a channel page (Home → About) reloads the whole page.
     - Fix background script stalls when tabs disappear.
     - Resolve memory leaks related to Hardware Acceleration and excessive iframes.
     - Fix CPU spikes (>100%) during memory cleanup.
