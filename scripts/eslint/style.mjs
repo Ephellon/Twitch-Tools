@@ -782,6 +782,177 @@ const rules = {
             };
         },
     },
+    'jsdoc': {
+        meta: { type: 'suggestion', schema: [], messages: {
+            missing: 'Give `{{ name }}` a JSDoc header (`/** … */`): it is {{ why }}.',
+            param: 'The JSDoc header of `{{ name }}` has no `@param` for `{{ param }}`.',
+            extra: 'The JSDoc header of `{{ name }}` lists `@param {{ param }}`, which it doesn\'t take.',
+        } },
+        create(context) {
+            const { sourceCode } = context;
+
+            // Statements that carry a declaration's comment: `const x = …`, `export …`, `window.x = …;`
+            const CARRIERS = new Set(['VariableDeclarator', 'VariableDeclaration', 'ExportNamedDeclaration', 'ExportDefaultDeclaration', 'AssignmentExpression', 'ExpressionStatement']);
+            const GLOBALS = new Set(['window', 'top', 'globalThis', 'self']);
+            const DOCUMENTED = new Set(['FunctionExpression', 'ArrowFunctionExpression', 'ClassExpression', 'ObjectExpression']);
+
+            /*
+             * jsdocOf
+             * The `/** … *\/` comment right before `node` or the statement that declares it, if any.
+             */
+            const jsdocOf = node => {
+                for(let target = node; target; target = CARRIERS.has(target.parent?.type) ? target.parent : null) {
+                    let comments = sourceCode.getCommentsBefore(target);
+
+                    // Comma-first lists: `, name = …` keeps its comment above the comma
+                    const before = sourceCode.getTokenBefore(target);
+
+                    if(!comments.length && before?.value == ',')
+                        comments = sourceCode.getCommentsBefore(before);
+
+                    const last = comments.at(-1);
+
+                    if(last?.type == 'Block' && last.value.startsWith('*'))
+                        return last;
+
+                    if(comments.length)
+                        return null;
+                }
+
+                return null;
+            };
+
+            const topLevel = node => !sourceCode.getAncestors(node).some(ancestor => FUNCTIONS.has(ancestor.type) || ancestor.type == 'ClassBody');
+
+            // Read from another function than the one that declares it
+            const sharedAcrossFunctions = declarator => {
+                const [variable] = sourceCode.getDeclaredVariables(declarator);
+
+                if(!variable)
+                    return false;
+
+                const home = variable.scope.variableScope;
+
+                return variable.references.some(reference => reference.from.variableScope !== home);
+            };
+
+            const why = node => {
+                if(topLevel(node))
+                    return 'top-level';
+
+                if(sharedAcrossFunctions(node))
+                    return 'used in more than one function';
+
+                return null;
+            };
+
+            const paramNames = fn => fn.params.map(param => {
+                if(param.type == 'Identifier')
+                    return param.name;
+
+                if(param.type == 'AssignmentPattern' && param.left.type == 'Identifier')
+                    return param.left.name;
+
+                if(param.type == 'RestElement' && param.argument.type == 'Identifier')
+                    return param.argument.name;
+
+                return null;
+            });
+
+            const check = (node, fn, name, reason) => {
+                if(!reason)
+                    return;
+
+                const doc = jsdocOf(node);
+
+                if(!doc)
+                    return context.report({ node, messageId: 'missing', data: { name, why: reason } });
+
+                if(!fn || !FUNCTIONS.has(fn.type))
+                    return;
+
+                // `@param {type} name`, `[name=default]` or `name.key` (a destructured part)
+                const listed = [...doc.value.matchAll(/@param\s+(?:\{[^}]*\}\s*)?\[?([\w$]+)/g)].map(([, param]) => param)
+                    , taken = paramNames(fn);
+
+                for(const param of taken)
+                    if(param && !listed.includes(param))
+                        context.report({ node, messageId: 'param', data: { name, param } });
+
+                // Destructured parameters are documented under any name: only check lists of plain names
+                if(taken.every(defined => defined))
+                    for(const param of new Set(listed))
+                        if(!taken.includes(param))
+                            context.report({ node, messageId: 'extra', data: { name, param } });
+            };
+
+            return {
+                FunctionDeclaration(node) {
+                    if(node.id)
+                        check(node, node, node.id.name, topLevel(node) ? 'top-level' : (sharedAcrossFunctions(node) ? 'used in more than one function' : null));
+                },
+
+                ClassDeclaration(node) {
+                    if(node.id)
+                        check(node, null, node.id.name, why(node));
+                },
+
+                VariableDeclarator(node) {
+                    if(node.id.type != 'Identifier' || !DOCUMENTED.has(node.init?.type))
+                        return;
+
+                    // Objects: the shared ones at the top of a file
+                    if(node.init.type == 'ObjectExpression')
+                        return check(node, null, node.id.name, topLevel(node) ? 'a top-level object' : null);
+
+                    check(node, node.init, node.id.name, why(node));
+                },
+
+                // `window.NAME = …`, `top.NAME = …`: global by definition
+                AssignmentExpression(node) {
+                    const { left, right } = node;
+
+                    if(left.type != 'MemberExpression' || left.computed || !GLOBALS.has(left.object.name) || !DOCUMENTED.has(right?.type))
+                        return;
+
+                    // `window.X = X = …` is documented where X is
+                    if(node.parent.type == 'VariableDeclarator' || node.parent.type == 'AssignmentExpression')
+                        return;
+
+                    check(node, right, `${ left.object.name }.${ left.property.name }`, 'global');
+                },
+
+                // Getters and methods of a top-level or global object (`STREAMER.name`, `Cache.load`)
+                Property(node) {
+                    const object = node.parent;
+
+                    if(object.type != 'ObjectExpression' || !(node.kind != 'init' || node.method || FUNCTIONS.has(node.value?.type)))
+                        return;
+
+                    // The object's name: `const X = {…}`, `X = window.X = {…}`, `window.X = {…}`
+                    let holder = object.parent
+                        , owner = null
+                        , global = false;
+
+                    for(; holder?.type == 'AssignmentExpression' || holder?.type == 'VariableDeclarator'; holder = holder.parent) {
+                        const target = holder.type == 'VariableDeclarator' ? holder.id : holder.left
+                            , onGlobal = target.type == 'MemberExpression' && !target.computed && GLOBALS.has(target.object.name);
+
+                        global ||= onGlobal;
+                        owner ??= target.type == 'Identifier' ? target.name : (onGlobal ? target.property.name : null);
+                    }
+
+                    // Published on `window` (`window.STREAMER`), or declared at the top of a file
+                    if(!owner || !(global || topLevel(object)))
+                        return;
+
+                    const key = node.key.name ?? node.key.value;
+
+                    check(node, node.kind == 'init' ? node.value : null, `${ owner }.${ key }`, 'a member of a top-level object');
+                },
+            };
+        },
+    },
 };
 
 export default { meta: { name: 'ttv-style' }, rules };

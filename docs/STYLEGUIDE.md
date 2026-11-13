@@ -144,7 +144,14 @@ Leave room to breathe. All of these are **lint, fix** (`padding-line-between-sta
 - Helpers used by only one function are defined inside it; shared helpers go in `src/lib` (or `core.js`/`utils.js` for page-scope helpers).
 
 ### Header comments
-- Every named or top-level function, plugin hook and exported helper has a JSDoc header. It says what the function does, what it takes and what it returns, at a high level. Inline arrows and callbacks don't need one.
+- These have a JSDoc header (`/** … */`). **lint** (`ttv/jsdoc`); `npm run docs:gaps` lists what's missing, `src/ext/` included:
+  - every top-level function, class and object;
+  - every named function used by more than one function (declared in one place, called from another);
+  - everything published on `window`/`top`/`globalThis` (`window.STREAMER = …`, `top.SET_PINNED_STREAMERS = …`);
+  - every getter and method of those objects (`STREAMER.name`, `Cache.load`);
+  - plugin hooks and exported helpers.
+- Not needed: inline arrows and callbacks, helpers used by one function only, tests and fixtures, vendored libraries (`localforage`, `sortable`, `resemble`).
+- A function's header says what it does, at a high level, then `@param {type} name - meaning` for each parameter (optional ones as `[name=default]`), `@returns {type} meaning` unless it returns nothing, and `@throws` when it throws on purpose. The `@param` names match the parameters (**lint**); a destructured parameter is documented by any name, with its parts as `name.part`.
   ```javascript
   /**
    * Waits for `condition` to return an element.
@@ -153,6 +160,21 @@ Leave room to breathe. All of these are **lint, fix** (`padding-line-between-sta
    * @returns {Promise<Element|null>} The element, or `null` on timeout
    */
   ```
+- An object's header says what it holds and who reads it. Each getter says what it returns and where the value comes from, with `@type`:
+  ```javascript
+  /**
+   * The channel being watched. Read by nearly every feature; the values are live (each getter reads the page).
+   * @type {Channel}
+   */
+  STREAMER = window.STREAMER = {
+      /**
+       * The channel's name: from the channel-info link, else the cached Search result, else the URL.
+       * @type {string}
+       */
+      get name() { … },
+  ```
+- A shape used in more than one file (`Channel`, `Recording`, `Reward`, `PluginContext`) is a `@typedef` in `src/lib/types.js`; headers refer to it by name instead of repeating it.
+- Headers use the same plain English as user-facing text: say what and why, not how; don't restate the code.
 
 ### Regular expression callbacks
 - A `replace` callback lists every positional parameter, used or not, named `$0, $1…$n, $$, $_` (match, groups, offset, input). **lint, fix** (`ttv/regex-callback-params`)

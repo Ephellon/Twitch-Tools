@@ -258,7 +258,8 @@ export default [
         },
         linterOptions: { reportUnusedDisableDirectives: 'off' },
         plugins: { '@stylistic': stylistic, ttv: house },
-        rules: { ...legacy, ...style },
+        // JSDoc headers are for src/ (docs/STYLEGUIDE.md, Header comments); scripts/ keeps its short `/* name */` notes
+        rules: { ...legacy, ...style, 'ttv/jsdoc': 'warn' },
     },
     ...Object.entries(sharedGlobals).map(([file, names]) => ({
         files: [`${ ROOT }/${ file }`],
@@ -272,6 +273,11 @@ export default [
         // ES modules bundled into lib.js (plugins included); they share the page scope of the scripts loaded alongside it
         files: [`${ ROOT }/lib/**/*.js`, `${ ROOT }/plugins/**/*.js`, `${ ROOT }/settings/**/*.js`],
         languageOptions: { sourceType: 'module', globals: sharedGlobals['lib.js'] },
+    },
+    {
+        // Tests and fixtures needn't document their helpers (docs/STYLEGUIDE.md, Header comments)
+        files: [`${ ROOT }/**/tests/**`, `${ ROOT }/**/*.test.js`, `${ ROOT }/**/*.test.mjs`],
+        rules: { 'ttv/jsdoc': 'off' },
     },
     {
         // The DSL runs both as content scripts and under Node (its test runner)

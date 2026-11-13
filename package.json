@@ -4,6 +4,7 @@
     "scripts": {
         "build": "node scripts/build.mjs",
         "lint": "eslint",
+        "docs:gaps": "node scripts/docs-gaps.mjs",
         "format": "eslint --fix",
         "test": "node src/dsl/tests/run.js && node src/dsl/host/host-conformance.test.js && node --no-warnings src/dsl/host/extension-adapter.test.mjs && node --test \"src/lib/tests/*.test.mjs\" \"src/settings/tests/*.test.mjs\"",
         "lint:firefox": "web-ext lint --source-dir dist/firefox",
