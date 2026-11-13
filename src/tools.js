@@ -2018,6 +2018,8 @@ let Initialize = async(START_OVER = false) => {
      * @prop {boolean} main      - Returns whether the stream is the user's Prime Subscription
      * @prop {number} mark       - Returns an activity score based on the channel's tags
      * @prop {string} name       - the channel's username
+     * @prop {function} onhost   - Set it to a function to call when the channel hosts another (each set adds one)
+     * @prop {function} onraid   - Set it to a function to call when the channel raids another (each set adds one)
      * @prop {boolean} paid      - Is the user  subscribed
      * @prop {boolean} ping      - Does the user have notifications on
      * @prop {boolean} plug      - Is there an advertisement running
@@ -2026,6 +2028,7 @@ let Initialize = async(START_OVER = false) => {
      * @prop {boolean} redo      - Is the channel streaming a rerun (VOD)
      * @prop {array} shop        - Returns a list (sorted, ascending price) of the channel's rewards
      * @prop {number} sole       - The channel's ID
+     * @prop {string} song       - The song playing on stream, from Twitch's soundtrack banner (`''` when none)
      * @prop {array} tags        - Tags of the current stream
      * @prop {string} team       - The team the channel is affiliated with (if applicable)
      * @prop {number} time       - How long has the channel been live

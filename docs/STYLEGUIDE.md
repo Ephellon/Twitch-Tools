@@ -173,6 +173,7 @@ Leave room to breathe. All of these are **lint, fix** (`padding-line-between-sta
        */
       get name() { … },
   ```
+- An object whose header lists its members as `@prop {type} name - meaning` (as `STREAMER`'s does) needs no header on each member; `ttv/jsdoc` reads the list.
 - A shape used in more than one file (`Channel`, `Recording`, `Reward`, `PluginContext`) is a `@typedef` in `src/lib/types.js`; headers refer to it by name instead of repeating it.
 - Headers use the same plain English as user-facing text: say what and why, not how; don't restate the code.
 
