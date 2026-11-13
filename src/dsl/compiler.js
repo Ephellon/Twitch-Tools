@@ -22,6 +22,10 @@
 
 ;
 
+/**
+ * The DSL's shared namespace: each DSL file (tokens, tokenizer, parser, compiler, runtime…) adds its part to it.
+ * @type {object}
+ */
 globalThis.TTV_DSL ??= {};
 
 if(typeof require === 'function' && typeof module === 'object') {
@@ -302,10 +306,19 @@ if(typeof require === 'function' && typeof module === 'object') {
         return false;
     };
 
-    /** Coerces a value into something indexable. */
+    /**
+     * Coerces a value into something indexable.
+     * @param {*} value - Value to coerce
+     * @returns {Array} The value as an array
+     */
     const toList = (value) => (Array.isArray(value) ? value : (null == value ? [] : [value]));
 
-    /** Applies a 0-based index, counting from the end when negative. */
+    /**
+     * Applies a 0-based index, counting from the end when negative.
+     * @param {Array} list - The list to index
+     * @param {number} index - The index
+     * @returns {*} The value at the index, or `undefined`
+     */
     const at = (list, index) => {
         const items = toList(list);
 
@@ -348,7 +361,12 @@ if(typeof require === 'function' && typeof module === 'object') {
         return build(node, scope);
     };
 
-    /** Compiles a list of nodes at the same scope. */
+    /**
+     * Compiles a list of nodes at the same scope.
+     * @param {Node[]} [nodes] - Nodes to compile
+     * @param {Object} scope - The current scope
+     * @returns {Function[]} The compiled closures
+     */
     const compileAll = (nodes, scope) => (nodes ?? []).map(entry => compileNode(entry, scope));
 
     /** Opens a nested lexical scope — one deeper subject slot.
@@ -401,12 +419,16 @@ if(typeof require === 'function' && typeof module === 'object') {
         }
     };
 
-    /** Reads a variable by walking outward from the scope it was referenced in.
+    /**
+     * Reads a variable by walking outward from the scope it was referenced in.
      *
      * Slots are shared by reference between sibling subtrees (see `runtime.createContext`),
      * so an outward walk is all that separates "visible to my descendants" from "visible to
      * my later siblings too" — the `+scope` modes differ only in which slot they write to.
-     * @return {*} the bound value, or `UNBOUND`
+     * @param {Object} context - The current execution context
+     * @param {number} depth - Scope depth to start the search
+     * @param {string} name - Variable name
+     * @returns {*} The bound value, or `UNBOUND`
      */
     const readVariable = (context, depth, name) => {
         const envs = context.envs;
@@ -424,12 +446,17 @@ if(typeof require === 'function' && typeof module === 'object') {
         return UNBOUND;
     };
 
-    /** Writes a variable into a fixed slot.
+    /**
+     * Writes a variable into a fixed slot.
      *
      * The slot index comes from the compiler, but the context at hand may be shallower than
      * the scope the binding was compiled in — a `where` filter reached through a different
      * path, say — so the index is clamped rather than trusted. A binding always lands
      * somewhere real.
+     * @param {Object} context - The current execution context
+     * @param {number} slot - Slot index
+     * @param {string} name - Variable name
+     * @param {*} value - Value to bind
      */
     const bindVariable = (context, slot, name, value) => {
         const envs = context.envs;
@@ -502,7 +529,13 @@ if(typeof require === 'function' && typeof module === 'object') {
         },
     });
 
-    /** Runs a list of statement closures in order, charging one step each. */
+    /**
+     * Runs a list of statement closures in order, charging one step each.
+     * @param {Function[]} statements - Statements to run
+     * @param {Object} runtime - The DSL runtime
+     * @param {Object} loc - Source location
+     * @returns {Function} The sequence closure
+     */
     const sequence = (statements, runtime, loc) => async(context) => {
         for(const statement of statements) {
             if(context.signal.aborted)
@@ -514,8 +547,14 @@ if(typeof require === 'function' && typeof module === 'object') {
         }
     };
 
-    /** Wraps a detached loop or handler so a fault is reported once and the script stops
-     * rather than surfacing as an unhandled rejection. */
+    /**
+     * Wraps a detached loop or handler so a fault is reported once and the script stops
+     * rather than surfacing as an unhandled rejection.
+     * @param {Object} runtime - The DSL runtime
+     * @param {Object} context - The execution context
+     * @param {Object} loc - Source location
+     * @returns {Function} The guard closure
+     */
     const guard = (runtime, context, loc) => (error) => {
         const failure = (error instanceof DSLError ? error : new DSLRuntimeError(String(error?.message ?? error), loc));
 
@@ -684,7 +723,13 @@ if(typeof require === 'function' && typeof module === 'object') {
                 , body = compileNode(node.body, inner(scope))
                 , { label } = node;
 
-            /** @return {Promise<Boolean>} false when the loop should stop */
+            /**
+             * The loop body executed for each item.
+             * @param {Object} context - The execution context
+             * @param {*} value - The current item
+             * @param {number} index - The current index
+             * @returns {Promise<boolean>} `false` when the loop should stop
+             */
             const iterate = async(context, value, index) => {
                 runtime.step(node.loc);
 
