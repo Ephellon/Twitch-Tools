@@ -17,6 +17,10 @@
 
 ;
 
+/**
+ * The DSL's shared namespace.
+ * @type {object}
+ */
 globalThis.TTV_DSL ??= {};
 
 if(typeof require === 'function' && typeof module === 'object') {
@@ -84,7 +88,14 @@ if(typeof require === 'function' && typeof module === 'object') {
         }
     };
 
-    /** Appends a span, merging it into the previous one when the type repeats. */
+    /**
+     * Appends a span, merging it into the previous one when the type repeats.
+     * @param {Array} spans - The list of spans
+     * @param {string} type - The span type
+     * @param {string} source - The source text
+     * @param {number} start - Start offset
+     * @param {number} end - End offset
+     */
     const push = (spans, type, source, start, end) => {
         if(end <= start)
             return;
@@ -101,7 +112,13 @@ if(typeof require === 'function' && typeof module === 'object') {
         spans.push({ type, text: source.slice(start, end), start, end });
     };
 
-    /** The span type for a plain (non-template, non-sigil) token. */
+    /**
+     * The span type for a plain (non-template, non-sigil) token.
+     * @param {object} token - The token to check
+     * @param {object} verbs - The set of active verbs
+     * @param {number} lineStart - The offset of the line start
+     * @returns {string} The span type
+     */
     const typeOf = (token, verbs, lineStart) => {
         if(KEYWORD_TYPES.has(token.type) && /^[a-z]/.test(token.lexeme ?? ''))
             return 'keyword';
@@ -254,7 +271,15 @@ if(typeof require === 'function' && typeof module === 'object') {
         return new Error("too many open brackets");
     };
 
-    /** A template: its text as `template`, each `${ }` as punctuation around code. */
+    /**
+     * A template: its text as `template`, each `${ }` as punctuation around code.
+     * @param {string} source - The source text
+     * @param {number} start - Start offset
+     * @param {number} end - End offset
+     * @param {object} token - The template token
+     * @param {object} verbs - The set of active verbs
+     * @param {Array} spans - The list of spans
+     */
     const template = (source, start, end, token, verbs, spans) => {
         let at = start
             , offset = start - token.loc.start;

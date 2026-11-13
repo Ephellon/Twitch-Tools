@@ -25,6 +25,10 @@
 
 ;
 
+/**
+ * The DSL's shared namespace.
+ * @type {object}
+ */
 globalThis.TTV_DSL ??= {};
 
 if(typeof require === 'function' && typeof module === 'object')
@@ -198,7 +202,12 @@ if(typeof require === 'function' && typeof module === 'object')
      */
     const BLOCKED_STATICS = Object.freeze(new Set(['prototype', 'constructor', 'length', 'name', 'caller', 'arguments']));
 
-    /** How big an array-building call's input may be. */
+    /**
+     * Stops an array-building call whose input is too big: more than `MAX_ARRAY_FROM` items (or characters).
+     * @param {string} label - The call's name, for the error (`&label`)
+     * @param {*} value - Its input: a string, a list, or anything with a `length` or `size`
+     * @throws {DSLRuntimeError} When the input is too big
+     */
     const checkArraySize = (label, value) => {
         const size = (null == value ? 0 : (typeof value === 'string' ? value.length : Number(value.length ?? value.size ?? 0)));
 
@@ -216,7 +225,7 @@ if(typeof require === 'function' && typeof module === 'object')
     /** Copies a global's static members, minus {@link BLOCKED_STATICS}: constants by value,
      * methods as wrappers called on their owner.
      * @param {String} label - the global's name, for {@link GUARDED_STATICS}
-     * @param {Object} owner
+     * @param {object} owner
      * @return {Object}
      */
     const expose = (label, owner) => {
@@ -249,7 +258,7 @@ if(typeof require === 'function' && typeof module === 'object')
         Array: expose('Array', Array),
     });
 
-    /** @param {Object} object @param {String} key @return {Boolean} an own property only */
+    /** @param {object} object @param {String} key @return {Boolean} an own property only */
     const owns = (object, key) => Object.prototype.hasOwnProperty.call(object, key);
 
     /** Property names a host path may never traverse. Not a substitute for the host simply
@@ -258,7 +267,8 @@ if(typeof require === 'function' && typeof module === 'object')
      * to do, so it is refused outright. */
     const FORBIDDEN_SEGMENTS = Object.freeze(new Set(['__proto__', 'prototype', 'constructor']));
 
-    /** `<text> %… <replacement>` — trim, then replace matching runs.
+    /**
+     * `<text> %… <replacement>` — trim, then replace matching runs.
      *
      * Three rules, all recorded in SPEC §5.9:
      *
@@ -271,10 +281,11 @@ if(typeof require === 'function' && typeof module === 'object')
      *    opt-in and belongs in the replacement itself: `% '·'` yields `a·b` and `% ' · '`
      *    yields `a · b`. An operator that quietly added spaces would be impossible to turn
      *    off.
-     * @param {String|Array<String>} value - already rendered by the caller
-     * @param {Array<String>} letters - the class run; empty means {@link PERCENT_DEFAULT}
-     * @param {String} replacement
-     * @return {String}
+     * @param {string|string[]} value - already rendered by the caller
+     * @param {string[]} letters - the class run; empty means {@link PERCENT_DEFAULT}
+     * @param {string} replacement - The replacement text
+     * @param {object} loc - Source location
+     * @returns {string}
      */
     const percent = (value, letters, replacement, loc) => {
         // A list has nothing to replace *within*; joining is the only sensible reading, and
@@ -475,7 +486,7 @@ if(typeof require === 'function' && typeof module === 'object')
      *
      * Channels are plain records; everything a script can read off `#` or `/name` is just a
      * property. Enough to drive the language, and nothing more.
-     * @param {Object} [options]
+     * @param {object} [options]
      * @param {Object<String, Object>} [options.channels]
      * @param {String} [options.current] - the channel `#` refers to
      * @return {Object}
@@ -500,7 +511,7 @@ if(typeof require === 'function' && typeof module === 'object')
                 current = name;
             },
 
-            /** @param {String} name @param {Object} record @return {Object} */
+            /** @param {String} name @param {object} record @return {Object} */
             define(name, record) {
                 const entry = Object.assign({ name, live: false }, record);
 
@@ -556,11 +567,17 @@ if(typeof require === 'function' && typeof module === 'object')
         },
     });
 
-    /** Shared body of `POST` / `REPLY`.
+    /**
+     * Shared body of `POST` / `REPLY`.
      *
      * A blank message is dropped rather than sent — the mockup's `REPLY \`\`` is a real
      * pattern, and Twitch would reject it anyway.
-     * @return {Boolean} whether anything was sent
+     * @param {object} sink - The delivery sink
+     * @param {string} verb - The delivery verb ('POST' or 'REPLY')
+     * @param {object} context - The execution context
+     * @param {*} value - The message value
+     * @param {string|null} to - Target recipient
+     * @returns {boolean} Whether anything was sent
      */
     const deliver = (sink, verb, context, value, to) => {
         const text = (null == value ? '' : String(value));
@@ -577,15 +594,15 @@ if(typeof require === 'function' && typeof module === 'object')
     };
 
     /** Builds the object a compiled script executes against.
-     * @param {Object} [options]
+     * @param {object} [options]
      * @param {Object<String, Object>} [options.realms] - extra realms, merged over `TWITCH`
      * @param {Object<String, Function>} [options.verbs] - extra verbs, merged over the defaults
      * @param {Object<String, *>} [options.constants] - values bare identifiers resolve to
-     * @param {Object} [options.clock] - `{ now, setTimeout, clearTimeout }`
+     * @param {object} [options.clock] - `{ now, setTimeout, clearTimeout }`
      * @param {Function} [options.random] - returns `[0, 1)`
-     * @param {Object} [options.logger] - `{ log, warn, error }`
+     * @param {object} [options.logger] - `{ log, warn, error }`
      * @param {{ steps: Number, wallMs: Number }} [options.limits]
-     * @param {Object} [options.jsBindings] - the object `&Path.fn()` walks. **Empty by
+     * @param {object} [options.jsBindings] - the object `&Path.fn()` walks. **Empty by
      *   default**, deliberately: a script naming `&datetime.now` should fail as loudly as one
      *   naming `DISCORD` until the host has decided to expose it.
      * @param {Object<String, String>} [options.jsPermissions] - dotted path -> required
@@ -628,6 +645,12 @@ if(typeof require === 'function' && typeof module === 'object')
                 throw new DSLRuntimeError(`A host binding may not be called \`${ name }\`; \`&${ name }.*\` is the built-in`);
 
         const unmapped = []
+            /**
+             * Recursively collects all host calls and their paths.
+             * @param {*} value - The object to scan
+             * @param {string} path - Current path
+             * @param {number} depth - Current recursion depth
+             */
             , collect = (value, path, depth) => {
                 if(typeof value === 'function') {
                     if(!owns(jsPermissions, path))
@@ -681,7 +704,7 @@ if(typeof require === 'function' && typeof module === 'object')
              * Elapsed time comes from `wallClock`, never from `clock`: `clock` is the
              * script's own sense of time and a test moves it in five-minute jumps, which
              * has nothing to do with how long the handler actually ran.
-             * @param {Object} [loc]
+             * @param {object} [loc]
              * @throws {DSLLimitError}
              */
             step(loc) {
@@ -724,7 +747,7 @@ if(typeof require === 'function' && typeof module === 'object')
 
             /** Waits, unless the script is already stopping.
              * @param {Number} milliseconds
-             * @param {Object} signal - `{ aborted }`
+             * @param {object} signal - `{ aborted }`
              * @return {Promise<Boolean>} false when the wait was cut short
              */
             sleep(milliseconds, signal) {
@@ -746,7 +769,12 @@ if(typeof require === 'function' && typeof module === 'object')
                 });
             },
 
-            /** @param {Array} items @return {*} one item, chosen with the injected source */
+            /**
+             * Picks a random item from the list.
+             * @param {Array} items - The list to pick from
+             * @param {object} loc - Source location
+             * @returns {*} One item, chosen with the injected source
+             */
             pick(items, loc) {
                 if(!Array.isArray(items) || !items.length)
                     throw new DSLRuntimeError('`any from` was given nothing to choose from', loc);
@@ -793,7 +821,7 @@ if(typeof require === 'function' && typeof module === 'object')
             },
 
             /** Delivers an event to every live `await`.
-             * @param {Object} event
+             * @param {object} event
              * @return {Promise<void>}
              */
             async dispatch(event) {
@@ -808,9 +836,9 @@ if(typeof require === 'function' && typeof module === 'object')
 
             /** Calls a verb.
              * @param {String} name
-             * @param {Object} context
+             * @param {object} context
              * @param {*} value
-             * @param {Object} [loc]
+             * @param {object} [loc]
              * @return {Promise<*>}
              */
             async invokeVerb(name, context, value, loc) {
@@ -844,8 +872,8 @@ if(typeof require === 'function' && typeof module === 'object')
              * `+eval:calc` must not grant `eval`, because the narrow spelling is the one a
              * cautious author reached for on purpose.
              * @param {String} name
-             * @param {Object} context
-             * @param {Object} [loc]
+             * @param {object} context
+             * @param {object} [loc]
              * @throws {DSLPermissionError}
              */
             requirePermission(name, context, loc) {
@@ -868,7 +896,7 @@ if(typeof require === 'function' && typeof module === 'object')
             /** Checks that a `using` header's grant is on the list. Called by the compiler,
              * so a typo stops the script before anything runs.
              * @param {String} grant - without the `+`
-             * @param {Object} [loc]
+             * @param {object} [loc]
              * @throws {DSLPermissionError}
              */
             checkGrant(grant, loc) {
@@ -896,8 +924,8 @@ if(typeof require === 'function' && typeof module === 'object')
              * that would most obviously have wanted one.
              * @param {Array<String>} path
              * @param {Array<*>} args
-             * @param {Object} context
-             * @param {Object} [loc]
+             * @param {object} context
+             * @param {object} [loc]
              * @return {*}
              */
             invokeJS(path, args, context, loc) {
@@ -1009,13 +1037,25 @@ if(typeof require === 'function' && typeof module === 'object')
      * `envs[parentDepth]` lands in one every sibling subtree is already holding — which is
      * precisely "visible to my later siblings too", achieved without a single scope-chain
      * walk at runtime.
-     * @param {Object} runtime
-     * @param {Object} seed
+     * @param {object} runtime
+     * @param {object} seed
      * @return {Object}
      */
     const createContext = (runtime, { subject, channel, realm, permissions = [] }) => {
         const signal = createSignal();
 
+        /**
+         * Creates a context object.
+         * @param {Array} subjects - Subjects array
+         * @param {Array} envs - Environment array
+         * @param {object} currentChannel - Current channel
+         * @param {object} currentRealm - Current realm
+         * @param {object} granted - Granted permissions
+         * @param {object} hold - Hold object
+         * @param {string} route - Current route
+         * @param {number} [callDepth=0] - Current call depth
+         * @returns {object} The context object
+         */
         const make = (subjects, envs, currentChannel, currentRealm, granted, hold, route, callDepth = 0) => ({
             runtime,
             signal,
@@ -1045,7 +1085,7 @@ if(typeof require === 'function' && typeof module === 'object')
 
             /** Opens a nested lexical scope.
              * @param {*} value - the new subject
-             * @param {Object} [options]
+             * @param {object} [options]
              * @return {Object}
              */
             child(value, { channel: nextChannel, realm: nextRealm, permissions: nextPermissions, hold: nextHold, route: nextRoute } = {}) {
