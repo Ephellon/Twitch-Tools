@@ -142,6 +142,8 @@ plugin({
      */
     enabled() {
         return true
+            // Not on Twitch's own pages, VODs included (#90)
+            && !RESERVED_TWITCH_PATHNAMES.test(location.pathname)
             && (false
                 || nullish(Settings.live_reminders)
                 || parseBool(Settings.live_reminders)

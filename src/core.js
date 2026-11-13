@@ -2814,9 +2814,15 @@ __STATIC__: {
         if(JobReason?.unlike('default'))
             console.log(`Registering job (${ JobName }): ${ JobReason }`);
 
+        const handler = Handlers[JobName];
+
+        // A string handler would be eval'd by setInterval/setTimeout, which the extension's CSP blocks
+        if(typeof handler !== 'function')
+            throw new TypeError(`Job handler for "${ JobName }" is not a function: received "${ typeof handler }"`);
+
         return Jobs[JobName] ??= Timers[JobName] > 0
-            ? setInterval(Handlers[JobName], Timers[JobName])
-            : -setTimeout(Handlers[JobName], -Timers[JobName]);
+            ? setInterval(handler, Timers[JobName])
+            : -setTimeout(handler, -Timers[JobName]);
     }
     Handlers.__reasons__.set('RegisterJob', UUID.from(RegisterJob).value);
 
