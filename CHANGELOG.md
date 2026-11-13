@@ -37,7 +37,6 @@
 - [ ] **Streak Saver:** a real save works hands-off (the popup presses play itself); the live **Watch** route is only tested on a faked row, not on a real streak. Any save Twitch doesn't answer is logged as "Twitch Integrity Fail", whatever the cause.
 - [ ] **Recording:** Fix recording failures when pre-roll ads play.
 - [ ] **Chat:** Fix chat bullets not registering in the main catcher/reflector.
-- [ ] **Documentation:** Complete JSDoc for `polyfills.js`, `tools.js`, `chat.js`, `player.js`, `glyphs.js`, and `settings.js`.
 
 ---
 
