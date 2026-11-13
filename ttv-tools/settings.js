@@ -3002,10 +3002,12 @@ document.body.onload = async() => {
 
                     Observing:
                     for(let provider of providers) {
-                        // Apply the false status to `dependent` when the `provider` is set to false
-                            // when(provider.checked === false) → dependent.checked = false
-                        // Also apply the changes to `provider` in the opposing manner when `dependent` is set to true
-                            // when(dependent.checked === true) → provider.checked = true
+                        /**
+                         * Apply the false status to `dependent` when the `provider` is set to false
+                         * @simply when(provider.checked === false) → dependent.checked = false
+                         * Also apply the changes to `provider` in the opposing manner when `dependent` is set to true
+                         * @simply when(dependent.checked === true) → provider.checked = true
+                         */
                         let dependents = (provider.getAttribute('dependents') ?? '').split(',');
 
                         provider.setAttribute('dependents', [...dependents, `#${ dependent.id }`].filter(string => string.length).join(','));

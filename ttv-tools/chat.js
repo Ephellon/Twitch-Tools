@@ -1188,8 +1188,10 @@ let Chat__Initialize = async(START_OVER = false) => {
         RegisterJob('convert_emotes');
     }
 
-    // Update rules
-        // UPDATE_RULES(ruleType:string<"filter" | "phrase" | "lurking">) → object<{ text:RegExp, user:RegExp, emote:RegExp, badge:RegExp, channel:array<object>, rules:array<string>{ specific:array<string{ channel:array<string>, user:array<string>, badge:array<string>, emote:array<string> }>, general:array<string> } }>
+    /**
+     * Update rules
+     * @simply UPDATE_RULES(ruleType:string<"filter" | "phrase" | "lurking">) → object<{ text:RegExp, user:RegExp, emote:RegExp, badge:RegExp, channel:array<object>, rules:array<string>{ specific:array<string{ channel:array<string>, user:array<string>, badge:array<string>, emote:array<string> }>, general:array<string> } }>
+     */
     let UPDATE_RULES = (ruleType, delimeter = ',') => {
         let rules = Settings[`${ ruleType }_rules`];
         let channel = [], user = [], badge = [], emote = [], text = [];

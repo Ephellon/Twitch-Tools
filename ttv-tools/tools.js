@@ -131,11 +131,13 @@ BONUS_BUTTON_BLUNDER: {
 
 ;
 
-// Displays a balloon (popup)
-    // new Balloon({ title:string, icon:string? }, ...jobs:object<{ href:string<URL>, message:string?, src:string?, time:string<Date>, onremove:function? }>) → object
-    // Balloon.prototype.add(...jobs:object<{ href:string<URL>, message:string?, src:string?, time:string<Date>, onremove:function? }>) → Element
-    // Balloon.prototype.addButton({ left:boolean?, icon:string?<Glyphs>, onclick:function?, attributes:object? }) → Element
-    // Balloon.prototype.remove() → undefined
+/**
+ * Displays a balloon (popup)
+ * @simply new Balloon({ title:string, icon:string? }, ...jobs:object<{ href:string<URL>, message:string?, src:string?, time:string<Date>, onremove:function? }>) → object
+ * @simply Balloon.prototype.add(...jobs:object<{ href:string<URL>, message:string?, src:string?, time:string<Date>, onremove:function? }>) → Element
+ * @simply Balloon.prototype.addButton({ left:boolean?, icon:string?<Glyphs>, onclick:function?, attributes:object? }) → Element
+ * @simply Balloon.prototype.remove() → undefined
+ */
 class Balloon {
     static #BALLOONS = new Map;
 
@@ -705,8 +707,10 @@ class Balloon {
     }
 }
 
-// Creates a Twitch-style chat footer
-    // new ChatFooter(title:string, options:object?) → Element<ChatFooter>
+/**
+ * Creates a Twitch-style chat footer
+ * @simply new ChatFooter(title:string, options:object?) → Element<ChatFooter>
+ */
 class ChatFooter {
     static #FOOTERS = new Map()
     static #FOOTER_TIMEOUT = -1
@@ -845,8 +849,10 @@ class DeferredCard {
     }
 }
 
-// Creates a Twitch-style card
-    // new Card({ title:string, subtitle:string?, fineTuning:object? }) → Element<Card>
+/**
+ * Creates a Twitch-style card
+ * @simply new Card({ title:string, subtitle:string?, fineTuning:object? }) → Element<Card>
+ */
 class Card {
     static #CARDS = new Map()
 
@@ -990,9 +996,11 @@ class Card {
     static deferred = DeferredCard;
 }
 
-// Creates a Twitch-style context menu
-    // new ContextMenu({ options:array, fineTuning:object? }) → Element<ContextMenu>
-    // options = { text:string, icon:string, shortcut:string, favicon:string<HTML|SVG> }
+/**
+ * Creates a Twitch-style context menu
+ * @simply new ContextMenu({ options:array, fineTuning:object? }) → Element<ContextMenu>
+ * options = { text:string, icon:string, shortcut:string, favicon:string<HTML|SVG> }
+ */
 class ContextMenu {
     static #RootCloseOnComplete = when.defined(() => $('#root'))
         .then(root => root
@@ -1794,8 +1802,10 @@ Object.defineProperties(Chat, {
     vips: { value: [] },
 
     get: {
-        // Create an array of the current chat
-            // Chat.get(mostRecent:number?, keepEmotes:boolean?) → [...object<{ style<string{ CSS }>, author<string>, emotes<array{ string }>, message<string>, mentions<array{ string }>, element?<Element>, uuid<string>, reply?<Element>, deleted?<boolean>, highlighted?<boolean> }>]
+        /**
+         * Create an array of the current chat
+         * @simply Chat.get(mostRecent:number?, keepEmotes:boolean?) → [...object<{ style<string{ CSS }>, author<string>, emotes<array{ string }>, message<string>, mentions<array{ string }>, element?<Element>, uuid<string>, reply?<Element>, deleted?<boolean>, highlighted?<boolean> }>]
+         */
         value:
         function get(mostRecent = 250, keepEmotes = true) {
             let results = [];
@@ -1827,8 +1837,10 @@ Object.defineProperties(Chat, {
     },
 
     send: {
-        // Sends a message via the current chat
-            // Chat.send(message:string?) → undefined
+        /**
+         * Sends a message via the current chat
+         * @simply Chat.send(message:string?) → undefined
+         */
         value:
         function send(message = '') {
             if(typeof message != 'string')
@@ -1842,8 +1854,10 @@ Object.defineProperties(Chat, {
     },
 
     reply: {
-        // Replies to a message via the current chat
-            // Chat.send(to:string<IRC-Msg-Id>, message:string?) → undefined
+        /**
+         * Replies to a message via the current chat
+         * @simply Chat.send(to:string<IRC-Msg-Id>, message:string?) → undefined
+         */
         value:
         function reply(to = '', message = '') {
             if(typeof to != 'string' || to.length < 1 || typeof message != 'string' || message.length < 1)
@@ -2157,8 +2171,10 @@ Object.defineProperties(Chat, {
     },
 });
 
-// Convert an SI number into a number
-    // parseCoin(amount:string) → number
+/**
+ * Convert an SI number into a number
+ * @simply parseCoin(amount:string) → number
+ */
 function parseCoin(amount = '') {
     function getUnits(lang) {
         let booklet;
@@ -2217,8 +2233,10 @@ function parseCoin(amount = '') {
     return parseInt(points) | 0;
 }
 
-// Get the video quality
-    // GetQuality() → string<{ auto:boolean, high:boolean, low:boolean, source:boolean }>
+/**
+ * Get the video quality
+ * @simply GetQuality() → string<{ auto:boolean, high:boolean, low:boolean, source:boolean }>
+ */
 async function GetQuality() {
     const lock = { configurable: false, enumerable: true, writable: false };
 
@@ -2299,8 +2317,10 @@ async function GetQuality() {
     return quality;
 }
 
-// Change the video quality
-    // SetQuality(quality:string?, backup:string?) → Object<{ oldValue:object<{ input:Element, label:Element }>, newValue:object<{ input:Element, label:Element }> }>
+/**
+ * Change the video quality
+ * @simply SetQuality(quality:string?, backup:string?) → Object<{ oldValue:object<{ input:Element, label:Element }>, newValue:object<{ input:Element, label:Element }> }>
+ */
 async function SetQuality(quality = 'auto', backup = 'source') {
     let buttons = {
         get settings() {
@@ -2372,8 +2392,10 @@ async function SetQuality(quality = 'auto', backup = 'source') {
     });
 }
 
-// Get the video volume
-    // GetVolume(fromVideoElement:boolean?) → number<Percentage>
+/**
+ * Get the video volume
+ * @simply GetVolume(fromVideoElement:boolean?) → number<Percentage>
+ */
 function GetVolume(fromVideoElement = true) {
     let video = $('[data-a-target="video-player"i] video'),
         slider = $('[data-a-target*="player"i][data-a-target*="volume"i]');
@@ -2401,8 +2423,10 @@ Object.defineProperties(GetVolume, {
     __onchange__: { value: new Map() },
 });
 
-// Change the video volume
-    // SetVolume(volume:number<Percentage>) → undefined
+/**
+ * Change the video volume
+ * @simply SetVolume(volume:number<Percentage>) → undefined
+ */
 function SetVolume(volume = 0.5) {
     let video = $('[data-a-target="video-player"i] video'),
         thumb = $('[data-a-target*="player"i][data-a-target*="volume"i]'),
@@ -2420,8 +2444,10 @@ function SetVolume(volume = 0.5) {
         slider.modStyle(`width: ${ 100 * volume }%`);
 }
 
-// Get the view mode
-    // GetViewMode() → string<{ "fullscreen" | "fullwidth" | "theatre" | "default" }>
+/**
+ * Get the view mode
+ * @simply GetViewMode() → string<{ "fullscreen" | "fullwidth" | "theatre" | "default" }>
+ */
 function GetViewMode() {
     let mode = 'default',
         theatre = false,
@@ -2463,8 +2489,10 @@ function GetViewMode() {
     return mode;
 }
 
-// Change the view mode
-    // SetViewMode(mode:string<{ "fullscreen" | "fullwidth" | "theatre" | "default" }>) → undefined
+/**
+ * Change the view mode
+ * @simply SetViewMode(mode:string<{ "fullscreen" | "fullwidth" | "theatre" | "default" }>) → undefined
+ */
 function SetViewMode(mode = 'default') {
     let buttons = [],
         toggles = {
@@ -2513,8 +2541,10 @@ function SetViewMode(mode = 'default') {
     }
 }
 
-// Get the current user activity
-    // GetActivity() → Promise<string | null>
+/**
+ * Get the current user activity
+ * @simply GetActivity() → Promise<string | null>
+ */
 async function GetActivity() {
     return when.defined(() => {
         let open = $.defined('[data-a-target="user-display-name"i], [class*="dropdown-menu-header"i]');
@@ -2531,8 +2561,10 @@ async function GetActivity() {
     });
 }
 
-// Get the current page's language
-    // GetLanguage() → Promise<string | null>
+/**
+ * Get the current page's language
+ * @simply GetLanguage() → Promise<string | null>
+ */
 async function GetLanguage() {
     return when.defined(() => {
         let open = $.defined('[data-a-target="user-display-name"i], [class*="dropdown-menu-header"i]');
@@ -2550,8 +2582,10 @@ async function GetLanguage() {
     });
 }
 
-// Reloads the webpage
-    // ReloadPage(onlineOnly:boolean?) → undefined
+/**
+ * Reloads the webpage
+ * @simply ReloadPage(onlineOnly:boolean?) → undefined
+ */
 async function ReloadPage(onlineOnly = true) {
     // Navigaotr is offline, do not reload
     if(true
@@ -2584,8 +2618,10 @@ async function ReloadPage(onlineOnly = true) {
 // Import the glyphs
 let { Glyphs } = top;
 
-// Returns ordinal numbers
-    // nth(n:number, s:string?) → string
+/**
+ * Returns ordinal numbers
+ * @simply nth(n:number, s:string?) → string
+ */
 let nth = (n, s = '') => {
     n += '';
 
@@ -2753,13 +2789,17 @@ let nth = (n, s = '') => {
     return n;
 }
 
-// Returns a unique list of channels (used with `Array..filter`)
-    // uniqueChannels(channel:object<Channel>, index:number, channels:array) → boolean
+/**
+ * Returns a unique list of channels (used with `Array..filter`)
+ * @simply uniqueChannels(channel:object<Channel>, index:number, channels:array) → boolean
+ */
 let uniqueChannels = (channel, index, channels) =>
     channels.filter(channel => defined(channel?.name)).findIndex(ch => ch.name === channel?.name) == index;
 
-// Returns whether or not a channel is live (used with `Array..filter`)
-    // isLive(channel:object<Channel>) → boolean
+/**
+ * Returns whether or not a channel is live (used with `Array..filter`)
+ * @simply isLive(channel:object<Channel>) → boolean
+ */
 let isLive = channel => parseBool(channel?.live);
 
 /*** Setup (pre-init) #MARK:globals #MARK:variables
@@ -3891,8 +3931,10 @@ let DO_NOT_AUTO_ADD = []; // List of names to ignore for auto-adding; the user a
 
 let ALREADY_EXPANDED = false;
 
-// Intializes the extension
-    // Initialize(START_OVER:boolean) → undefined
+/**
+ * Intializes the extension
+ * @simply Initialize(START_OVER:boolean) → undefined
+ */
 let Initialize = async(START_OVER = false) => {
     // Modify the logging feature via the settings
     if(!parseBool(Settings.display_in_console))
@@ -4021,8 +4063,10 @@ let Initialize = async(START_OVER = false) => {
     }, 250);
 
     top.GetNextStreamer =
-    // Gets the next available channel (streamer)
-        // GetNextStreamer(except:string?) → Object<Channel>
+    /**
+     * Gets the next available channel (streamer)
+     * @simply GetNextStreamer(except:string?) → Object<Channel>
+     */
     function GetNextStreamer(except = '') {
         if(defined(GetNextStreamer.href))
             return {
@@ -4200,8 +4244,10 @@ let Initialize = async(START_OVER = false) => {
     GetNextStreamer.pinnedStreamers = [];
 
     top.SET_PINNED_STREAMERS =
-    // Saves the pins and shows them; `share` tells the other tabs (off for a change another tab sent)
-        // SET_PINNED_STREAMERS(list:array<string>, share:boolean?) → undefined
+    /**
+     * Saves the pins and shows them; `share` tells the other tabs (off for a change another tab sent)
+     * @simply SET_PINNED_STREAMERS(list:array<string>, share:boolean?) → undefined
+     */
     function SET_PINNED_STREAMERS(list, share = true) {
         const imgSize = '70px';
 
@@ -7722,8 +7768,10 @@ let Initialize = async(START_OVER = false) => {
 
     let ALREADY_RESTORING_DEAD_CHANNEL = false;
 
-    // Restart the First in line que's timers
-        // REDO_FIRST_IN_LINE_QUEUE(url:string?<URL>, search:object?) → <Promise>?undefined
+    /**
+     * Restart the First in line que's timers
+     * @simply REDO_FIRST_IN_LINE_QUEUE(url:string?<URL>, search:object?) → <Promise>?undefined
+     */
     top.REDO_FIRST_IN_LINE_QUEUE =
     async function REDO_FIRST_IN_LINE_QUEUE(url, search = null) {
         if(nullish(url) || (FIRST_IN_LINE_HREF === url && [FIRST_IN_LINE_JOB, FIRST_IN_LINE_WARNING_JOB, FIRST_IN_LINE_WARNING_TEXT_UPDATE].filter(nullish).length < 1))
@@ -13413,8 +13461,10 @@ let Initialize = async(START_OVER = false) => {
     // A channel row in Twitch's search tray; its parent holds the buttons
     const SEARCH_ACTIONS_RESULT = '[id^="search-result"i] a[data-tray-item][href^="/"]';
 
-    // The channel a search result opens, or nothing for other results (games, categories, searches)
-        // SearchActionsChannelOf(link:HTMLAnchorElement) → string|undefined
+    /**
+     * The channel a search result opens, or nothing for other results (games, categories, searches)
+     * @simply SearchActionsChannelOf(link:HTMLAnchorElement) → string|undefined
+     */
     function SearchActionsChannelOf(link) {
         let [name, ...rest] = parseURL(link.href).pathname.split('/').filter(defined).filter(part => part.length);
 
@@ -13425,8 +13475,10 @@ let Initialize = async(START_OVER = false) => {
         return name;
     }
 
-    // Reads a cached object (`LiveReminders`, `DVRChannels`), stored as JSON or as an object
-        // SearchActionsLoad(key:string) → Promise<object>
+    /**
+     * Reads a cached object (`LiveReminders`, `DVRChannels`), stored as JSON or as an object
+     * @simply SearchActionsLoad(key:string) → Promise<object>
+     */
     async function SearchActionsLoad(key) {
         let value = (await Cache.load(key))?.[key];
 
@@ -13516,8 +13568,10 @@ let Initialize = async(START_OVER = false) => {
         },
     };
 
-    // Draws one button in its state
-        // SearchActionsPaint(button:HTMLButtonElement, action:object, name:string, active:boolean) → undefined
+    /**
+     * Draws one button in its state
+     * @simply SearchActionsPaint(button:HTMLButtonElement, action:object, name:string, active:boolean) → undefined
+     */
     function SearchActionsPaint(button, action, name, active) {
         button.dataset.active = active;
         button.innerHTML = Glyphs.modify(action.glyph(active), { height: '16px', width: '16px', style: 'fill:currentcolor' });

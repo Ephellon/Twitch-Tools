@@ -814,8 +814,10 @@ let REPORTS = new Map,
     NO_RECEIVER = new Map,
     MAX_TIME_ALLOWED = 35_000;
 
-// Stops a tab's hang-up timer (it answered, or is frozen or loading)
-    // DisarmHangUp(id:number) → undefined
+/**
+ * Stops a tab's hang-up timer (it answered, or is frozen or loading)
+ * @simply DisarmHangUp(id:number) → undefined
+ */
 function DisarmHangUp(id) {
     clearTimeout(HANG_UP_CHECKER.get(id));
     HANG_UP_CHECKER.delete(id);

@@ -1618,8 +1618,10 @@ function autocomplete(element, options) {
 
 ;
 
-// Filters an object by its keys using any number of iterable sources
-    // Object.filter(target, ...sources) → Object<target - #>
+/**
+ * Filters an object by its keys using any number of iterable sources
+ * @simply Object.filter(target, ...sources) → Object<target - #>
+ */
 Object.filter ??= function filter(target, ...sources) {
     for(let source of sources)
         if(source?.constructor?.prototype?.[Symbol.iterator]) // iterables only
@@ -1630,22 +1632,28 @@ Object.filter ??= function filter(target, ...sources) {
     return target;
 };
 
-// Binds the function the same way as `Function..bind` but uses an `argument array` instead of an `argument spread`
-    // Function..wrap(thisArg:object|null, argArray:array?<any>) → Function
+/**
+ * Binds the function the same way as `Function..bind` but uses an `argument array` instead of an `argument spread`
+ * @simply Function..wrap(thisArg:object|null, argArray:array?<any>) → Function
+ */
 Function.prototype.wrap ??= function wrap(thisArg, argArray = []) {
     return this.bind.apply(this, [thisArg].concat(argArray));
 };
 
-// Finds the last index using the same format as `Array..findIndex`
-    // Array..findLastIndex(predicate:function, thisArg:object?) → number<integer>
+/**
+ * Finds the last index using the same format as `Array..findIndex`
+ * @simply Array..findLastIndex(predicate:function, thisArg:object?) → number<integer>
+ */
 Array.prototype.findLastIndex ??= function findLastIndex(predicate, thisArg = null) {
     let index = this.reverse().findIndex(predicate, thisArg);
 
     return !!~index? (this.length - index) - 1: index;
 };
 
-// Determines if the array contains any of the value(s)
-    // Array..contains(...values:any) → boolean
+/**
+ * Determines if the array contains any of the value(s)
+ * @simply Array..contains(...values:any) → boolean
+ */
 Array.prototype.contains ??= function contains(...values) {
     for(let value of values)
         if(false
@@ -1660,20 +1668,26 @@ Array.prototype.contains ??= function contains(...values) {
     return false;
 };
 
-// Determines if the array is missing all of the value(s)
-    // Array..missing(...values:any) → boolean
+/**
+ * Determines if the array is missing all of the value(s)
+ * @simply Array..missing(...values:any) → boolean
+ */
 Array.prototype.missing ??= function missing(...values) {
     return !this.contains(...values);
 };
 
-// Returns an array of purely unique elements
-    // Array..isolate(against:array?) → Set[]
+/**
+ * Returns an array of purely unique elements
+ * @simply Array..isolate(against:array?) → Set[]
+ */
 Array.prototype.isolate ??= function isolate(against = []) {
     return [...new Set(this)].filter(value => against.missing(value));
 };
 
-// (Randomly) Shuffles the array
-    // Array..shuffle() → array
+/**
+ * (Randomly) Shuffles the array
+ * @simply Array..shuffle() → array
+ */
 Array.prototype.shuffle ??= function shuffle() {
     let A = (new MersenneTwister(0x89C6D5F7 * Math.random() | 0));
     let B = (new MersenneTwister(0x76CDBEF3 * A.random()    | 0));
@@ -1682,15 +1696,19 @@ Array.prototype.shuffle ??= function shuffle() {
     return [...this].sort(() => (A.random() < 0.5? -B.random(): +C.random()) * this.length | 0);
 };
 
-// Returns a random item from the array
-    // Array..random() → any
+/**
+ * Returns a random item from the array
+ * @simply Array..random() → any
+ */
 Array.prototype.random ??= function random() {
     return this.shuffle()[Math.random() * this.length | 0];
 };
 
-// https://stackoverflow.com/a/6117889/4211612
-// Returns the current week of the year
-    // Date..getWeek() → number<integer>
+/**
+ * https://stackoverflow.com/a/6117889/4211612
+ * Returns the current week of the year
+ * @simply Date..getWeek() → number<integer>
+ */
 Date.prototype.getWeek = function getWeek() {
     let now = new Date(Date.UTC(
         this.getFullYear(),
@@ -1706,9 +1724,11 @@ Date.prototype.getWeek = function getWeek() {
     return Math.ceil((((now - year) / 86_400_000) + 1) / 7);
 };
 
-// https://stackoverflow.com/a/8619946/4211612
-// Returns the current day of the year
-    // Date..getAbsoluteDay() → number<integer>
+/**
+ * https://stackoverflow.com/a/8619946/4211612
+ * Returns the current day of the year
+ * @simply Date..getAbsoluteDay() → number<integer>
+ */
 Date.prototype.getAbsoluteDay ??= function getAbsoluteDay() {
     let start = new Date(this.getFullYear(), 0, 0);
     let day = 86_400_000,
@@ -1717,15 +1737,19 @@ Date.prototype.getAbsoluteDay ??= function getAbsoluteDay() {
     return (offset / day).floor();
 };
 
-// Returns the current meridiem
-    // Date..getMeridiem() → string<{ "AM" | "PM" }>
+/**
+ * Returns the current meridiem
+ * @simply Date..getMeridiem() → string<{ "AM" | "PM" }>
+ */
 Date.prototype.getMeridiem ??= function getMeridiem() {
     return this.getHours() > 11? 'PM': 'AM';
 };
 
-// https://stackoverflow.com/a/11888430/4211612
-// Returns whether or not Daylight Savings Time is in effect
-    // Date.isDST() → boolean
+/**
+ * https://stackoverflow.com/a/11888430/4211612
+ * Returns whether or not Daylight Savings Time is in effect
+ * @simply Date.isDST() → boolean
+ */
 Date.isDST ??= function isDST() {
     let now = new Date;
     let Jan = new Date(now.getFullYear(), 0, 1),
@@ -1734,14 +1758,18 @@ Date.isDST ??= function isDST() {
     return now.getTimezoneOffset() < Math.max(Jan.getTimezoneOffset(), Jul.getTimezoneOffset());
 };
 
-// Returns the milliseconds since an event
-    // Date.since(event:Date|number) → number<integer>
+/**
+ * Returns the milliseconds since an event
+ * @simply Date.since(event:Date|number) → number<integer>
+ */
 Date.since ??= function since(event) {
     return (+new Date) - +event;
 };
 
-// Strips the HTML body from a document
-    // DOMParser.stripBody(html:string?) → string<html>
+/**
+ * Strips the HTML body from a document
+ * @simply DOMParser.stripBody(html:string?) → string<html>
+ */
 DOMParser.stripBody ??= function stripBody(html = '') {
     return html
         .replace(/[^]*(<head\W[^]*?<\/head>)[^]*/i, '<html>$1<body></body></html>')
@@ -1807,8 +1835,10 @@ DOMParser.stripBody ??= function stripBody(html = '') {
         });
 };
 
-// Gets meta properties by name
-    // Document..get(property:string) → string|null
+/**
+ * Gets meta properties by name
+ * @simply Document..get(property:string) → string|null
+ */
 Document.prototype.get ??= function get(property) {
     return this.querySelector(`[name$="${ property }"i], [property$="${ property }"i], [name$="og:${ property }"i], [property$="og:${ property }"i]`)?.getAttribute('content');
 };
@@ -2113,23 +2143,29 @@ Element.prototype.getAllElementsByText ??= function getAllElementsByText(searchT
     return containers.isolate();
 };
 
-// Gets the DOM path of an element
-    // Element..getPath(mode:number?<int>) → string
+/**
+ * Gets the DOM path of an element
+ * @simply Element..getPath(mode:number?<int>) → string
+ */
 Element.prototype.getPath ??= function getPath(mode = getDOMPath.SHORT) {
     return getDOMPath(this, mode);
 };
 
-// Sets the tooltip of an element
-    // Element..setTooltip(message:string, fineTuning:object) → this
+/**
+ * Sets the tooltip of an element
+ * @simply Element..setTooltip(message:string, fineTuning:object) → this
+ */
 Element.prototype.setTooltip ??= function setTooltip(message, fineTuning) {
     new Tooltip(this, message, fineTuning);
 
     return this;
 };
 
-// https://stackoverflow.com/a/41698614/4211612
-// Determines if the element is visible to the user or not
-    // Element..isVisible() → boolean
+/**
+ * https://stackoverflow.com/a/41698614/4211612
+ * Determines if the element is visible to the user or not
+ * @simply Element..isVisible() → boolean
+ */
 Element.prototype.isVisible ??= function isVisible() {
     // Styling...
     const style = getComputedStyle(this),
@@ -2386,14 +2422,18 @@ Element.prototype.queryBy ??= function queryBy(selectors, container = document) 
 	return media;
 };
 
-// Adds to an attribute (combines get + set)
-    // Element..addToAttr(attribute:string, value:any?) → undefined
+/**
+ * Adds to an attribute (combines get + set)
+ * @simply Element..addToAttr(attribute:string, value:any?) → undefined
+ */
 Element.prototype.addToAttr ??= function addToAttr(attribute, value = '') {
     this.setAttribute(attribute, [this.getAttribute(attribute), value].join(' ').trim());
 }
 
-// Modifies an element's style attribute
-    // Element..modStyle(value:string?, important:boolean?, deleted:boolean?, innate:boolean?) → undefined
+/**
+ * Modifies an element's style attribute
+ * @simply Element..modStyle(value:string?, important:boolean?, deleted:boolean?, innate:boolean?) → undefined
+ */
 Element.prototype.modStyle ??= function modStyle(value = '', important = false, deleted = false, innate = false) {
     let _old = this.modStyle.destruct(this.getAttribute('style')),
         _new = this.modStyle.destruct(value),
@@ -2731,8 +2771,10 @@ try {
     });
 } catch(error) {/* Do nothing */}
 
-// Returns a function's name as a formatted title
-    // Function..toTitle() → string
+/**
+ * Returns a function's name as a formatted title
+ * @simply Function..toTitle() → string
+ */
 Function.prototype.toTitle ??= function toTitle() {
     return (this?.name || '')
         .replace(/\$\$/g, ' | ')
@@ -2742,8 +2784,10 @@ Function.prototype.toTitle ??= function toTitle() {
         .trim();
 };
 
-// Returns a string as a formatted title
-    // String..toTitle() → string
+/**
+ * Returns a string as a formatted title
+ * @simply String..toTitle() → string
+ */
 String.prototype.toTitle ??= function toTitle() {
     return this
         .replace(/\$\$/g, ' | ')
@@ -2753,14 +2797,18 @@ String.prototype.toTitle ??= function toTitle() {
         .trim();
 };
 
-// Pads a string
-    // String..pad(fillString:string?) → string
+/**
+ * Pads a string
+ * @simply String..pad(fillString:string?) → string
+ */
 String.prototype.pad ??= function pad(fillString = ' ') {
     return [fillString, this, fillString].join('');
 };
 
-// Counts the number of elements in the string
-    // String..count(...searches:string) → number<integer>
+/**
+ * Counts the number of elements in the string
+ * @simply String..count(...searches:string) → number<integer>
+ */
 String.prototype.count ??= function count(...searches) {
     let count = 0;
     for(let search of searches)
@@ -2768,8 +2816,10 @@ String.prototype.count ??= function count(...searches) {
     return count;
 };
 
-// Compares strings (space dependent)
-    // String..equals(value:any, caseSensitive:boolean?) → boolean
+/**
+ * Compares strings (space dependent)
+ * @simply String..equals(value:any, caseSensitive:boolean?) → boolean
+ */
 String.prototype.equals ??= function equals(value = '', caseSensitive = false) {
     value = value?.toString() || '';
 
@@ -2813,8 +2863,10 @@ String.prototype.equals ??= function equals(value = '', caseSensitive = false) {
     return this.normalize('NFKD').trim() == value.normalize('NFKD').trim();
 };
 
-// Compares strings (matches any)
-    // String..anyOf(strings:array<string>) → boolean
+/**
+ * Compares strings (matches any)
+ * @simply String..anyOf(strings:array<string>) → boolean
+ */
 String.prototype.anyOf ??= function anyOf(...strings) {
     for(let string of strings)
         if(this.equals(string, false))
@@ -2822,14 +2874,18 @@ String.prototype.anyOf ??= function anyOf(...strings) {
     return false;
 };
 
-// Compares strings (space dependent)
-    // String..unlike(value:any, caseSensitive:boolean?) → boolean
+/**
+ * Compares strings (space dependent)
+ * @simply String..unlike(value:any, caseSensitive:boolean?) → boolean
+ */
 String.prototype.unlike ??= function unlike(value, caseSensitive = false) {
     return !this.equals(value, caseSensitive);
 };
 
-// Compares strings (matches none)
-    // String..noneOf(strings:array<string>) → boolean
+/**
+ * Compares strings (matches none)
+ * @simply String..noneOf(strings:array<string>) → boolean
+ */
 String.prototype.noneOf ??= function noneOf(...strings) {
     for(let string of strings)
         if(this.unlike(string, false))
@@ -2837,8 +2893,10 @@ String.prototype.noneOf ??= function noneOf(...strings) {
     return false;
 };
 
-// Replaces text in the string
-    // String..replaceAll(search:any, replacer:string|function) → string
+/**
+ * Replaces text in the string
+ * @simply String..replaceAll(search:any, replacer:string|function) → string
+ */
 String.prototype.replaceAll ??= function replaceAll(search, replacer) {
     let before = this,
         after = before.replace(search, replacer);
@@ -2848,14 +2906,18 @@ String.prototype.replaceAll ??= function replaceAll(search, replacer) {
     return after;
 };
 
-// Replaces spaces in the string
-    // String..sheer() → string
+/**
+ * Replaces spaces in the string
+ * @simply String..sheer() → string
+ */
 String.prototype.sheer ??= function sheer() {
     return this.replace(/\s+/g, '');
 };
 
-// Removess spaces and makes the string all lowercase
-    // String..mutilate(normalize:boolean?) → string
+/**
+ * Removess spaces and makes the string all lowercase
+ * @simply String..mutilate(normalize:boolean?) → string
+ */
 String.prototype.mutilate ??= function mutilate(normalize = false) {
     let results = this.sheer().toLowerCase();
 
@@ -2865,8 +2927,10 @@ String.prototype.mutilate ??= function mutilate(normalize = false) {
     return results;
 };
 
-// Matches two strings and returns a comparison of how much text matched
-    // String..errs(string:string, positionDependent:boolean?) → number<float>
+/**
+ * Matches two strings and returns a comparison of how much text matched
+ * @simply String..errs(string:string, positionDependent:boolean?) → number<float>
+ */
 String.prototype.errs ??= function errs(string, positionDependent = false) {
     let [B, A] = [this, string?.toString() || ''].map(s => s.sheer().normalize('NFKD').toLowerCase()).sort((a, b) => a.length - b.length),
         C = '';
@@ -2886,8 +2950,10 @@ String.prototype.errs ??= function errs(string, positionDependent = false) {
     return 1 - C.length / A.length
 };
 
-// Compares strings - Calculates the Levenshtein's distance between two strings
-    // String..distanceFrom(that:any) → number<integer>
+/**
+ * Compares strings - Calculates the Levenshtein's distance between two strings
+ * @simply String..distanceFrom(that:any) → number<integer>
+ */
 String.prototype.distanceFrom ??= function distanceFrom(that = '') {
     let A = this,
         B = that?.toString?.() || '';
@@ -2954,9 +3020,11 @@ HTMLCollection.prototype.splice         ??= Array.prototype.splice;
 HTMLCollection.prototype.unshift        ??= Array.prototype.unshift;
 HTMLCollection.prototype.values         ??= Array.prototype.values;
 
-// https://learnersbucket.com/examples/interview/promise-any-polyfill/
-// Resovles to a non-empty Promise
-    // Promise.anySettled(promises:Promise[]) → Promise
+/**
+ * https://learnersbucket.com/examples/interview/promise-any-polyfill/
+ * Resovles to a non-empty Promise
+ * @simply Promise.anySettled(promises:Promise[]) → Promise
+ */
 Promise.anySettled = function anySettled(promises) {
     let errors = new Array(promises.length);
     let errd = 0;
@@ -2982,16 +3050,18 @@ Promise.anySettled = function anySettled(promises) {
     });
 };
 
-// https://stackoverflow.com/a/35859991/4211612
-// Captures the current frame from a video element
-    // HTMLVideoElement..captureFrame(imageType:string?, returnType:string?) → string<dataURL> | object | HTMLImageElement
-        // imageType = "image/jpeg" | "image/png" | "image/webp"
-        // returnType = "img" | "element" | "HTMLImageElement"
-            // → HTMLImageElement
-        // returnType = "json" | "object"
-            // → Object<{ type=imageType, data:string, height:number<integer>, width:number<integer> }>
-        // returnType = "dataURI" | "dataURL" | ...
-            // → string<dataURL>
+/**
+ * https://stackoverflow.com/a/35859991/4211612
+ * Captures the current frame from a video element
+ * @simply HTMLVideoElement..captureFrame(imageType:string?, returnType:string?) → string<dataURL> | object | HTMLImageElement
+ * imageType = "image/jpeg" | "image/png" | "image/webp"
+ * returnType = "img" | "element" | "HTMLImageElement"
+ * → HTMLImageElement
+ * returnType = "json" | "object"
+ * → Object<{ type=imageType, data:string, height:number<integer>, width:number<integer> }>
+ * returnType = "dataURI" | "dataURL" | ...
+ * → string<dataURL>
+ */
 HTMLVideoElement.prototype.captureFrame ??= function captureFrame(imageType = "image/png", returnType = "dataURL") {
     let { height, width, videoHeight, videoWidth } = this;
 
@@ -3038,15 +3108,19 @@ HTMLVideoElement.prototype.captureFrame ??= function captureFrame(imageType = "i
 
 // Recording (and the HTMLVideoElement..startRecording … saveRecording methods) → ext/recording.js
 
-// Returns the confidence level of the machine's ability to play the specified media type
-    // HTMLVideoElement..supports(MIMEType:string?) → number<{ 0 | 0.5 | 1 }>
+/**
+ * Returns the confidence level of the machine's ability to play the specified media type
+ * @simply HTMLVideoElement..supports(MIMEType:string?) → number<{ 0 | 0.5 | 1 }>
+ */
 HTMLVideoElement.prototype.supports ??= function supports(MIMEType = '') {
     return (this.canPlayType(MIMEType).length / 6).floorToNearest(0.5);
 }
 
-// https://developer.mozilla.org/en-US/docs/Web/API/Clipboard/write#example_of_copying_canvas_contents_to_the_clipboard
-// Copies the current frame from a video element to the clipboard
-    // HTMLVideoElement..copyFrame() → Promise<boolean>
+/**
+ * https://developer.mozilla.org/en-US/docs/Web/API/Clipboard/write#example_of_copying_canvas_contents_to_the_clipboard
+ * Copies the current frame from a video element to the clipboard
+ * @simply HTMLVideoElement..copyFrame() → Promise<boolean>
+ */
 HTMLVideoElement.prototype.copyFrame ??= function copyFrame() {
     let { height, width, videoHeight, videoWidth } = this;
 
@@ -3068,8 +3142,10 @@ HTMLVideoElement.prototype.copyFrame ??= function copyFrame() {
     return promise;
 };
 
-// Passes the current frame from a video element as an image blob
-    // HTMLVideoElement..passFrame() → Promise<Blob>
+/**
+ * Passes the current frame from a video element as an image blob
+ * @simply HTMLVideoElement..passFrame() → Promise<Blob>
+ */
 HTMLVideoElement.prototype.passFrame ??= function passFrame() {
     let { height, width, videoHeight, videoWidth } = this;
 
@@ -3093,9 +3169,11 @@ HTMLVideoElement.prototype.passFrame ??= function passFrame() {
     return promise;
 };
 
-// Copies the current image to the clipboard
-    // HTMLImageElement..copy() → Promise<boolean>
-    // HTMLPictureElement..copy() → Promise<boolean>
+/**
+ * Copies the current image to the clipboard
+ * @simply HTMLImageElement..copy() → Promise<boolean>
+ * @simply HTMLPictureElement..copy() → Promise<boolean>
+ */
 HTMLImageElement.prototype.copy =
 HTMLPictureElement.prototype.copy ??= function copy() {
     let { naturalHeight, naturalWidth } = this;
@@ -3146,9 +3224,11 @@ Object.defineProperties(Promise, {
     REJECTED: { value: 'rejected' },
 });
 
-// https://stackoverflow.com/a/45205645/4211612
-// Creates a CSS object that can be used to easily transform an object to a CSS string, JSON, or object
-    // new CSSObject({ ...css-properties }, important:boolean?) → Object<CSSObject>
+/**
+ * https://stackoverflow.com/a/45205645/4211612
+ * Creates a CSS object that can be used to easily transform an object to a CSS string, JSON, or object
+ * @simply new CSSObject({ ...css-properties }, important:boolean?) → Object<CSSObject>
+ */
 class CSSObject {
     static VENDORS = {
         ALL: Symbol.for('all'),
@@ -3634,8 +3714,10 @@ class Color {
         return Object.assign(this, Color.destruct(color));
     }
 
-    // Converts Hex color values to a color-object
-        // Color.HEXtoColor(hex:string<String#CSS-Color>) → Object<Color>
+    /**
+     * Converts Hex color values to a color-object
+     * @simply Color.HEXtoColor(hex:string<String#CSS-Color>) → Object<Color>
+     */
     static HEXtoColor(hex = '#000') {
         hex = hex.replace('#', '');
 
@@ -3650,10 +3732,12 @@ class Color {
         return Color.RGBtoHSL(R, G, B, A / 255);
     }
 
-    // https://stackoverflow.com/a/9493060/4211612 →
-        // https://www.rapidtables.com/convert/color/rgb-to-hsl.html
-    // Converts RGB to HSL
-        // Color.RGBtoHSL(red:number?<uint8>, green:number?<uint8>, blue:number?<uint8>, alpha:number?<Percentage>) → Object<{ RGB, R, G, B, red, green, blue, HSL, H, S, L, hue, saturation, lightness }>
+    /**
+     * https://stackoverflow.com/a/9493060/4211612 →
+     * https://www.rapidtables.com/convert/color/rgb-to-hsl.html
+     * Converts RGB to HSL
+     * @simply Color.RGBtoHSL(red:number?<uint8>, green:number?<uint8>, blue:number?<uint8>, alpha:number?<Percentage>) → Object<{ RGB, R, G, B, red, green, blue, HSL, H, S, L, hue, saturation, lightness }>
+     */
     static RGBtoHSL(R = 0, G = 0, B = 0, A = 1) {
         // Convert RGB to fractions of 1
         let r = R / 255,
@@ -3709,10 +3793,12 @@ class Color {
         };
     }
 
-    // https://stackoverflow.com/a/9493060/4211612 →
-        // https://www.rapidtables.com/convert/color/hsl-to-rgb.html
-    // Converts HSL to RGB
-        // Color.HSLtoRGB(hue:number?<Degrees>, saturation:number?<Percentage>, lightness:number?<Percentage>, alpha:number?<Percentage>) → Object<{ RGB, R, G, B, red, green, blue, HSL, H, S, L, hue, saturation, lightness }>
+    /**
+     * https://stackoverflow.com/a/9493060/4211612 →
+     * https://www.rapidtables.com/convert/color/hsl-to-rgb.html
+     * Converts HSL to RGB
+     * @simply Color.HSLtoRGB(hue:number?<Degrees>, saturation:number?<Percentage>, lightness:number?<Percentage>, alpha:number?<Percentage>) → Object<{ RGB, R, G, B, red, green, blue, HSL, H, S, L, hue, saturation, lightness }>
+     */
     static HSLtoRGB(hue = 0, saturation = 0, lightness = 0, alpha = 1) {
         let H = (hue % 360),
             S = (saturation / 100),
@@ -3805,8 +3891,10 @@ class Color {
         };
     }
 
-    // Converts HWB to RGB → https://www.w3schools.com/lib/w3color.js
-        // Color.HWBtoRGB(hue:number?<Degrees>, white:number?<Percentage>, black:number?<Percentage>) → Object<{ RGB, R, G, B, red, green, blue, HWB, H, W, K, hue, white, black }>
+    /**
+     * Converts HWB to RGB → https://www.w3schools.com/lib/w3color.js
+     * @simply Color.HWBtoRGB(hue:number?<Degrees>, white:number?<Percentage>, black:number?<Percentage>) → Object<{ RGB, R, G, B, red, green, blue, HWB, H, W, K, hue, white, black }>
+     */
     static HWBtoRGB(hue = 0, white = 0, black = 0, alpha = 1) {
         let { R, G, B } = Color.HSLtoRGB(hue, 1, .5);
         let E = white + black;
@@ -3923,9 +4011,11 @@ class Color {
         return Color.RGBtoCMYK(this.R, this.G, this.B, this.A).CMYK;
     }
 
-    // https://stackoverflow.com/a/9733420/4211612
-    // Gets the luminance of a color
-        // Color.luminance(red:number<uint8>, green:number<uint8>, blue:number<uint8>) → number<[0, 1]>
+    /**
+     * https://stackoverflow.com/a/9733420/4211612
+     * Gets the luminance of a color
+     * @simply Color.luminance(red:number<uint8>, green:number<uint8>, blue:number<uint8>) → number<[0, 1]>
+     */
     static luminance(R = 0, G = 0, B = 0) {
         let l = [R, G, B].map(c => {
             c /= 255;
@@ -3958,9 +4048,11 @@ class Color {
         return ((this.R * 299 + this.G * 587 + this.B * 114) / 1e3) > (W * 255);
     }
 
-    // https://stackoverflow.com/a/9733420/4211612
-    // Gets the contrast of two colors
-        // Color.contrast(C1:array<[number<uint8>, number<uint8>, number<uint8>]>, C2:array<[number<uint8>, number<uint8>, number<uint8>]>) → number<[0, 21]>
+    /**
+     * https://stackoverflow.com/a/9733420/4211612
+     * Gets the contrast of two colors
+     * @simply Color.contrast(C1:array<[number<uint8>, number<uint8>, number<uint8>]>, C2:array<[number<uint8>, number<uint8>, number<uint8>]>) → number<[0, 21]>
+     */
     static contrast(C1, C2) {
         let L1 = Color.luminance(...C1),
             L2 = Color.luminance(...C2),
@@ -3980,9 +4072,11 @@ class Color {
         return value;
     }
 
-    // Gets the distance between two RGB colors
-    // https://tomekdev.com/posts/sorting-colors-in-js
-        // Color.distance(C1:array<[R, G, B]>, C2:array<[R, G, B]>) → number
+    /**
+     * Gets the distance between two RGB colors
+     * https://tomekdev.com/posts/sorting-colors-in-js
+     * @simply Color.distance(C1:array<[R, G, B]>, C2:array<[R, G, B]>) → number
+     */
     static distance(C1, C2) {
         let [R, G, B] = C1,
             [r, g, b] = C2;
@@ -3990,8 +4084,10 @@ class Color {
         return Math.sqrt( (R - r)**2 + (G - g)**2 + (B - b)**2 );
     }
 
-    // Returns a Color object
-        // Color.destruct(color:string<Color>) → Color
+    /**
+     * Returns a Color object
+     * @simply Color.destruct(color:string<Color>) → Color
+     */
     static destruct(color) {
         color = (color || '#000').toString().trim();
 
@@ -4058,8 +4154,10 @@ class Color {
             }
     }
 
-    // Retrns a color's name
-        // Color.getName(color:string<Color>) → string
+    /**
+     * Retrns a color's name
+     * @simply Color.getName(color:string<Color>) → string
+     */
     static getName(color = '#000') {
         color = Color.destruct(color);
 
@@ -4248,10 +4346,12 @@ class Color {
     }
 }
 
-// https://www.reddit.com/r/Twitch/comments/dxgkhr/comment/f7q4bud/?utm_source=share&utm_medium=web2x&context=3
-// Returns a random string
-    // new ClipName(version:number?) → string
-    // 2 Adj + 1 Noun + 1 Global Emote
+/**
+ * https://www.reddit.com/r/Twitch/comments/dxgkhr/comment/f7q4bud/?utm_source=share&utm_medium=web2x&context=3
+ * Returns a random string
+ * @simply new ClipName(version:number?) → string
+ * 2 Adj + 1 Noun + 1 Global Emote
+ */
 class ClipName extends String {
     static ADJECTIVES = 'adorable adventurous aggressive agreeable alert alive amused angry calm careful cautious charming cheerful clean clear clever cloudy clumsy eager easy elated elegant embarrassed enchanting encouraging bad beautiful better bewildered black bloody blue blue-eyed dangerous dark dead defeated defiant delightful depressed determined different fair faithful famous fancy fantastic fierce filthy fine annoyed annoying anxious arrogant ashamed attractive average awful colorful combative comfortable concerned condemned confused cooperative courageous curious cute energetic enthusiastic envious evil excited expensive exuberant blushing bored brainy brave breakable bright busy buttery difficult disgusted distinct disturbed dizzy doubtful drab dull dusty foolish fragile frail frantic friendly frightened funny furry gentle gifted glamorous gleaming glorious good ill important impossible inexpensive innocent inquisitive nasty naughty nervous nice nutty obedient obnoxious odd old-fashioned handsome happy healthy helpful helpless hilarious lazy light lively lonely long lovely lucky panicky perfect plain pleasant poised poor powerful gorgeous graceful grieving grotesque grumpy grungy itchy jealous jittery jolly joyous kind open outrageous outstanding homeless homely horrible hungry hurt hushed magnificent misty modern motionless muddy mushy mysterious precious prickly proud putrid puzzled quaint queasy real relieved repulsive rich scary selfish shiny shy silly sleepy smiling vast victorious vivacious wandering weary wicked wide-eyed talented tame tasty tender tense terrible thankful thoughtful thoughtless tired smoggy sore sparkling splendid spotless stormy strange stupid successful super svelte wild witty worried worrisome wrong zany zealous'
         .split(' ');
@@ -4282,8 +4382,10 @@ class ClipName extends String {
     }
 }
 
-// Returns an iterable range (inclusive)
-    // Number..to(end:number?, by:number?) → @@Iterator
+/**
+ * Returns an iterable range (inclusive)
+ * @simply Number..to(end:number?, by:number?) → @@Iterator
+ */
 Number.prototype.to ??= function to(end = 0, by = 1) {
     end ??= 0;
 	by ??= 1;
@@ -4395,13 +4497,15 @@ function toImage(imageType = "image/png", returnType = "dataURL") {
     return data;
 };
 
-// Returns a number formatted using unit suffixes
-    // Number..suffix(unit:string?, decimalPlaces:boolean|number?, format:string?, keepTrailingZeroes:boolean?) → string
-        // decimalPlaces = true | false | *:number
-            // true → 123.456.suffix('m', true) => "123.456m"
-            // false → 123.456.suffix('m', false) => "123m"
-            // 1 → 123.456.suffix('m', 1) => "123.4m"
-        // format = "metric" | "full" | "imperial" | "natural" | "readable" | "data" | "time:..."
+/**
+ * Returns a number formatted using unit suffixes
+ * @simply Number..suffix(unit:string?, decimalPlaces:boolean|number?, format:string?, keepTrailingZeroes:boolean?) → string
+ * decimalPlaces = true | false | *:number
+ * true → 123.456.suffix('m', true) => "123.456m"
+ * false → 123.456.suffix('m', false) => "123m"
+ * 1 → 123.456.suffix('m', 1) => "123.4m"
+ * format = "metric" | "full" | "imperial" | "natural" | "readable" | "data" | "time:..."
+ */
 Number.prototype.suffix ??= function suffix(unit = '', decimalPlaces = true, format = "metric", keepTrailingZeroes = true) {
     let number = parseFloat(this),
         sign = (number < 0? '-': ''),
@@ -4502,33 +4606,41 @@ Number.prototype.suffix ??= function suffix(unit = '', decimalPlaces = true, for
     ].join(padded? ' ': '');
 };
 
-// Returns a number formatted using unit prefixes
-    // Number..prefix(unit:string?, decimalPlaces:boolean|number?, format:string?) → string
-        // decimalPlaces = true | false | *:number
-            // true → 123.456.prefix('m', true) => "m123.456"
-            // false → 123.456.prefix('m', false) => "m123"
-            // 1 → 123.456.prefix('m', 1) => "m123.4"
-        // format = "metric" | "full" | "imperial" | "natural" | "readable" | "data" | "time:..."
+/**
+ * Returns a number formatted using unit prefixes
+ * @simply Number..prefix(unit:string?, decimalPlaces:boolean|number?, format:string?) → string
+ * decimalPlaces = true | false | *:number
+ * true → 123.456.prefix('m', true) => "m123.456"
+ * false → 123.456.prefix('m', false) => "m123"
+ * 1 → 123.456.prefix('m', 1) => "m123.4"
+ * format = "metric" | "full" | "imperial" | "natural" | "readable" | "data" | "time:..."
+ */
 Number.prototype.prefix ??= function prefix(unit = '', decimalPlaces = true, format = "metric") {
     let delimeter = `\0${ (+new Date).toString(36) }→`;
 
     return this.suffix(delimeter, decimalPlaces, format).split(delimeter).reverse().join(unit);
 };
 
-// Floors a number to the nearest X
-    // Number..floorToNearest(number:number) → number
+/**
+ * Floors a number to the nearest X
+ * @simply Number..floorToNearest(number:number) → number
+ */
 Number.prototype.floorToNearest ??= function floorToNearest(number) {
     return this - (this % number);
 };
 
-// Raises a number to the nearest X
-    // Number..ceilToNearest(number:number) → number
+/**
+ * Raises a number to the nearest X
+ * @simply Number..ceilToNearest(number:number) → number
+ */
 Number.prototype.ceilToNearest ??= function ceilToNearest(number) {
     return (this - (this % number)) + (number % this);
 };
 
-// Clamps (keeps) a number between two points
-    // Number..clamp(min:number, max:number?) → number
+/**
+ * Clamps (keeps) a number between two points
+ * @simply Number..clamp(min:number, max:number?) → number
+ */
 Number.prototype.clamp ??= function clamp(min, max) {
     if(Number.isNaN(min) || nullish(min))
         throw TypeError('[min] must be a number');
@@ -4564,8 +4676,10 @@ Number[Math] = (parent => {
     return parent;
 })(Math);
 
-// Determines if the string contains any of the value(s)
-    // String..contains(...values:any) → boolean
+/**
+ * Determines if the string contains any of the value(s)
+ * @simply String..contains(...values:any) → boolean
+ */
 String.prototype.contains ??= function contains(...values) {
     let has = false;
 
@@ -4576,8 +4690,10 @@ String.prototype.contains ??= function contains(...values) {
     return has;
 };
 
-// Determines if the string is missing all of the value(s)
-    // String..missing(...values:any) → boolean
+/**
+ * Determines if the string is missing all of the value(s)
+ * @simply String..missing(...values:any) → boolean
+ */
 String.prototype.missing ??= function missing(...values) {
     return !this.contains(...values);
 };
@@ -4923,8 +5039,10 @@ String.prototype.pluralSuffix ??= function pluralSuffix(numberOfItems = 0, tail 
 
 ;
 
-// Returns if an item is of an object class
-    // isObj(object:any, ...or?<Function>) → boolean
+/**
+ * Returns if an item is of an object class
+ * @simply isObj(object:any, ...or?<Function>) → boolean
+ */
 function isObj(object, ...or) {
     return defined(
         [Object, Array, Uint8Array, Uint8ClampedArray, Uint16Array, Uint32Array, Int8Array, Int16Array, Int32Array, Float32Array, Float64Array, BigInt64Array, BigUint64Array, ...or]
@@ -4932,14 +5050,18 @@ function isObj(object, ...or) {
     );
 }
 
-// Returns a number formatted with commas
-    // comify(number:number, locale:string) → string
+/**
+ * Returns a number formatted with commas
+ * @simply comify(number:number, locale:string) → string
+ */
 function comify(number, locale = window.LANGUAGE) {
     return parseFloat(number).toLocaleString(locale);
 }
 
-// Returns a string reformatted
-    // toFormat(string:string|array, pattern:string) → string
+/**
+ * Returns a string reformatted
+ * @simply toFormat(string:string|array, pattern:string) → string
+ */
 function toFormat(string, patterns) {
     patterns = patterns.split('-');
 
@@ -5048,9 +5170,11 @@ toFormat.destruct ??= function destruct(string) {
     ].filter(str => str.length).join('-');
 };
 
-// https://stackoverflow.com/a/19176790/4211612
-// Returns the assumed operating system
-    // GetOS(is:string?) → string | boolean
+/**
+ * https://stackoverflow.com/a/19176790/4211612
+ * Returns the assumed operating system
+ * @simply GetOS(is:string?) → string | boolean
+ */
 function GetOS(is = null) {
     let { userAgent } = window.navigator;
     let OSs = {
@@ -5108,8 +5232,10 @@ Object.defineProperties(GetOS, {
     WIN_3_11: { value: 'Windows 3.11' },
 });
 
-// Returns the assumed key combination
-    // GetMacro(keys:string, OS:string?) → string
+/**
+ * Returns the assumed key combination
+ * @simply GetMacro(keys:string, OS:string?) → string
+ */
 function GetMacro(keys = '', OS = null) {
     keys = (keys ?? '').trim();
     OS ??= GetOS();
@@ -5264,8 +5390,10 @@ function GetMacro(keys = '', OS = null) {
     return toFormat(keys, pattern);
 }
 
-// Returns particulars about an OS' filesystem
-    // GetFileSystem(OS:string?) → object
+/**
+ * Returns particulars about an OS' filesystem
+ * @simply GetFileSystem(OS:string?) → object
+ */
 function GetFileSystem(OS = null) {
     OS ??= GetOS();
 
@@ -5353,8 +5481,10 @@ function GetFileSystem(OS = null) {
     return { acceptableFilenames, unacceptableFilenameCharacters, illegalFilenameCharacters, allIllegalFilenameCharacters, directorySeperator, lineDelimeter, characterNames };
 }
 
-// Logs messages (green)
-    // $log(...messages:any) → undefined
+/**
+ * Logs messages (green)
+ * @simply $log(...messages:any) → undefined
+ */
 function $log(...messages) {
     // return console.error(...messages);
 
@@ -5419,8 +5549,10 @@ function $log(...messages) {
     });
 };
 
-// Logs warnings (yellow)
-    // $warn(...messages:any) → undefined
+/**
+ * Logs warnings (yellow)
+ * @simply $warn(...messages:any) → undefined
+ */
 function $warn(...messages) {
     // return console.error(...messages);
 
@@ -5485,8 +5617,10 @@ function $warn(...messages) {
     });
 };
 
-// Logs errors (red)
-    // $error(...messages:any) → undefined
+/**
+ * Logs errors (red)
+ * @simply $error(...messages:any) → undefined
+ */
 function $error(...messages) {
     // return console.error(...messages);
 
@@ -5551,8 +5685,10 @@ function $error(...messages) {
     });
 };
 
-// Logs comments (blue)
-    // $remark(...messages:any) → undefined
+/**
+ * Logs comments (blue)
+ * @simply $remark(...messages:any) → undefined
+ */
 function $remark(...messages) {
     // return console.error(...messages);
 
@@ -5617,8 +5753,10 @@ function $remark(...messages) {
     });
 };
 
-// Logs notices (pink)
-    // $notice(...messages:any) → undefined
+/**
+ * Logs notices (pink)
+ * @simply $notice(...messages:any) → undefined
+ */
 function $notice(...messages) {
     // return console.error(...messages);
 
@@ -5683,8 +5821,10 @@ function $notice(...messages) {
     });
 };
 
-// Logs nothing (white)
-    // $ignore(...messages:any) → undefined
+/**
+ * Logs nothing (white)
+ * @simply $ignore(...messages:any) → undefined
+ */
 function $ignore(...messages) {
     // return console.error(...messages);
 
@@ -5780,8 +5920,10 @@ setInterval(() => {
 
 ;
 
-// Displays an alert message
-    // alert(message:string?) → boolean | null
+/**
+ * Displays an alert message
+ * @simply alert(message:string?) → boolean | null
+ */
 function alert(message = '') {
     if(alert.done.contains(message))
         return alert.done.fetch(message);
@@ -5926,8 +6068,10 @@ Object.defineProperties(alert, {
     }
 });
 
-// Displays an alert message (sticky, pre-hidden)
-    // alert.silent(message:string?, veiled:boolean?) → boolean | null
+/**
+ * Displays an alert message (sticky, pre-hidden)
+ * @simply alert.silent(message:string?, veiled:boolean?) → boolean | null
+ */
 alert.silent ??= (message = '', veiled = false) => {
     if(alert.done.contains(message))
         return alert.done.fetch(message);
@@ -5951,8 +6095,10 @@ alert.silent ??= (message = '', veiled = false) => {
     return response;
 };
 
-// Displays an alert message with a timer
-    // alert.timed(message:string?, milliseconds:number?, pausable:boolean?) → boolean | null
+/**
+ * Displays an alert message with a timer
+ * @simply alert.timed(message:string?, milliseconds:number?, pausable:boolean?) → boolean | null
+ */
 alert.timed ??= (message = '', milliseconds = 60_000, pausable = false) => {
     if(alert.done.contains(message))
         return alert.done.fetch(message);
@@ -6008,8 +6154,10 @@ alert.timed ??= (message = '', milliseconds = 60_000, pausable = false) => {
 
 ;
 
-// Displays a confirmation message
-    // confirm(message:string?) → boolean | null
+/**
+ * Displays a confirmation message
+ * @simply confirm(message:string?) → boolean | null
+ */
 function confirm(message = '') {
     if(confirm.done.contains(message))
         return confirm.done.fetch(message);
@@ -6205,8 +6353,10 @@ Object.defineProperties(confirm, {
     }
 });
 
-// Displays a confirmation message (sticky, pre-hidden)
-    // confirm.silent(message:string?, veiled:boolean?) → boolean | null
+/**
+ * Displays a confirmation message (sticky, pre-hidden)
+ * @simply confirm.silent(message:string?, veiled:boolean?) → boolean | null
+ */
 confirm.silent ??= (message = '', veiled = false) => {
     if(confirm.done.contains(message))
         return confirm.done.fetch(message);
@@ -6230,8 +6380,10 @@ confirm.silent ??= (message = '', veiled = false) => {
     return response;
 };
 
-// Displays a confirmation message with a timer
-    // confirm.timed(message:string?, milliseconds:number?, pausable:boolean?) → boolean | null
+/**
+ * Displays a confirmation message with a timer
+ * @simply confirm.timed(message:string?, milliseconds:number?, pausable:boolean?) → boolean | null
+ */
 confirm.timed ??= (message = '', milliseconds = 60_000, pausable = false) => {
     if(confirm.done.contains(message))
         return confirm.done.fetch(message);
@@ -6287,8 +6439,10 @@ confirm.timed ??= (message = '', milliseconds = 60_000, pausable = false) => {
 
 ;
 
-// Prompts a message
-    // prompt(message:string?, defaultValue:string?) → string | null
+/**
+ * Prompts a message
+ * @simply prompt(message:string?, defaultValue:string?) → string | null
+ */
 function prompt(message = '', defaultValue = '') {
     if(prompt.done.contains(message))
         return prompt.done.fetch(message);
@@ -6502,8 +6656,10 @@ Object.defineProperties(prompt, {
     }
 });
 
-// Prompts a message (sticky, pre-hidden)
-    // prompt.silent(message:string?, defaultValue:string?, veiled:boolean?) → string | null
+/**
+ * Prompts a message (sticky, pre-hidden)
+ * @simply prompt.silent(message:string?, defaultValue:string?, veiled:boolean?) → string | null
+ */
 prompt.silent ??= (message = '', defaultValue = '', veiled = false) => {
     if(prompt.done.contains(message))
         return prompt.done.fetch(message);
@@ -6527,8 +6683,10 @@ prompt.silent ??= (message = '', defaultValue = '', veiled = false) => {
     return response;
 };
 
-// Prompts a message with a timer
-    // prompt.timed(message:string?, milliseconds:number?, pausable:boolean?) → string | null
+/**
+ * Prompts a message with a timer
+ * @simply prompt.timed(message:string?, milliseconds:number?, pausable:boolean?) → string | null
+ */
 prompt.timed ??= (message = '', milliseconds = 60_000, pausable = true) => {
     if(prompt.done.contains(message))
         return prompt.done.fetch(message);
@@ -6584,8 +6742,10 @@ prompt.timed ??= (message = '', milliseconds = 60_000, pausable = true) => {
 
 ;
 
-// Presents a selection menu to the user
-    // select(message:string?, options:array?|object?, multiple:boolean?) → string<number|array:number> | null
+/**
+ * Presents a selection menu to the user
+ * @simply select(message:string?, options:array?|object?, multiple:boolean?) → string<number|array:number> | null
+ */
 function select(message = '', options = [], multiple = false) {
     if(select.done.contains(message))
         return select.done.fetch(message);
@@ -6858,8 +7018,10 @@ Object.defineProperties(select, {
     }
 });
 
-// Selects an option (sticky, pre-hidden)
-    // select.silent(message:string?, options:array?|object?, multiple:boolean?, veiled:boolean?) → string<number|array:number> | null
+/**
+ * Selects an option (sticky, pre-hidden)
+ * @simply select.silent(message:string?, options:array?|object?, multiple:boolean?, veiled:boolean?) → string<number|array:number> | null
+ */
 select.silent ??= (message = '', options = [], multiple = false, veiled = false) => {
     if(select.done.contains(message))
         return select.done.fetch(message);
@@ -6883,8 +7045,10 @@ select.silent ??= (message = '', options = [], multiple = false, veiled = false)
     return response;
 };
 
-// Selects an option with a timer
-    // select.timed(message:string?, options:array?|object?, multiple:boolean?, milliseconds:number?, pausable:boolean?) → string | null
+/**
+ * Selects an option with a timer
+ * @simply select.timed(message:string?, options:array?|object?, multiple:boolean?, milliseconds:number?, pausable:boolean?) → string | null
+ */
 select.timed ??= (message = '', options = [], multiple = false, milliseconds = 60_000, pausable = true) => {
     if(select.done.contains(message))
         return select.done.fetch(message);
@@ -6927,8 +7091,10 @@ select.timed ??= (message = '', options = [], multiple = false, milliseconds = 6
     return response;
 };
 
-// Compares two versions and returns an integer representing their relationship
-    // compareVersions(old:string?, new:string?, return:string?) → number | boolean
+/**
+ * Compares two versions and returns an integer representing their relationship
+ * @simply compareVersions(old:string?, new:string?, return:string?) → number | boolean
+ */
 function compareVersions(oldVersion = '', newVersion = '', returnType) {
     // https://www.toptal.com/designers/htmlarrows/math/
     let syms = '68 71 7A E1 64 DC 66 6F 7C 81 DE 5F 61 63 78 79 60 76 77 69 70 7B E0 65 DD 67 6E 7D 80 DF'.split(' ').map(u => String.fromCharCode(parseInt(`22${u}`, 16))).join('');
@@ -9435,8 +9601,10 @@ window.ISO_639_1 ??= ({
     }
 });
 
-// Encodes HTML to be HTML-embed friendly
-    // encodeHTML(string:string?) → string
+/**
+ * Encodes HTML to be HTML-embed friendly
+ * @simply encodeHTML(string:string?) → string
+ */
 function encodeHTML(string = '') {
     for(let { char, html, dec, hex } of decodeHTML.table)
         string = string.replaceAll(char, html);
@@ -9444,8 +9612,10 @@ function encodeHTML(string = '') {
     return string;
 }
 
-// Decodes HTML-embedded text
-    // decodeHTML(string:string) → string
+/**
+ * Decodes HTML-embedded text
+ * @simply decodeHTML(string:string) → string
+ */
 function decodeHTML(string = '') {
     return string.replace(/&(#x?\d+|[a-z]+);/ig, ($0, $1, $$, $_) => decodeHTML.table.find(({ html, dec, hex }) => [html, dec, hex].contains($0))?.char ?? $0);
 }

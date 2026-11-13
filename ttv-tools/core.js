@@ -1220,8 +1220,10 @@ try {
 
         "all": {
             value:
-            // Makes a Promised setInterval. Only executes if ALL conditions pass
-                // when.all(...conditions:function) → array<Promise~any[]>
+            /**
+             * Makes a Promised setInterval. Only executes if ALL conditions pass
+             * @simply when.all(...conditions:function) → array<Promise~any[]>
+             */
             async function(...conditions) {
                 conditions = [].concat(conditions);
 
@@ -1236,8 +1238,10 @@ try {
 
         "any": {
             value:
-            // Makes a Promised setInterval. Only executes if ANY conditions pass
-                // when.any(...conditions:function) → Promise~any[]
+            /**
+             * Makes a Promised setInterval. Only executes if ANY conditions pass
+             * @simply when.any(...conditions:function) → Promise~any[]
+             */
             async function(...conditions) {
                 conditions = [].concat(conditions);
 
@@ -1252,8 +1256,10 @@ try {
 
         "pipe": {
             value:
-            // Makes a Promised setInterval. Pipes the arguments provided, applying them to both the condition and resolver
-                // when.pipe(condition:function<any>, ms:number?<integer>, ...args<any>) → Promise~any[]
+            /**
+             * Makes a Promised setInterval. Pipes the arguments provided, applying them to both the condition and resolver
+             * @simply when.pipe(condition:function<any>, ms:number?<integer>, ...args<any>) → Promise~any[]
+             */
             async function(condition, ms = 100, ...args) {
                 args = [].concat(args);
 
@@ -1265,8 +1271,10 @@ try {
 
         "thru": {
             value:
-            // Makes a Promised setInterval. Pipes the arguments provided, applying them only on the resolver
-                // when.thru(condition:function<any>, ms:number?<integer>, ...args<any>) → Promise~any[]
+            /**
+             * Makes a Promised setInterval. Pipes the arguments provided, applying them only on the resolver
+             * @simply when.thru(condition:function<any>, ms:number?<integer>, ...args<any>) → Promise~any[]
+             */
             async function(condition, ms = 100, ...args) {
                 args = [].concat(args);
 
@@ -1278,8 +1286,10 @@ try {
 
         "defined": {
             value:
-            // Makes a Promised setInterval
-                // when.defined(condition:function<any>, ms:number?<integer>) → Promise~any
+            /**
+             * Makes a Promised setInterval
+             * @simply when.defined(condition:function<any>, ms:number?<integer>) → Promise~any
+             */
             async function(condition, ms = 100, ...args) {
                 return new Promise((resolve, reject) => {
                     // One check at a time: a condition that never settles otherwise leaves one pending call per tick (#57)
@@ -1315,8 +1325,10 @@ try {
 
         "nullish": {
             value:
-            // Makes a Promised setInterval
-                // when.nullish(condition:function<any>, ms:number?<integer>) → Promise~any
+            /**
+             * Makes a Promised setInterval
+             * @simply when.nullish(condition:function<any>, ms:number?<integer>) → Promise~any
+             */
             async function(condition, ms = 100, ...args) {
                 return new Promise((resolve, reject) => {
                     let interval = setInterval(async args => {
@@ -1333,8 +1345,10 @@ try {
 
         "empty": {
             value:
-            // Makes a Promised setInterval
-                // when.empty(condition:function<@@iterable>, ms:number?<integer>) → Promise~any
+            /**
+             * Makes a Promised setInterval
+             * @simply when.empty(condition:function<@@iterable>, ms:number?<integer>) → Promise~any
+             */
             async function(condition, ms = 100, ...args) {
                 return new Promise((resolve, reject) => {
                     let interval = setInterval(async args => {
@@ -1351,8 +1365,10 @@ try {
 
         "sated": {
             value:
-            // Makes a Promised setInterval
-                // when.sated(condition:function<@@iterable>, ms:number?<integer>) → Promise~any
+            /**
+             * Makes a Promised setInterval
+             * @simply when.sated(condition:function<@@iterable>, ms:number?<integer>) → Promise~any
+             */
             async function(condition, ms = 100, ...args) {
                 return new Promise((resolve, reject) => {
                     let interval = setInterval(async args => {
@@ -1371,8 +1387,10 @@ try {
     Object.defineProperties(when.all, {
         "defined": {
             value:
-            // Makes a Promised setInterval. Only executes if ALL conditions pass
-                // when.all.defined(...conditions:function) → array<Promise~any[]>
+            /**
+             * Makes a Promised setInterval. Only executes if ALL conditions pass
+             * @simply when.all.defined(...conditions:function) → array<Promise~any[]>
+             */
             async function(...conditions) {
                 conditions = [].concat(conditions);
 
@@ -1386,8 +1404,10 @@ try {
         },
         "nullish": {
             value:
-            // Makes a Promised setInterval. Only executes if ALL conditions pass
-                // when.all.nullish(...conditions:function) → array<Promise~any[]>
+            /**
+             * Makes a Promised setInterval. Only executes if ALL conditions pass
+             * @simply when.all.nullish(...conditions:function) → array<Promise~any[]>
+             */
             async function(...conditions) {
                 conditions = [].concat(conditions);
 
@@ -1401,8 +1421,10 @@ try {
         },
         "empty": {
             value:
-            // Makes a Promised setInterval. Only executes if ALL conditions pass
-                // when.all.empty(...conditions:function) → array<Promise~any[]>
+            /**
+             * Makes a Promised setInterval. Only executes if ALL conditions pass
+             * @simply when.all.empty(...conditions:function) → array<Promise~any[]>
+             */
             async function(...conditions) {
                 conditions = [].concat(conditions);
 
@@ -1416,8 +1438,10 @@ try {
         },
         "sated": {
             value:
-            // Makes a Promised setInterval. Only executes if ALL conditions pass
-                // when.all.sated(...conditions:function) → array<Promise~any[]>
+            /**
+             * Makes a Promised setInterval. Only executes if ALL conditions pass
+             * @simply when.all.sated(...conditions:function) → array<Promise~any[]>
+             */
             async function(...conditions) {
                 conditions = [].concat(conditions);
 
@@ -1434,8 +1458,10 @@ try {
     Object.defineProperties(when.any, {
         "defined": {
             value:
-            // Makes a Promised setInterval. Only executes if ALL conditions pass
-                // when.any.defined(...conditions:function) → Promise~any[]
+            /**
+             * Makes a Promised setInterval. Only executes if ALL conditions pass
+             * @simply when.any.defined(...conditions:function) → Promise~any[]
+             */
             async function(...conditions) {
                 conditions = [].concat(conditions);
 
@@ -1449,8 +1475,10 @@ try {
         },
         "nullish": {
             value:
-            // Makes a Promised setInterval. Only executes if ALL conditions pass
-                // when.any.nullish(...conditions:function) → Promise~any[]
+            /**
+             * Makes a Promised setInterval. Only executes if ALL conditions pass
+             * @simply when.any.nullish(...conditions:function) → Promise~any[]
+             */
             async function(...conditions) {
                 conditions = [].concat(conditions);
 
@@ -1464,8 +1492,10 @@ try {
         },
         "empty": {
             value:
-            // Makes a Promised setInterval. Only executes if ALL conditions pass
-                // when.any.empty(...conditions:function) → Promise~any[]
+            /**
+             * Makes a Promised setInterval. Only executes if ALL conditions pass
+             * @simply when.any.empty(...conditions:function) → Promise~any[]
+             */
             async function(...conditions) {
                 conditions = [].concat(conditions);
 
@@ -1479,8 +1509,10 @@ try {
         },
         "sated": {
             value:
-            // Makes a Promised setInterval. Only executes if ALL conditions pass
-                // when.any.sated(...conditions:function) → Promise~any[]
+            /**
+             * Makes a Promised setInterval. Only executes if ALL conditions pass
+             * @simply when.any.sated(...conditions:function) → Promise~any[]
+             */
             async function(...conditions) {
                 conditions = [].concat(conditions);
 
@@ -1497,8 +1529,10 @@ try {
     Object.defineProperties(when.defined, {
         "pipe": {
             value:
-            // Makes a Promised setInterval. Pipes the arguments provided, applying them to both the condition and resolver
-                // when.defined.pipe(condition:function<any>, ms:number?<integer>, ...args<any>) → Promise~any[]
+            /**
+             * Makes a Promised setInterval. Pipes the arguments provided, applying them to both the condition and resolver
+             * @simply when.defined.pipe(condition:function<any>, ms:number?<integer>, ...args<any>) → Promise~any[]
+             */
             async function(condition, ms = 100, ...args) {
                 args = [].concat(args);
 
@@ -1510,8 +1544,10 @@ try {
 
         "thru": {
             value:
-            // Makes a Promised setInterval. Pipes the arguments provided, applying them only on the resolver
-                // when.defined.thru(condition:function<any>, ms:number?<integer>, ...args<any>) → Promise~any[]
+            /**
+             * Makes a Promised setInterval. Pipes the arguments provided, applying them only on the resolver
+             * @simply when.defined.thru(condition:function<any>, ms:number?<integer>, ...args<any>) → Promise~any[]
+             */
             async function(condition, ms = 100, ...args) {
                 args = [].concat(args);
 
@@ -1525,8 +1561,10 @@ try {
     Object.defineProperties(when.nullish, {
         "pipe": {
             value:
-            // Makes a Promised setInterval. Pipes the arguments provided, applying them to both the condition and resolver
-                // when.nullish.pipe(condition:function<any>, ms:number?<integer>, ...args<any>) → Promise~any[]
+            /**
+             * Makes a Promised setInterval. Pipes the arguments provided, applying them to both the condition and resolver
+             * @simply when.nullish.pipe(condition:function<any>, ms:number?<integer>, ...args<any>) → Promise~any[]
+             */
             async function(condition, ms = 100, ...args) {
                 args = [].concat(args);
 
@@ -1538,8 +1576,10 @@ try {
 
         "thru": {
             value:
-            // Makes a Promised setInterval. Pipes the arguments provided, applying them only on the resolver
-                // when.nullish.thru(condition:function<any>, ms:number?<integer>, ...args<any>) → Promise~any[]
+            /**
+             * Makes a Promised setInterval. Pipes the arguments provided, applying them only on the resolver
+             * @simply when.nullish.thru(condition:function<any>, ms:number?<integer>, ...args<any>) → Promise~any[]
+             */
             async function(condition, ms = 100, ...args) {
                 args = [].concat(args);
 
@@ -1553,8 +1593,10 @@ try {
     Object.defineProperties(when.empty, {
         "pipe": {
             value:
-            // Makes a Promised setInterval. Pipes the arguments provided, applying them to both the condition and resolver
-                // when.empty.pipe(condition:function<any>, ms:number?<integer>, ...args<any>) → Promise~any[]
+            /**
+             * Makes a Promised setInterval. Pipes the arguments provided, applying them to both the condition and resolver
+             * @simply when.empty.pipe(condition:function<any>, ms:number?<integer>, ...args<any>) → Promise~any[]
+             */
             async function(condition, ms = 100, ...args) {
                 args = [].concat(args);
 
@@ -1566,8 +1608,10 @@ try {
 
         "thru": {
             value:
-            // Makes a Promised setInterval. Pipes the arguments provided, applying them only on the resolver
-                // when.empty.thru(condition:function<any>, ms:number?<integer>, ...args<any>) → Promise~any[]
+            /**
+             * Makes a Promised setInterval. Pipes the arguments provided, applying them only on the resolver
+             * @simply when.empty.thru(condition:function<any>, ms:number?<integer>, ...args<any>) → Promise~any[]
+             */
             async function(condition, ms = 100, ...args) {
                 args = [].concat(args);
 
@@ -1581,8 +1625,10 @@ try {
     Object.defineProperties(when.sated, {
         "pipe": {
             value:
-            // Makes a Promised setInterval. Pipes the arguments provided, applying them to both the condition and resolver
-                // when.sated.pipe(condition:function<any>, ms:number?<integer>, ...args<any>) → Promise~any[]
+            /**
+             * Makes a Promised setInterval. Pipes the arguments provided, applying them to both the condition and resolver
+             * @simply when.sated.pipe(condition:function<any>, ms:number?<integer>, ...args<any>) → Promise~any[]
+             */
             async function(condition, ms = 100, ...args) {
                 args = [].concat(args);
 
@@ -1594,8 +1640,10 @@ try {
 
         "thru": {
             value:
-            // Makes a Promised setInterval. Pipes the arguments provided, applying them only on the resolver
-                // when.sated.thru(condition:function<any>, ms:number?<integer>, ...args<any>) → Promise~any[]
+            /**
+             * Makes a Promised setInterval. Pipes the arguments provided, applying them only on the resolver
+             * @simply when.sated.thru(condition:function<any>, ms:number?<integer>, ...args<any>) → Promise~any[]
+             */
             async function(condition, ms = 100, ...args) {
                 args = [].concat(args);
 
