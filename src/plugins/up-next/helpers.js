@@ -12,6 +12,10 @@ import { plugin } from '../../lib/plugins.js';
 const UpNextStatus = {
     key: 'tt-up-next-status',
 
+    /**
+     * Gets the current Up Next status.
+     * @returns {object|null} The status, or `null` on failure
+     */
     get() {
         try {
             return JSON.parse(sessionStorage.getItem(this.key) ?? 'null');
@@ -20,6 +24,10 @@ const UpNextStatus = {
         }
     },
 
+    /**
+     * Sets the current Up Next status.
+     * @param {object} state - Status to save
+     */
     set(state) {
         try {
             sessionStorage.setItem(this.key, JSON.stringify(state));
@@ -28,6 +36,9 @@ const UpNextStatus = {
         }
     },
 
+    /**
+     * Clears the current Up Next status.
+     */
     clear() {
         try {
             sessionStorage.removeItem(this.key);
@@ -62,8 +73,12 @@ plugin({
 
         let ALREADY_RESTORING_DEAD_CHANNEL = false;
 
-        // Restart the First in line que's timers
-            // REDO_FIRST_IN_LINE_QUEUE(url:string?<URL>, search:object?) → <Promise>?undefined
+        /**
+         * Restarts the Up Next (First in Line) queue's timers.
+         * @param {string|URL} [url] - The job (channel URL) whose timer restarts; the queue's first job when left out
+         * @param {object} [search=null] - Search parameters
+         * @returns {Promise<void>}
+         */
         top.REDO_FIRST_IN_LINE_QUEUE =
         async function REDO_FIRST_IN_LINE_QUEUE(url, search = null) {
             // Skip only if a job for this URL is really running: cleared intervals keep their IDs, and callers often set
@@ -269,6 +284,11 @@ plugin({
             }, 1000);
         };
 
+        /**
+         * When the next channel is due: now plus `offset`, else the Up Next wait time (an hour away in a tab that doesn't run Up Next).
+         * @param {number} [offset] - How long from now, in ms
+         * @returns {number} The due time, in ms since 1970
+         */
         top.NEW_DUE_DATE =
         function NEW_DUE_DATE(offset) {
             if(!UP_NEXT_ALLOW_THIS_TAB)
@@ -345,6 +365,10 @@ plugin({
             }
         };
 
+        /**
+         * Gets the time remaining until the next due date.
+         * @returns {number} Time remaining in ms
+         */
         top.GET_TIME_REMAINING =
         function GET_TIME_REMAINING() {
             if(!UP_NEXT_ALLOW_THIS_TAB)

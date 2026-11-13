@@ -5,9 +5,18 @@
 // Expects the caller to pass a single message. (Remember, the Twitch
 // IRC server may send one or more IRC messages in a single message.)
 
+/**
+ * Twitch chat over IRC: the open sockets, and the parsers for the messages they receive.
+ * @type {object}
+ */
 window.TTV_IRC ??= {
     sockets: {},
 
+    /**
+     * Parses an IRC message into its component parts.
+     * @param {string} message - Raw IRC message
+     * @returns {object} Parsed message data
+     */
     parseMessage(message) {
         // Contains the component parts.
         let parsedMessage = {
@@ -91,8 +100,11 @@ window.TTV_IRC ??= {
         return parsedMessage;
     },
 
-    // Parses the tags component of the IRC message.
-        // badge-info=;badges=broadcaster/1;color=#0000FF;...
+    /**
+     * Parses the tags component of the IRC message, e.g. `badge-info=;badges=broadcaster/1;color=#0000FF;…`.
+     * @param {string} tags - Raw tags string
+     * @returns {object} Parsed tags
+     */
     parseTags(tags) {
         // List of tags to ignore.
         const tagsToIgnore = {
@@ -195,7 +207,11 @@ window.TTV_IRC ??= {
         return convertedParsedTags;
     },
 
-    // Parses the command component of the IRC message.
+    /**
+     * Parses the command component of the IRC message.
+     * @param {string} rawCommandComponent - Raw command string
+     * @returns {object} Parsed command data
+     */
     parseCommand(rawCommandComponent) {
         let [command, channel, ...request] = rawCommandComponent.trim().split(' ');
 
@@ -274,7 +290,11 @@ window.TTV_IRC ??= {
         return null;
     },
 
-    // Parses the source (nick and host) components of the IRC message.
+    /**
+     * Parses the source (nick and host) components of the IRC message.
+     * @param {string} rawSourceComponent - Raw source string, e.g. `nick!user@host`
+     * @returns {object|null} `{ nick, host }`, or `null` when the message has no source
+     */
     parseSource(rawSourceComponent) {
         // Not all messages contain a source
         if(nullish(rawSourceComponent)) {
@@ -289,7 +309,12 @@ window.TTV_IRC ??= {
         }
     },
 
-    // Parsing the IRC parameters component if it contains a command (e.g., !dice).
+    /**
+     * Parses the IRC parameters component if it contains a command (e.g., !dice).
+     * @param {string} rawParametersComponent - Raw parameters string
+     * @param {object} command - The command object to update
+     * @returns {void}
+     */
     parseParameters(rawParametersComponent, command) {
         let index = 0;
         let commandParts = rawParametersComponent.slice(index + 1).trim();

@@ -896,7 +896,7 @@ const rules = {
                 // `@param {type} name`, `[name=default]` or `name.key` (a destructured part)
                 // …or named in a `@simply name(param:type, …) → result` signature line
                 const listed = [
-                    ...[...doc.value.matchAll(/@param\s+(?:\{[^}]*\}\s*)?\[?(?:\.\.\.)?([\w$]+)/g)].map(([, param]) => param),
+                    ...[...doc.value.matchAll(/@param\s+(?:\{(?:[^{}]|\{[^{}]*\})*\}\s*)?\[?(?:\.\.\.)?([\w$]+)/g)].map(([, param]) => param),
                     ...[...doc.value.matchAll(/@simply\s+(.+)/g)].flatMap(([, line]) => [...simplyParams(line)]),
                 ]
                     , taken = paramNames(fn);
@@ -977,7 +977,7 @@ const rules = {
                     // A member the object's own header lists (`@prop {type} key - …`) is documented there
                     const header = jsdocOf(object.parent);
 
-                    if(header && new RegExp(`@prop(?:erty)?\\s+(?:\\{[^}]*\\}\\s*)?\\[?${ key }\\b`).test(header.value))
+                    if(header && new RegExp(`@prop(?:erty)?\\s+(?:\\{(?:[^{}]|\\{[^{}]*\\})*\\}\\s*)?\\[?${ key }\\b`).test(header.value))
                         return;
 
                     check(node, node.kind == 'init' ? node.value : null, `${ owner }.${ key }`, 'a member of a top-level object');

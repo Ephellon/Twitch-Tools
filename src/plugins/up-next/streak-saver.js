@@ -58,6 +58,10 @@ async function gql(query, variables = {}) {
     return json?.data ?? {};
 }
 
+/**
+ * Saves Watch Streaks: finds a VOD or clip for each channel in the streak list and plays it in a hidden frame, one save at a time.
+ * @type {object}
+ */
 export const StreakSaver = {
     /**
      * The streaks you can still save, soonest deadline first.
@@ -140,6 +144,11 @@ export const StreakSaver = {
      */
     async popup({ name, display }) {
         const f = furnish
+            /**
+             * `name` → `name's` (`James` → `James'`).
+             * @param {string} string - The name
+             * @returns {string}
+             */
             , s = string => string.replace(/$/, "'").replace(/(?<!s)'$/, "'s");
 
         $('#tt-streak-saver-popup')?.remove();
@@ -157,7 +166,10 @@ export const StreakSaver = {
                 frame
             );
 
-        // Shows the frame in the middle of the screen, sized and layered like Stream Preview
+        /**
+         * Shows the frame in the middle of the screen, sized and layered like Stream Preview.
+         * @param {string} message - What to show above it
+         */
         const reveal = message => {
             const scale = parseFloat(Settings.stream_preview_scale) || 1;
 

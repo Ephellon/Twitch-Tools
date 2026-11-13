@@ -83,6 +83,11 @@ const write = values => new Promise(resolve => STORAGE.set(values, resolve));
  */
 const ask = async html => !!(await confirm(`${ html }<!-- ${ Date.now() } -->`));
 
+/**
+ * Escapes HTML special characters.
+ * @param {string} text - Text to escape
+ * @returns {string}
+ */
 const escape = text => String(text).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 
 /**
@@ -153,7 +158,9 @@ function openEditor({ source, file, original, taken }) {
 
         let timer = null, faulty = new Set;
 
-        // Line numbers, one per line of text; lines with a problem are marked
+        /**
+         * Redraws the line numbers, one per line of text; lines with a problem are marked.
+         */
         const number = () => {
             const count = textarea.value.split('\n').length;
 
@@ -161,6 +168,9 @@ function openEditor({ source, file, original, taken }) {
             gutter.scrollTop = textarea.scrollTop;
         };
 
+        /**
+         * Refreshes the editor's highlighting and problem list.
+         */
         const refresh = () => {
             const text = textarea.value
                 , { meta: info } = TTV_DSL.inspect(text, { file })
@@ -201,6 +211,10 @@ function openEditor({ source, file, original, taken }) {
             document.execCommand('insertText', false, '    ');
         });
 
+        /**
+         * Closes the editor and resolves the promise.
+         * @param {*} result - Result of the editing session, or `null` if cancelled
+         */
         const close = result => {
             overlay.remove();
             resolve(result);
@@ -262,8 +276,9 @@ export async function renderUserScripts({ ids, defaults }) {
 
     Object.assign(defaults, settingDefaults([{ sections }]));
 
-    // The manager list
-    // Reload back to this list: the fragment brings the page here, then the section is lined up once the page settles
+    /**
+     * Reloads back to the manager list: the URL fragment brings the page here, then the section is lined up once the page settles.
+     */
     const reload = () => {
         location.hash = RETURN_HASH;
         location.reload();
@@ -281,8 +296,16 @@ export async function renderUserScripts({ ids, defaults }) {
         history.replaceState(null, '', location.pathname + location.search);
     }
 
+    /**
+     * Gets the set of all currently taken script IDs.
+     * @returns {Set<string>}
+     */
     const taken = () => new Set([...builtIn, ...scripts.map(({ meta }) => meta.id)]);
 
+    /**
+     * Saves the provided script list to storage and reloads.
+     * @param {Array<object>} list - Scripts to save
+     */
     const store = async list => {
         await write({ [SCRIPTS_KEY]: list.map(({ file, source }) => ({ file, source })) });
         reload();
@@ -337,6 +360,11 @@ export async function renderUserScripts({ ids, defaults }) {
         });
     }
 
+    /**
+     * Adds a new script via the editor.
+     * @param {string} source - Script source
+     * @param {string} file - Target filename
+     */
     const add = async(source, file) => {
         const result = await openEditor({ source, file, original: null, taken: taken() });
 
