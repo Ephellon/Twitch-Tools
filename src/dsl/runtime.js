@@ -760,6 +760,7 @@ if(typeof require === 'function' && typeof module === 'object')
                         resolve(!signal?.aborted);
                     }, milliseconds);
 
+                    /** Ends the wait early when the script is stopped: clears the timer and resolves `false`. */
                     const cancel = () => {
                         clock.clearTimeout(handle);
                         resolve(false);
