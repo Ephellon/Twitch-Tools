@@ -6,6 +6,10 @@
 import { plugin, plugins, run, start } from '../../lib/plugins.js';
 import { Recording, installVideoMethods } from '../../lib/recording.js';
 
+/**
+ * The plugin registry's API (`plugin`, `plugins`, `run`, `start`), shared by every bundle over one registry; whichever bundle loads first sets it.
+ * @type {object}
+ */
 globalThis.TTV ??= { plugin, plugins, run, start };
 globalThis.Recording = Recording;
 installVideoMethods();

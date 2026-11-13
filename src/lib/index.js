@@ -23,6 +23,10 @@ import { plugin, plugins, run, start } from './plugins.js';
 import '../plugins/index.js';
 
 // chat-plugins.js publishes the same functions over the same registry, so either may come first
+/**
+ * The plugin registry's API (`plugin`, `plugins`, `run`, `start`), shared by every bundle over one registry; whichever bundle loads first sets it.
+ * @type {object}
+ */
 globalThis.TTV ??= { plugin, plugins, run, start };
 
 Object.assign(globalThis, {

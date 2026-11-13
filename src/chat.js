@@ -19,6 +19,10 @@
 
 window.IS_A_FRAMED_CONTAINER = (top != window);
 
+/**
+ * Global queue for chat-related visual elements and messages.
+ * @type {{balloons:Array, bullets:Array, bttv_emotes:Array, emotes:Array, messages:Array, message_popups:Array, popups:Array}}
+ */
 top.Queue ??= { balloons: [], bullets: [], bttv_emotes: [], emotes: [], messages: [], message_popups: [], popups: [] };
 
 /**
@@ -69,7 +73,9 @@ let Chat__Initialize = async(START_OVER = false) => {
                 TTV_BADGES[name] = uuid;
         });
 
-    // Time how long jobs take to complete properly
+    /**
+     * Times how long jobs take to complete: `new StopWatch(name)`, then `StopWatch.stop(name)`.
+     */
     class StopWatch {
         static #WATCHES = new Map;
 
@@ -862,8 +868,14 @@ Chat__PAGE_CHECKER = setInterval(Chat__WAIT_FOR_PAGE = async() => {
             Overrides: {
                 window.ALLOWED_JOBS ??= (parseURL(location).searchParameters?.allow || '').split(',');
 
-                // Registers a job
-                    // @override RegisterJob(JobName:string) → Number<IntervalID>
+                /**
+                 * Starts a job in the chat frame (overrides core.js's `RegisterJob`): with `?allow=` in the URL, only the
+                 * listed jobs start, and the chat is cleared every 15 s when no chat job is allowed.
+                 * @simply RegisterJob(JobName:string) → Number<IntervalID>
+                 * @param {string} JobName - The job (its `Handlers`/`Timers` key)
+                 * @param {string} [JobReason='default'] - Why it starts, for the log
+                 * @returns {number|undefined} The timer (negative for a one-time job), or nothing when the job isn't allowed
+                 */
                 window.RegisterJob = function RegisterJob(JobName, JobReason = 'default') {
                     RegisterJob.__reason__ = JobReason;
 
@@ -888,6 +900,9 @@ Chat__PAGE_CHECKER = setInterval(Chat__WAIT_FOR_PAGE = async() => {
             }
         }
 
+        /**
+         * Runs when Twitch moves to another page without a reload: restarts the chat frame's features for the new page.
+         */
         top.onlocationchange = () => {
             $warn("[Child] Re-initializing...");
 

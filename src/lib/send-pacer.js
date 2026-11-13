@@ -20,6 +20,10 @@ export function createSendPacer({ gap = 1100, window = 30_000, limit = () => 20,
     const queue = [], sent = [];
     let timer = null;
 
+    /**
+     * Processes the queued messages in the pacer.
+     * @returns {void}
+     */
     function drain() {
         timer = null;
 

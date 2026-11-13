@@ -3,8 +3,10 @@
  * Moved verbatim from tools.js in Phase 3; see src/lib/index.js for how it reaches the page.
  */
 
-// Creates a Twitch-style chat footer
-    // new ChatFooter(title:string, options:object?) → Element<ChatFooter>
+/**
+ * Creates a Twitch-style chat footer
+ * @simply new ChatFooter(title:string, options:object?) → Element<ChatFooter>
+ */
 class ChatFooter {
     static #FOOTERS = new Map();
     static #FOOTER_TIMEOUT = -1;

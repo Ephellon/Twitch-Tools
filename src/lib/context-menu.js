@@ -3,9 +3,11 @@
  * Moved verbatim from tools.js in Phase 3; see src/lib/index.js for how it reaches the page.
  */
 
-// Creates a Twitch-style context menu
-    // new ContextMenu({ options:array, fineTuning:object? }) → Element<ContextMenu>
-    // options = { text:string, icon:string, shortcut:string, favicon:string<HTML|SVG> }
+/**
+ * Creates a Twitch-style context menu
+ * @simply new ContextMenu({ options:array, fineTuning:object? }) → Element<ContextMenu>
+ * options = { text:string, icon:string, shortcut:string, favicon:string<HTML|SVG> }
+ */
 class ContextMenu {
     static #RootCloseOnComplete = when.defined(() => $('#root'))
         .then(root => root

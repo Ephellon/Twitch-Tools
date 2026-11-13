@@ -3,8 +3,10 @@
  * Moved verbatim from tools.js in Phase 3; see src/lib/index.js for how it reaches the page.
  */
 
-// Creates a Twitch-style card
-    // new Card({ title:string, subtitle:string?, fineTuning:object? }) → Element<Card>
+/**
+ * Creates a Twitch-style card
+ * @simply new Card({ title:string, subtitle:string?, fineTuning:object? }) → Element<Card>
+ */
 class Card {
     static #CARDS = new Map();
 

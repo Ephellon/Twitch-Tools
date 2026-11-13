@@ -10,7 +10,7 @@
 import { ESLint } from 'eslint';
 
 // Third-party code in src/ext: not ours to document
-const VENDORED = /\/ext\/(?:localforage|sortable|resemble)\.js$/;
+const VENDORED = /\/ext\/(?:localforage|sortable|resemble|tracking)\.js$/;
 
 const args = process.argv.slice(2)
     , list = args.includes('--list')

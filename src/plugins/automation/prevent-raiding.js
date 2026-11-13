@@ -48,6 +48,9 @@ plugin({
 
         raid_stopper:
         if(raiding || raided || SHADOW_RAID) {
+            /**
+             * After the next page change, waits 5 s, then lets raids through again (the raid being stopped is over).
+             */
             top.onlocationchange = () => wait(5000).then(() => CONTINUE_RAIDING = SHADOW_RAID = false);
 
             // Ignore followed channels

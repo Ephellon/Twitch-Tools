@@ -582,6 +582,10 @@ window.Glyphs ??= {
         })();
     },
 
+    /**
+     * Each glyph's SVG path data, by name (glyphs on the exclusion list left out).
+     * @type {object}
+     */
     get pathData() {
         return (() => {
             let exclusions = window.Glyphs.__exclusionList__,

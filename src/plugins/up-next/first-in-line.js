@@ -431,7 +431,12 @@ plugin({
                 })
             , 100);
 
-            // Restart the timer if the user navigates away from the page
+            /**
+             * Restarts the Up Next timer when the viewer moves to another page.
+             * @param {object} change - The page change
+             * @param {string} change.from - The page left
+             * @param {string} change.to - The page opened
+             */
             top.onlocationchange = ({ from, to }) => {
                 if(from == to)
                     return;

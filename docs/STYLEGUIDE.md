@@ -144,13 +144,13 @@ Leave room to breathe. All of these are **lint, fix** (`padding-line-between-sta
 - Helpers used by only one function are defined inside it; shared helpers go in `src/lib` (or `core.js`/`utils.js` for page-scope helpers).
 
 ### Header comments
-- These have a JSDoc header (`/** … */`). **lint** (`ttv/jsdoc`); `npm run docs:gaps` lists what's missing, `src/ext/` included:
+- These have a JSDoc header (`/** … */`). **lint, error** (`ttv/jsdoc`: a missing header fails lint); `npm run docs:gaps` lists what's missing, `src/ext/` included:
   - every top-level function, class and object;
   - every named function used by more than one function (declared in one place, called from another);
   - everything published on `window`/`top`/`globalThis` (`window.STREAMER = …`, `top.SET_PINNED_STREAMERS = …`);
   - every getter and method of those objects (`STREAMER.name`, `Cache.load`);
   - plugin hooks and exported helpers.
-- Not needed: inline arrows and callbacks, helpers used by one function only, tests and fixtures, vendored libraries (`localforage`, `sortable`, `resemble`).
+- Not needed: inline arrows and callbacks, helpers used by one function only, tests and fixtures, vendored libraries (`localforage`, `sortable`, `resemble`, `tracking`).
 - A function's header says what it does, at a high level, then `@param {type} name - meaning` for each parameter (optional ones as `[name=default]`), `@returns {type} meaning` unless it returns nothing, and `@throws` when it throws on purpose. The `@param` names match the parameters (**lint**); a destructured parameter is documented by any name, with its parts as `name.part`.
   ```javascript
   /**

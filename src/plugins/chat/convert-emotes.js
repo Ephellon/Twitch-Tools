@@ -15,6 +15,12 @@ plugin({
     async install(context) {
         const OWNED_EMOTES = (top.OWNED_EMOTES ??= new Map)
             , CAPTURED_EMOTES = (top.CAPTURED_EMOTES ??= new Map)
+            /**
+             * Converts a standard emote to a captured emote format.
+             * @param {object} emote - The emote to convert
+             * @param {boolean} [makeTooltip=true] - Whether to create a tooltip
+             * @returns {object|void} The converted emote, or nothing if filtered
+             */
             , CONVERT_TO_CAPTURED_EMOTE = (emote, makeTooltip = true) => {
                 const { name, src } = emote;
 

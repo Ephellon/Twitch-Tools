@@ -5,6 +5,10 @@
 
 import { plugin, plugins, run, start } from '../../lib/plugins.js';
 
+/**
+ * The plugin registry's API (`plugin`, `plugins`, `run`, `start`), shared by every bundle over one registry; whichever bundle loads first sets it.
+ * @type {object}
+ */
 globalThis.TTV ??= { plugin, plugins, run, start };
 import './auto-claim-bonuses.js';
 import './emote-searching.js';

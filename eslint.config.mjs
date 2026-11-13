@@ -259,7 +259,7 @@ export default [
         linterOptions: { reportUnusedDisableDirectives: 'off' },
         plugins: { '@stylistic': stylistic, ttv: house },
         // JSDoc headers are for src/ (docs/STYLEGUIDE.md, Header comments); scripts/ keeps its short `/* name */` notes
-        rules: { ...legacy, ...style, 'ttv/jsdoc': 'warn' },
+        rules: { ...legacy, ...style, 'ttv/jsdoc': 'error' },
     },
     ...Object.entries(sharedGlobals).map(([file, names]) => ({
         files: [`${ ROOT }/${ file }`],

@@ -353,6 +353,10 @@ switch(BrowserNamespace) {
         Manifest = Runtime.getManifest();
         Alarms = Container.alarms;
 
+        /**
+         * Every stored setting, merged from sync and local storage, to be written back as one copy.
+         * @type {object}
+         */
         const _storage = {};
 
         Storage.sync.get().then(_sync => {
@@ -376,6 +380,10 @@ switch(BrowserNamespace) {
         Manifest = Runtime.getManifest();
         Alarms = Container.alarms;
 
+        /**
+         * Every stored setting, merged from sync and local storage, to be written back as one copy.
+         * @type {object}
+         */
         const _storage = {};
 
         Storage.sync.get().then(_sync => {
@@ -483,6 +491,11 @@ Container.tabs.onReplaced?.addListener((addedTabId, removedTabId) => {
 Container.runtime.onStartup?.addListener(() => {
     Storage.get(['UP_NEXT_OWNER_NAME'], ({ UP_NEXT_OWNER_NAME = null }) => {
         Container.tabs.query({ url: '*://*.twitch.tv/*' }, (tabs = []) => {
+            /**
+             * Extracts the channel name from a Twitch URL.
+             * @param {string} url - The URL to parse
+             * @returns {string} The channel name, or an empty string if invalid
+             */
             const channelOf = url => { try { return new URL(url).pathname.slice(1).split('/').shift().toLowerCase().trim() } catch(error) { return '' } };
             const asleep = tab => tab.discarded || tab.status == 'unloaded';
             const owner = tabs.find(tab => UP_NEXT_OWNER_NAME && channelOf(tab.url) == UP_NEXT_OWNER_NAME)
@@ -1058,9 +1071,12 @@ Alarms.onAlarm.addListener(({ name }) => {
         auditMemory();
 });
 
-// The tiers the RAM Alarms settings show (500 MB, 1 GB, 2 GB), compared with the page's JavaScript memory: the only
-// number a page can read. It used to compare a guessed 400/600/800 MB, so "1 GB: Notify" fired at about 600 MB (#64).
-// The browser's Task Manager counts the whole tab (video, images, the browser's own work), so it shows more.
+/**
+ * The tiers the RAM Alarms settings show (500 MB, 1 GB, 2 GB), compared with the page's JavaScript memory: the only
+ * number a page can read. It used to compare a guessed 400/600/800 MB, so "1 GB: Notify" fired at about 600 MB (#64).
+ * The browser's Task Manager counts the whole tab (video, images, the browser's own work), so it shows more.
+ * @type {object}
+ */
 const MEMORY_TIERS = {
     LOW:    500 * 1024 ** 2,
     MEDIUM: 1 * 1024 ** 3,

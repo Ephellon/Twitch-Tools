@@ -29,6 +29,10 @@ function siteName(host) {
     })[host] ?? host;
 }
 
+/**
+ * Renders the site access settings in the given container.
+ * @returns {Promise<void>}
+ */
 export async function renderSiteAccess() {
     const container = document.getElementById('site-access-manager');
     const api = globalThis.browser ?? globalThis.chrome;
@@ -37,6 +41,10 @@ export async function renderSiteAccess() {
     if(!container || !api?.permissions || !origins.length)
         return;
 
+    /**
+     * Draws content into the target element.
+     * @returns {Promise<void>}
+     */
     const draw = async() => {
         const granted = await api.permissions.contains({ origins });
         const hosts = origins.map(origin => origin.replace(/^https:\/\/|\/\*$/g, ''));

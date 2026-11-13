@@ -10,6 +10,12 @@ const PACER = createSendPacer({
     limit: () => (Chat.viewerBadges ?? []).some(badge => /^(broadcaster|moderator|vip)$/.test(badge)) ? 100 : 20,
 });
 
+/**
+ * Sends `message` to chat, @-mentioning each of `mentions`; with no message, returns the chat instead (`Chat.get()`).
+ * @param {string} [message=''] - What to send
+ * @param {...string} mentions - Names to mention (the `@` is added when missing)
+ * @returns {*} What `Chat.send` returns, or the chat messages when there's no message
+ */
 function Chat(message = '', ...mentions) {
     if(!message.length)
         return Chat.get();

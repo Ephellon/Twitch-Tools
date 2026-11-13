@@ -12,6 +12,10 @@ import { plugin } from '../../lib/plugins.js';
 export const TabLurk = {
     key: 'tt-away-mode',
 
+    /**
+     * Gets the current lurk state from session storage.
+     * @returns {object|null} The lurk state, or `null` if not set or invalid
+     */
     get() {
         try {
             return JSON.parse(sessionStorage.getItem(this.key) ?? 'null');
@@ -20,6 +24,10 @@ export const TabLurk = {
         }
     },
 
+    /**
+     * Sets the lurk state in session storage.
+     * @param {object} state - The state to save
+     */
     set(state) {
         try {
             sessionStorage.setItem(this.key, JSON.stringify(state));

@@ -135,9 +135,18 @@ plugin({
                 button.tooltip.innerHTML = Glyphs.modify('channelpoints', { style: `height: 1.5rem; width: 1.5rem; vertical-align: bottom` }) + ` ${ ((120 + (200 * +enabled)) * context.CHANNEL_POINTS_MULTIPLIER) | 0 } / h`;
             };
 
+            /**
+             * Colours the Auto-Claim indicator by Twitch's integrity check: green when it passes, red when it fails.
+             * (Replaced right below, so it never runs; see the CHANGELOG.)
+             * @param {boolean} okay - Whether the check passes
+             */
             top.onintegritychange = okay =>
                 $('#tt-auto-claim-indicator')?.modStyle(`background-color:${ ['#ff4f4d', '#00ad96'][+okay] }`);
 
+            /**
+             * Shows the points per hour Auto-Claim earns in its tooltip: the higher rate while Twitch's integrity check passes.
+             * @param {boolean} okay - Whether the check passes
+             */
             top.onintegritychange = okay =>
                 button.tooltip.innerHTML = Glyphs.modify('channelpoints', { style: `height: 1.5rem; width: 1.5rem; vertical-align: bottom` }) + ` ${ ((120 + (200 * +okay)) * context.CHANNEL_POINTS_MULTIPLIER) | 0 } / h`;
 

@@ -3,11 +3,13 @@
  * Moved verbatim from tools.js in Phase 3; see src/lib/index.js for how it reaches the page.
  */
 
-// Displays a balloon (popup)
-    // new Balloon({ title:string, icon:string? }, ...jobs:object<{ href:string<URL>, message:string?, src:string?, time:string<Date>, onremove:function? }>) → object
-    // Balloon.prototype.add(...jobs:object<{ href:string<URL>, message:string?, src:string?, time:string<Date>, onremove:function? }>) → Element
-    // Balloon.prototype.addButton({ left:boolean?, icon:string?<Glyphs>, onclick:function?, attributes:object? }) → Element
-    // Balloon.prototype.remove() → undefined
+/**
+ * Displays a balloon (popup)
+ * @simply new Balloon({ title:string, icon:string? }, ...jobs:object<{ href:string<URL>, message:string?, src:string?, time:string<Date>, onremove:function? }>) → object
+ * @simply Balloon.prototype.add(...jobs:object<{ href:string<URL>, message:string?, src:string?, time:string<Date>, onremove:function? }>) → Element
+ * @simply Balloon.prototype.addButton({ left:boolean?, icon:string?<Glyphs>, onclick:function?, attributes:object? }) → Element
+ * @simply Balloon.prototype.remove() → undefined
+ */
 class Balloon {
     static #BALLOONS = new Map;
 

@@ -75,8 +75,15 @@ export function startWhisperRelay(cookies = Search.cookies) {
     const seen = new Set;
     let url = HERMES_URL, refused = false, retries = 0;
 
+    /**
+     * Establishes the WebSocket connection to the whisper relay.
+     */
     const connect = () => {
         const socket = startWhisperRelay.socket = new WebSocket(url);
+        /**
+         * Generates an ISO timestamp.
+         * @returns {string} The current timestamp
+         */
         const stamp = () => new Date().toISOString();
 
         socket.onopen = () => {

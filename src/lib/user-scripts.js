@@ -74,9 +74,18 @@ export function createUserScripts({ DSL, storage, env, frame, log }) {
     const running = new Map();          // id → { stop }
     let scripts = [], consent = {}, channel = null, watcher = null;
 
-    // Where a script may run: `chat` runs on channel pages and pop-out chat; `main` only on channel pages
+    /**
+     * Whether a script may run in this frame: `chat` scripts run on channel pages and pop-out chat; `main` ones only on channel pages.
+     * @param {object} meta - The script's metadata (its `frames`)
+     * @returns {boolean}
+     */
     const allowed = meta => meta.frames?.includes('chat') || (frame == 'main' && meta.frames?.includes('main'));
 
+    /**
+     * Creates a prefixed logger for a specific script.
+     * @param {object} meta - The script metadata
+     * @returns {function} A function that takes a message and returns the prefixed string
+     */
     const prefix = meta => message => `[${ meta.name ?? meta.id }] ${ message }`;
 
     /**

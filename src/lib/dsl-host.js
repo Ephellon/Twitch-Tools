@@ -162,7 +162,11 @@ export function createAdapter(env) {
         },
     };
 
-    // Scripts only post into the channel the socket is in
+    /**
+     * Scripts only post into the channel the socket is in.
+     * @param {object} context - The script's context, with the channel it targets
+     * @returns {boolean} `true` when it names no channel or the current one
+     */
     const inCurrentChannel = context => {
         const name = context.channel?.name;
 
