@@ -21,6 +21,10 @@
 
 ;
 
+/**
+ * The DSL's shared namespace: each DSL file adds its part to it.
+ * @type {object}
+ */
 globalThis.TTV_DSL ??= {};
 
 (() => {
@@ -104,11 +108,19 @@ globalThis.TTV_DSL ??= {};
         return root;
     };
 
-    /** @param {Object} node @return {String} all descendant text, in order */
+    /**
+     * Returns all descendant text of a node, in order.
+     * @param {object} node - The node to extract text from
+     * @returns {string} The concatenated text of the node and its descendants
+     */
     const textOf = (node) => ('text' === node.type ? node.text : node.children.map(textOf).join(''));
 
-    /** A plain, serializable copy: elements become `{ tag, attributes, children }` and text
-     * nodes become strings. This is the shape `&html.parse` returns. */
+    /**
+     * Creates a plain, serializable copy: elements become `{ tag, attributes, children }` and text
+     * nodes become strings. This is the shape `&html.parse` returns.
+     * @param {object} node - The node to serialize
+     * @returns {string|object} The serialized node
+     */
     const serialize = (node) => ('text' === node.type
         ? node.text
         : { tag: node.tag, attributes: Object.assign({}, node.attrs), children: node.children.map(serialize) });
@@ -184,6 +196,11 @@ globalThis.TTV_DSL ??= {};
         if(!parts.length)
             return found;
 
+        /**
+         * Walks the node tree to find elements matching the query selector.
+         * @param {object} node - The current node being visited
+         * @param {Array} ancestors - The chain of ancestors leading to this node
+         */
         const visit = (node, ancestors) => {
             if('element' !== node.type)
                 return;
@@ -219,6 +236,11 @@ globalThis.TTV_DSL ??= {};
      */
     const createFakePage = (markup = '') => {
         const root = parseHtml(markup)
+            /**
+             * Returns the first element matching the selector, or `null`.
+             * @param {string} selector - The CSS selector to search for
+             * @returns {object|null} The first matching element, or `null`
+             */
             , first = (selector) => (query(root, selector)[0] ?? null);
 
         const html = {

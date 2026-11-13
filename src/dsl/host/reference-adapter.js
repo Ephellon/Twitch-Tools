@@ -107,6 +107,10 @@ function createReferenceAdapter(env) {
 
     Object.freeze(channel);
 
+    /**
+     * Returns the currently active channel object.
+     * @returns {object} The active channel
+     */
     const currentChannel = () => channel;
 
     const realm = {
@@ -142,7 +146,11 @@ function createReferenceAdapter(env) {
         },
     };
 
-    /** Refuses to post into a channel the socket is not in. */
+    /**
+     * Refuses to post into a channel the socket is not in.
+     * @param {object} context - The execution context, with the channel it targets
+     * @returns {boolean} `true` when it names no channel or the current one (case doesn't matter)
+     */
     const inCurrentChannel = (context) => {
         const name = context.channel?.name;
 

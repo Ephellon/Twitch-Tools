@@ -18,6 +18,10 @@
 
 ;
 
+/**
+ * The DSL's shared namespace: each DSL file adds its part to it.
+ * @type {object}
+ */
 globalThis.TTV_DSL ??= {};
 
 if(typeof require === 'function' && typeof module === 'object')
@@ -91,7 +95,11 @@ if(typeof require === 'function' && typeof module === 'object')
         return { blocks, calls };
     };
 
-    /** One diagnostic, in the shape the editor relies on. */
+    /**
+     * Creates one diagnostic, in the shape the editor relies on.
+     * @param {Error} error - The error to wrap as a diagnostic
+     * @returns {object} The diagnostic object
+     */
     const diagnostic = (error) => ({
         name: error.name,
         message: error.message,

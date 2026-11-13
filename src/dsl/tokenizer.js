@@ -27,6 +27,10 @@
 
 ;
 
+/**
+ * The DSL's shared namespace: each DSL file adds its part to it.
+ * @type {object}
+ */
 globalThis.TTV_DSL ??= {};
 
 if(typeof require === 'function' && typeof module === 'object') {

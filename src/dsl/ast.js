@@ -20,6 +20,10 @@
 
 ;
 
+/**
+ * The DSL's shared namespace: each DSL file adds its part to it.
+ * @type {object}
+ */
 globalThis.TTV_DSL ??= {};
 
 (() => {
@@ -547,6 +551,12 @@ globalThis.TTV_DSL ??= {};
      * @return {Object} `root`, for chaining
      */
     const walk = (root, visitors = {}) => {
+        /**
+         * Recursively visits nodes in the AST.
+         * @param {object} current - The node being visited
+         * @param {object} parent - The parent of the current node
+         * @param {string} key - The property name on the parent that holds the current node
+         */
         const visit = (current, parent, key) => {
             if(!isNode(current))
                 return;
