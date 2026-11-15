@@ -43,7 +43,7 @@
 ## Release History
 
 ### Version 5.35.\*
-- [`5.35.5.45`](https://github.com/Ephellon/Twitch-Tools/releases/tag/5.35.5.45) — Auto-Claim's indicator changes colour with Twitch's integrity check again
+- [`5.35.5.45`](https://github.com/Ephellon/Twitch-Tools/releases/tag/5.35.5.45) — Auto-Claim's indicator changes color with Twitch's integrity check again
 - [`5.35.5.44`](https://github.com/Ephellon/Twitch-Tools/releases/tag/5.35.5.44) — More robust fix for #90, all reserved pages are ignored
 - [`5.35.5.43`](https://github.com/Ephellon/Twitch-Tools/releases/tag/5.35.5.43) — Fixed #90, VODs are no longer affected by Live Reminders; fixed CSP issue in core.js
 - [`5.35.5.42`](https://github.com/Ephellon/Twitch-Tools/releases/tag/5.35.5.42) — Fixed #89, the sidenav may open up to once per page load
