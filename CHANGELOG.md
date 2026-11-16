@@ -42,6 +42,7 @@
 ## Release History
 
 ### Version 5.35.\*
+- [`5.35.5.48`](https://github.com/Ephellon/Twitch-Tools/releases/tag/5.35.5.48) — No more reloads on an offline channel's page when Watch Time or the Points Receipt is shown (#91)
 - [`5.35.5.47`](https://github.com/Ephellon/Twitch-Tools/releases/tag/5.35.5.47) — No more reloads every few minutes with Recover Pages on, or on a channel's About/Schedule/Videos/Clips page (#91); the side nav stops opening and closing with Use Fine Details (#89); the Pin list shows every pin (#71)
 - [`5.35.5.46`](https://github.com/Ephellon/Twitch-Tools/releases/tag/5.35.5.46) — TTV Tools no longer runs on VOD pages (#90): Up Next, Lurk and reloads stay off them, as before 5.35.5.38
 - [`5.35.5.45`](https://github.com/Ephellon/Twitch-Tools/releases/tag/5.35.5.45) — Auto-Claim's indicator changes color with Twitch's integrity check again

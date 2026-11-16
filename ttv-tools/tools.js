@@ -18279,6 +18279,8 @@ if(top == window) {
                                             parseBool(Settings.watch_time_placement)?
                                                 (false
                                                     || $.defined('#tt-watch-time')
+                                                    // Placed next to the live timer; there's none when offline (#91)
+                                                    || $.nullish('.live-time')
 
                                                     || !NOT_LOADED_CORRECTLY.push('watch_time_placement')
                                                 ):
@@ -18290,6 +18292,8 @@ if(top == window) {
                                             parseBool(Settings.points_receipt_placement)?
                                                 (false
                                                     || $.defined('#tt-points-receipt')
+                                                    // Placed next to the live timer; there's none when offline (#91)
+                                                    || $.nullish('.live-time')
 
                                                     || !NOT_LOADED_CORRECTLY.push('points_receipt_placement')
                                                 ):
