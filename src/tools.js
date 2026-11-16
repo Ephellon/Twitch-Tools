@@ -3973,9 +3973,9 @@ if(top == window) {
                                 when(() => {
                                     const NOT_LOADED_CORRECTLY = []
                                         , ALL_LOADED_CORRECTLY = (true
-                                            // Lurking
+                                            // Lurking: its button is only drawn when it has a place ("Do not display" is the default) (#91)
                                             && parseBool(
-                                            parseBool(Settings.away_mode)
+                                            (parseBool(Settings.away_mode) && (Settings.away_mode_placement ?? 'null') != 'null')
                                                 ? (false
                                                     || $.defined('#away-mode')
                                                     // No player to put the button on (an offline channel)
@@ -4061,8 +4061,9 @@ if(top == window) {
                                         if(++RECOVERY_TRIALS <= 10)
                                             return false;
 
-                                        // A hidden page is throttled and loads slowly: reload it once it's seen, not in the background
-                                        if(document.hidden)
+                                        // A hidden page is throttled and loads slowly: reload it once it's seen, not in the background.
+                                        // A channel's About/Schedule/Videos/Clips page has no stream for the features to load on: never reload it (#91)
+                                        if(document.hidden || /^\/[^/]+\/(?:about|schedule|videos|clips)\b/i.test(location.pathname))
                                             return false;
 
                                         // Reload once per page every 5 minutes at most; a page that still can't load its

@@ -48,7 +48,7 @@ plugin({
                 Cache.save({ BAD_STREAMERS });
 
                 // removeFromSearch(['tt-err-chn']);
-            } else if($.nullish('[id*="side"i][id*="nav"i] .side-nav-section[aria-label][tt-svg-label="followed"i] a[class*="side-nav-card"i]') && !/^User_Not_Logged_In_\d+$/.test(USERNAME)) {
+            } else if($.nullish('[id*="side"i][id*="nav"i] .side-nav-section:is([tt-svg-label="followed"i], [aria-label*="followed"i]) a[class*="side-nav-card"i]') && !/^User_Not_Logged_In_\d+$/.test(USERNAME)) {
                 if(RERENDERED_AT == location.pathname)
                     return /* Already tried on this page */;
 
@@ -59,7 +59,7 @@ plugin({
                     if(SideNav.open)
                         SideNav.set(false).then(() => wait(1e3)).then(() => SideNav.set(true));
 
-                    if($.nullish('[id*="side"i][id*="nav"i] .side-nav-section[aria-label][tt-svg-label="followed"i] a[class*="side-nav-card"i]'))
+                    if($.nullish('[id*="side"i][id*="nav"i] .side-nav-section:is([tt-svg-label="followed"i], [aria-label*="followed"i]) a[class*="side-nav-card"i]'))
                         return;
 
                     $warn("[Followed Channels] is missing. Reloading...");

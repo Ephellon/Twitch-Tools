@@ -484,7 +484,8 @@ plugin({
                                 .with(search)
                             );
 
-                            const SearchableNames = new Set(ALL_CHANNELS.map(c => c.name));
+                            // Pins too, even when they're neither listed channels nor reminders (#71)
+                            const SearchableNames = new Set([...ALL_CHANNELS.map(c => c.name), ...(GetNextStreamer.pinnedStreamers ?? [])]);
                             const WantedNames = new Set(STREAMERS.map(c => c.name));
 
                             Cache.load('LiveReminders', async({ LiveReminders }) => {
