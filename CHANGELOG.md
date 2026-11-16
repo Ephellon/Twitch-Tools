@@ -25,7 +25,6 @@
     - Resolve "Up Next Owner" tab synchronization and URL mimicking.
     - The Pin list's unpinned names are hard to read (dark on dark); not reproduced in a live test, needs a screenshot and the theme used.
     - The Pin list can show a stream title (from a lookup) as a channel.
-    - The channel list (`ALL_CHANNELS`) can hold only a few channels and one without a name, so Pins can't tell which channels are live (the first pin is used even when offline) and show no avatars.
 - [ ] **Performance:**
     - Fix background script stalls when tabs disappear.
     - Resolve memory leaks related to Hardware Acceleration and excessive iframes.
@@ -42,6 +41,7 @@
 ## Release History
 
 ### Version 5.35.\*
+- [`5.35.5.49`](https://github.com/Ephellon/Twitch-Tools/releases/tag/5.35.5.49) — Followed channels are found again with the full side bar open, so Up Next and the Pin list see them
 - [`5.35.5.48`](https://github.com/Ephellon/Twitch-Tools/releases/tag/5.35.5.48) — No more reloads on an offline channel's page when Watch Time or the Points Receipt is shown (#91)
 - [`5.35.5.47`](https://github.com/Ephellon/Twitch-Tools/releases/tag/5.35.5.47) — No more reloads every few minutes with Recover Pages on, or on a channel's About/Schedule/Videos/Clips page (#91); the side nav stops opening and closing with Use Fine Details (#89); the Pin list shows every pin (#71)
 - [`5.35.5.46`](https://github.com/Ephellon/Twitch-Tools/releases/tag/5.35.5.46) — TTV Tools no longer runs on VOD pages (#90): Up Next, Lurk and reloads stay off them, as before 5.35.5.38
