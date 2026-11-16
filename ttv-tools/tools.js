@@ -8155,6 +8155,10 @@ let Initialize = async(START_OVER = false) => {
 
                     parent.insertBefore(body, $('[up-next--body] > :nth-child(2)'));
 
+                    // Pins too, even when they're neither listed channels nor reminders (#71)
+                    for(let pin of GetNextStreamer.pinnedStreamers ?? [])
+                        SearchableNames.add(pin);
+
                     // Names come from several lists in different case ("qilin", "Qilin"): one row per channel
                     let listed = new Set;
 
@@ -9824,6 +9828,9 @@ let Initialize = async(START_OVER = false) => {
         BAD_STREAMERS = cache.BAD_STREAMERS ?? "";
     });
 
+    // The page Up Next+ last re-rendered the side nav on, to find the followed channels (once per page: #89)
+    let FOLLOWED_RERENDERED_AT;
+
     Handlers.first_in_line_plus = async() => {
         new StopWatch('first_in_line_plus');
 
@@ -9848,7 +9855,14 @@ let Initialize = async(START_OVER = false) => {
             Cache.save({ BAD_STREAMERS });
 
             // removeFromSearch(['tt-err-chn']);
-        } else if($.nullish('[id*="side"i][id*="nav"i] .side-nav-section[aria-label][tt-svg-label="followed"i] a[class*="side-nav-card"i]') && !/^User_Not_Logged_In_\d+$/.test(USERNAME)) {
+        } else if($.nullish('[id*="side"i][id*="nav"i] .side-nav-section:is([tt-svg-label="followed"i], [aria-label*="followed"i]) a[class*="side-nav-card"i]') && !/^User_Not_Logged_In_\d+$/.test(USERNAME)) {
+            // Once per page: this handler runs every second, and each run toggled the side nav, so it flapped open and shut (#89).
+            // The full side nav's section is labelled "Followed Channels" (aria-label); `tt-svg-label` only exists in the mini nav
+            if(FOLLOWED_RERENDERED_AT == location.pathname)
+                return /* Already tried on this page */;
+
+            FOLLOWED_RERENDERED_AT = location.pathname;
+
             wait(3000).then(() => {
                 // Is the nav open?
                 let alreadyOpen = $.defined('[data-a-target="side-nav-search-input"i], [data-a-target="side-nav-header-expanded"i]'),
@@ -9863,7 +9877,7 @@ let Initialize = async(START_OVER = false) => {
                     wait(1e3).then(() => sidenav?.click());
                 }
 
-                if($.nullish('[id*="side"i][id*="nav"i] .side-nav-section[aria-label][tt-svg-label="followed"i] a[class*="side-nav-card"i]'))
+                if($.nullish('[id*="side"i][id*="nav"i] .side-nav-section:is([tt-svg-label="followed"i], [aria-label*="followed"i]) a[class*="side-nav-card"i]'))
                     return;
 
                 $warn("[Followed Channels] is missing. Reloading...");
@@ -18224,9 +18238,9 @@ if(top == window) {
                         when(() => {
                             let NOT_LOADED_CORRECTLY = [],
                                 ALL_LOADED_CORRECTLY = (true
-                                    // Lurking
+                                    // Lurking: its button is only drawn when it has a place ("Do not display" is the default) (#91)
                                     && parseBool(
-                                            parseBool(Settings.away_mode)?
+                                            (parseBool(Settings.away_mode) && (Settings.away_mode_placement ?? 'null') != 'null')?
                                                 (false
                                                     || $.defined('#away-mode')
 
@@ -18299,8 +18313,9 @@ if(top == window) {
                                     RestartJob(job, 'FAILED_TO_ACTIVATE');
 
                             if(parseBool(Settings.recover_pages)) {
-                                // A hidden page is throttled and loads slowly: reload it once it's seen, not in the background
-                                if(++RECOVERY_TRIALS > 10 && !document.hidden)
+                                // A hidden page is throttled and loads slowly: reload it once it's seen, not in the background.
+                                // A channel's About/Schedule/Videos/Clips page has no stream for the features to load on: never reload it (#91)
+                                if(++RECOVERY_TRIALS > 10 && !document.hidden && !/^\/[^/]+\/(?:about|schedule|videos|clips)\b/i.test(location.pathname))
                                     addReport(NOT_LOADED_CORRECTLY.map(fail => ({ [`fail-to-load-${ fail }`]: true })), true);
                                 return false;
                             }
