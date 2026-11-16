@@ -13,7 +13,7 @@ plugin({
      */
     async install() {
         wait(1000).then(() => {
-            $.all('[data-a-target="followed-channel"i], [id*="side"i][id*="nav"i] .side-nav-section[aria-label][tt-svg-label="followed"i] [href^="/"], [data-test-selector*="search-result"i][data-test-selector*="channel"i] a:not([href*="/search?"])').map(a => {
+            $.all('[data-a-target="followed-channel"i], [id*="side"i][id*="nav"i] .side-nav-section:is([tt-svg-label="followed"i], [aria-label*="followed"i]) [href^="/"], [data-test-selector*="search-result"i][data-test-selector*="channel"i] a:not([href*="/search?"])').map(a => {
                 a.addEventListener('mouseup', async event => {
                     const { currentTarget, button = -1 } = event;
 
