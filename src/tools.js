@@ -3812,8 +3812,8 @@ if(top == window) {
             ? $error(`The current runtime (v${ Manifest.version }) is not correct (v${ version })`)
                 .toNativeStack()
             : setInterval(WAIT_FOR_PAGE = async() => {
-                // Do NOT run on unsafe pages; a VOD (/videos/<id>) is a watch page, not one of them
-                if(UNSAFE_TWITCH_PATHNAMES.test(location.pathname) && !/^\/videos?\/\d+/i.test(location.pathname))
+                // Do NOT run on unsafe pages, VODs included: live features (Up Next, Lurk, reloads) don't belong there (#90)
+                if(UNSAFE_TWITCH_PATHNAMES.test(location.pathname))
                     return false;
 
                 const sadOverlay = $('[data-test-selector*="sad"i][data-test-selector*="overlay"i]');
@@ -3918,9 +3918,6 @@ if(top == window) {
                     && (false
                         // There is a message container
                         || $.defined('[data-test-selector$="message-container"i]')
-
-                        // A VOD with its player: chat replay has no message container
-                        || (/\/videos?\//i.test(location.pathname) && $.defined('[data-a-target="video-player"i] video'))
 
                         // There is an ongoing search
                         || (true
