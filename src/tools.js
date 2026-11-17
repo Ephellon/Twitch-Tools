@@ -1318,7 +1318,7 @@ async function update() {
     window.STREAMERS = STREAMERS = [
         ...STREAMERS,
         // Current (followed) streamers
-        ...$.all(`[id*="side"i][id*="nav"i] .side-nav-section:is([tt-svg-label="followed"i], [aria-label*="followed"i]) a:not([href$="${ PATHNAME }"i])`)
+        ...$.all(`[id*="side"i][id*="nav"i] .side-nav-section[aria-label][tt-svg-label="followed"i] a:not([href$="${ PATHNAME }"i])`)
             .map(element => {
                 const icon = $('img', element)?.src;
                 const streamer = {
@@ -1330,7 +1330,7 @@ async function update() {
                             , url = parseURL(href)
                             , { pathname } = url;
 
-                        const parent = $(`[id*="side"i][id*="nav"i] .side-nav-section:is([tt-svg-label="followed"i], [aria-label*="followed"i]) [href$="${ pathname }"i]`);
+                        const parent = $(`[id*="side"i][id*="nav"i] .side-nav-section[aria-label][tt-svg-label="followed"i] [href$="${ pathname }"i]`);
 
                         if(nullish(parent))
                             return UnlistedLive(pathname);
@@ -2788,7 +2788,7 @@ let Initialize = async(START_OVER = false) => {
         )
             element.click();
 
-        const ALL_LIVE_SIDE_PANEL_CHANNELS = $.all('[id*="side"i][id*="nav"i] .side-nav-section:is([tt-svg-label="followed"i], [aria-label*="followed"i]) a').filter(e => $.nullish('[class*="--offline"i]', e));
+        const ALL_LIVE_SIDE_PANEL_CHANNELS = $.all('[id*="side"i][id*="nav"i] .side-nav-section[aria-label][tt-svg-label="followed"i] a').filter(e => $.nullish('[class*="--offline"i]', e));
 
         try {
             /** Hidden Channels Array - all channels/friends that appear on the side panel
@@ -2887,7 +2887,7 @@ let Initialize = async(START_OVER = false) => {
              */
             STREAMERS = [
                 // Current streamers
-                ...$.all(`[id*="side"i][id*="nav"i] .side-nav-section:is([tt-svg-label="followed"i], [aria-label*="followed"i]) a:not([href$="${ NORMALIZED_PATHNAME }"i])`)
+                ...$.all(`[id*="side"i][id*="nav"i] .side-nav-section[aria-label][tt-svg-label="followed"i] a:not([href$="${ NORMALIZED_PATHNAME }"i])`)
                     .map(element => {
                         const icon = $('img', element)?.src;
                         const streamer = {
@@ -2899,7 +2899,7 @@ let Initialize = async(START_OVER = false) => {
                                     , url = parseURL(href)
                                     , { pathname } = url;
 
-                                const parent = $(`[id*="side"i][id*="nav"i] .side-nav-section:is([tt-svg-label="followed"i], [aria-label*="followed"i]) [href$="${ pathname }"i]`);
+                                const parent = $(`[id*="side"i][id*="nav"i] .side-nav-section[aria-label][tt-svg-label="followed"i] [href$="${ pathname }"i]`);
 
                                 if(nullish(parent))
                                     return UnlistedLive(pathname);
