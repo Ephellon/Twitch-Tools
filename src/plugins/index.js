@@ -44,3 +44,4 @@ import './customization/stream-preview.js';
 import './customization/watch-time.js';
 import './networking/auto-dvr.js';
 import './developer/developer-features.js';
+import './developer/debug-recording.js';

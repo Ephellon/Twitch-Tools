@@ -3744,6 +3744,9 @@ let Initialize = async(START_OVER = false) => {
     // Developer Features → src/plugins/developer/developer-features.js
     await TTV.run('extra_keyboard_shortcuts', PLUGIN_CONTEXT);
 
+    // Debug Recording → src/plugins/developer/debug-recording.js
+    await TTV.run('debug_recording', PLUGIN_CONTEXT);
+
     // Miscellaneous → src/plugins/misc/miscellaneous.js
     await TTV.run('miscellaneous', PLUGIN_CONTEXT);
 

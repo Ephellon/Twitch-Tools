@@ -57,6 +57,7 @@ import recoverStream49 from '../plugins/video-recovery/recover-stream.settings.j
 import recoverVideo50 from '../plugins/video-recovery/recover-video.settings.js';
 import displayConsoleMessages51 from './sections/display-console-messages.js';
 import displayStatistics52 from './sections/display-statistics.js';
+import debugRecording from '../plugins/developer/debug-recording.settings.js';
 import experimentalFeatures53 from '../plugins/developer/developer-features.experimental-features.settings.js';
 import extraKeyboardShortcuts54 from '../plugins/developer/developer-features.settings.js';
 import lowDataUsage55 from './sections/low-data-usage.js';
@@ -200,6 +201,7 @@ export default [
         sections: [
             displayConsoleMessages51,
             displayStatistics52,
+            debugRecording,
             experimentalFeatures53,
             extraKeyboardShortcuts54,
             lowDataUsage55,
