@@ -38,7 +38,6 @@ import rewardsCalculator31 from '../plugins/chat/rewards-calculator.settings.js'
 import accentColor32 from './sections/accent-color.js';
 import blockBanners33 from '../plugins/customization/block-banners.settings.js';
 import contextMenuOverride34 from './sections/context-menu-override.js';
-import easyLurk35 from '../plugins/automation/lurking.easy-lurk.settings.js';
 import hideBlankAds36 from '../plugins/player/hide-blank-ads.settings.js';
 import pointsReceiptAndRank37 from '../plugins/currencies/points-receipt.settings.js';
 import pointWatcher38 from '../plugins/customization/point-watcher.settings.js';
@@ -75,31 +74,68 @@ import language65 from './sections/language.js';
 
 export default [
     {
-        header: 'Automation',
-        tr: 'header:automation',
+        header: 'Up Next &amp; Channel Hopping',
+        tr: 'header:up-next',
+        headerAttrs: {
+            subtitle: 'Keep watching without babysitting the page.',
+        },
         save: true,
         sections: [
-            autoJoin1,
-            claimBonuses2,
-            claimDrops3,
-            claimPrimeLoot4,
-            easyLurk5,
             firstInLineUpNext6,
-            follows7,
-            killExtensions8,
             nextChannel9,
-            parseCommands10,
-            preventRaiding11,
-            primeSubscription12,
             stayLive13,
             streakSaver,
-            timeZones14,
-            viewMode15,
+            follows7,
+            preventRaiding11,
+            autoJoin1,
         ],
     },
     {
-        header: 'Chat &amp; Messaging',
-        tr: 'header:chat-and-messaging',
+        header: 'Lurking',
+        tr: 'header:lurking',
+        headerAttrs: {
+            subtitle: 'Watch in the background.',
+        },
+        save: true,
+        sections: [
+            easyLurk5,
+            lurkingMessage22,
+            killExtensions8,
+        ],
+    },
+    {
+        header: 'Free Points &amp; Loot',
+        tr: 'header:free-points',
+        headerAttrs: {
+            subtitle: 'Collect everything automatically.',
+        },
+        save: true,
+        sections: [
+            claimBonuses2,
+            claimDrops3,
+            claimPrimeLoot4,
+            primeSubscription12,
+        ],
+    },
+    {
+        header: 'Points &amp; Bits Info',
+        tr: 'header:points-info',
+        headerAttrs: {
+            subtitle: 'See what you have earned, and what things cost.',
+        },
+        save: true,
+        sections: [
+            pointsReceiptAndRank37,
+            channelPointsReceipt30,
+            pointWatcher38,
+            watchTime40,
+            rewardsCalculator31,
+            convertBits29,
+        ],
+    },
+    {
+        header: 'Reading Chat',
+        tr: 'header:reading-chat',
         headerAttrs: {
             subtitle: 'These settings do not apply to banned channels unless otherwise noted.',
         },
@@ -110,88 +146,85 @@ export default [
             filterMessages18,
             highlightMentions19,
             highlightPhrases20,
-            linkMaker21,
-            lurkingMessage22,
-            nativeReply23,
+            showPopUps28,
             notificationSounds24,
             preventSpam25,
             recoverChat26,
             recoverMessages27,
-            showPopUps28,
         ],
     },
     {
-        header: 'Currencies',
-        tr: 'header:currencies',
-        save: true,
-        sections: [
-            convertBits29,
-            channelPointsReceipt30,
-            rewardsCalculator31,
-        ],
-    },
-    {
-        header: 'Customization',
-        tr: 'header:customization',
-        save: true,
-        sections: [
-            accentColor32,
-            blockBanners33,
-            contextMenuOverride34,
-            easyLurk35,
-            hideBlankAds36,
-            pointsReceiptAndRank37,
-            pointWatcher38,
-            streamPreview39,
-            watchTime40,
-        ],
-    },
-    {
-        header: 'Networking',
-        tr: 'header:networking',
+        header: 'Talking in Chat',
+        tr: 'header:talking-in-chat',
         headerAttrs: {
-            subtitle: 'Data here will interact with the Internet.',
+            subtitle: 'Type and reply faster.',
         },
         save: true,
         sections: [
-            exportSettings41,
-            siteAccess,
+            nativeReply23,
+            linkMaker21,
+            parseCommands10,
+        ],
+    },
+    {
+        header: 'Fix Broken Streams',
+        tr: 'header:fix-streams',
+        headerAttrs: {
+            subtitle: 'Stop freezes, ads and black screens.',
+        },
+        save: true,
+        sections: [
+            recoverStream49,
+            recoverVideo50,
+            recoverFrames47,
+            recoverAds46,
+            hideBlankAds36,
+            recoverPages48,
+            keepPopOuts44,
+            ramAlarms45,
+        ],
+    },
+    {
+        header: 'Looks &amp; Extras',
+        tr: 'header:looks',
+        headerAttrs: {
+            subtitle: 'Change how Twitch looks.',
+        },
+        save: true,
+        sections: [
+            accentColor32,
+            viewMode15,
+            blockBanners33,
+            streamPreview39,
+            contextMenuOverride34,
+            timeZones14,
             storeIntegration42,
             videoClips43,
         ],
     },
     {
-        header: 'Video Recovery',
-        tr: 'header:video-recovery',
-        save: true,
-        sections: [
-            keepPopOuts44,
-            ramAlarms45,
-            recoverAds46,
-            recoverFrames47,
-            recoverPages48,
-            recoverStream49,
-            recoverVideo50,
-        ],
-    },
-    {
-        header: 'User Scripts',
-        tr: 'header:user-scripts',
+        header: 'Data &amp; Sync',
+        tr: 'header:data',
         headerAttrs: {
-            subtitle: 'Your own automation, written in the TTV DSL.',
+            subtitle: 'Move, back up or limit your data. Some of these use the Internet.',
         },
         save: true,
         sections: [
+            exportSettings41,
+            lowDataUsage55,
+            dataUsage63,
+            siteAccess,
             userScripts,
+            language65,
         ],
-        // The installed scripts and the permissions approved for them (kept by the list above, not a control)
+        // The installed scripts and the permissions approved for them (kept by the User Scripts list, not a control)
         stored: ['user_scripts', 'user_scripts__consent'],
     },
     {
-        header: 'Developer Features',
-        tr: 'header:developer-features',
+        header: 'Troubleshooting',
+        tr: 'header:troubleshooting',
         headerAttrs: {
-            subtitle: 'These are advanced features that should be used for testing.',
+            subtitle: 'Help find a bug. These are advanced features.',
         },
         attrs: {
             id: ':settings--developer',
@@ -202,19 +235,18 @@ export default [
             displayConsoleMessages51,
             displayStatistics52,
             debugRecording,
-            experimentalFeatures53,
-            extraKeyboardShortcuts54,
-            lowDataUsage55,
             useFineDetails56,
             automaticTabReloads57,
+            extraKeyboardShortcuts54,
             showDefaultValues58,
+            experimentalFeatures53,
         ],
     },
     {
-        header: 'Experimental Features',
+        header: 'Experimental',
         tr: 'header:experimental-features',
         headerAttrs: {
-            subtitle: 'These are experimental features that may produce errors.',
+            subtitle: 'Features still being tested. They may cause errors.',
         },
         attrs: {
             id: ':settings--experimental',
@@ -261,9 +293,7 @@ export default [
         stored: ['clientID', 'oauthToken'],
         sections: [
             version62,
-            dataUsage63,
             support64,
-            language65,
         ],
     },
 ];

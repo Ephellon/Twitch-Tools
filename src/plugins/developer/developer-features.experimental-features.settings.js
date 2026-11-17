@@ -1,5 +1,5 @@
 /*** /plugins/developer/developer-features.experimental-features.settings.js
- * Settings for "Experimental Features" (Developer Features).
+ * Settings for "Experimental Features" (Troubleshooting).
  */
 
 export default {

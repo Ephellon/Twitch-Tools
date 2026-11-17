@@ -1,9 +1,9 @@
 /*** /plugins/chat/simplify-chat.settings.js
- * Settings for "Accessibility" (Chat & Messaging).
+ * Settings for "Simpler Chat" (Reading Chat).
  */
 
 export default {
-    title: "Accessibility",
+    title: "Simpler Chat",
     tr: 'simplify-chat',
     glyph: 'accessible',
     flags: ['large', 'help'],
@@ -11,7 +11,7 @@ export default {
         new: '5.32.7',
         id: 'accessibility',
     },
-    keywords: 'accent,act,array,chatter,colors,conversation,demonstration,display,emphasis,example,exhibit,font,fount,gossip,homogeneous,inflection,inflexible,monotone,orderly,parade,presentation,reliable,resonance,rigid,strength,systematic,timbre,tones,uniform',
+    keywords: 'accessibility,accent,act,array,chatter,colors,conversation,demonstration,display,emphasis,example,exhibit,font,fount,gossip,homogeneous,inflection,inflexible,monotone,orderly,parade,presentation,reliable,resonance,rigid,strength,systematic,timbre,tones,uniform',
     rows: [
         {
             text: "Make Twitch™ easier to navigate and use.",

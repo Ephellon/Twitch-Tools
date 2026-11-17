@@ -1,5 +1,5 @@
 /*** /plugins/automation/prevent-raiding.settings.js
- * Settings for "Prevent Raiding" (Automation).
+ * Settings for "Prevent Raiding" (Up Next & Channel Hopping).
  */
 
 export default {

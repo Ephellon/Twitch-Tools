@@ -1,5 +1,5 @@
 /*** /plugins/chat/bttv-emotes.settings.js
- * Settings for "BetterTTV Emotes" (Chat & Messaging).
+ * Settings for "BetterTTV Emotes" (Reading Chat).
  */
 
 export default {

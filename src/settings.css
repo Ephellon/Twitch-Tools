@@ -256,6 +256,44 @@ header {
     font-family: Roobert;
     font-size: 125%;
     font-weight: bold;
+
+    /* Each group's title stays in view while its settings scroll by */
+    background-color: var(--background-dark);
+    padding: .5rem 0;
+    position: sticky;
+    top: 0;
+    /* Above open panels and their summaries (`--ttv-layer-raised`), below pop-ups (`--ttv-layer-overlay`) */
+    z-index: calc(var(--ttv-layer-raised) + 1);
+
+    /* Covers the strip above it too (the body's padding), so nothing scrolls by over the title */
+    box-shadow: 0 -3rem 0 var(--background-dark);
+}
+
+/* Jumps (from the list or a search) land below the sticky group title; the body is what scrolls */
+body {
+    scroll-padding-top: 5rem;
+}
+
+/* Jump to a group */
+#jump-to {
+    display: flex;
+    flex-wrap: wrap;
+    gap: .25rem .5rem;
+
+    font-size: .8rem;
+    margin: 0 0 2rem;
+}
+
+#jump-to a {
+    border: 1px solid var(--border-light);
+    border-radius: 1rem;
+    color: inherit;
+    padding: .2rem .7rem;
+    text-decoration: none;
+}
+
+#jump-to a:hover, #jump-to a:focus-visible {
+    background-color: var(--background-dark-lit-highlighted);
 }
 
 html:not([lang="en"i]) header {

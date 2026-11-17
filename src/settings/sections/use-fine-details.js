@@ -1,5 +1,5 @@
 /*** /settings/sections/use-fine-details.js
- * Settings for "Use Fine Details" (Developer Features).
+ * Settings for "Use Fine Details" (Troubleshooting).
  */
 
 export default {

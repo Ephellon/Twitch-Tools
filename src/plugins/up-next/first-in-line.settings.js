@@ -1,16 +1,16 @@
 /*** /plugins/up-next/first-in-line.settings.js
- * Settings for "First in Line / Up Next" (Automation).
+ * Settings for "Up Next" (Up Next & Channel Hopping).
  */
 
 export default {
-    title: "First in Line / Up Next",
+    title: "Up Next",
     tr: 'first-in-line',
     glyph: 'favorite',
     flags: ['small'],
     badges: {
         beta: '5.34.0.1',
     },
-    keywords: 'avenue,blink,carrier,channel,current,flood,flow,flutter,jerk,jiggle,keep,keep reminders,live,live reminders,means,medium,route,rush,shudder,spate,stream,surge,tide,torrent,tremble,tributary,tunnel,twitch',
+    keywords: 'first in line,avenue,blink,carrier,channel,current,flood,flow,flutter,jerk,jiggle,keep,keep reminders,live,live reminders,means,medium,route,rush,shudder,spate,stream,surge,tide,torrent,tremble,tributary,tunnel,twitch',
     rows: [
         {
             text: "Go to a channel's stream when it goes live.",
@@ -22,7 +22,7 @@ export default {
             extras: {
                 title: "Options",
                 tr: 'options',
-                subtitle: 'Adjust options for "First in Line"',
+                subtitle: 'Adjust options for "Up Next"',
             },
             rows: [
                 {

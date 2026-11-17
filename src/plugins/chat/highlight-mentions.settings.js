@@ -1,5 +1,5 @@
 /*** /plugins/chat/highlight-mentions.settings.js
- * Settings for "Highlight Mentions" (Chat & Messaging).
+ * Settings for "Highlight Mentions" (Reading Chat).
  */
 
 export default {

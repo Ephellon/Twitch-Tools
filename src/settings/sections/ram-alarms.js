@@ -1,5 +1,5 @@
 /*** /settings/sections/ram-alarms.js
- * Settings for "RAM Alarms" (Video Recovery).
+ * Settings for "RAM Alarms" (Fix Broken Streams).
  */
 
 export default {

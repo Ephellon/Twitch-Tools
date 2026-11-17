@@ -1,5 +1,5 @@
 /*** /plugins/video-recovery/recover-pages.settings.js
- * Settings for "Recover Pages" (Video Recovery).
+ * Settings for "Recover Pages" (Fix Broken Streams).
  */
 
 export default {

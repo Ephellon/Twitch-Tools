@@ -1,5 +1,5 @@
 /*** /settings/sections/display-statistics.js
- * Settings for "Display Statistics" (Developer Features).
+ * Settings for "Display Statistics" (Troubleshooting).
  */
 
 export default {

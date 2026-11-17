@@ -1,5 +1,5 @@
 /*** /settings/sections/low-data-usage.js
- * Settings for "Low Data Usage" (Developer Features).
+ * Settings for "Low Data Usage" (Data & Sync).
  */
 
 export default {

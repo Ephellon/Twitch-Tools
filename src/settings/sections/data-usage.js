@@ -1,5 +1,5 @@
 /*** /settings/sections/data-usage.js
- * Settings for "Data Usage" (About TTV Tools).
+ * Settings for "Data Usage" (Data & Sync).
  */
 
 export default {

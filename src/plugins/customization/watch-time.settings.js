@@ -1,5 +1,5 @@
 /*** /plugins/customization/watch-time.settings.js
- * Settings for "Watch Time" (Customization).
+ * Settings for "Watch Time" (Points & Bits Info).
  */
 
 export default {

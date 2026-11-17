@@ -1,5 +1,5 @@
 /*** /plugins/automation/claim-loot.settings.js
- * Settings for "Claim Prime Loot" (Automation).
+ * Settings for "Claim Prime Loot" (Free Points & Loot).
  */
 
 export default {

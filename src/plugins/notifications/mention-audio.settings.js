@@ -1,5 +1,5 @@
 /*** /plugins/notifications/mention-audio.settings.js
- * Settings for "Notification Sounds" (Chat & Messaging).
+ * Settings for "Notification Sounds" (Reading Chat).
  */
 
 export default {

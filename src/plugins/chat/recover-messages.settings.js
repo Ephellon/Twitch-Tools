@@ -1,5 +1,5 @@
 /*** /plugins/chat/recover-messages.settings.js
- * Settings for "Recover Messages" (Chat & Messaging).
+ * Settings for "Recover Messages" (Reading Chat).
  */
 
 export default {

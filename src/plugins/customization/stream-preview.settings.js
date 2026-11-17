@@ -1,5 +1,5 @@
 /*** /plugins/customization/stream-preview.settings.js
- * Settings for "Stream Preview" (Customization).
+ * Settings for "Stream Preview" (Looks & Extras).
  */
 
 export default {

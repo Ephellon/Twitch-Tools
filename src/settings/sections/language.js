@@ -1,5 +1,5 @@
 /*** /settings/sections/language.js
- * Settings for "Language" (About TTV Tools).
+ * Settings for "Language" (Data & Sync).
  */
 
 export default {

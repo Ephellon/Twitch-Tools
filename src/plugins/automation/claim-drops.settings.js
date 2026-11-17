@@ -1,5 +1,5 @@
 /*** /plugins/automation/claim-drops.settings.js
- * Settings for "Claim Drops" (Automation).
+ * Settings for "Claim Drops" (Free Points & Loot).
  */
 
 export default {

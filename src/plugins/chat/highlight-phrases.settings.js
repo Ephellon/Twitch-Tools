@@ -1,5 +1,5 @@
 /*** /plugins/chat/highlight-phrases.settings.js
- * Settings for "Highlight Phrases" (Chat & Messaging).
+ * Settings for "Highlight Phrases" (Reading Chat).
  */
 
 export default {

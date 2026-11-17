@@ -1,5 +1,5 @@
 /*** /plugins/automation/claim-prime.settings.js
- * Settings for "Prime Subscription" (Automation).
+ * Settings for "Prime Subscription" (Free Points & Loot).
  */
 
 export default {

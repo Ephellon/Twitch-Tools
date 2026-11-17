@@ -1,5 +1,5 @@
 /*** /plugins/up-next/streak-saver.settings.js
- * Settings for "Streak Saver" (Automation).
+ * Settings for "Streak Saver" (Up Next & Channel Hopping).
  */
 
 export default {

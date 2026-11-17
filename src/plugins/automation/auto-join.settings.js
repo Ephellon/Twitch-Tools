@@ -1,5 +1,5 @@
 /*** /plugins/automation/auto-join.settings.js
- * Settings for "Auto-Join" (Automation).
+ * Settings for "Auto-Join" (Up Next & Channel Hopping).
  */
 
 export default {

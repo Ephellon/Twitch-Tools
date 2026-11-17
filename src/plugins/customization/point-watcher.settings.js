@@ -1,5 +1,5 @@
 /*** /plugins/customization/point-watcher.settings.js
- * Settings for "Point Watcher" (Customization).
+ * Settings for "Point Watcher" (Points & Bits Info).
  */
 
 export default {

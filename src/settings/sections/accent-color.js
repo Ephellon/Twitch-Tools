@@ -1,5 +1,5 @@
 /*** /settings/sections/accent-color.js
- * Settings for "Accent Color" (Customization).
+ * Settings for "Accent Color" (Looks & Extras).
  */
 
 export default {

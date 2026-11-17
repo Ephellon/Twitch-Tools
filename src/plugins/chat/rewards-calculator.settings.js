@@ -1,5 +1,5 @@
 /*** /plugins/chat/rewards-calculator.settings.js
- * Settings for "Rewards Calculator" (Currencies).
+ * Settings for "Rewards Calculator" (Points & Bits Info).
  */
 
 export default {

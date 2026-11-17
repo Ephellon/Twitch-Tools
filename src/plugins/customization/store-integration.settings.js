@@ -1,16 +1,16 @@
 /*** /plugins/customization/store-integration.settings.js
- * Settings for "Store Integration" (Networking).
+ * Settings for "Game Store Links" (Looks & Extras).
  */
 
 export default {
-    title: "Store Integration",
+    title: "Game Store Links",
     tr: 'store-integration',
     glyph: 'gift',
     flags: ['small', 'gold'],
     badges: {
         new: '5.29',
     },
-    keywords: 'acquisition,advance,asset,assimilation,association,boy,buy,channel,contact,cube,current,dsi,element,epic,examination,exploration,flood,flow,game,hookup,hunt,inquiry,inspection,integration,investigation,investment,link,network,nintendo,play,playstation,purchase,pursuit,quest,relationship,research,rush,search,spate,station,stock,store,steam,stream,surge,switch,tide,tie,torrent,tributary,wii,xbox',
+    keywords: 'store integration,acquisition,advance,asset,assimilation,association,boy,buy,channel,contact,cube,current,dsi,element,epic,examination,exploration,flood,flow,game,hookup,hunt,inquiry,inspection,integration,investigation,investment,link,network,nintendo,play,playstation,purchase,pursuit,quest,relationship,research,rush,search,spate,station,stock,store,steam,stream,surge,switch,tide,tie,torrent,tributary,wii,xbox',
     rows: [
         {
             toggle: 'store_integration',
@@ -22,7 +22,7 @@ export default {
             extras: {
                 title: "Options",
                 tr: 'options',
-                subtitle: 'Adjust options for "Store Integration"',
+                subtitle: 'Adjust options for "Game Store Links"',
             },
             rows: [
                 {

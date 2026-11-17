@@ -1,5 +1,5 @@
 /*** /plugins/developer/developer-features.settings.js
- * Settings for "Extra Keyboard Shortcuts" (Developer Features).
+ * Settings for "Extra Keyboard Shortcuts" (Troubleshooting).
  */
 
 export default {

@@ -142,11 +142,22 @@ export function renderSection(section) {
  * @returns {string} The page's markup
  */
 export function renderLayout(groups) {
-    return groups.map(({ header, tr, headerAttrs, attrs, save, footer = '', sections }) => {
+    const jump = groups.map(({ header, tr }) => `<a href="#${ groupId(tr) }"${ attributes({ 'tr-id': tr }) }>${ header }</a>`).join('');
+
+    return `<nav id="jump-to" aria-label="Groups">${ jump }</nav>` + groups.map(({ header, tr, headerAttrs, attrs, save, footer = '', sections }) => {
         const saveButton = save ? `<section save tr-id="save"><button class="ripple save">Save</button></section>` : '';
 
-        return `<header${ attributes({ 'tr-id': tr, ...headerAttrs }) }>${ header }</header><article${ attributes(attrs) }>${ sections.map(renderSection).join('') }${ saveButton }${ footer }</article>`;
+        return `<header${ attributes({ id: groupId(tr), 'tr-id': tr, ...headerAttrs }) }>${ header }</header><article${ attributes(attrs) }>${ sections.map(renderSection).join('') }${ saveButton }${ footer }</article>`;
     }).join('');
+}
+
+/**
+ * A group's anchor on the page, from its translation id (`header:lurking` → `group-lurking`).
+ * @param {string} tr - The group's translation id
+ * @returns {string} The id its header gets, and the jump list links to
+ */
+export function groupId(tr) {
+    return `group-${ String(tr).replace(/^header:/, '').replace(/[^\w-]+/g, '-') }`;
 }
 
 /**

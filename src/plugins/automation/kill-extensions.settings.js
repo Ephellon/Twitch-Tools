@@ -1,5 +1,5 @@
 /*** /plugins/automation/kill-extensions.settings.js
- * Settings for "Kill Extensions" (Automation).
+ * Settings for "Kill Extensions" (Lurking).
  */
 
 export default {

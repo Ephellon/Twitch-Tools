@@ -1,5 +1,5 @@
 /*** /plugins/automation/stay-live.settings.js
- * Settings for "Stay Live" (Automation).
+ * Settings for "Stay Live" (Up Next & Channel Hopping).
  */
 
 export default {

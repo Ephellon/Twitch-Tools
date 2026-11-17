@@ -1,5 +1,5 @@
 /*** /plugins/chat/prevent-spam.settings.js
- * Settings for "Prevent Spam" (Chat & Messaging).
+ * Settings for "Prevent Spam" (Reading Chat).
  */
 
 export default {

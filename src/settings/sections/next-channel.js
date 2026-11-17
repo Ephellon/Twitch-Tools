@@ -1,16 +1,16 @@
 /*** /settings/sections/next-channel.js
- * Settings for "Next Channel" (Automation).
+ * Settings for "Next Channel Pick" (Up Next & Channel Hopping).
  */
 
 export default {
-    title: "Next Channel",
+    title: "Next Channel Pick",
     tr: 'next-channel-preference',
     glyph: 'favorite',
     flags: ['small'],
     badges: {
         new: '4.1.8',
     },
-    keywords: 'avenue,carrier,channel,current,flood,flow,means,medium,offline,route,rush,spate,stream,surge,tide,torrent,tributary,tunnel',
+    keywords: 'next channel,avenue,carrier,channel,current,flood,flow,means,medium,offline,route,rush,spate,stream,surge,tide,torrent,tributary,tunnel',
     rows: [
         {
             text: "How should the next channel be chosen when <b>Up Next</b> is empty?",

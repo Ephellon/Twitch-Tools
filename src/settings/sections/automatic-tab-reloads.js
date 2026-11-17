@@ -1,5 +1,5 @@
 /*** /settings/sections/automatic-tab-reloads.js
- * Settings for "Automatic Tab Reloads" (Developer Features).
+ * Settings for "Automatic Tab Reloads" (Troubleshooting).
  */
 
 export default {

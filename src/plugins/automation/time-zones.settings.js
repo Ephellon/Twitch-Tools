@@ -1,5 +1,5 @@
 /*** /plugins/automation/time-zones.settings.js
- * Settings for "Time Zones" (Automation).
+ * Settings for "Time Zones" (Looks & Extras).
  */
 
 export default {

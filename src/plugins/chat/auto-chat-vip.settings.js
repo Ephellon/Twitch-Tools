@@ -1,16 +1,16 @@
 /*** /plugins/chat/auto-chat-vip.settings.js
- * Settings for "Lurking Message" (Chat & Messaging).
+ * Settings for "Lurk Message" (Lurking).
  */
 
 export default {
-    title: "Lurking Message",
+    title: "Lurk Message",
     tr: 'auto-chat',
     glyph: 'thread',
     flags: ['white'],
     badges: {
         new: '5.32.5',
     },
-    keywords: 'channels,charge,directive,handling,information,letter,management,manipulation,memo,memorandum,message,news,note,notice,oversight,plan,policy,report,strategy,transaction,treatment,vip,word',
+    keywords: 'lurking message,channels,charge,directive,handling,information,letter,management,manipulation,memo,memorandum,message,news,note,notice,oversight,plan,policy,report,strategy,transaction,treatment,vip,word',
     rows: [
         {
             text: "Send messages in chosen channels, based on your rules. If a rule has several messages, one is picked at random.",
@@ -37,7 +37,7 @@ export default {
             extras: {
                 title: "Options",
                 tr: 'options',
-                subtitle: 'Adjust options for "Lurking Message"',
+                subtitle: 'Adjust options for "Lurk Message"',
             },
             rows: [
                 {

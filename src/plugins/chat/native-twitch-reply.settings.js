@@ -1,5 +1,5 @@
 /*** /plugins/chat/native-twitch-reply.settings.js
- * Settings for "Native Reply" (Chat & Messaging).
+ * Settings for "Native Reply" (Talking in Chat).
  */
 
 export default {

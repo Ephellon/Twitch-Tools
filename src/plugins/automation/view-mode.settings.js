@@ -1,5 +1,5 @@
 /*** /plugins/automation/view-mode.settings.js
- * Settings for "View Mode" (Automation).
+ * Settings for "View Mode" (Looks & Extras).
  */
 
 export default {

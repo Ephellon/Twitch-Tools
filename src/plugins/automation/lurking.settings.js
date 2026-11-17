@@ -1,5 +1,5 @@
 /*** /plugins/automation/lurking.settings.js
- * Settings for "Easy Lurk" (Automation).
+ * Settings for "Easy Lurk" (Lurking).
  */
 
 export default {
@@ -10,7 +10,7 @@ export default {
     badges: {
         new: '4.12',
     },
-    keywords: 'agenda,amount,calendar,chart,chatter,conversation,figure,gossip,itinerary,lineup,list,number,program,quantity,record,roster,schedule,size,timetable,total,volume;sunday,monday,tuesday,wednesday,thursday,friday,saturday',
+    keywords: 'button,knob,placement,agenda,amount,calendar,chart,chatter,conversation,figure,gossip,itinerary,lineup,list,number,program,quantity,record,roster,schedule,size,timetable,total,volume;sunday,monday,tuesday,wednesday,thursday,friday,saturday',
     rows: [
         {
             toggle: 'away_mode',
@@ -28,6 +28,20 @@ export default {
                 subtitle: 'Adjust settings for "Easy Lurk"',
             },
             rows: [
+                {
+                    option: {
+                        title: "Button",
+                        tr: 'placement:away-mode',
+                    },
+                    rows: [
+                        {
+                            text: "Where should the <b>Easy Lurk</b> button be shown?",
+                        },
+                        {
+                            select: 'away_mode_placement',
+                        },
+                    ],
+                },
                 {
                     option: {
                         title: "Hide Chat",
@@ -146,6 +160,33 @@ export default {
         },
         away_mode_schedule: {
             type: 'custom',
+        },
+        away_mode_placement: {
+            type: 'select',
+            options: [
+                {
+                    default: true,
+                    value: 'null',
+                    label: "Do not display",
+                    attrs: {
+                        'tr-id': 'placement:away-mode:options',
+                    },
+                },
+                {
+                    value: 'over',
+                    label: "Over the video",
+                    attrs: {
+                        'tr-id': '',
+                    },
+                },
+                {
+                    value: 'under',
+                    label: "Under the video",
+                    attrs: {
+                        'tr-id': '',
+                    },
+                },
+            ],
         },
     },
 };

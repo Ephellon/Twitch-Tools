@@ -1,13 +1,13 @@
 /*** /plugins/chat/auto-claim-bonuses.settings.js
- * Settings for "Claim Bonuses" (Automation).
+ * Settings for "Auto-Claim Bonuses" (Free Points & Loot).
  */
 
 export default {
-    title: "Claim Bonuses",
+    title: "Auto-Claim Bonuses",
     tr: 'auto-claim-bonuses',
     glyph: 'channelpoints',
     flags: ['small'],
-    keywords: 'avenue,benefit,bonus,bonus channel points,bounty,button,carrier,channel,dividend,gift,gratuity,knob,means,medium,perk,points,premium,prize,reward,route,tunnel',
+    keywords: 'claim bonuses,avenue,benefit,bonus,bonus channel points,bounty,button,carrier,channel,dividend,gift,gratuity,knob,means,medium,perk,points,premium,prize,reward,route,tunnel',
     rows: [
         {
             toggle: 'auto_claim_bonuses',

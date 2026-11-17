@@ -1,9 +1,9 @@
 /*** /plugins/networking/auto-dvr.settings.js
- * Settings for "Video Clips" (Networking).
+ * Settings for "Clips & DVR" (Looks & Extras).
  */
 
 export default {
-    title: "Video Clips",
+    title: "Clips &amp; DVR",
     tr: 'networking:video-clips',
     glyph: 'download',
     flags: ['small'],
@@ -11,7 +11,7 @@ export default {
         new: '5.32.4',
         beta: '5.28',
     },
-    keywords: 'allocation,alt,avenue,bar,beginning,block,book,break,breathing space,carrier,case,channels,charge,chunk,citation,clips,collectibles,conclusion,crown,cup,current,data,dawn,decoration,default,delinquency,directory,dossier,dvr,excerpt,file,flood,flow,folder,fraction,fragment,gold,halt,handling,hesitation,hiatus,hitch,information,interlude,intermission,interruption,interval,keepsake,kickoff,lapse,layoff,letup,list,lot,lull,management,manipulation,means,medal,medium,memento,mow,nonpayment,notebook,opening,outset,oversight,part,pause,piece,plan,policy,portions,prize,prune,quantity,queue,recess,record,recording,respite,route,rush,section,segment,serving,shave,shear,snip,souvenir,spate,start,stoppage,strategy,streams,surge,suspension,televised,tide,torrent,transaction,treatment,tributary,trim,trophies,trophy,tunnel,video',
+    keywords: 'video clips,allocation,alt,avenue,bar,beginning,block,book,break,breathing space,carrier,case,channels,charge,chunk,citation,clips,collectibles,conclusion,crown,cup,current,data,dawn,decoration,default,delinquency,directory,dossier,dvr,excerpt,file,flood,flow,folder,fraction,fragment,gold,halt,handling,hesitation,hiatus,hitch,information,interlude,intermission,interruption,interval,keepsake,kickoff,lapse,layoff,letup,list,lot,lull,management,manipulation,means,medal,medium,memento,mow,nonpayment,notebook,opening,outset,oversight,part,pause,piece,plan,policy,portions,prize,prune,quantity,queue,recess,record,recording,respite,route,rush,section,segment,serving,shave,shear,snip,souvenir,spate,start,stoppage,strategy,streams,surge,suspension,televised,tide,torrent,transaction,treatment,tributary,trim,trophies,trophy,tunnel,video',
     rows: [
         {
             text: "Record parts of a stream; press <code id='key:alt-z'>Alt + Z</code> to start or stop.",
@@ -20,7 +20,7 @@ export default {
             extras: {
                 title: "Options",
                 tr: 'options',
-                subtitle: 'Adjust settings for "Video Clips"',
+                subtitle: 'Adjust settings for "Clips & DVR"',
             },
             rows: [
                 {

@@ -1,5 +1,5 @@
 /*** /plugins/chat/convert-emotes.settings.js
- * Settings for "Convert emotes" (Experimental Features).
+ * Settings for "Convert emotes" (Experimental).
  */
 
 export default {

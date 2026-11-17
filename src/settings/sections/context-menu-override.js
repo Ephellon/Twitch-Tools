@@ -1,5 +1,5 @@
 /*** /settings/sections/context-menu-override.js
- * Settings for "Context Menu Override" (Customization).
+ * Settings for "Context Menu Override" (Looks & Extras).
  */
 
 export default {

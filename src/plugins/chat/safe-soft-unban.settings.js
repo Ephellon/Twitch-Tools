@@ -1,5 +1,5 @@
 /*** /plugins/chat/safe-soft-unban.settings.js
- * Settings for "Soft Unban" (Experimental Features).
+ * Settings for "Soft Unban" (Experimental).
  */
 
 export default {

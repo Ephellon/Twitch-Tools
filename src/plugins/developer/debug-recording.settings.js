@@ -1,5 +1,5 @@
 /*** /plugins/developer/debug-recording.settings.js
- * Settings for "Debug Recording" (Developer Features).
+ * Settings for "Debug Recording" (Troubleshooting).
  */
 
 export default {

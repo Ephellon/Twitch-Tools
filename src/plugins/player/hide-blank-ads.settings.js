@@ -1,5 +1,5 @@
 /*** /plugins/player/hide-blank-ads.settings.js
- * Settings for "Hide Blank Ads" (Customization).
+ * Settings for "Hide Blank Ads" (Fix Broken Streams).
  */
 
 export default {

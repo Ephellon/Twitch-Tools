@@ -1,5 +1,5 @@
 /*** /plugins/chat/convert-bits.settings.js
- * Settings for "Convert Bits" (Currencies).
+ * Settings for "Convert Bits" (Points & Bits Info).
  */
 
 export default {

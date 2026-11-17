@@ -1,5 +1,5 @@
 /*** /plugins/currencies/points-receipt.settings.js
- * Settings for "Points Receipt & Rank" (Customization).
+ * Settings for "Points Receipt & Rank" (Points & Bits Info).
  */
 
 export default {

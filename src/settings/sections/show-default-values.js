@@ -1,5 +1,5 @@
 /*** /settings/sections/show-default-values.js
- * Settings for "Show Default Values" (Developer Features).
+ * Settings for "Show Default Values" (Troubleshooting).
  */
 
 export default {

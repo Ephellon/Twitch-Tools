@@ -1,5 +1,5 @@
 /*** /plugins/customization/block-banners.settings.js
- * Settings for "Block Banners" (Customization).
+ * Settings for "Block Banners" (Looks & Extras).
  */
 
 export default {

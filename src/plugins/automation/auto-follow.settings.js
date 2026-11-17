@@ -1,13 +1,13 @@
 /*** /plugins/automation/auto-follow.settings.js
- * Settings for "Follows" (Automation).
+ * Settings for "Auto-Follow" (Up Next & Channel Hopping).
  */
 
 export default {
-    title: "Follows",
+    title: "Auto-Follow",
     tr: 'auto-follow',
     glyph: 'favorite',
     flags: ['small'],
-    keywords: 'avenue,board,bulletin,bureau,button,cabinet,carrier,channels,charge,collectibles,commission,current,extras,flood,flow,follow,forum,group,handling,jury,knob,management,manipulation,means,medium,notice,notification,oversight,panel,plan,policy,proclamation,reminders,route,rush,spate,strategy,streams,surge,tab,task force,tide,torrent,transaction,treatment,tribunal,tributary,tunnel,warning',
+    keywords: 'follows,avenue,board,bulletin,bureau,button,cabinet,carrier,channels,charge,collectibles,commission,current,extras,flood,flow,follow,forum,group,handling,jury,knob,management,manipulation,means,medium,notice,notification,oversight,panel,plan,policy,proclamation,reminders,route,rush,spate,strategy,streams,surge,tab,task force,tide,torrent,transaction,treatment,tribunal,tributary,tunnel,warning',
     rows: [
         {
             text: "Follow channels automatically while you watch them.",
@@ -21,7 +21,7 @@ export default {
             extras: {
                 title: "Options",
                 tr: 'options',
-                subtitle: 'Adjust options for "Follows"',
+                subtitle: 'Adjust options for "Auto-Follow"',
             },
             rows: [
                 {

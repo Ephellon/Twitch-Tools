@@ -1,5 +1,5 @@
 /*** /plugins/chat/filter-messages.settings.js
- * Settings for "Filter Messages" (Chat & Messaging).
+ * Settings for "Filter Messages" (Reading Chat).
  */
 
 export default {

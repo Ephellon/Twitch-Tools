@@ -1,5 +1,5 @@
 /*** /plugins/video-recovery/recover-stream.recover-ads.settings.js
- * Settings for "Recover Ads" (Video Recovery).
+ * Settings for "Recover Ads" (Fix Broken Streams).
  */
 
 export default {

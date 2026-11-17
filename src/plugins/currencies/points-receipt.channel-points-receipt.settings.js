@@ -1,5 +1,5 @@
 /*** /plugins/currencies/points-receipt.channel-points-receipt.settings.js
- * Settings for "Channel Points Receipt" (Currencies).
+ * Settings for "Channel Points Receipt" (Points & Bits Info).
  */
 
 export default {

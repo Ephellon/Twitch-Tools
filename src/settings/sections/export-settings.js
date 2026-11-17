@@ -1,16 +1,16 @@
 /*** /settings/sections/export-settings.js
- * Settings for "Export Settings" (Networking).
+ * Settings for "Sync & Backup" (Data & Sync).
  */
 
 export default {
-    title: "Export Settings",
+    title: "Sync &amp; Backup",
     tr: 'networking:sync-settings',
     glyph: 'export',
     flags: ['small'],
     badges: {
         new: '5.32',
     },
-    keywords: 'cloud,download,dump,export,id,load,log in,network,settings,ship,smuggle,transport,upload',
+    keywords: 'export settings,sync settings,cloud,download,dump,export,id,load,log in,network,settings,ship,smuggle,transport,upload',
     summaryAttrs: {
         style: 'width:fit-content',
     },

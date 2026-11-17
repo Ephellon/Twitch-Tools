@@ -1,5 +1,5 @@
 /*** /plugins/automation/parse-commands.settings.js
- * Settings for "Parse Commands" (Automation).
+ * Settings for "Parse Commands" (Talking in Chat).
  */
 
 export default {

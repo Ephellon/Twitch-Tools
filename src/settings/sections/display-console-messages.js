@@ -1,5 +1,5 @@
 /*** /settings/sections/display-console-messages.js
- * Settings for "Display Console Messages" (Developer Features).
+ * Settings for "Display Console Messages" (Troubleshooting).
  */
 
 export default {

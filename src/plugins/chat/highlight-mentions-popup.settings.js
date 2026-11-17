@@ -1,5 +1,5 @@
 /*** /plugins/chat/highlight-mentions-popup.settings.js
- * Settings for "Show Pop-ups" (Chat & Messaging).
+ * Settings for "Show Pop-ups" (Reading Chat).
  */
 
 export default {

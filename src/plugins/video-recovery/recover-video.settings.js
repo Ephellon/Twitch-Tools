@@ -1,5 +1,5 @@
 /*** /plugins/video-recovery/recover-video.settings.js
- * Settings for "Recover Video" (Video Recovery).
+ * Settings for "Recover Video" (Fix Broken Streams).
  */
 
 export default {

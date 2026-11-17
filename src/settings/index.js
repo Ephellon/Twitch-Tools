@@ -10,6 +10,19 @@ import { renderSiteAccess } from './site-access.js';
 
 document.getElementById('search-container').insertAdjacentHTML('beforebegin', renderLayout(layout));
 
+// Jump to a group: its settings land just under its (sticky) title. Listens on the document (settings.js re-renders
+// translated text) and before settings.js, which opens links in a new tab
+document.addEventListener('click', event => {
+    const link = event.target.closest('a[href^="#group-"]');
+
+    if(!link)
+        return;
+
+    event.preventDefault();
+    event.stopImmediatePropagation();
+    document.querySelector(link.getAttribute('href'))?.nextElementSibling?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+}, { capture: true });
+
 window.SETTINGS_LAYOUT = layout;
 window.SETTINGS_IDS = settingIds(layout);
 window.SETTINGS_DEFAULTS = settingDefaults(layout);

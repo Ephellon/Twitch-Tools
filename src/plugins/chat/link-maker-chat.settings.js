@@ -1,5 +1,5 @@
 /*** /plugins/chat/link-maker-chat.settings.js
- * Settings for "Link Maker" (Chat & Messaging).
+ * Settings for "Link Maker" (Talking in Chat).
  */
 
 export default {

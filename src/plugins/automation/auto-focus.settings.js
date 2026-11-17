@@ -1,5 +1,5 @@
 /*** /plugins/automation/auto-focus.settings.js
- * Settings for "Auto-Focus" (Experimental Features).
+ * Settings for "Auto-Focus" (Experimental).
  */
 
 export default {

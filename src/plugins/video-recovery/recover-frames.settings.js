@@ -1,5 +1,5 @@
 /*** /plugins/video-recovery/recover-frames.settings.js
- * Settings for "Recover Frames" (Video Recovery).
+ * Settings for "Recover Frames" (Fix Broken Streams).
  */
 
 export default {

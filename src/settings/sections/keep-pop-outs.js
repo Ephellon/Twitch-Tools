@@ -1,5 +1,5 @@
 /*** /settings/sections/keep-pop-outs.js
- * Settings for "Keep Pop-outs" (Video Recovery).
+ * Settings for "Keep Pop-outs" (Fix Broken Streams).
  */
 
 export default {
