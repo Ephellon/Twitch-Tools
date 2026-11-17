@@ -1103,6 +1103,14 @@ try {
         if(extras.length)
             extras.splice(0, 0, {});
 
+        if(parseBool(Settings.debug_recording))
+            extras.splice(0, 0, {
+                text: "Save Debugging Report...",
+                icon: 'rewind',
+                shortcut: 'ctrl+ctrl+ctrl',
+                action: event => GLOBAL_EVENT_LISTENERS.KEYDOWN_CTRL_CTRL_CTRL?.(event),
+            });
+
         let MAX = 10;
 
         while(nullish(extras.at(-1)?.text) && --MAX > 0)

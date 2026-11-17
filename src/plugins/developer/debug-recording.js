@@ -1,7 +1,7 @@
 /*** /plugins/developer/debug-recording.js
  * Debug Recording (phase 1): keeps a rolling log of clicks, page changes, reloads, the video's status, and what TTV did
- * (jobs, logs, errors, Up Next, settings), with messages hidden. Alt + Shift + R saves it as an `.html` file to attach
- * to an issue. The log survives reloads (per tab, in `sessionStorage`). See lib/debug-recorder.js.
+ * (jobs, logs, errors, Up Next, settings), with messages hidden. Tapping Ctrl three times (or "Save Debugging Report..." in
+ * the right-click menu) saves it as an `.html` file to attach to an issue. The log survives reloads (per tab, in `sessionStorage`). See lib/debug-recorder.js.
  */
 
 import { plugin } from '../../lib/plugins.js';
@@ -148,11 +148,47 @@ function startRecording() {
         log.add('error', { message: logLine([reason ?? 'Promise rejected']), source: 'promise' });
     });
 
-    // Alt + Shift + R saves the recording
-    on(document, 'keydown', ({ key = '', altKey, ctrlKey, metaKey, shiftKey }) => {
-        if(altKey && shiftKey && !(ctrlKey || metaKey) && key.equals('r'))
+    // Ctrl tapped three times quickly saves the recording (Alt + Shift + R is the browser's Reading Mode)
+    // A tap is a Ctrl press and release with nothing else pressed, so Ctrl + C and holding Ctrl don't count
+    let presses = []
+        , tainted = false;
+
+    /**
+     * Saves the recording on a triple Ctrl tap, or right away when the right-click menu calls it (with a copy of the click).
+     * @param {KeyboardEvent|object} event The key press or release, or the menu's copy of the click
+     */
+    GLOBAL_EVENT_LISTENERS.KEYDOWN_CTRL_CTRL_CTRL = function Save_the_Debug_Recording(event) {
+        const { type, key = '', repeat, altKey, metaKey, shiftKey, timeStamp } = event ?? {};
+
+        // From the menu: a copy of the click, not a key
+        if(!/^key(?:down|up)$/.test(type ?? ''))
+            return saveRecording();
+
+        if(type == 'keydown') {
+            if(key != 'Control' || repeat || altKey || metaKey || shiftKey) {
+                presses = [];
+                tainted = true;
+            }
+
+            return;
+        }
+
+        if(key != 'Control')
+            return;
+
+        if(tainted)
+            return tainted = false;
+
+        presses = [...presses, timeStamp].filter(time => timeStamp - time < 750);
+
+        if(presses.length >= 3) {
+            presses = [];
             saveRecording();
-    }, { capture: true });
+        }
+    };
+
+    on(document, 'keydown', GLOBAL_EVENT_LISTENERS.KEYDOWN_CTRL_CTRL_CTRL, { capture: true });
+    on(document, 'keyup', GLOBAL_EVENT_LISTENERS.KEYDOWN_CTRL_CTRL_CTRL, { capture: true });
 
     // TTV's own logs (recorded even when they aren't shown in the console)
     for(const name of LOG_LEVELS) {
@@ -292,6 +328,7 @@ plugin({
             globalThis[name] = original;
 
         RECORDER.observer?.disconnect();
+        delete GLOBAL_EVENT_LISTENERS.KEYDOWN_CTRL_CTRL_CTRL;
         RECORDER.storage?.();
 
         RECORDER = null;

@@ -16,10 +16,10 @@ export default {
             toggle: 'debug_recording',
         },
         {
-            text: "Keep a log of the last {{debug_recording__minutes}} of clicks, page changes, the video's status and what TTV did. Messages are hidden.",
+            text: "Keep a log of the last {{debug_recording__minutes}} of clicks, page changes, the video's status and what the extension did. <strong warning-text>Messages are hidden.</strong>",
         },
         {
-            text: "Press <code>Alt</code> + <code>Shift</code> + <code>R</code> on Twitch to save it as a file you can add to an issue.",
+            text: "Press <code>Ctrl</code> three times quickly on a Twitch page to save it as a file you can add to an issue.",
         },
     ],
     settings: {
