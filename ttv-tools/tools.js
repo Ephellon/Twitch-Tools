@@ -3543,6 +3543,14 @@ try {
         if(extras.length)
             extras.splice(0, 0, {});
 
+        if(parseBool(Settings.debug_recording))
+            extras.splice(0, 0, {
+                text: `Save Debugging Report...`,
+                icon: 'rewind',
+                shortcut: 'alt+shift+r',
+                action: GLOBAL_EVENT_LISTENERS.KEYDOWN_ALT_SHIFT_R,
+            });
+
         let MAX = 10;
         while(nullish(extras.at(-1)?.text) && --MAX > 0)
             extras.splice(-1, 1);
@@ -18242,7 +18250,7 @@ let Initialize = async(START_OVER = false) => {
             });
 
             // Alt + Shift + R saves the recording
-            on(document, 'keydown', ({ key = '', altKey, ctrlKey, metaKey, shiftKey }) => {
+            on(document, 'keydown', GLOBAL_EVENT_LISTENERS.KEYDOWN_ALT_SHIFT_R = function Save_the_Debug_Recording({ key = '', altKey, ctrlKey, metaKey, shiftKey }) {
                 if(altKey && shiftKey && !(ctrlKey || metaKey) && key.equals('r'))
                     saveRecording();
             }, { capture: true });
