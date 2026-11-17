@@ -42,6 +42,7 @@
 ## Release History
 
 ### Version 5.35.\*
+- [`5.35.5.54`](https://github.com/Ephellon/Twitch-Tools/releases/tag/5.35.5.54) — The Settings page no longer asks about the "new storage system" (from 5.32.4)
 - [`5.35.5.53`](https://github.com/Ephellon/Twitch-Tools/releases/tag/5.35.5.53) — Debug Recording shows settings as they are, but hides what you write yourself (extra emotes, filter, highlight and lurking rules, the export id), chat lines in TTV's logs, and your rule words wherever they're logged
 - [`5.35.5.52`](https://github.com/Ephellon/Twitch-Tools/releases/tag/5.35.5.52) — Debug Recording saves with Ctrl tapped three times (Alt + Shift + R is the browser's Reading Mode); "Save Debugging Report..." in the right-click menu works
 - [`5.35.5.51`](https://github.com/Ephellon/Twitch-Tools/releases/tag/5.35.5.51) — New: Debug Recording (Developer Features) keeps a log of the last 1–30 minutes of clicks, page changes, reloads, the video's status and what TTV did, with messages hidden; Alt + Shift + R saves it as a file to add to an issue

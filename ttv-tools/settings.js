@@ -31,19 +31,6 @@ function getURL(path = '') {
 
 // Handle updates here
 (async function(version) {
-    // Handle storage change
-    if(compareVersions(`${ version } ≥ 5.32.4`)) {
-        let v5_32_4 = await Storage.get('v5_32_4');
-        Storage_change: if(parseBool(v5_32_4) == false)
-            await alert.silent(`There is a new storage system in place, please press OK to proceed. All settings will be transferred.`).then(async() => {
-                let sync = await Container.storage.sync.get();
-
-                for(let key in sync)
-                    Container.storage.local.set({ [key]: sync[key] });
-                Storage.set({ v5_32_4: true });
-            });
-    }
-
     // Convert settings
     if(compareVersions(`${ version } = 5.32.5`)) {
         let opt = 'auto_chat__vip';
