@@ -266,7 +266,7 @@ header {
     z-index: calc(var(--ttv-layer-raised) + 1);
 
     /* Covers the strip above it too (the body's padding), so nothing scrolls by over the title */
-    box-shadow: 0 -3rem 0 var(--background-dark);
+    box-shadow: 0 -2rem 0 var(--background-dark);
 }
 
 /* Jumps (from the list or a search) land below the sticky group title; the body is what scrolls */
@@ -281,7 +281,7 @@ body {
     gap: .25rem .5rem;
 
     font-size: .8rem;
-    margin: 0 0 2rem;
+    margin: 0 0 3rem;
 }
 
 #jump-to a {
