@@ -3547,8 +3547,8 @@ try {
             extras.splice(0, 0, {
                 text: `Save Debugging Report...`,
                 icon: 'rewind',
-                shortcut: 'alt+shift+r',
-                action: GLOBAL_EVENT_LISTENERS.KEYDOWN_ALT_SHIFT_R,
+                shortcut: 'ctrl+ctrl+ctrl',
+                action: event => GLOBAL_EVENT_LISTENERS.KEYDOWN_CTRL_CTRL_CTRL?.(event),
             });
 
         let MAX = 10;
@@ -17766,7 +17766,7 @@ let Initialize = async(START_OVER = false) => {
 
     /*** Debug Recording
      * A rolling log of clicks, page changes, reloads, the video's status, and what TTV did (jobs, logs, errors, Up Next,
-     * settings), with messages hidden. Alt + Shift + R saves it as an `.html` file to attach to an issue.
+     * settings), with messages hidden. Pressing Ctrl three times saves it as an `.html` file to attach to an issue.
      * Shared with v6 (src/lib/debug-recorder.js, src/plugins/developer/debug-recording.js).
      */
     const DEBUG_RECORDING = (() => {
@@ -18249,11 +18249,43 @@ let Initialize = async(START_OVER = false) => {
                 log.add('error', { message: logLine([reason ?? 'Promise rejected']), source: 'promise' });
             });
 
-            // Alt + Shift + R saves the recording
-            on(document, 'keydown', GLOBAL_EVENT_LISTENERS.KEYDOWN_ALT_SHIFT_R = function Save_the_Debug_Recording({ key = '', altKey, ctrlKey, metaKey, shiftKey }) {
-                if(altKey && shiftKey && !(ctrlKey || metaKey) && key.equals('r'))
+            // Ctrl tapped three times quickly saves the recording (Alt + Shift + R is the browser's Reading Mode)
+            // A tap is a Ctrl press and release with nothing else pressed, so Ctrl + C and holding Ctrl don't count
+            let presses = []
+                , tainted = false;
+
+            GLOBAL_EVENT_LISTENERS.KEYDOWN_CTRL_CTRL_CTRL = function Save_the_Debug_Recording(event) {
+                let { type, key = '', repeat, altKey, metaKey, shiftKey, timeStamp } = event ?? {};
+
+                // From the menu: a copy of the click, not a key
+                if(!/^key(?:down|up)$/.test(type ?? ''))
+                    return saveRecording();
+
+                if(type == 'keydown') {
+                    if(key != 'Control' || repeat || altKey || metaKey || shiftKey) {
+                        presses = [];
+                        tainted = true;
+                    }
+
+                    return;
+                }
+
+                if(key != 'Control')
+                    return;
+
+                if(tainted)
+                    return tainted = false;
+
+                presses = [...presses, timeStamp].filter(time => timeStamp - time < 750);
+
+                if(presses.length >= 3) {
+                    presses = [];
                     saveRecording();
-            }, { capture: true });
+                }
+            };
+
+            on(document, 'keydown', GLOBAL_EVENT_LISTENERS.KEYDOWN_CTRL_CTRL_CTRL, { capture: true });
+            on(document, 'keyup', GLOBAL_EVENT_LISTENERS.KEYDOWN_CTRL_CTRL_CTRL, { capture: true });
 
             // TTV's own logs (recorded even when they aren't shown in the console)
             for(const name of LOG_LEVELS) {
@@ -18390,6 +18422,7 @@ let Initialize = async(START_OVER = false) => {
                     globalThis[name] = original;
 
                 RECORDER.observer?.disconnect();
+                delete GLOBAL_EVENT_LISTENERS.KEYDOWN_CTRL_CTRL_CTRL;
                 RECORDER.storage?.();
 
                 RECORDER = null;
