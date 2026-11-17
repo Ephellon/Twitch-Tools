@@ -157,12 +157,12 @@ export class DebugLog {
     /**
      * @param {object}   [options]
      * @param {number}   [options.minutes = 5]      How far back to keep
-     * @param {number}   [options.limit = 10_000]   The most events kept
+     * @param {number}   [options.limit = 20_000]   The most events kept
      * @param {function} [options.now = Date.now]   The clock (for tests)
      * @param {object}   [options.meta = {}]        About the recording: version, browser, …
      * @param {Array}    [options.events = []]      Events kept from before (a reload)
      */
-    constructor({ minutes = 5, limit = 10_000, now = Date.now, meta = {}, events = [] } = {}) {
+    constructor({ minutes = 5, limit = 20_000, now = Date.now, meta = {}, events = [] } = {}) {
         this.minutes = minutes;
         this.limit = limit;
         this.now = now;
