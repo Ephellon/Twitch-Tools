@@ -17799,9 +17799,47 @@ let Initialize = async(START_OVER = false) => {
             return String(text ?? '').replace(/\S/gu, MASK);
         }
 
+        /** Settings the user writes themselves: their values are hidden (extra emotes, the rule lists, the export id) */
+        const SENSITIVE_SETTINGS = ['bttv_emotes_extras', 'filter_rules', 'phrase_rules', 'lurking_rules', 'sync-token'];
+
+        /** Keys in logged objects that hold a message, or who wrote it: their text is hidden */
+        const MESSAGE_KEYS = /^(?:raw|message|messages|text|body|content|html|innerText|textContent|author|user|username|login|mentions?|reply|emotes)$/i;
+
         /**
-         * A setting's value, safe to keep: switches and numbers as they are; text hidden (its length kept); anything
-         * else only by its kind. Values of keys that look secret keep nothing.
+         * Whether a setting holds something the user wrote themselves (or a secret).
+         * @simply isSensitive(key:string) → boolean
+         *
+         * @param  {string} key The setting's key (`filter_rules`), or its name as logged (`FILTER RULES`)
+         * @return {boolean}
+         */
+        function isSensitive(key = '') {
+            const normal = String(key).trim().toLowerCase().replace(/\s+/g, '_').replace(/-input$/, '');
+
+            return SENSITIVE_SETTINGS.includes(normal) || /token|secret|password|cookie/i.test(normal);
+        }
+
+        /**
+         * Hides every bit of text in a value, keeping its shape: strings become `MASK`s, lists and objects are hidden inside.
+         * @simply maskDeep(value:any, depth:number?) → any
+         *
+         * @param  {*}      value       What to hide
+         * @param  {number} [depth = 4] How deep to look inside lists and objects
+         * @return {*}
+         */
+        function maskDeep(value, depth = 4) {
+            if(typeof value == 'string')
+                return maskText(value);
+            if(value === null || typeof value != 'object' || depth < 1)
+                return value;
+            if(Array.isArray(value))
+                return value.map(item => maskDeep(item, depth - 1));
+
+            return Object.fromEntries(Object.entries(value).map(([key, item]) => [key, maskDeep(item, depth - 1)]));
+        }
+
+        /**
+         * A setting's value, safe to keep: as it is, except for settings the user writes themselves (`SENSITIVE_SETTINGS`)
+         * and secrets, whose text is hidden (its length kept).
          * @simply maskSetting(key:string, value:any) → any
          *
          * @param  {string} key   The setting's key
@@ -17809,39 +17847,43 @@ let Initialize = async(START_OVER = false) => {
          * @return {*}
          */
         function maskSetting(key, value) {
-            if(/token|secret|password|auth|key\b|cookie|session/i.test(key))
-                return '';
+            if(value === void null)
+                return null;
 
-            switch(typeof value) {
-                case 'boolean':
-                case 'number': {
-                    return value;
-                }
-
-                case 'string': {
-                    return /^(?:true|false|null|-?\d+(?:\.\d+)?)$/i.test(value) ? value : maskText(value);
-                }
-
-                case 'undefined': {
-                    return null;
-                }
-
-                default: {
-                    return value === null ? null : `[${ Array.isArray(value) ? `list of ${ value.length }` : 'object' }]`;
-                }
-            } // switch typeof value
+            return isSensitive(key) ? maskDeep(value) : value;
         }
 
         /**
-         * Turns log arguments into one short line.
-         * @simply logLine(args:array, max:number?) → string
+         * Hides messages inside a logged object: the text under message-like keys (`raw`, `message`, `author`, …).
+         * @simply maskMessages(value:any, depth:number?) → any
+         */
+        function maskMessages(value, depth = 4) {
+            if(value === null || typeof value != 'object' || depth < 1)
+                return value;
+            if(Array.isArray(value))
+                return value.map(item => maskMessages(item, depth - 1));
+
+            return Object.fromEntries(Object.entries(value).map(([key, item]) => [key, MESSAGE_KEYS.test(key) ? maskDeep(item) : maskMessages(item, depth - 1)]));
+        }
+
+        /**
+         * Turns log arguments into one short line, with messages and what the user wrote hidden:
+         * - text under message-like keys of logged objects (`raw`, `message`, `author`, …);
+         * - the old and new values when a setting the user writes themselves is logged as changed;
+         * - any of `terms` (the user's own rules) found in the line.
+         * @simply logLine(args:array, max:number?, terms:array<string>?) → string
          *
-         * @param  {Array}  args        What was passed to `$log`, `$warn`, …
-         * @param  {number} [max = 300] The longest line kept
+         * @param  {Array}         args        What was passed to `$log`, `$warn`, …
+         * @param  {number}        [max = 300] The longest line kept
+         * @param  {Array<string>} [terms=[]]  Words to hide wherever they appear (see `sensitiveTerms`)
          * @return {string}
          */
-        function logLine(args, max = 300) {
-            const line = [...args].map(arg => {
+        function logLine(args, max = 300, terms = []) {
+            const list = [...args]
+                , naming = list.find(arg => typeof arg == 'string') ?? ''
+                , setting = /\bfeature: (.+)$/i.exec(naming)?.[1];
+
+            let line = list.map(arg => {
                 if(arg instanceof Error)
                     return `${ arg.name }: ${ arg.message }`;
 
@@ -17849,8 +17891,10 @@ let Initialize = async(START_OVER = false) => {
                     if(typeof arg.tagName == 'string')
                         return `<${ arg.tagName.toLowerCase() }>`;
 
+                    const safe = setting && isSensitive(setting) ? maskDeep(arg) : maskMessages(arg);
+
                     try {
-                        return JSON.stringify(arg);
+                        return JSON.stringify(safe);
                     } catch {
                         return String(arg);
                     }
@@ -17859,7 +17903,30 @@ let Initialize = async(START_OVER = false) => {
                 return String(arg);
             }).join(' ');
 
+            for(const term of terms)
+                line = line.split(term).join(maskText(term));
+
             return line.length > max ? `${ line.slice(0, max - 1) }…` : line;
+        }
+
+        /**
+         * The words in the user's own rules (filter, highlight and lurking rules, extra emotes), to hide in log lines.
+         * Words shorter than 3 letters are left, since they'd hide too much.
+         * @simply sensitiveTerms(settings:object) → array<string>
+         *
+         * @param  {object} [settings={}] The current settings
+         * @return {Array<string>}         Longest first, so a longer word is hidden whole
+         */
+        function sensitiveTerms(settings = {}) {
+            const terms = new Set;
+
+            for(const key of SENSITIVE_SETTINGS)
+                for(const rule of String(settings?.[key] ?? '').split(/[,;\n]/))
+                    for(const word of rule.replace(/^[\s@:/]+|[\s/:]+$/g, '').split(/\s+/))
+                        if(word.length >= 3)
+                            terms.add(word);
+
+            return [...terms].sort((a, b) => b.length - a.length);
         }
 
         /**
@@ -18296,7 +18363,7 @@ let Initialize = async(START_OVER = false) => {
 
                 RECORDER.logs[name] = original;
                 globalThis[name] = function(...args) {
-                    RECORDER?.log.add('log', { level: name.slice(1), text: logLine(args) });
+                    RECORDER?.log.add('log', { level: name.slice(1), text: logLine(args, 300, sensitiveTerms(Settings)) });
 
                     return original.apply(this, args);
                 };
