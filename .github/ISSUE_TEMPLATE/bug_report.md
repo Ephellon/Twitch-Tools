@@ -20,8 +20,9 @@ assignees: Ephellon
 **Expected behavior**
 <!-- A clear and concise (to the point) description of what you expected to happen -->
 
-**Screenshots**
+**Screenshots / Recordings**
 <!-- If applicable, add screenshots to help explain your problem -->
+<!-- ≥v5.35.5.53 and ≥v6 can attach Debugging Reports (*.html) -->
 
 **Extension Information**
  - Version: `2.XX.YY`
