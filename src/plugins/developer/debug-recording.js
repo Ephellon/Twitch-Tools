@@ -5,7 +5,7 @@
  */
 
 import { plugin } from '../../lib/plugins.js';
-import { DebugLog, buildRecording, describeElement, logLine, maskSetting } from '../../lib/debug-recorder.js';
+import { DebugLog, buildRecording, describeElement, logLine, maskSetting, sensitiveTerms } from '../../lib/debug-recorder.js';
 
 const STORE_KEY = 'ttv-debug-recording';
 const LOG_LEVELS = ['$log', '$warn', '$error', '$remark', '$notice'];
@@ -199,7 +199,7 @@ function startRecording() {
 
         RECORDER.logs[name] = original;
         globalThis[name] = function(...args) {
-            RECORDER?.log.add('log', { level: name.slice(1), text: logLine(args) });
+            RECORDER?.log.add('log', { level: name.slice(1), text: logLine(args, 300, sensitiveTerms(Settings)) });
 
             return original.apply(this, args);
         };

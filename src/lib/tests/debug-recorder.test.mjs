@@ -4,7 +4,7 @@
 
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { DebugLog, MASK, buildRecording, describeElement, logLine, maskSetting, maskText } from '../debug-recorder.js';
+import { DebugLog, MASK, buildRecording, describeElement, isSensitive, logLine, maskSetting, maskText, sensitiveTerms } from '../debug-recorder.js';
 
 /** A small stand-in for an element: a tag, attributes, a parent, and the selectors it sits inside */
 const element = (tag, { attrs = {}, text = '', parent = null, inside = [] } = {}) => ({
@@ -23,19 +23,43 @@ test('maskText keeps length and spacing', () => {
     assert.equal(maskText('😀 ok').length, `${ MASK } ${ MASK }${ MASK }`.length);
 });
 
-test('maskSetting keeps switches and numbers, hides text and secrets', () => {
+test('maskSetting keeps values as they are, except what the user writes themselves', () => {
     assert.equal(maskSetting('away_mode', true), true);
     assert.equal(maskSetting('away_mode__volume', 25), 25);
-    assert.equal(maskSetting('away_mode', 'true'), 'true');
+    assert.equal(maskSetting('UP_NEXT_OWNER_NAME', 'milkietatas'), 'milkietatas');
+    assert.deepEqual(maskSetting('ALL_FIRST_IN_LINE_JOBS', ['a']), ['a']);
     assert.equal(maskSetting('phrase_rules', 'cat dog'), `${ MASK.repeat(3) } ${ MASK.repeat(3) }`);
-    assert.equal(maskSetting('sync-token', 'abc123'), '');
-    assert.equal(maskSetting('list', [1, 2]), '[list of 2]');
+    assert.equal(maskSetting('filter_rules', '@nightbot'), MASK.repeat(9));
+    assert.equal(maskSetting('lurking_rules', 'hi;bye'), MASK.repeat(6));
+    assert.equal(maskSetting('bttv_emotes_extras', 'KEKW'), MASK.repeat(4));
+    assert.equal(maskSetting('sync-token', 'abc123'), MASK.repeat(6));
     assert.equal(maskSetting('gone', void null), null);
+});
+
+test('isSensitive knows keys and their logged names', () => {
+    assert.ok(isSensitive('FILTER RULES'));
+    assert.ok(isSensitive('phrase_rules-input'));
+    assert.ok(!isSensitive('UP NEXT OWNER NAME'));
 });
 
 test('logLine joins arguments and cuts long lines', () => {
     assert.equal(logLine(['Up Next:', { a: 1 }, new Error('nope')]), 'Up Next: {"a":1} Error: nope');
     assert.equal(logLine(['x'.repeat(400)]).length, 300);
+});
+
+test('logLine hides messages, the user\'s rules, and changed values of their own settings', () => {
+    const line = { raw: 'Nightbot: hi all', author: 'nightbot', style: 'color: red' };
+    const text = logLine(['Censoring message because the user matches: nightbot', line], 300, sensitiveTerms({ filter_rules: '@nightbot,ok' }));
+
+    assert.ok(!/nightbot|hi all/i.test(text), text);
+    assert.match(text, /"style":"color: red"/);
+
+    assert.equal(logLine(['Modifying feature: UP NEXT OWNER NAME', { oldValue: 'a', newValue: 'b' }]), 'Modifying feature: UP NEXT OWNER NAME {"oldValue":"a","newValue":"b"}');
+    assert.ok(!/cat/.test(logLine(['Modifying feature: PHRASE RULES', { oldValue: '', newValue: 'cat' }])));
+});
+
+test('sensitiveTerms takes words of 3+ letters from the user\'s rules, longest first', () => {
+    assert.deepEqual(sensitiveTerms({ filter_rules: '@nightbot,ok', phrase_rules: 'big cat,/regex/', bttv_emotes_extras: 'KEKW' }), ['nightbot', 'regex', 'KEKW', 'big', 'cat']);
 });
 
 test('describeElement names the element and hides messages', () => {
