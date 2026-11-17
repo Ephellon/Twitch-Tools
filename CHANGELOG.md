@@ -42,6 +42,7 @@
 ## Release History
 
 ### Version 5.35.\*
+- [`5.35.5.51`](https://github.com/Ephellon/Twitch-Tools/releases/tag/5.35.5.51) — New: Debug Recording (Developer Features) keeps a log of the last 1–30 minutes of clicks, page changes, reloads, the video's status and what TTV did, with messages hidden; Alt + Shift + R saves it as a file to add to an issue
 - [`5.35.5.50`](https://github.com/Ephellon/Twitch-Tools/releases/tag/5.35.5.50) — Undoes 5.35.5.49, which froze pages (high memory and CPU, constant reloads)
 - [`5.35.5.49`](https://github.com/Ephellon/Twitch-Tools/releases/tag/5.35.5.49) — Followed channels are found again with the full side bar open, so Up Next and the Pin list see them
 - [`5.35.5.48`](https://github.com/Ephellon/Twitch-Tools/releases/tag/5.35.5.48) — No more reloads on an offline channel's page when Watch Time or the Points Receipt is shown (#91)

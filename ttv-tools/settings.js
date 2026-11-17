@@ -305,6 +305,9 @@ let // These are option names. Anything else will be removed
         'user_language_preference',
         // Automatic Tab Reloads
         'auto_tab_reloads',
+        // Debug Recording
+        'debug_recording',
+            'debug_recording__minutes',
 
         /* "Hidden" options */
         'sync-token',

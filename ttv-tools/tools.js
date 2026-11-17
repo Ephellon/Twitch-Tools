@@ -17756,6 +17756,660 @@ let Initialize = async(START_OVER = false) => {
         RegisterJob('extra_keyboard_shortcuts');
     }
 
+    /*** Debug Recording
+     * A rolling log of clicks, page changes, reloads, the video's status, and what TTV did (jobs, logs, errors, Up Next,
+     * settings), with messages hidden. Alt + Shift + R saves it as an `.html` file to attach to an issue.
+     * Shared with v6 (src/lib/debug-recorder.js, src/plugins/developer/debug-recording.js).
+     */
+    const DEBUG_RECORDING = (() => {
+        /** What hidden text is drawn with: one block per character, so lengths and line wraps stay real */
+        const MASK = '█';
+
+        /** Where messages live: their text is hidden */
+        const MESSAGE_AREAS = [
+            '[data-a-target="chat-line-message"i]',
+            '[class*="chat-line__message"i]',
+            '[data-a-target="chat-input"i]',
+            '[class*="whisper"i]',
+            '[data-test-selector*="notification"i]',
+        ].join(',');
+
+        /** The main chat input: its text is hidden, but its length is kept */
+        const CHAT_INPUT = '[data-a-target="chat-input"i]';
+
+        /** Every other box someone types in keeps nothing (passwords, card numbers, whispers, search, …) */
+        const INPUT_BOXES = 'input, textarea, select, [contenteditable]:not([contenteditable="false"i])';
+
+        /**
+         * Hides text but keeps its length and spacing.
+         * @simply maskText(text:string?) → string
+         *
+         * @param  {string} [text = ""] The text to hide
+         * @return {string}             The same text with every visible character replaced by `MASK`
+         */
+        function maskText(text = '') {
+            return String(text ?? '').replace(/\S/gu, MASK);
+        }
+
+        /**
+         * A setting's value, safe to keep: switches and numbers as they are; text hidden (its length kept); anything
+         * else only by its kind. Values of keys that look secret keep nothing.
+         * @simply maskSetting(key:string, value:any) → any
+         *
+         * @param  {string} key   The setting's key
+         * @param  {*}      value The setting's value
+         * @return {*}
+         */
+        function maskSetting(key, value) {
+            if(/token|secret|password|auth|key\b|cookie|session/i.test(key))
+                return '';
+
+            switch(typeof value) {
+                case 'boolean':
+                case 'number': {
+                    return value;
+                }
+
+                case 'string': {
+                    return /^(?:true|false|null|-?\d+(?:\.\d+)?)$/i.test(value) ? value : maskText(value);
+                }
+
+                case 'undefined': {
+                    return null;
+                }
+
+                default: {
+                    return value === null ? null : `[${ Array.isArray(value) ? `list of ${ value.length }` : 'object' }]`;
+                }
+            } // switch typeof value
+        }
+
+        /**
+         * Turns log arguments into one short line.
+         * @simply logLine(args:array, max:number?) → string
+         *
+         * @param  {Array}  args        What was passed to `$log`, `$warn`, …
+         * @param  {number} [max = 300] The longest line kept
+         * @return {string}
+         */
+        function logLine(args, max = 300) {
+            const line = [...args].map(arg => {
+                if(arg instanceof Error)
+                    return `${ arg.name }: ${ arg.message }`;
+
+                if(arg && typeof arg == 'object') {
+                    if(typeof arg.tagName == 'string')
+                        return `<${ arg.tagName.toLowerCase() }>`;
+
+                    try {
+                        return JSON.stringify(arg);
+                    } catch {
+                        return String(arg);
+                    }
+                }
+
+                return String(arg);
+            }).join(' ');
+
+            return line.length > max ? `${ line.slice(0, max - 1) }…` : line;
+        }
+
+        /**
+         * Describes an element for the log: a short path to it, and a label (its name, or its text; hidden when it's a message,
+         * empty when it's an input box other than the main chat input).
+         * @simply describeElement(element:Element?) → { path:string, label:string }
+         *
+         * @param  {Element} [element] The element (anything with `tagName`, `getAttribute`, `parentElement`, `closest`)
+         * @return {{ path: string, label: string }}
+         */
+        function describeElement(element) {
+            if(!element?.tagName)
+                return { path: '', label: "" };
+
+            let parts = []
+                , node = element;
+
+            for(let depth = 0; node?.tagName && depth < 4; ++depth, node = node.parentElement) {
+                let part = node.tagName.toLowerCase()
+                    , id = node.id
+                    , target = node.getAttribute?.('data-a-target')
+                    , test = node.getAttribute?.('data-test-selector');
+
+                if(id)
+                    part += `#${ id }`;
+                if(target)
+                    part += `[data-a-target="${ target }"]`;
+                else if(test)
+                    part += `[data-test-selector="${ test }"]`;
+                else if(typeof node.className == 'string' && node.className.trim().length)
+                    part += `.${ node.className.trim().split(/\s+/)[0] }`;
+
+                parts.unshift(part);
+
+                if(id || target)
+                    break;
+            }
+
+            let label = (null
+                ?? element.getAttribute?.('aria-label')
+                ?? element.getAttribute?.('title')
+                ?? element.textContent
+                ?? ''
+            ).trim().replace(/\s+/g, ' ').slice(0, 60);
+
+            if(element.closest?.(CHAT_INPUT))
+                label = maskText(label);
+            else if(element.closest?.(INPUT_BOXES))
+                label = '';
+            else if(element.closest?.(MESSAGE_AREAS))
+                label = maskText(label);
+
+            return { path: parts.join(' > '), label };
+        }
+
+        /**
+         * The rolling log: the newest events of the last few minutes, oldest dropped first.
+         */
+        class DebugLog {
+            /**
+             * @param {object}   [options]
+             * @param {number}   [options.minutes = 5]      How far back to keep
+             * @param {number}   [options.limit = 20_000]   The most events kept
+             * @param {function} [options.now = Date.now]   The clock (for tests)
+             * @param {object}   [options.meta = {}]        About the recording: version, browser, …
+             * @param {Array}    [options.events = []]      Events kept from before (a reload)
+             */
+            constructor({ minutes = 5, limit = 20_000, now = Date.now, meta = {}, events = [] } = {}) {
+                this.minutes = minutes;
+                this.limit = limit;
+                this.now = now;
+                this.meta = meta;
+                this.events = [...events];
+            }
+
+            /**
+             * Adds an event, then drops what's too old.
+             * @simply DebugLog#add(type:string, data:object?) → object
+             *
+             * @param  {string} type      The kind of event: `click`, `nav`, `load`, `video`, `job`, `log`, …
+             * @param  {object} [data={}] What happened
+             * @return {object}           The event as kept
+             */
+            add(type, data = {}) {
+                const event = { t: this.now(), type, ...data };
+
+                this.events.push(event);
+                this.trim();
+
+                return event;
+            }
+
+            /**
+             * Drops events older than `minutes`, then the oldest ones over `limit`.
+             * @simply DebugLog#trim() → undefined
+             */
+            trim() {
+                let oldest = this.now() - this.minutes * 60_000
+                    , start = this.events.findIndex(event => event.t >= oldest);
+
+                if(start < 0)
+                    start = this.events.length;
+
+                start = Math.max(start, this.events.length - this.limit);
+
+                if(start > 0)
+                    this.events.splice(0, start);
+            }
+
+            /**
+             * What gets stored between reloads, and saved.
+             * @simply DebugLog#toJSON() → { meta:object, events:array }
+             */
+            toJSON() {
+                return { meta: this.meta, events: this.events };
+            }
+        }
+
+        /**
+         * Builds the `.html` file: the log, and a small page that shows it as a timeline with filters. It works offline, with
+         * nothing loaded from elsewhere.
+         * @simply buildRecording(recording:object) → string<HTML>
+         *
+         * @param  {object} recording        From `DebugLog#toJSON()`
+         * @param  {object} recording.meta   About the recording
+         * @param  {Array}  recording.events The events, oldest first
+         * @return {string}
+         */
+        function buildRecording({ meta = {}, events = [] }) {
+            // `<` can't end the script early once escaped
+            const data = JSON.stringify({ meta, events }).replace(/</g, '\\u003c').replace(/\u2028/g, '\\u2028').replace(/\u2029/g, '\\u2029');
+            const title = `TTV Tools debug recording${ meta.channel ? ` — ${ meta.channel }` : '' }`.replace(/[<>&"]/g, (c, $$, $_) => `&#${ c.charCodeAt(0) };`);
+
+            return `<!doctype html>
+        <html lang=en>
+        <head>
+        <meta charset=utf-8>
+        <meta name=viewport content="width=device-width, initial-scale=1">
+        <title>${ title }</title>
+        <style>
+        :root { --bg:#fff; --fg:#1f1f23; --dim:#6b6b76; --line:#e4e4ea; --row:#f6f6f9; --accent:#9147ff;
+            --live:#2e9d4d; --rerun:#c28b00; --offline:#7a7a85; --ad:#d6336c; --none:#d0d0d8; }
+        @media (prefers-color-scheme: dark) { :root { --bg:#0e0e10; --fg:#efeff1; --dim:#9a9aa5; --line:#2a2a2f; --row:#18181b; --none:#3a3a40; } }
+        * { box-sizing:border-box }
+        body { margin:0; background:var(--bg); color:var(--fg); font:14px/1.4 system-ui, sans-serif }
+        header { padding:16px; border-bottom:1px solid var(--line) }
+        h1 { font-size:18px; margin:0 0 4px }
+        .meta { color:var(--dim); font-size:12px; display:flex; flex-wrap:wrap; gap:4px 16px }
+        #strip { display:flex; height:14px; margin:12px 16px 0; border-radius:4px; overflow:hidden; background:var(--none) }
+        #strip span { height:100% }
+        .legend { margin:4px 16px 0; font-size:12px; color:var(--dim); display:flex; gap:12px; flex-wrap:wrap }
+        .legend i { display:inline-block; width:10px; height:10px; border-radius:2px; margin-right:4px; vertical-align:-1px }
+        #controls { position:sticky; top:0; background:var(--bg); padding:8px 16px; border-bottom:1px solid var(--line); display:flex; flex-wrap:wrap; gap:6px 12px; align-items:center; z-index:1 }
+        #controls label { font-size:13px; white-space:nowrap }
+        #search { flex:1 1 200px; min-width:0; padding:4px 8px; border:1px solid var(--line); border-radius:4px; background:var(--row); color:inherit }
+        table { width:100%; border-collapse:collapse; font-size:13px }
+        td { padding:3px 8px; border-bottom:1px solid var(--line); vertical-align:top }
+        tr:nth-child(even) td { background:var(--row) }
+        td.t { white-space:nowrap; color:var(--dim); font-variant-numeric:tabular-nums }
+        td.k { white-space:nowrap; font-weight:600 }
+        td.d { word-break:break-word; font-family:ui-monospace, monospace; font-size:12px }
+        tr[data-type=error] td.k, tr[data-level=error] td.k { color:var(--ad) }
+        tr[data-level=warn] td.k { color:var(--rerun) }
+        tr[data-type=load] td, tr[data-type=unload] td { font-weight:600 }
+        .masked { filter:blur(3px); user-select:none }
+        .wrap { overflow-x:auto }
+        </style>
+        </head>
+        <body>
+        <header>
+        <h1>${ title }</h1>
+        <div class=meta id=meta></div>
+        </header>
+        <div id=strip title="Video status over time"></div>
+        <div class=legend><span><i style="background:var(--live)"></i>live</span><span><i style="background:var(--rerun)"></i>rerun</span><span><i style="background:var(--offline)"></i>offline</span><span><i style="background:var(--ad)"></i>ad</span><span><i style="background:var(--none)"></i>no video</span></div>
+        <div id=controls><input id=search type=search placeholder="Filter (text)"><span id=types></span></div>
+        <div class=wrap><table><tbody id=rows></tbody></table></div>
+        <script type="application/json" id=data>${ data }</script>
+        <script>
+        (() => {
+            const { meta, events } = JSON.parse(document.getElementById('data').textContent);
+            const first = events[0]?.t ?? meta.started ?? 0, last = events.at(-1)?.t ?? first;
+            const pad = (n, s = 2) => String(n).padStart(s, '0');
+            const offset = t => { const ms = Math.max(0, t - first); return pad(Math.floor(ms / 60000)) + ':' + pad(Math.floor(ms / 1000) % 60) + '.' + pad(ms % 1000, 3); };
+            const clock = t => new Date(t).toLocaleTimeString([], { hour12: false });
+            const esc = s => String(s ?? '').replace(/[&<>"]/g, c => '&#' + c.charCodeAt(0) + ';');
+            const masked = s => esc(s).replace(/█+/g, m => '<span class=masked>' + m + '</span>');
+
+            const summary = e => {
+                switch(e.type) {
+                    case 'click': return (e.trusted ? 'user' : 'script') + ' click on ' + esc(e.path) + (e.label ? ' — "' + masked(e.label) + '"' : '') + ' @' + e.x + ',' + e.y;
+                    case 'nav': return esc(e.from) + ' → ' + esc(e.to);
+                    case 'load': return 'page ' + esc(e.how) + ': ' + esc(e.path) + (e.reason ? ' (reason: ' + esc(e.reason) + ')' : '') + (e.reports?.length ? ' reports: ' + esc(e.reports.join(', ')) : '');
+                    case 'unload': return 'leaving ' + esc(e.path);
+                    case 'video': return esc(e.status) + (e.paused ? ', paused' : '') + ', ready ' + e.ready + ', at ' + e.time + 's, buffered to ' + e.buffered + 's' + (e.height ? ', ' + e.height + 'p' : '') + (e.muted ? ', muted' : ', volume ' + e.volume);
+                    case 'stall': return 'video stuck at ' + e.time + 's for ' + e.seconds + 's (' + esc(e.status) + ')';
+                    case 'job': return esc(e.name) + ' ' + esc(e.state);
+                    case 'log': return masked(e.text);
+                    case 'error': return esc(e.message) + (e.source ? ' (' + esc(e.source) + ')' : '');
+                    case 'upnext': return e.queue.length ? e.queue.map(esc).join(' → ') : '(empty)';
+                    case 'setting': return esc(e.key) + ' = ' + masked(JSON.stringify(e.value));
+                    case 'lag': return 'page busy for ' + e.ms + ' ms';
+                    case 'memory': return e.mb + ' MB in use';
+                    case 'visibility': return esc(e.state);
+                    default: return masked(JSON.stringify(e));
+                }
+            };
+
+            const metaParts = [
+                ['TTV Tools', meta.version], ['Browser', meta.browser], ['Channel', meta.channel],
+                ['From', meta.started && new Date(meta.started).toLocaleString()], ['Saved', meta.saved && new Date(meta.saved).toLocaleString()],
+                ['Events', events.length],
+            ].filter(([, v]) => v != null && v !== '');
+            document.getElementById('meta').innerHTML = metaParts.map(([k, v]) => '<span>' + k + ': <b>' + esc(v) + '</b></span>').join('');
+
+            // The video's status over time
+            const strip = document.getElementById('strip'), span = Math.max(1, last - first);
+            let status = 'none', since = first;
+            const segment = (from, to, s) => strip.insertAdjacentHTML('beforeend', '<span style="width:' + ((to - from) / span * 100) + '%;background:var(--' + s + ')" title="' + s + ' ' + offset(from) + '–' + offset(to) + '"></span>');
+            for(const e of events)
+                if(e.type == 'video' && e.status != status) { segment(since, e.t, status); status = e.status; since = e.t; }
+                else if(e.type == 'load' || e.type == 'unload') { segment(since, e.t, status); status = 'none'; since = e.t; }
+            segment(since, last, status);
+
+            // Filters
+            const counts = {};
+            for(const e of events) counts[e.type] = (counts[e.type] ?? 0) + 1;
+            const shown = new Set(Object.keys(counts));
+            document.getElementById('types').innerHTML = Object.entries(counts).sort().map(([type, n]) => '<label><input type=checkbox checked value="' + esc(type) + '"> ' + esc(type) + ' (' + n + ')</label>').join(' ');
+
+            const rows = document.getElementById('rows');
+            rows.innerHTML = events.map((e, i) => '<tr data-i=' + i + ' data-type="' + esc(e.type) + '"' + (e.level ? ' data-level="' + esc(e.level) + '"' : '') + '><td class=t title="' + clock(e.t) + '">' + offset(e.t) + '</td><td class=k>' + esc(e.level ?? e.type) + '</td><td class=d>' + summary(e) + '</td></tr>').join('');
+
+            const search = document.getElementById('search');
+            const filter = () => {
+                const term = search.value.trim().toLowerCase();
+                for(const row of rows.children)
+                    row.hidden = !shown.has(row.dataset.type) || (term && !row.textContent.toLowerCase().includes(term));
+            };
+            document.getElementById('types').addEventListener('change', ({ target }) => { target.checked ? shown.add(target.value) : shown.delete(target.value); filter(); });
+            search.addEventListener('input', filter);
+        })();
+        </script>
+        </body>
+        </html>
+        `;
+        }
+
+        const STORE_KEY = 'ttv-debug-recording';
+        const LOG_LEVELS = ['$log', '$warn', '$error', '$remark', '$notice'];
+
+        /** The recorder's state while it's on; `null` while it's off */
+        let RECORDER = null;
+
+        /**
+         * The page's path, without its query (it can hold tokens).
+         * @simply pagePath() → string
+         */
+        function pagePath() {
+            return location.pathname;
+        }
+
+        /**
+         * The video's status for the log.
+         * @simply videoStatus(video:HTMLVideoElement?) → string
+         */
+        function videoStatus(video) {
+            if($.defined('[data-a-target*="ad-countdown"i]'))
+                return 'ad';
+            if(nullish(video))
+                return 'none';
+            if(!STREAMER?.live)
+                return 'offline';
+            if(STREAMER?.redo)
+                return 'rerun';
+            return 'live';
+        }
+
+        /**
+         * Saves the log so a reload keeps it. Halves the log when storage is full.
+         * @simply persist() → undefined
+         */
+        function persist() {
+            if(!RECORDER)
+                return;
+
+            for(let tries = 0; tries < 4; ++tries)
+                try {
+                    return sessionStorage.setItem(STORE_KEY, JSON.stringify(RECORDER.log));
+                } catch {
+                    RECORDER.log.events.splice(0, Math.ceil(RECORDER.log.events.length / 2));
+                }
+        }
+
+        /**
+         * Downloads the log as an `.html` file.
+         * @simply saveRecording() → undefined
+         */
+        function saveRecording() {
+            if(!RECORDER)
+                return;
+
+            const { log } = RECORDER
+                , saved = Date.now()
+                , channel = STREAMER?.name ?? pagePath().split('/')[1] ?? 'twitch'
+                , html = buildRecording({ meta: { ...log.meta, channel, saved }, events: log.events })
+                , link = document.createElement('a')
+                , stamp = new Date(saved).toISOString().replace(/\.\d+Z$/, '').replace(/:/g, '-');
+
+            link.href = URL.createObjectURL(new Blob([html], { type: 'text/html' }));
+            link.download = `ttv-recording-${ channel }-${ stamp }.html`;
+            link.click();
+
+            setTimeout(() => URL.revokeObjectURL(link.href), 10_000);
+
+            alert.timed?.(`Debug recording saved (${ log.events.length } events).`, 5000);
+        }
+
+        /**
+         * Starts recording: restores the log kept before a reload, notes how the page was reached, and adds the listeners.
+         * Runs at start-up, or on the first job run when the feature is turned on later.
+         * @simply startRecording() → undefined
+         */
+        function startRecording() {
+            if(RECORDER)
+                return;
+
+            $remark("Adding Debug Recording...");
+
+            let kept = null;
+
+            try {
+                kept = JSON.parse(sessionStorage.getItem(STORE_KEY) ?? 'null');
+            } catch {
+                // Nothing kept, or storage is blocked
+            }
+
+            const log = new DebugLog({
+                minutes: parseFloat(Settings.debug_recording__minutes) || 5,
+                meta: kept?.meta ?? {
+                    started: Date.now(),
+                    version: (globalThis.browser ?? globalThis.chrome)?.runtime?.getManifest?.()?.version,
+                    browser: navigator.userAgent.match(/(?:Edg|OPR|Firefox|Chrome)\/[\d.]+/)?.[0] ?? '',
+                },
+                events: kept?.events ?? [],
+            });
+
+            RECORDER = {
+                log,
+                listeners: [],
+                logs: {},
+                last: { path: pagePath(), video: '', time: -1, stuckSince: null, jobs: {}, queue: null, memory: 0, saved: 0 },
+            };
+
+            // How this page was reached (a reload keeps TTV's reason in the URL and its reports in sessionStorage)
+            const how = performance.getEntriesByType?.('navigation')?.[0]?.type ?? 'navigate'
+                , reason = new URLSearchParams(location.search).get('reload-reason') ?? ''
+                , reports = Object.keys(sessionStorage).filter(key => /^TTV-Tools/i.test(key));
+
+            log.add('load', { how, path: pagePath(), reason, reports });
+
+            /**
+             * Listens, and remembers the listener so turning the feature off removes it.
+             * @simply on(target:EventTarget, type:string, listener:function, options:object?) → undefined
+             */
+            const on = (target, type, listener, options = { capture: true, passive: true }) => {
+                target.addEventListener(type, listener, options);
+                RECORDER.listeners.push([target, type, listener, options]);
+            };
+
+            on(document, 'click', ({ target, clientX, clientY, isTrusted, button }) => {
+                log.add('click', { ...describeElement(target), x: Math.round(clientX), y: Math.round(clientY), trusted: isTrusted, button });
+            });
+
+            on(window, 'pagehide', () => {
+                log.add('unload', { path: pagePath() });
+                persist();
+            });
+
+            on(document, 'visibilitychange', () => log.add('visibility', { state: document.visibilityState }));
+
+            on(window, 'error', ({ message, filename, lineno }) => {
+                log.add('error', { message: String(message), source: filename ? `${ filename.split('/').pop() }:${ lineno }` : '' });
+            });
+
+            on(window, 'unhandledrejection', ({ reason }) => {
+                log.add('error', { message: logLine([reason ?? 'Promise rejected']), source: 'promise' });
+            });
+
+            // Alt + Shift + R saves the recording
+            on(document, 'keydown', ({ key = '', altKey, ctrlKey, metaKey, shiftKey }) => {
+                if(altKey && shiftKey && !(ctrlKey || metaKey) && key.equals('r'))
+                    saveRecording();
+            }, { capture: true });
+
+            // TTV's own logs (recorded even when they aren't shown in the console)
+            for(const name of LOG_LEVELS) {
+                const original = globalThis[name];
+
+                if(typeof original != 'function')
+                    continue;
+
+                RECORDER.logs[name] = original;
+                globalThis[name] = function(...args) {
+                    RECORDER?.log.add('log', { level: name.slice(1), text: logLine(args) });
+
+                    return original.apply(this, args);
+                };
+            }
+
+            /**
+             * Notes settings that change (their values hidden where they're text).
+             * @param {object} changes What changed, by key
+             */
+            const storageListener = changes => {
+                for(const [key, { newValue }] of Object.entries(changes))
+                    if(key in (Settings ?? {}))
+                        log.add('setting', { key, value: maskSetting(key, newValue) });
+            };
+
+            Storage?.onChanged?.addListener?.(storageListener);
+            RECORDER.storage = () => Storage?.onChanged?.removeListener?.(storageListener);
+
+            // Long tasks: the page is too busy to respond
+            try {
+                RECORDER.observer = new PerformanceObserver(list => {
+                    for(const entry of list.getEntries())
+                        if(entry.duration >= 200)
+                            log.add('lag', { ms: Math.round(entry.duration) });
+                });
+
+                RECORDER.observer.observe({ type: 'longtask', buffered: false });
+            } catch {
+                // Long tasks aren't reported in this browser
+            }
+        }
+
+        return {
+            /**
+             * Samples what can't be listened for: page changes, the video, jobs, the Up Next queue, and memory.
+             */
+            handler() {
+                if(!RECORDER)
+                    startRecording();
+
+                const { log, last } = RECORDER
+                    , now = Date.now();
+
+                // Page changes (Twitch changes pages without reloading)
+                const path = pagePath();
+
+                if(path != last.path) {
+                    log.add('nav', { from: last.path, to: path });
+                    last.path = path;
+                }
+
+                // The video
+                const video = globalThis.MASTER_VIDEO ?? $('[data-a-player-state] video') ?? $('video')
+                    , state = {
+                        status: videoStatus(video),
+                        paused: !!video?.paused,
+                        ready: video?.readyState ?? 0,
+                        time: +(video?.currentTime ?? 0).toFixed(1),
+                        buffered: +(video?.buffered?.length ? video.buffered.end(video.buffered.length - 1) : 0).toFixed(1),
+                        height: video?.videoHeight ?? 0,
+                        muted: !!video?.muted,
+                        volume: +(video?.volume ?? 0).toFixed(2),
+                    }
+                    , key = [state.status, state.paused, state.ready, state.height, state.muted, state.volume].join('|');
+
+                if(key != last.video) {
+                    log.add('video', state);
+                    last.video = key;
+                }
+
+                // A playing video that doesn't move
+                if(!state.paused && state.status != 'none' && state.time == last.time) {
+                    last.stuckSince ??= now
+                } else {
+                    if(last.stuckSince && now - last.stuckSince >= 2_000)
+                        log.add('stall', { time: state.time, seconds: +((now - last.stuckSince) / 1000).toFixed(1), status: state.status });
+                    last.stuckSince = null;
+                }
+                last.time = state.time;
+
+                // Jobs starting and stopping
+                for(const [name, id] of Object.entries(Jobs ?? {})) {
+                    if(name == 'debug_recording')
+                        continue;
+
+                    const running = id != null;
+
+                    if(running != (last.jobs[name] ?? false)) {
+                        log.add('job', { name, state: running ? 'started' : 'stopped' });
+                        last.jobs[name] = running;
+                    }
+                }
+
+                // The Up Next queue
+                const queue = (ALL_FIRST_IN_LINE_JOBS ?? []).map(href => parseURL(href).pathname.slice(1).split('/')[0])
+                    , joined = queue.join(',');
+
+                if(joined != last.queue) {
+                    log.add('upnext', { queue });
+                    last.queue = joined;
+                }
+
+                // Memory, every 10s (Chrome only)
+                if(performance.memory && now - last.memory >= 10_000) {
+                    log.add('memory', { mb: Math.round(performance.memory.usedJSHeapSize / 2 ** 20) });
+                    last.memory = now;
+                }
+
+                if(now - last.saved >= 2_000) {
+                    persist();
+                    last.saved = now;
+                }
+            },
+
+            unhandler() {
+                if(!RECORDER)
+                    return;
+
+                for(const [target, type, listener, options] of RECORDER.listeners)
+                    target.removeEventListener(type, listener, options);
+
+                for(const [name, original] of Object.entries(RECORDER.logs))
+                    globalThis[name] = original;
+
+                RECORDER.observer?.disconnect();
+                RECORDER.storage?.();
+
+                RECORDER = null;
+
+                try {
+                    sessionStorage.removeItem(STORE_KEY);
+                } catch {
+                    // Storage is blocked: nothing was kept
+                }
+            },
+
+            setup() {
+                startRecording();
+
+            },
+        };
+    })();
+
+    Handlers.debug_recording = () => DEBUG_RECORDING.handler();
+    Timers.debug_recording = 250;
+    Unhandlers.debug_recording = () => DEBUG_RECORDING.unhandler();
+
+    __DebugRecording__:
+    if(parseBool(Settings.debug_recording)) {
+        DEBUG_RECORDING.setup();
+        RegisterJob('debug_recording');
+    }
+
     let DEFAULT_CLIP_NAME = new ClipName(2);
     let GLOBAL_CLIP_HANDLER = setInterval(() => {
         // The Alt+Z recorder only exists while Extra Keyboard Shortcuts is on (#53)
