@@ -29,6 +29,19 @@ function getURL(path = '') {
     return url.origin + path.replace(/^(?!\/)/, '/');
 }
 
+// Jump to a group: its settings land just under its (sticky) title. Listens on the document, before the code
+// that opens links in a new tab
+document.addEventListener('click', event => {
+    let link = event.target.closest?.('a[href^="#group-"]');
+
+    if(!link)
+        return;
+
+    event.preventDefault();
+    event.stopImmediatePropagation();
+    document.querySelector(link.getAttribute('href'))?.nextElementSibling?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+}, { capture: true });
+
 // Handle updates here
 (async function(version) {
     // Convert settings

@@ -42,6 +42,7 @@
 ## Release History
 
 ### Version 5.35.\*
+- [`5.35.6`](https://github.com/Ephellon/Twitch-Tools/releases/tag/5.35.6) — New Settings layout: 12 groups named for what you want to do (Up Next & Channel Hopping, Lurking, Free Points & Loot, Points & Bits Info, Reading Chat, Talking in Chat, Fix Broken Streams, Looks & Extras, Data & Sync, Troubleshooting, Experimental, About), a jump-to list, and group titles that stay in view; Easy Lurk's button placement moves into Easy Lurk; some sections renamed (old names still found by search). Your settings don't change
 - [`5.35.5.54`](https://github.com/Ephellon/Twitch-Tools/releases/tag/5.35.5.54) — The Settings page no longer asks about the "new storage system" (from 5.32.4)
 - [`5.35.5.53`](https://github.com/Ephellon/Twitch-Tools/releases/tag/5.35.5.53) — Debug Recording shows settings as they are, but hides what you write yourself (extra emotes, filter, highlight and lurking rules, the export id), chat lines in TTV's logs, and your rule words wherever they're logged
 - [`5.35.5.52`](https://github.com/Ephellon/Twitch-Tools/releases/tag/5.35.5.52) — Debug Recording saves with Ctrl tapped three times (Alt + Shift + R is the browser's Reading Mode); "Save Debugging Report..." in the right-click menu works
