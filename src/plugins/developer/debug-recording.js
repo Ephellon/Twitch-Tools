@@ -1,11 +1,13 @@
 /*** /plugins/developer/debug-recording.js
  * Debug Recording (phase 1): keeps a rolling log of clicks, page changes, reloads, the video's status, and what TTV did
  * (jobs, logs, errors, Up Next, settings), with messages hidden. Tapping Ctrl three times (or "Save Debugging Report..." in
- * the right-click menu) saves it as an `.html` file to attach to an issue. The log survives reloads (per tab, in `sessionStorage`). See lib/debug-recorder.js.
+ * the right-click menu) saves it as an `.html` file to attach to an issue. Only the tab's top page records (not TTV's
+ * hidden frames). The log survives reloads (`sessionStorage`), and navigations to other sites and respawned tabs (the
+ * background keeps each tab's log: `DEBUG_RECORDING` in background.js). See lib/debug-recorder.js.
  */
 
 import { plugin } from '../../lib/plugins.js';
-import { DebugLog, buildRecording, describeElement, logLine, maskSetting, sensitiveTerms } from '../../lib/debug-recorder.js';
+import { DebugLog, buildRecording, describeElement, logLine, maskSetting, mergeHistory, sensitiveTerms } from '../../lib/debug-recorder.js';
 
 const STORE_KEY = 'ttv-debug-recording';
 const LOG_LEVELS = ['$log', '$warn', '$error', '$remark', '$notice'];
@@ -54,6 +56,44 @@ function persist() {
 }
 
 /**
+ * Tells the background about the tab's log (the events it hasn't seen yet), so it outlives the page.
+ * @simply share(message:object?, callback:function?) → undefined
+ *
+ * @param {object}   [message={}] Extra fields: `load` (ask for the tab's log), `replace` (send all of it), `clear`
+ * @param {function} [callback]   Gets the background's reply
+ */
+function share(message = {}, callback) {
+    if(!RECORDER && !message.clear)
+        return;
+
+    const { log, pending = [] } = RECORDER ?? {}
+        , body = { action: 'DEBUG_RECORDING', ...message };
+
+    if(log && !message.clear && !message.load) {
+        Object.assign(body, { meta: log.meta, minutes: log.minutes, limit: log.limit });
+
+        if(message.replace)
+            body.events = log.events;
+        else if(pending.length)
+            body.append = [...pending];
+        else
+            return;
+
+        pending.length = 0;
+    }
+
+    try {
+        Runtime?.sendMessage?.(body, reply => {
+            // Read, so a page the background doesn't answer (it's restarting) doesn't log an error
+            void (globalThis.browser ?? globalThis.chrome)?.runtime?.lastError;
+            callback?.(reply);
+        });
+    } catch {
+        // The extension was reloaded: this page can't reach the background any more
+    }
+}
+
+/**
  * Downloads the log as an `.html` file.
  * @simply saveRecording() → undefined
  */
@@ -66,7 +106,8 @@ function saveRecording() {
         , channel = STREAMER?.name ?? pagePath().split('/')[1] ?? 'twitch'
         , html = buildRecording({ meta: { ...log.meta, channel, saved }, events: log.events })
         , link = document.createElement('a')
-        , stamp = new Date(saved).toISOString().replace(/\.\d+Z$/, '').replace(/:/g, '-');
+        , local = new Date(saved - new Date(saved).getTimezoneOffset() * 60_000)
+        , stamp = local.toISOString().replace(/\.\d+Z$/, '').replace(/:/g, '-');
 
     link.href = URL.createObjectURL(new Blob([html], { type: 'text/html' }));
     link.download = `ttv-recording-${ channel }-${ stamp }.html`;
@@ -83,7 +124,8 @@ function saveRecording() {
  * @simply startRecording() → undefined
  */
 function startRecording() {
-    if(RECORDER)
+    // Only the tab's own page: TTV loads Twitch pages in hidden frames too, and they share the tab's storage
+    if(RECORDER || top !== window)
         return;
 
     $remark("Adding Debug Recording...");
@@ -108,6 +150,7 @@ function startRecording() {
 
     RECORDER = {
         log,
+        pending: [],
         listeners: [],
         logs: {},
         last: { path: pagePath(), video: '', time: -1, stuckSince: null, jobs: {}, queue: null, memory: 0, saved: 0 },
@@ -118,7 +161,36 @@ function startRecording() {
         , reason = new URLSearchParams(location.search).get('reload-reason') ?? ''
         , reports = Object.keys(sessionStorage).filter(key => /^TTV-Tools/i.test(key));
 
+    // New events wait in `pending` until they're shared with the background
+    const add = log.add.bind(log);
+
+    log.add = (type, data) => {
+        const event = add(type, data);
+
+        RECORDER?.pending.push(event);
+
+        return event;
+    };
+
+    const since = Date.now();
+
     log.add('load', { how, path: pagePath(), reason, reports });
+
+    // The tab's log from before this page: newer in the background after a navigation to another site or a respawn
+    share({ load: true }, kept => {
+        if(!RECORDER || RECORDER.log !== log)
+            return;
+
+        const { meta, events, fromKept } = mergeHistory(log, kept, since);
+
+        log.meta = meta;
+        log.events = events;
+        log.trim();
+
+        // The background missed this tab's history (it restarted, or the feature was just turned on): send all of it
+        if(!fromKept && events.some(event => event.t < since))
+            share({ replace: true });
+    });
 
     /**
      * Listens, and remembers the listener so turning the feature off removes it.
@@ -136,6 +208,7 @@ function startRecording() {
     on(window, 'pagehide', () => {
         log.add('unload', { path: pagePath() });
         persist();
+        share();
     });
 
     on(document, 'visibilitychange', () => log.add('visibility', { state: document.visibilityState }));
@@ -243,6 +316,9 @@ plugin({
         if(!RECORDER)
             startRecording();
 
+        if(!RECORDER)
+            return;
+
         const { log, last } = RECORDER
             , now = Date.now();
 
@@ -313,6 +389,7 @@ plugin({
 
         if(now - last.saved >= 2_000) {
             persist();
+            share();
             last.saved = now;
         }
     },
@@ -332,6 +409,7 @@ plugin({
         RECORDER.storage?.();
 
         RECORDER = null;
+        share({ clear: true });
 
         try {
             sessionStorage.removeItem(STORE_KEY);

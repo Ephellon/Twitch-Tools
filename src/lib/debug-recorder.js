@@ -281,6 +281,29 @@ export class DebugLog {
 }
 
 /**
+ * Joins a page's log with the history kept elsewhere (the background, for the tab), so the log survives
+ * navigations: of the two histories from before this page, the one with the newer last event is kept.
+ * @simply mergeHistory(log:object, kept:object?, since:number) → { meta:object, events:array, fromKept:boolean }
+ *
+ * @param  {object} log         This page's log (`{ meta, events }`); its events from before `since` came from `sessionStorage`
+ * @param  {object} [kept]      The tab's log as the background kept it (`{ meta, events }`), if any
+ * @param  {number} since       When this page started recording; later events are this page's own
+ * @return {{ meta: object, events: Array, fromKept: boolean }}
+ */
+export function mergeHistory(log, kept, since) {
+    const own = log.events.filter(event => event.t >= since)
+        , local = log.events.filter(event => event.t < since)
+        , remote = (kept?.events ?? []).filter(event => event.t < since)
+        , fromKept = (remote.at(-1)?.t ?? -Infinity) > (local.at(-1)?.t ?? -Infinity);
+
+    return {
+        meta: (fromKept ? kept.meta : null) ?? log.meta,
+        events: [...(fromKept ? remote : local), ...own],
+        fromKept,
+    };
+}
+
+/**
  * Builds the `.html` file: the log, and a small page that shows it as a timeline with filters. It works offline, with
  * nothing loaded from elsewhere.
  * @simply buildRecording(recording:object) → string<HTML>
@@ -325,7 +348,7 @@ td.k { white-space:nowrap; font-weight:600 }
 td.d { word-break:break-word; font-family:ui-monospace, monospace; font-size:12px }
 tr[data-type=error] td.k, tr[data-level=error] td.k { color:var(--ad) }
 tr[data-level=warn] td.k { color:var(--rerun) }
-tr[data-type=load] td, tr[data-type=unload] td { font-weight:600 }
+tr[data-type=load] td, tr[data-type=unload] td, tr[data-type=respawn] td { font-weight:600 }
 .masked { filter:blur(3px); user-select:none }
 .wrap { overflow-x:auto }
 </style>
@@ -346,7 +369,7 @@ tr[data-type=load] td, tr[data-type=unload] td { font-weight:600 }
     const first = events[0]?.t ?? meta.started ?? 0, last = events.at(-1)?.t ?? first;
     const pad = (n, s = 2) => String(n).padStart(s, '0');
     const offset = t => { const ms = Math.max(0, t - first); return pad(Math.floor(ms / 60000)) + ':' + pad(Math.floor(ms / 1000) % 60) + '.' + pad(ms % 1000, 3); };
-    const clock = t => new Date(t).toLocaleTimeString([], { hour12: false });
+    const clock = t => new Date(t).toLocaleTimeString([], { hour12: false }) + '.' + pad(new Date(t).getMilliseconds(), 3);
     const esc = s => String(s ?? '').replace(/[&<>"]/g, c => '&#' + c.charCodeAt(0) + ';');
     const masked = s => esc(s).replace(/█+/g, m => '<span class=masked>' + m + '</span>');
 
@@ -356,6 +379,7 @@ tr[data-type=load] td, tr[data-type=unload] td { font-weight:600 }
             case 'nav': return esc(e.from) + ' → ' + esc(e.to);
             case 'load': return 'page ' + esc(e.how) + ': ' + esc(e.path) + (e.reason ? ' (reason: ' + esc(e.reason) + ')' : '') + (e.reports?.length ? ' reports: ' + esc(e.reports.join(', ')) : '');
             case 'unload': return 'leaving ' + esc(e.path);
+            case 'respawn': return 'the tab was replaced by a new one (respawned by TTV' + (e.forced ? ', forced' : '') + ')';
             case 'video': return esc(e.status) + (e.paused ? ', paused' : '') + ', ready ' + e.ready + ', at ' + e.time + 's, buffered to ' + e.buffered + 's' + (e.height ? ', ' + e.height + 'p' : '') + (e.muted ? ', muted' : ', volume ' + e.volume);
             case 'stall': return 'video stuck at ' + e.time + 's for ' + e.seconds + 's (' + esc(e.status) + ')';
             case 'job': return esc(e.name) + ' ' + esc(e.state);
@@ -383,7 +407,7 @@ tr[data-type=load] td, tr[data-type=unload] td { font-weight:600 }
     const segment = (from, to, s) => strip.insertAdjacentHTML('beforeend', '<span style="width:' + ((to - from) / span * 100) + '%;background:var(--' + s + ')" title="' + s + ' ' + offset(from) + '–' + offset(to) + '"></span>');
     for(const e of events)
         if(e.type == 'video' && e.status != status) { segment(since, e.t, status); status = e.status; since = e.t; }
-        else if(e.type == 'load' || e.type == 'unload') { segment(since, e.t, status); status = 'none'; since = e.t; }
+        else if(e.type == 'load' || e.type == 'unload' || e.type == 'respawn') { segment(since, e.t, status); status = 'none'; since = e.t; }
     segment(since, last, status);
 
     // Filters
@@ -393,7 +417,7 @@ tr[data-type=load] td, tr[data-type=unload] td { font-weight:600 }
     document.getElementById('types').innerHTML = Object.entries(counts).sort().map(([type, n]) => '<label><input type=checkbox checked value="' + esc(type) + '"> ' + esc(type) + ' (' + n + ')</label>').join(' ');
 
     const rows = document.getElementById('rows');
-    rows.innerHTML = events.map((e, i) => '<tr data-i=' + i + ' data-type="' + esc(e.type) + '"' + (e.level ? ' data-level="' + esc(e.level) + '"' : '') + '><td class=t title="' + clock(e.t) + '">' + offset(e.t) + '</td><td class=k>' + esc(e.level ?? e.type) + '</td><td class=d>' + summary(e) + '</td></tr>').join('');
+    rows.innerHTML = events.map((e, i) => '<tr data-i=' + i + ' data-type="' + esc(e.type) + '"' + (e.level ? ' data-level="' + esc(e.level) + '"' : '') + '><td class=t title="+' + offset(e.t) + ' from the start">' + clock(e.t) + '</td><td class=k>' + esc(e.level ?? e.type) + '</td><td class=d>' + summary(e) + '</td></tr>').join('');
 
     const search = document.getElementById('search');
     const filter = () => {

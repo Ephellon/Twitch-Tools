@@ -4,7 +4,7 @@
 
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { DebugLog, MASK, buildRecording, describeElement, isSensitive, logLine, maskSetting, maskText, sensitiveTerms } from '../debug-recorder.js';
+import { DebugLog, MASK, buildRecording, describeElement, isSensitive, logLine, maskSetting, maskText, mergeHistory, sensitiveTerms } from '../debug-recorder.js';
 
 /** A small stand-in for an element: a tag, attributes, a parent, and the selectors it sits inside */
 const element = (tag, { attrs = {}, text = '', parent = null, inside = [] } = {}) => ({
@@ -114,4 +114,32 @@ test('buildRecording makes one page that can\'t be broken by what it holds', () 
     assert.equal(html.match(/<\/script>/g).length, 2);
     assert.ok(!html.includes('<b>x</b>'));
     assert.ok(html.includes('\\u003c/script>'));
+});
+
+test('mergeHistory keeps the newer history from before this page, then this page\'s own events', () => {
+    const page = { meta: { started: 1 }, events: [{ t: 1, type: 'a' }, { t: 2, type: 'b' }, { t: 10, type: 'load' }] };
+
+    // Nothing kept in the background: the page's own (sessionStorage) history stays
+    assert.deepEqual(mergeHistory(page, null, 10).events.map(e => e.type), ['a', 'b', 'load']);
+    assert.equal(mergeHistory(page, null, 10).fromKept, false);
+
+    // After a navigation to another site (or a respawn), the background has newer history
+    const kept = { meta: { started: 0 }, events: [{ t: 0, type: 'x' }, { t: 5, type: 'y' }, { t: 6, type: 'respawn' }] };
+    const merged = mergeHistory(page, kept, 10);
+
+    assert.deepEqual(merged.events.map(e => e.type), ['x', 'y', 'respawn', 'load']);
+    assert.equal(merged.fromKept, true);
+    assert.deepEqual(merged.meta, { started: 0 });
+
+    // The background's copy of this page's own events isn't repeated
+    const echo = { meta: {}, events: [...kept.events, { t: 10, type: 'load' }] };
+
+    assert.deepEqual(mergeHistory(page, echo, 10).events.map(e => e.type), ['x', 'y', 'respawn', 'load']);
+});
+
+test('buildRecording shows clock times and respawns', () => {
+    const html = buildRecording({ meta: {}, events: [{ t: Date.UTC(2026, 0, 1, 12, 0, 0, 5), type: 'respawn', from: 3, forced: true }] });
+
+    assert.match(html, /getMilliseconds/);
+    assert.match(html, /case 'respawn'/);
 });
