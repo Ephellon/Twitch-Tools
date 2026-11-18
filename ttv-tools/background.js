@@ -173,6 +173,13 @@ const SHARED_DATA = new Map;
 const SHARED_DATA_KEYS = ['USERNAME', 'THEME', 'ANTITHEME', 'ACTIVITY'];
 
 /**
+ * Debug Recording: each tab's log, by tab ID, so it outlives the tab's pages (a navigation to another site, a
+ * respawn). The pages send their new events (`DEBUG_RECORDING`), and ask for the log when they start.
+ * @type {Map<number, { meta: object, events: Array<object> }>}
+ */
+const DEBUG_RECORDINGS = new Map;
+
+/**
  * Reloads the specified tab.
  * @simply ReloadTab(tab:object<Tab>, onlineOnly:boolean?, forced:boolean?) → undefined
  *
@@ -244,6 +251,14 @@ function RemoveTab(tab, duplicateTab = false, forced = true) {
         Container.tabs.create({ active: tab.active, index: tab.index, url: tab.url, windowId: tab.windowId }, _ => {
             if(tab.groupId > -1)
                 Container.tabs.group({ groupId: tab.groupId, tabIds: [_.id] });
+
+            // Debug Recording: the new tab carries on this tab's log
+            if(DEBUG_RECORDINGS.has(tab.id)) {
+                const kept = DEBUG_RECORDINGS.get(tab.id);
+
+                kept.events.push({ t: Date.now(), type: 'respawn', from: tab.id, forced });
+                DEBUG_RECORDINGS.set(_.id, kept);
+            }
 
             // The new tab replaces this one: Up Next stays with it, instead of going to whichever tab claims first (#68)
             Storage.get(['UP_NEXT_OWNER'], ({ UP_NEXT_OWNER = null }) => {
@@ -767,6 +782,44 @@ Runtime.onMessage.addListener((request, sender, respond) => {
                         SHARED_DATA.set(key, value.slice(0, 256));
         } break;
 
+        case 'DEBUG_RECORDING': {
+            const id = sender.tab?.id;
+
+            // Only a tab's own page records (not TTV's hidden frames)
+            if(nullish(id) || sender.frameId) {
+                respond(null);
+                break;
+            }
+
+            if(request.clear) {
+                DEBUG_RECORDINGS.delete(id);
+                respond(null);
+                break;
+            }
+
+            if(request.load) {
+                respond(DEBUG_RECORDINGS.get(id) ?? null);
+                break;
+            }
+
+            const kept = DEBUG_RECORDINGS.get(id) ?? { meta: {}, events: [] };
+
+            if(request.events)
+                kept.events = [...request.events];
+            else
+                kept.events.push(...(request.append ?? []));
+
+            kept.meta = request.meta ?? kept.meta;
+
+            // The page's own limits: the last few minutes, and so many events
+            const oldest = Date.now() - (request.minutes ?? 5) * 60_000;
+
+            kept.events = kept.events.filter(event => event.t >= oldest).slice(-(request.limit ?? 20_000));
+
+            DEBUG_RECORDINGS.set(id, kept);
+            respond(null);
+        } break;
+
         case 'RESPAWN_THIS_TAB': {
             if(!request.meta?.isActive)
                 Container.tabs.get(sender.tab.id, tab => {
@@ -806,6 +859,9 @@ Runtime.onMessage.addListener((request, sender, respond) => {
 
     return true;
 });
+
+// Debug Recording: a closed tab's log goes (after a while, so a respawn can pick it up first)
+Container.tabs.onRemoved.addListener(id => setTimeout(() => DEBUG_RECORDINGS.delete(id), 60_000));
 
 // Handle and manage dead or dying tabs
 let REPORTS = new Map,

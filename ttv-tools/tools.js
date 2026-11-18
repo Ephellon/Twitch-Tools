@@ -17767,6 +17767,7 @@ let Initialize = async(START_OVER = false) => {
     /*** Debug Recording
      * A rolling log of clicks, page changes, reloads, the video's status, and what TTV did (jobs, logs, errors, Up Next,
      * settings), with messages hidden. Pressing Ctrl three times saves it as an `.html` file to attach to an issue.
+     * Only the tab's top page records; the background keeps each tab's log, so it survives navigations and respawns.
      * Shared with v6 (src/lib/debug-recorder.js, src/plugins/developer/debug-recording.js).
      */
     const DEBUG_RECORDING = (() => {
@@ -18046,6 +18047,29 @@ let Initialize = async(START_OVER = false) => {
         }
 
         /**
+         * Joins a page's log with the history kept elsewhere (the background, for the tab), so the log survives
+         * navigations: of the two histories from before this page, the one with the newer last event is kept.
+         * @simply mergeHistory(log:object, kept:object?, since:number) → { meta:object, events:array, fromKept:boolean }
+         *
+         * @param  {object} log         This page's log (`{ meta, events }`); its events from before `since` came from `sessionStorage`
+         * @param  {object} [kept]      The tab's log as the background kept it (`{ meta, events }`), if any
+         * @param  {number} since       When this page started recording; later events are this page's own
+         * @return {{ meta: object, events: Array, fromKept: boolean }}
+         */
+        function mergeHistory(log, kept, since) {
+            const own = log.events.filter(event => event.t >= since)
+                , local = log.events.filter(event => event.t < since)
+                , remote = (kept?.events ?? []).filter(event => event.t < since)
+                , fromKept = (remote.at(-1)?.t ?? -Infinity) > (local.at(-1)?.t ?? -Infinity);
+
+            return {
+                meta: (fromKept ? kept.meta : null) ?? log.meta,
+                events: [...(fromKept ? remote : local), ...own],
+                fromKept,
+            };
+        }
+
+        /**
          * Builds the `.html` file: the log, and a small page that shows it as a timeline with filters. It works offline, with
          * nothing loaded from elsewhere.
          * @simply buildRecording(recording:object) → string<HTML>
@@ -18090,7 +18114,7 @@ let Initialize = async(START_OVER = false) => {
         td.d { word-break:break-word; font-family:ui-monospace, monospace; font-size:12px }
         tr[data-type=error] td.k, tr[data-level=error] td.k { color:var(--ad) }
         tr[data-level=warn] td.k { color:var(--rerun) }
-        tr[data-type=load] td, tr[data-type=unload] td { font-weight:600 }
+        tr[data-type=load] td, tr[data-type=unload] td, tr[data-type=respawn] td { font-weight:600 }
         .masked { filter:blur(3px); user-select:none }
         .wrap { overflow-x:auto }
         </style>
@@ -18111,7 +18135,7 @@ let Initialize = async(START_OVER = false) => {
             const first = events[0]?.t ?? meta.started ?? 0, last = events.at(-1)?.t ?? first;
             const pad = (n, s = 2) => String(n).padStart(s, '0');
             const offset = t => { const ms = Math.max(0, t - first); return pad(Math.floor(ms / 60000)) + ':' + pad(Math.floor(ms / 1000) % 60) + '.' + pad(ms % 1000, 3); };
-            const clock = t => new Date(t).toLocaleTimeString([], { hour12: false });
+            const clock = t => new Date(t).toLocaleTimeString([], { hour12: false }) + '.' + pad(new Date(t).getMilliseconds(), 3);
             const esc = s => String(s ?? '').replace(/[&<>"]/g, c => '&#' + c.charCodeAt(0) + ';');
             const masked = s => esc(s).replace(/█+/g, m => '<span class=masked>' + m + '</span>');
 
@@ -18121,6 +18145,7 @@ let Initialize = async(START_OVER = false) => {
                     case 'nav': return esc(e.from) + ' → ' + esc(e.to);
                     case 'load': return 'page ' + esc(e.how) + ': ' + esc(e.path) + (e.reason ? ' (reason: ' + esc(e.reason) + ')' : '') + (e.reports?.length ? ' reports: ' + esc(e.reports.join(', ')) : '');
                     case 'unload': return 'leaving ' + esc(e.path);
+                    case 'respawn': return 'the tab was replaced by a new one (respawned by TTV' + (e.forced ? ', forced' : '') + ')';
                     case 'video': return esc(e.status) + (e.paused ? ', paused' : '') + ', ready ' + e.ready + ', at ' + e.time + 's, buffered to ' + e.buffered + 's' + (e.height ? ', ' + e.height + 'p' : '') + (e.muted ? ', muted' : ', volume ' + e.volume);
                     case 'stall': return 'video stuck at ' + e.time + 's for ' + e.seconds + 's (' + esc(e.status) + ')';
                     case 'job': return esc(e.name) + ' ' + esc(e.state);
@@ -18148,7 +18173,7 @@ let Initialize = async(START_OVER = false) => {
             const segment = (from, to, s) => strip.insertAdjacentHTML('beforeend', '<span style="width:' + ((to - from) / span * 100) + '%;background:var(--' + s + ')" title="' + s + ' ' + offset(from) + '–' + offset(to) + '"></span>');
             for(const e of events)
                 if(e.type == 'video' && e.status != status) { segment(since, e.t, status); status = e.status; since = e.t; }
-                else if(e.type == 'load' || e.type == 'unload') { segment(since, e.t, status); status = 'none'; since = e.t; }
+                else if(e.type == 'load' || e.type == 'unload' || e.type == 'respawn') { segment(since, e.t, status); status = 'none'; since = e.t; }
             segment(since, last, status);
 
             // Filters
@@ -18158,7 +18183,7 @@ let Initialize = async(START_OVER = false) => {
             document.getElementById('types').innerHTML = Object.entries(counts).sort().map(([type, n]) => '<label><input type=checkbox checked value="' + esc(type) + '"> ' + esc(type) + ' (' + n + ')</label>').join(' ');
 
             const rows = document.getElementById('rows');
-            rows.innerHTML = events.map((e, i) => '<tr data-i=' + i + ' data-type="' + esc(e.type) + '"' + (e.level ? ' data-level="' + esc(e.level) + '"' : '') + '><td class=t title="' + clock(e.t) + '">' + offset(e.t) + '</td><td class=k>' + esc(e.level ?? e.type) + '</td><td class=d>' + summary(e) + '</td></tr>').join('');
+            rows.innerHTML = events.map((e, i) => '<tr data-i=' + i + ' data-type="' + esc(e.type) + '"' + (e.level ? ' data-level="' + esc(e.level) + '"' : '') + '><td class=t title="+' + offset(e.t) + ' from the start">' + clock(e.t) + '</td><td class=k>' + esc(e.level ?? e.type) + '</td><td class=d>' + summary(e) + '</td></tr>').join('');
 
             const search = document.getElementById('search');
             const filter = () => {
@@ -18222,6 +18247,44 @@ let Initialize = async(START_OVER = false) => {
         }
 
         /**
+         * Tells the background about the tab's log (the events it hasn't seen yet), so it outlives the page.
+         * @simply share(message:object?, callback:function?) → undefined
+         *
+         * @param {object}   [message={}] Extra fields: `load` (ask for the tab's log), `replace` (send all of it), `clear`
+         * @param {function} [callback]   Gets the background's reply
+         */
+        function share(message = {}, callback) {
+            if(!RECORDER && !message.clear)
+                return;
+
+            const { log, pending = [] } = RECORDER ?? {}
+                , body = { action: 'DEBUG_RECORDING', ...message };
+
+            if(log && !message.clear && !message.load) {
+                Object.assign(body, { meta: log.meta, minutes: log.minutes, limit: log.limit });
+
+                if(message.replace)
+                    body.events = log.events;
+                else if(pending.length)
+                    body.append = [...pending];
+                else
+                    return;
+
+                pending.length = 0;
+            }
+
+            try {
+                Runtime?.sendMessage?.(body, reply => {
+                    // Read, so a page the background doesn't answer (it's restarting) doesn't log an error
+                    void (globalThis.browser ?? globalThis.chrome)?.runtime?.lastError;
+                    callback?.(reply);
+                });
+            } catch {
+                // The extension was reloaded: this page can't reach the background any more
+            }
+        }
+
+        /**
          * Downloads the log as an `.html` file.
          * @simply saveRecording() → undefined
          */
@@ -18234,7 +18297,8 @@ let Initialize = async(START_OVER = false) => {
                 , channel = STREAMER?.name ?? pagePath().split('/')[1] ?? 'twitch'
                 , html = buildRecording({ meta: { ...log.meta, channel, saved }, events: log.events })
                 , link = document.createElement('a')
-                , stamp = new Date(saved).toISOString().replace(/\.\d+Z$/, '').replace(/:/g, '-');
+                , local = new Date(saved - new Date(saved).getTimezoneOffset() * 60_000)
+                , stamp = local.toISOString().replace(/\.\d+Z$/, '').replace(/:/g, '-');
 
             link.href = URL.createObjectURL(new Blob([html], { type: 'text/html' }));
             link.download = `ttv-recording-${ channel }-${ stamp }.html`;
@@ -18251,7 +18315,8 @@ let Initialize = async(START_OVER = false) => {
          * @simply startRecording() → undefined
          */
         function startRecording() {
-            if(RECORDER)
+            // Only the tab's own page: TTV loads Twitch pages in hidden frames too, and they share the tab's storage
+            if(RECORDER || top !== window)
                 return;
 
             $remark("Adding Debug Recording...");
@@ -18276,6 +18341,7 @@ let Initialize = async(START_OVER = false) => {
 
             RECORDER = {
                 log,
+                pending: [],
                 listeners: [],
                 logs: {},
                 last: { path: pagePath(), video: '', time: -1, stuckSince: null, jobs: {}, queue: null, memory: 0, saved: 0 },
@@ -18286,7 +18352,36 @@ let Initialize = async(START_OVER = false) => {
                 , reason = new URLSearchParams(location.search).get('reload-reason') ?? ''
                 , reports = Object.keys(sessionStorage).filter(key => /^TTV-Tools/i.test(key));
 
+            // New events wait in `pending` until they're shared with the background
+            const add = log.add.bind(log);
+
+            log.add = (type, data) => {
+                const event = add(type, data);
+
+                RECORDER?.pending.push(event);
+
+                return event;
+            };
+
+            const since = Date.now();
+
             log.add('load', { how, path: pagePath(), reason, reports });
+
+            // The tab's log from before this page: newer in the background after a navigation to another site or a respawn
+            share({ load: true }, kept => {
+                if(!RECORDER || RECORDER.log !== log)
+                    return;
+
+                const { meta, events, fromKept } = mergeHistory(log, kept, since);
+
+                log.meta = meta;
+                log.events = events;
+                log.trim();
+
+                // The background missed this tab's history (it restarted, or the feature was just turned on): send all of it
+                if(!fromKept && events.some(event => event.t < since))
+                    share({ replace: true });
+            });
 
             /**
              * Listens, and remembers the listener so turning the feature off removes it.
@@ -18304,6 +18399,7 @@ let Initialize = async(START_OVER = false) => {
             on(window, 'pagehide', () => {
                 log.add('unload', { path: pagePath() });
                 persist();
+                share();
             });
 
             on(document, 'visibilitychange', () => log.add('visibility', { state: document.visibilityState }));
@@ -18321,8 +18417,12 @@ let Initialize = async(START_OVER = false) => {
             let presses = []
                 , tainted = false;
 
+            /**
+             * Saves the recording on a triple Ctrl tap, or right away when the right-click menu calls it (with a copy of the click).
+             * @param {KeyboardEvent|object} event The key press or release, or the menu's copy of the click
+             */
             GLOBAL_EVENT_LISTENERS.KEYDOWN_CTRL_CTRL_CTRL = function Save_the_Debug_Recording(event) {
-                let { type, key = '', repeat, altKey, metaKey, shiftKey, timeStamp } = event ?? {};
+                const { type, key = '', repeat, altKey, metaKey, shiftKey, timeStamp } = event ?? {};
 
                 // From the menu: a copy of the click, not a key
                 if(!/^key(?:down|up)$/.test(type ?? ''))
@@ -18404,6 +18504,9 @@ let Initialize = async(START_OVER = false) => {
                 if(!RECORDER)
                     startRecording();
 
+                if(!RECORDER)
+                    return;
+
                 const { log, last } = RECORDER
                     , now = Date.now();
 
@@ -18474,6 +18577,7 @@ let Initialize = async(START_OVER = false) => {
 
                 if(now - last.saved >= 2_000) {
                     persist();
+                    share();
                     last.saved = now;
                 }
             },
@@ -18493,6 +18597,7 @@ let Initialize = async(START_OVER = false) => {
                 RECORDER.storage?.();
 
                 RECORDER = null;
+                share({ clear: true });
 
                 try {
                     sessionStorage.removeItem(STORE_KEY);
