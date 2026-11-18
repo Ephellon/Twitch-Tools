@@ -7863,7 +7863,7 @@ let Initialize = async(START_OVER = false) => {
                     // Stop this channel's countdown before anything else, so it can't fire after a Skip (#52)
                     [FIRST_IN_LINE_JOB, FIRST_IN_LINE_WARNING_JOB, FIRST_IN_LINE_WARNING_TEXT_UPDATE].forEach(clearInterval);
                     FIRST_IN_LINE_HREF = undefined;
-                    FIRST_IN_LINE_DUE_DATE = NEW_DUE_DATE(FIRST_IN_LINE_TIMER);
+                    FIRST_IN_LINE_DUE_DATE = NEW_DUE_DATE(CHANNEL_WAIT());
 
                     if(defined(next))
                         REDO_FIRST_IN_LINE_QUEUE(next, { redo: (parseURL(removed).searchParameters?.redo ?? "") });
@@ -7974,6 +7974,14 @@ let Initialize = async(START_OVER = false) => {
             ?? offset
             ?? FIRST_IN_LINE_WAIT_TIME * 60_000
         );
+    };
+
+    // The wait for each channel in the queue: about 5 min while rushing, the full wait otherwise (#92).
+    // Only the countdown to the current channel follows the "Rushing" setting; using it for every channel after
+    // (it could be seconds, or 0) sent Up Next from channel to channel as soon as each page loaded
+    top.CHANNEL_WAIT =
+    function CHANNEL_WAIT() {
+        return (FIRST_IN_LINE_BOOST? 5.5 * 60_000: FIRST_IN_LINE_WAIT_TIME * 60_000);
     };
 
     // The countdown (ms) when rushing turns on (`boost`) or off, by the "Rushing" setting (#70):
@@ -8320,7 +8328,8 @@ let Initialize = async(START_OVER = false) => {
                     up_next_button?.setAttribute('speeding', parseBool(speeding));
 
                     // The countdown follows the "Rushing" setting (#70)
-                    FIRST_IN_LINE_DUE_DATE = NEW_DUE_DATE(FIRST_IN_LINE_TIMER = RUSH_TIMER(FIRST_IN_LINE_BOOST, true));
+                    FIRST_IN_LINE_DUE_DATE = NEW_DUE_DATE(RUSH_TIMER(FIRST_IN_LINE_BOOST, true));
+                    FIRST_IN_LINE_TIMER = CHANNEL_WAIT();
 
                     // Rush once: remember which channel ends the rush
                     if(Settings.up_next__rushing == 'once')
@@ -9238,7 +9247,11 @@ let Initialize = async(START_OVER = false) => {
                                         if(FIRST_IN_LINE_PAUSED_AT.floorToNearest(1e3) === (+new Date).floorToNearest(1e3))
                                             return;
 
-                                        Cache.save({ FIRST_IN_LINE_DUE_DATE: FIRST_IN_LINE_DUE_DATE = NEW_DUE_DATE(timeRemaining + 1000) });
+                                        // Push the deadline back by the time that really passed: a background tab ticks about once a minute,
+
+                                        // so adding 1s per tick let a long pause run the countdown down to 0 (#92)
+
+                                        Cache.save({ FIRST_IN_LINE_DUE_DATE: FIRST_IN_LINE_DUE_DATE = NEW_DUE_DATE(timeRemaining + Math.max(0, +new Date - FIRST_IN_LINE_PAUSED_AT)) });
                                         StopWatch.stop('up_next_balloon__subheader_timer_animation', 1000);
 
                                         return FIRST_IN_LINE_PAUSED_AT = +new Date;
@@ -9519,7 +9532,11 @@ let Initialize = async(START_OVER = false) => {
                                 if(FIRST_IN_LINE_PAUSED_AT.floorToNearest(1e3) === (+new Date).floorToNearest(1e3))
                                     return;
 
-                                Cache.save({ FIRST_IN_LINE_DUE_DATE: FIRST_IN_LINE_DUE_DATE = NEW_DUE_DATE(timeRemaining + 1000) });
+                                // Push the deadline back by the time that really passed: a background tab ticks about once a minute,
+
+                                // so adding 1s per tick let a long pause run the countdown down to 0 (#92)
+
+                                Cache.save({ FIRST_IN_LINE_DUE_DATE: FIRST_IN_LINE_DUE_DATE = NEW_DUE_DATE(timeRemaining + Math.max(0, +new Date - FIRST_IN_LINE_PAUSED_AT)) });
                                 StopWatch.stop('first_in_line__job_watcher', 1000);
 
                                 return FIRST_IN_LINE_PAUSED_AT = +new Date;
@@ -16903,7 +16920,7 @@ let Initialize = async(START_OVER = false) => {
 
                             $notice(`Skipper work:`, removed);
 
-                            FIRST_IN_LINE_DUE_DATE = NEW_DUE_DATE(FIRST_IN_LINE_TIMER);
+                            FIRST_IN_LINE_DUE_DATE = NEW_DUE_DATE(CHANNEL_WAIT());
 
                             // Skipper
                             REDO_FIRST_IN_LINE_QUEUE(ALL_FIRST_IN_LINE_JOBS[0], { redo: (parseURL(removed).searchParameters?.redo ?? "") });
