@@ -211,7 +211,11 @@ plugin({
                                 if(FIRST_IN_LINE_PAUSED_AT.floorToNearest(1e3) === (+new Date).floorToNearest(1e3))
                                     return;
 
-                                Cache.save({ FIRST_IN_LINE_DUE_DATE: FIRST_IN_LINE_DUE_DATE = NEW_DUE_DATE(timeRemaining + 1000) });
+                                // Push the deadline back by the time that really passed: a background tab ticks about once a minute,
+
+                                // so adding 1s per tick let a long pause run the countdown down to 0 (#92)
+
+                                Cache.save({ FIRST_IN_LINE_DUE_DATE: FIRST_IN_LINE_DUE_DATE = NEW_DUE_DATE(timeRemaining + Math.max(0, +new Date - FIRST_IN_LINE_PAUSED_AT)) });
                                 StopWatch.stop('first_in_line__job_watcher', 1000);
 
                                 return FIRST_IN_LINE_PAUSED_AT = +new Date;

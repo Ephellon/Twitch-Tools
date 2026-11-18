@@ -394,7 +394,7 @@ plugin({
 
                                     $notice(`Skipper work:`, removed);
 
-                                    FIRST_IN_LINE_DUE_DATE = NEW_DUE_DATE(FIRST_IN_LINE_TIMER);
+                                    FIRST_IN_LINE_DUE_DATE = NEW_DUE_DATE(CHANNEL_WAIT());
 
                                     // Skipper
                                     REDO_FIRST_IN_LINE_QUEUE(ALL_FIRST_IN_LINE_JOBS[0], { redo: (parseURL(ALL_FIRST_IN_LINE_JOBS[0]).searchParameters?.redo ?? '') });

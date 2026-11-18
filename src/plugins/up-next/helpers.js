@@ -177,7 +177,7 @@ plugin({
                         // Stop this channel's countdown before anything else, so it can't fire after a Skip (#52)
                         [FIRST_IN_LINE_JOB, FIRST_IN_LINE_WARNING_JOB, FIRST_IN_LINE_WARNING_TEXT_UPDATE].forEach(clearInterval);
                         FIRST_IN_LINE_HREF = void null;
-                        FIRST_IN_LINE_DUE_DATE = NEW_DUE_DATE(FIRST_IN_LINE_TIMER);
+                        FIRST_IN_LINE_DUE_DATE = NEW_DUE_DATE(CHANNEL_WAIT());
 
                         // The next job keeps its own `redo`: passing the removed job's overwrote it, so a redo channel
                         // arrived with another channel's name and wasn't re-queued (owner KI)
@@ -298,6 +298,17 @@ plugin({
                 ?? offset
                 ?? FIRST_IN_LINE_WAIT_TIME * 60_000
             );
+        };
+
+        /**
+         * The wait for each channel in the queue: about 5 min while rushing, the full wait otherwise (#92).
+         * Only the countdown to the current channel follows the "Rushing" setting; using it for every channel after
+         * (it could be seconds, or 0) sent Up Next from channel to channel as soon as each page loaded.
+         * @returns {number} The wait, in ms
+         */
+        top.CHANNEL_WAIT =
+        function CHANNEL_WAIT() {
+            return (FIRST_IN_LINE_BOOST ? 5.5 * 60_000 : FIRST_IN_LINE_WAIT_TIME * 60_000);
         };
 
         /**
@@ -663,7 +674,8 @@ plugin({
                             up_next_button?.setAttribute('speeding', parseBool(speeding));
 
                             // The countdown follows the "Rushing" setting (#70)
-                            FIRST_IN_LINE_DUE_DATE = NEW_DUE_DATE(FIRST_IN_LINE_TIMER = RUSH_TIMER(FIRST_IN_LINE_BOOST, true));
+                            FIRST_IN_LINE_DUE_DATE = NEW_DUE_DATE(RUSH_TIMER(FIRST_IN_LINE_BOOST, true));
+                            FIRST_IN_LINE_TIMER = CHANNEL_WAIT();
 
                             // Rush once: remember which channel ends the rush
                             if(Settings.up_next__rushing == 'once')
@@ -1562,7 +1574,11 @@ plugin({
                                                 if(FIRST_IN_LINE_PAUSED_AT.floorToNearest(1e3) === (+new Date).floorToNearest(1e3))
                                                     return;
 
-                                                Cache.save({ FIRST_IN_LINE_DUE_DATE: FIRST_IN_LINE_DUE_DATE = NEW_DUE_DATE(timeRemaining + 1000) });
+                                                // Push the deadline back by the time that really passed: a background tab ticks about once a minute,
+
+                                                // so adding 1s per tick let a long pause run the countdown down to 0 (#92)
+
+                                                Cache.save({ FIRST_IN_LINE_DUE_DATE: FIRST_IN_LINE_DUE_DATE = NEW_DUE_DATE(timeRemaining + Math.max(0, +new Date - FIRST_IN_LINE_PAUSED_AT)) });
                                                 StopWatch.stop('up_next_balloon__subheader_timer_animation', 1000);
 
                                                 return FIRST_IN_LINE_PAUSED_AT = +new Date;
