@@ -42,6 +42,7 @@
 ## Release History
 
 ### Version 5.35.\*
+- [`5.35.6.4`](https://github.com/Ephellon/Twitch-Tools/releases/tag/5.35.6.4) — Up Next no longer shows an hour-long countdown after moving to a channel (a tab not running Up Next could save its one-hour filler), and no longer keeps the channel it just opened at the front of the queue when a channel was added as it left (#92); Debug Recording notes when chat is shown or collapsed (#93)
 - [`5.35.6.3`](https://github.com/Ephellon/Twitch-Tools/releases/tag/5.35.6.3) — Debug Recording names Edge and Opera correctly (not "Chrome"), and keeps a respawned tab's events in time order
 - [`5.35.6.2`](https://github.com/Ephellon/Twitch-Tools/releases/tag/5.35.6.2) — Up Next no longer jumps from channel to channel right after each page loads (#92): switching Rush on or off no longer makes the time left the wait for every channel after, and a long pause no longer runs the countdown down to 0
 - [`5.35.6.1`](https://github.com/Ephellon/Twitch-Tools/releases/tag/5.35.6.1) — Debug Recording keeps its log when the tab goes to another Twitch site or is respawned (RAM Alarms, Recover Pages), and TTV's hidden frames no longer overwrite it; recordings show the time of day for each event
