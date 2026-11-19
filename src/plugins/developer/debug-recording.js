@@ -7,7 +7,7 @@
  */
 
 import { plugin } from '../../lib/plugins.js';
-import { DebugLog, buildRecording, describeElement, logLine, maskSetting, mergeHistory, sensitiveTerms } from '../../lib/debug-recorder.js';
+import { DebugLog, browserName, buildRecording, describeElement, logLine, maskSetting, mergeHistory, sensitiveTerms } from '../../lib/debug-recorder.js';
 
 const STORE_KEY = 'ttv-debug-recording';
 const LOG_LEVELS = ['$log', '$warn', '$error', '$remark', '$notice'];
@@ -143,7 +143,7 @@ function startRecording() {
         meta: kept?.meta ?? {
             started: Date.now(),
             version: (globalThis.browser ?? globalThis.chrome)?.runtime?.getManifest?.()?.version,
-            browser: navigator.userAgent.match(/(?:Edg|OPR|Firefox|Chrome)\/[\d.]+/)?.[0] ?? '',
+            browser: browserName(navigator.userAgent),
         },
         events: kept?.events ?? [],
     });

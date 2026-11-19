@@ -298,9 +298,28 @@ export function mergeHistory(log, kept, since) {
 
     return {
         meta: (fromKept ? kept.meta : null) ?? log.meta,
-        events: [...(fromKept ? remote : local), ...own],
+        // In time order: a respawned tab's last events can reach the background after the "respawn" line
+        events: [...(fromKept ? remote : local), ...own].sort((a, b) => a.t - b.t),
         fromKept,
     };
+}
+
+/**
+ * The browser's name and version, for the recording: Edge and Opera say "Chrome/…" too, so they're checked first.
+ * @simply browserName(agent:string?) → string
+ *
+ * @param  {string} [agent = ""] A user-agent string
+ * @return {string}              `Edg/154.0.0.0`, `OPR/…`, `Firefox/…`, `Chrome/…`, or empty
+ */
+export function browserName(agent = '') {
+    for(const name of ['Edg', 'OPR', 'Firefox', 'Chrome']) {
+        const found = new RegExp(`\\b${ name }/[\\d.]+`).exec(agent ?? '')?.[0];
+
+        if(found)
+            return found;
+    }
+
+    return '';
 }
 
 /**

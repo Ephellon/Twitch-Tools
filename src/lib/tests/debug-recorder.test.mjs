@@ -4,7 +4,7 @@
 
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { DebugLog, MASK, buildRecording, describeElement, isSensitive, logLine, maskSetting, maskText, mergeHistory, sensitiveTerms } from '../debug-recorder.js';
+import { DebugLog, MASK, browserName, buildRecording, describeElement, isSensitive, logLine, maskSetting, maskText, mergeHistory, sensitiveTerms } from '../debug-recorder.js';
 
 /** A small stand-in for an element: a tag, attributes, a parent, and the selectors it sits inside */
 const element = (tag, { attrs = {}, text = '', parent = null, inside = [] } = {}) => ({
@@ -142,4 +142,21 @@ test('buildRecording shows clock times and respawns', () => {
 
     assert.match(html, /getMilliseconds/);
     assert.match(html, /case 'respawn'/);
+});
+
+test('browserName finds Edge and Opera before the "Chrome/" they also carry', () => {
+    const chrome = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/154.0.0.0 Safari/537.36';
+
+    assert.equal(browserName(chrome), 'Chrome/154.0.0.0');
+    assert.equal(browserName(`${ chrome } Edg/154.0.3000.12`), 'Edg/154.0.3000.12');
+    assert.equal(browserName(`${ chrome } OPR/120.0.0.1`), 'OPR/120.0.0.1');
+    assert.equal(browserName('Mozilla/5.0 (X11; Linux x86_64; rv:142.0) Gecko/20100101 Firefox/142.0'), 'Firefox/142.0');
+    assert.equal(browserName(''), '');
+});
+
+test('mergeHistory puts a respawned tab\'s late events back in time order', () => {
+    const kept = { meta: {}, events: [{ t: 1, type: 'a' }, { t: 5, type: 'respawn' }, { t: 3, type: 'visibility' }] };
+    const merged = mergeHistory({ meta: {}, events: [{ t: 10, type: 'load' }] }, kept, 10);
+
+    assert.deepEqual(merged.events.map(e => e.type), ['a', 'visibility', 'respawn', 'load']);
 });
