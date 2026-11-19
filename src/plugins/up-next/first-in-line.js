@@ -371,6 +371,7 @@ plugin({
                     , tenMin = 10 * oneMin;
 
                 [FIRST_IN_LINE_HREF] = ALL_FIRST_IN_LINE_JOBS = (cache.ALL_FIRST_IN_LINE_JOBS ?? []);
+                DROP_ARRIVED_CHANNEL();
                 FIRST_IN_LINE_BOOST = parseBool(cache.FIRST_IN_LINE_BOOST) && parseBool(ALL_FIRST_IN_LINE_JOBS?.length);
                 RUSH_LOADED(cache);
                 FIRST_IN_LINE_DUE_DATE = (null

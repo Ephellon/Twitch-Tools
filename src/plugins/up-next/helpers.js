@@ -291,13 +291,39 @@ plugin({
          */
         top.NEW_DUE_DATE =
         function NEW_DUE_DATE(offset) {
+            // A tab that doesn't run Up Next (or doesn't know yet, while its page loads) leaves the deadline alone. It used to
+            // "backfill" an hour, and once saved, the tab that runs Up Next got an hour-long countdown on its next channel (#92)
             if(!UP_NEXT_ALLOW_THIS_TAB)
-                return (+new Date) + 3_600_000;
+                return (Number.isFinite(FIRST_IN_LINE_DUE_DATE) ? FIRST_IN_LINE_DUE_DATE : (+new Date) + (offset ?? FIRST_IN_LINE_WAIT_TIME * 60_000));
 
             return (+new Date) + (null
                 ?? offset
                 ?? FIRST_IN_LINE_WAIT_TIME * 60_000
             );
+        };
+
+        /**
+         * Drops the channel this tab just arrived at from the front of the queue, when Up Next brought it here. A channel
+         * pushed while the last page was leaving could save the old queue last, so this channel was still first: Up Next
+         * counted down to the channel already open, then "jumped" to it (#92).
+         * @returns {boolean} Whether it was dropped
+         */
+        top.DROP_ARRIVED_CHANNEL =
+        function DROP_ARRIVED_CHANNEL() {
+            const { pathname, searchParameters } = parseURL(location)
+                , here = pathname.slice(1).split('/')[0]
+                , [first] = ALL_FIRST_IN_LINE_JOBS;
+
+            if(!/^first-in-line/i.test(searchParameters?.tool ?? '') || nullish(first) || !parseURL(first).pathname.slice(1).split('/')[0].equals(here))
+                return false;
+
+            ALL_FIRST_IN_LINE_JOBS.splice(0, 1);
+            [FIRST_IN_LINE_HREF] = ALL_FIRST_IN_LINE_JOBS;
+            Cache.save({ ALL_FIRST_IN_LINE_JOBS });
+
+            $warn(`[Up Next] Removed "${ here }" from the front of the queue: it's the channel Up Next just opened`);
+
+            return true;
         };
 
         /**
@@ -1271,6 +1297,7 @@ plugin({
                             , tenMin = 10 * oneMin;
 
                         [FIRST_IN_LINE_HREF] = ALL_FIRST_IN_LINE_JOBS = (cache.ALL_FIRST_IN_LINE_JOBS ?? []);
+                        DROP_ARRIVED_CHANNEL();
                         FIRST_IN_LINE_BOOST = parseBool(cache.FIRST_IN_LINE_BOOST) && parseBool(ALL_FIRST_IN_LINE_JOBS?.length);
                         RUSH_LOADED(cache);
                         FIRST_IN_LINE_DUE_DATE = (null

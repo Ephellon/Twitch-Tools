@@ -153,7 +153,7 @@ function startRecording() {
         pending: [],
         listeners: [],
         logs: {},
-        last: { path: pagePath(), video: '', time: -1, stuckSince: null, jobs: {}, queue: null, memory: 0, saved: 0 },
+        last: { path: pagePath(), video: '', chat: '', time: -1, stuckSince: null, jobs: {}, queue: null, memory: 0, saved: 0 },
     };
 
     // How this page was reached (a reload keeps TTV's reason in the URL and its reports in sessionStorage)
@@ -347,6 +347,15 @@ plugin({
         if(key != last.video) {
             log.add('video', state);
             last.video = key;
+        }
+
+        // The chat column: shown, collapsed, or not on the page (#93: chat collapsing after Up Next moves on)
+        const column = $('[class*="right-column"i]:has([data-a-target*="chat"i])') ?? $('.right-column')
+            , chat = nullish(column) ? 'none' : (column.offsetWidth < 50 || /--collapsed\b/i.test(column.className)) ? 'collapsed' : 'shown';
+
+        if(chat != last.chat) {
+            log.add('chat', { state: chat });
+            last.chat = chat;
         }
 
         // A playing video that doesn't move

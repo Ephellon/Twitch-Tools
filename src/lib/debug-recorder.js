@@ -409,6 +409,7 @@ tr[data-type=load] td, tr[data-type=unload] td, tr[data-type=respawn] td { font-
             case 'lag': return 'page busy for ' + e.ms + ' ms';
             case 'memory': return e.mb + ' MB in use';
             case 'visibility': return esc(e.state);
+            case 'chat': return 'chat ' + esc(e.state);
             default: return masked(JSON.stringify(e));
         }
     };
