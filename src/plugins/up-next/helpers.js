@@ -296,6 +296,11 @@ plugin({
             if(!UP_NEXT_ALLOW_THIS_TAB)
                 return (Number.isFinite(FIRST_IN_LINE_DUE_DATE) ? FIRST_IN_LINE_DUE_DATE : (+new Date) + (offset ?? FIRST_IN_LINE_WAIT_TIME * 60_000));
 
+            // While paused, a new deadline counts the pause from now: the next paused tick added all the time since the pause
+            // began, so a channel queued during a pause got more than the wait (#98)
+            if(FIRST_IN_LINE_PAUSED)
+                FIRST_IN_LINE_PAUSED_AT = +new Date;
+
             return (+new Date) + (null
                 ?? offset
                 ?? FIRST_IN_LINE_WAIT_TIME * 60_000
