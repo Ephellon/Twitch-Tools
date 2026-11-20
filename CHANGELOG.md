@@ -42,6 +42,7 @@
 ## Release History
 
 ### Version 5.35.\*
+- [`5.35.6.6`](https://github.com/Ephellon/Twitch-Tools/releases/tag/5.35.6.6) — A channel queued while Up Next is paused gets the set wait, not more (#98)
 - [`5.35.6.5`](https://github.com/Ephellon/Twitch-Tools/releases/tag/5.35.6.5) — Debug Recording reads whether chat is shown or collapsed correctly (it said "collapsed" while chat was shown) (#93)
 - [`5.35.6.4`](https://github.com/Ephellon/Twitch-Tools/releases/tag/5.35.6.4) — Up Next no longer shows an hour-long countdown after moving to a channel (a tab not running Up Next could save its one-hour filler), and no longer keeps the channel it just opened at the front of the queue when a channel was added as it left (#92); Debug Recording notes when chat is shown or collapsed (#93)
 - [`5.35.6.3`](https://github.com/Ephellon/Twitch-Tools/releases/tag/5.35.6.3) — Debug Recording names Edge and Opera correctly (not "Chrome"), and keeps a respawned tab's events in time order
