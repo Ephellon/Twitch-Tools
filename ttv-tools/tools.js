@@ -18599,8 +18599,15 @@ let Initialize = async(START_OVER = false) => {
                 }
 
                 // The chat column: shown, collapsed, or not on the page (#93: chat collapsing after Up Next moves on)
-                const column = $('[class*="right-column"i]:has([data-a-target*="chat"i])') ?? $('.right-column')
-                    , chat = nullish(column) ? 'none' : (column.offsetWidth < 50 || /--collapsed\b/i.test(column.className)) ? 'collapsed' : 'shown';
+                // By Twitch's classes, not width (the matched column is 0px wide beside a shown chat) or the toggle's label (translated)
+                const column = $('.right-column')
+                    , outer = $('.channel-root__right-column')
+                    , chat = (null
+                        ?? (nullish(column) ? 'none' : null)
+                        ?? (/\bright-column--collapsed\b/i.test(column.className) ? 'collapsed' : null)
+                        ?? ($.defined('.channel-root__right-column--expanded, .right-column--theatre') ? 'shown' : null)
+                        ?? (Math.max(column.offsetWidth, outer?.offsetWidth ?? 0) < 50 ? 'collapsed' : 'shown')
+                    );
 
                 if(chat != last.chat) {
                     log.add('chat', { state: chat });
