@@ -198,6 +198,89 @@ const SHARED_DATA_KEYS = ['USERNAME', 'THEME', 'ANTITHEME', 'ACTIVITY'];
 const DEBUG_RECORDINGS = new Map;
 
 /**
+ * Max Watchtime: sends tabs with Up Next off to the marked channels that are live (see tools.js, "Max Watchtime").
+ * Each live channel gets one tab for its stream: a channel already open in a tab keeps it; otherwise a random channel tab
+ * that isn't the Up Next tab or already on a marked live channel goes. None free → nothing (the next check tries again).
+ * First come, first served: channels are placed in the order they were first seen live. A channel that's no longer live
+ * frees its place (its tab stays: Stay Live moves it on).
+ * @simply MaxWatchtime(live:array<{ name: string, href: string }>) → Promise~{ moved: array }
+ */
+async function MaxWatchtime(live = []) {
+    const { MaxWatchtimeState = {}, UP_NEXT_OWNER = null } = await Storage.get(['MaxWatchtimeState', 'UP_NEXT_OWNER'])
+        , before = JSON.stringify(MaxWatchtimeState)
+        , placed = { ...(MaxWatchtimeState.placed ?? {}) }
+        , names = live.map(channel => String(channel.name).toLowerCase())
+        , moved = [];
+
+    // First come, first served: the order channels were first seen live
+    let order = (MaxWatchtimeState.order ?? []).filter(name => names.includes(name));
+
+    for(const name of names)
+        if(!order.includes(name))
+            order.push(name);
+
+    for(const name in placed)
+        if(!names.includes(name))
+            delete placed[name];
+
+    const tabs = await Container.tabs.query({ url: ['*://www.twitch.tv/*', '*://twitch.tv/*'] });
+
+    /**
+     * The channel a tab is on (its address's first part, lowercase), or `''`.
+     * @simply channelOf(tab:object<Tab>) → string
+     */
+    const channelOf = tab => {
+        try {
+            return new URL(tab.url).pathname.slice(1).split('/')[0].toLowerCase();
+        } catch(error) {
+            return '';
+        }
+    };
+
+    // A marked channel that's already open keeps that tab
+    for(const name of order)
+        placed[name] ??= tabs.find(tab => channelOf(tab) == name)?.id;
+
+    for(const name of order) {
+        if(defined(placed[name]))
+            continue;
+
+        const busy = new Set(Object.values(placed))
+            , free = tabs.filter(tab => true
+                && tab.id != UP_NEXT_OWNER
+                && !busy.has(tab.id)
+                && /^\w+$/.test(channelOf(tab))
+                && !RESERVED_TWITCH_PATHNAMES.has(channelOf(tab))
+            );
+
+        if(!free.length)
+            break;
+
+        const tab = free[Math.floor(Math.random() * free.length)]
+            , { href } = live.find(channel => String(channel.name).toLowerCase() == name)
+            , url = new URL(href);
+
+        url.searchParams.set('tool', 'max-watchtime');
+        await Container.tabs.update(tab.id, { url: url.href });
+
+        placed[name] = tab.id;
+        moved.push({ name, tab: tab.id });
+        console.warn(`[MAX WATCHTIME] ${ name } is live: sent tab #${ tab.id } (${ tab.url }) to it`);
+    }
+
+    for(const name in placed)
+        if(nullish(placed[name]))
+            delete placed[name];
+
+    const MaxWatchtimeStateNow = { placed, order };
+
+    if(JSON.stringify(MaxWatchtimeStateNow) != before)
+        await Storage.set({ MaxWatchtimeState: MaxWatchtimeStateNow });
+
+    return { moved };
+}
+
+/**
  * Debug Recording: this browser profile's signing key (ECDSA P-256), made on first use and kept in IndexedDB. Its
  * private half can't be exported (not even by TTV), so only this extension, in this profile, signs with it.
  * @simply RecordingKey() → Promise~{ privateKey: CryptoKey, publicKey: object<JWK> }
@@ -973,6 +1056,13 @@ Runtime.onMessage.addListener((request, sender, respond) => {
             RecordingKey()
                 .then(({ publicKey }) => respond({ key: publicKey }))
                 .catch(error => respond({ error: String(error?.message ?? error) }));
+        } break;
+
+        // Max Watchtime: the marked channels that are live now (from the one tab that checks them)
+        case 'MAX_WATCHTIME': {
+            MaxWatchtime(request.live)
+                .then(respond)
+                .catch(error => respond({ moved: [], error: String(error?.message ?? error) }));
         } break;
 
         case 'RESPAWN_THIS_TAB': {

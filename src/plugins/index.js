@@ -43,5 +43,6 @@ import './currencies/points-receipt.js';
 import './customization/stream-preview.js';
 import './customization/watch-time.js';
 import './networking/auto-dvr.js';
+import './up-next/max-watchtime.js';
 import './developer/developer-features.js';
 import './developer/debug-recording.js';

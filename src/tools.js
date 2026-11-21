@@ -1586,26 +1586,43 @@ function StreamEnded(login) {
     if(!state.ended && now - state.since >= 10_000 && now - state.checked >= 30_000) {
         state.checked = now;
 
-        fetch(`/${ name }`, { cache: 'no-store' })
-            .then(response => response.ok? response.text(): Promise.reject(response.status))
-            .then(html => {
-                let doc = (new DOMParser).parseFromString(html, 'text/html'),
-                    data = doc.querySelector('head>script[type^="application"i][type$="json"i]')?.textContent;
+        FetchLiveStatus(name).then(live => {
+            if(live !== false || StreamEnded.state !== state)
+                return;
 
-                if(!data || StreamEnded.state !== state)
-                    return;
-
-                let graph = JSON.parse(data)?.['@graph'] ?? [];
-
-                state.ended = !graph.some(item => parseBool(item?.publication?.isLiveBroadcast));
-
-                if(state.ended)
-                    $warn(`${ name }'s stream ended on this page (no video, and Twitch no longer lists it as live)`);
-            })
-            .catch(() => {});
+            state.ended = true;
+            $warn(`${ name }'s stream ended on this page (no video, and Twitch no longer lists it as live)`);
+        });
     }
 
     return state.ended;
+}
+
+/**
+ * Asks Twitch whether a channel is live right now: fetches its page (never from a cache) and reads it the way `Search`
+ * does. `null` when that can't be told (no answer, or no listing on the page).
+ * @simply FetchLiveStatus(login:string) → Promise~boolean?
+ *
+ * @param  {string} login The channel's name, as in its address
+ * @return {Promise<boolean?>}
+ */
+async function FetchLiveStatus(login) {
+    try {
+        let response = await fetch(`/${ encodeURIComponent(login) }`, { cache: 'no-store' });
+
+        if(!response.ok)
+            return null;
+
+        let doc = (new DOMParser).parseFromString(await response.text(), 'text/html'),
+            data = doc.querySelector('head>script[type^="application"i][type$="json"i]')?.textContent;
+
+        if(!data)
+            return null;
+
+        return (JSON.parse(data)?.['@graph'] ?? []).some(item => parseBool(item?.publication?.isLiveBroadcast));
+    } catch(error) {
+        return null;
+    }
 }
 
 /**
@@ -3786,6 +3803,9 @@ let Initialize = async(START_OVER = false) => {
 
     // Auto DVR → src/plugins/networking/auto-dvr.js
     await TTV.run('video_clips__dvr', PLUGIN_CONTEXT);
+
+    // Max Watchtime → src/plugins/up-next/max-watchtime.js
+    await TTV.run('max_watchtime', PLUGIN_CONTEXT);
 
     // Recover Frames → src/plugins/video-recovery/recover-frames.js
     await TTV.run('recover_frames', PLUGIN_CONTEXT);
