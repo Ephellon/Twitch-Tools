@@ -19,8 +19,9 @@ plugin({
         // Re-rendering the Side Nav toggles it: do it once per page, never while one is pending (#42)
         let RERENDERED_AT = null;
 
-        await Cache.load(['OLD_STREAMERS', 'BAD_STREAMERS'], cache => {
-            OLD_STREAMERS = cache.OLD_STREAMERS ?? '';
+        await Cache.load(['OLD_STREAMERS', 'OLD_STREAMERS_READ', 'BAD_STREAMERS'], cache => {
+            // Saved before the followed list could be read (6.1): not a baseline to compare with (see the burst check)
+            OLD_STREAMERS = (cache.OLD_STREAMERS_READ == 2) ? (cache.OLD_STREAMERS ?? '') : null;
             BAD_STREAMERS = cache.BAD_STREAMERS ?? '';
         });
 
@@ -31,10 +32,7 @@ plugin({
 
             NEW_STREAMERS = streamers.join(',').toLowerCase();
 
-            if(nullish(OLD_STREAMERS))
-                OLD_STREAMERS = NEW_STREAMERS;
-
-            let old_names = OLD_STREAMERS.split(',').filter(defined)
+            let old_names = (OLD_STREAMERS ?? '').split(',').filter(defined)
                 , new_names = NEW_STREAMERS.split(',').filter(defined)
                 , bad_names = BAD_STREAMERS?.split(',')?.filter(defined)?.filter(parseBool);
 
@@ -73,15 +71,33 @@ plugin({
                 return /* Fail "gracefully" */;
             }
 
+            // No baseline yet (the first read since 6.1): the first full list is it
+            if(nullish(OLD_STREAMERS)) {
+                if(STREAMERS.length < 1)
+                    return StopWatch.stop('first_in_line_plus');
+
+                OLD_STREAMERS = NEW_STREAMERS;
+            }
+
             if(OLD_STREAMERS == NEW_STREAMERS)
-                return StopWatch.stop('first_in_line_plus'), Cache.save({ OLD_STREAMERS });
+                return StopWatch.stop('first_in_line_plus'), Cache.save({ OLD_STREAMERS, OLD_STREAMERS_READ: 2 });
 
             new_names = new_names
                 .filter(name => old_names.missing(name))
                 .filter(name => bad_names.missing(name));
 
+            // A burst isn't channels going live: it's the followed list read fresh (the side bar opening, "Show More"). Take it
+            // as the baseline instead of queuing every followed channel at once (v5 5.35.5.49 froze pages that way)
+            if(new_names.length > 3) {
+                $warn(`[Up Next+] ${ new_names.length } followed channels appeared at once (the side bar was read fresh): not queued`);
+
+                new_names = [];
+            }
+
+            // Nothing new (a burst, or channels that went offline): the current list is the baseline, so a channel that comes
+            // back live is new again
             if(new_names.length < 1)
-                return StopWatch.stop('first_in_line_plus'), Cache.save({ OLD_STREAMERS });
+                return StopWatch.stop('first_in_line_plus'), Cache.save({ OLD_STREAMERS: OLD_STREAMERS = NEW_STREAMERS, OLD_STREAMERS_READ: 2 });
 
             // Try to detect if the extension was just re-installed?
             installation_viewer:
@@ -123,7 +139,7 @@ plugin({
 
             OLD_STREAMERS = NEW_STREAMERS;
 
-            Cache.save({ OLD_STREAMERS });
+            Cache.save({ OLD_STREAMERS, OLD_STREAMERS_READ: 2 });
 
             StopWatch.stop('first_in_line_plus');
         };

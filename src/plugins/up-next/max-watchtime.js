@@ -113,10 +113,12 @@ plugin({
         const placed = $('[tt-action="max-watchtime"i]', actionPanel)
             , dvr = $('[tt-action="auto-dvr"i]', actionPanel);
 
-        // Already there: keep it under DVR (DVR's button can come after it)
+        // Already there: keep it under DVR (DVR's button can come after it), or last without DVR
         if(defined(placed)) {
             if(defined(dvr) && dvr.nextElementSibling != placed)
                 dvr.after(placed);
+            else if(nullish(dvr) && actionPanel.lastElementChild != placed)
+                actionPanel.append(placed);
 
             return StopWatch.stop('max_watchtime');
         }

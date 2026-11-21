@@ -2740,7 +2740,8 @@ let Initialize = async(START_OVER = false) => {
         get vods() {
             const { name, sole } = STREAMER;
 
-            if(Number.isNaN(sole))
+            // No channel ID (it can be unknown, not just NaN): Twitch's own page; twitchmetrics needs the ID ("/c/undefined-name")
+            if(!(sole > 0))
                 return fetchURL.fromDisk(`https://www.twitch.tv/${ name }/videos`, { hoursUntilEntryExpires: 1 })
                     .then(r => r.text())
                     .then(html => {
@@ -4360,11 +4361,12 @@ if(top == window) {
                                     });
                     }
 
-                    // Twitch's side-nav sections no longer carry an icon to match: find "followed" by its cards (#42)
-                        // The cards only exist while the nav is expanded, and Twitch re-renders sections: keep checking
+                    // The followed section, by its header: its class isn't translated, and it's there whether the side bar is
+                    // open or not (the icon match fails in some browsers; the cards' `followed-channel` marks only exist while
+                    // it's open). Twitch re-renders sections: keep checking (#42)
                     top.FOLLOWED_SECTION_LABELER ??= setInterval(() => {
-                        for(const container of $.all('[id*="side"i][id*="nav"i] .side-nav-section[aria-label]:not([tt-svg-label])'))
-                            if($.defined('[data-a-id^="followed-channel"i], [data-test-selector="followed-channel"i]', container))
+                        for(const container of $.all('[id*="side"i][id*="nav"i] .side-nav-section[aria-label]'))
+                            if(container.getAttribute('tt-svg-label') != 'followed' && $.defined('.followed-side-nav-header, [data-a-id^="followed-channel"i], [data-test-selector="followed-channel"i]', container))
                                 container.setAttribute('tt-svg-label', 'followed');
                     }, 1000);
                 } // :SectionLabeling

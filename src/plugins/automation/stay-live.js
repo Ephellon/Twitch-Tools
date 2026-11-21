@@ -11,6 +11,9 @@ let ClearIntent, twitch_pathnames, reserved_twitch_pathnames;
 // The next-channel lookup still running (see the handler)
 let pendingLookup = null;
 
+// The channel the "no followed channels on" warning was last given for
+let warnedAlone = null;
+
 plugin({
     id: 'stay_live',
     timer: 3000,
@@ -86,8 +89,10 @@ plugin({
 
                         goto(parseURL(next).addSearch({ obit, tool: 'stay-live--steal' }).href);
                     });
-            } else  {
-                $warn(`${ STREAMER?.name } is no longer live. There doesn't seem to be any followed channels on right now`, new Date)
+            } else if(warnedAlone != STREAMER?.name) {
+                // Once per channel: this ran every 3s
+                warnedAlone = STREAMER?.name;
+                $warn(`${ STREAMER?.name } is no longer live. There doesn't seem to be any followed channels on right now`, new Date);
             }
 
             // After 30 seconds, remove the intent
