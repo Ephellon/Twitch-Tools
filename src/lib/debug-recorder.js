@@ -138,8 +138,13 @@ export function logLine(args, max = 300, terms = []) {
         return String(arg);
     }).join(' ');
 
-    for(const term of terms)
-        line = line.split(term).join(maskText(term));
+    // Whole words only: a rule word like "mod" mustn't hide part of "away_mode"
+    for(const term of terms) {
+        const escaped = term.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+            , pattern = (/^\w/.test(term) ? '\\b' : '') + escaped + (/\w$/.test(term) ? '\\b' : '');
+
+        line = line.replace(new RegExp(pattern, 'g'), maskText);
+    }
 
     return line.length > max ? `${ line.slice(0, max - 1) }…` : line;
 }

@@ -160,3 +160,9 @@ test('mergeHistory puts a respawned tab\'s late events back in time order', () =
 
     assert.deepEqual(merged.events.map(e => e.type), ['a', 'visibility', 'respawn', 'load']);
 });
+
+test('logLine hides rule words only as whole words', () => {
+    assert.equal(logLine(['The following did not activate properly: away_mode'], 300, ['mod']), 'The following did not activate properly: away_mode');
+    assert.equal(logLine(['user matches: mod'], 300, ['mod']), `user matches: ${ MASK.repeat(3) }`);
+    assert.equal(logLine(['a.b (x)'], 300, ['a.b']), `${ MASK.repeat(3) } (x)`);
+});
