@@ -8,6 +8,9 @@ import { plugin } from '../../lib/plugins.js';
 // The feature's state; init() resets it whenever the page (re)initializes
 let ClearIntent, twitch_pathnames, reserved_twitch_pathnames;
 
+// The next-channel lookup still running (see the handler)
+let pendingLookup = null;
+
 plugin({
     id: 'stay_live',
     timer: 3000,
@@ -35,8 +38,7 @@ plugin({
     handler: async({ StopWatch }) => {
         new StopWatch('stay_live');
 
-        const next = await GetNextStreamer(STREAMER.name)
-            , { pathname } = location;
+        const { pathname } = location;
 
         try {
             await Cache.load('UserIntent', async({ UserIntent }) => {
@@ -62,6 +64,11 @@ plugin({
 
             if(!RegExp(STREAMER?.name, 'i').test(PATHNAME))
                 break NotLive;
+
+            // Look the next channel up only now, one lookup at a time, and never wait on it for long: with nothing to pick it
+            // waits until a channel goes live, and Stay Live stalled on it every tick (while live too), piling up lookups
+            const lookup = (pendingLookup ??= Promise.resolve(GetNextStreamer(STREAMER.name)).finally(() => pendingLookup = null))
+                , next = await Promise.race([lookup, wait(5_000, null)]);
 
             if(defined(next)) {
                 $warn(`${ STREAMER?.name } is no longer live. Moving onto next channel (${ next.name })`, next.href, new Date);

@@ -319,7 +319,8 @@ plugin({
                 , here = pathname.slice(1).split('/')[0]
                 , [first] = ALL_FIRST_IN_LINE_JOBS;
 
-            if(!/^first-in-line/i.test(searchParameters?.tool ?? '') || nullish(first) || !parseURL(first).pathname.slice(1).split('/')[0].equals(here))
+            // Stay Live opens the queue's first channel too (`tool=stay-live`, `stay-live--steal`)
+            if(!/^(?:first-in-line|stay-live)/i.test(searchParameters?.tool ?? '') || nullish(first) || !parseURL(first).pathname.slice(1).split('/')[0].equals(here))
                 return false;
 
             ALL_FIRST_IN_LINE_JOBS.splice(0, 1);
