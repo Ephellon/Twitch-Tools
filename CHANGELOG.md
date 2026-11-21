@@ -42,6 +42,7 @@
 ## Release History
 
 ### Version 5.35.\*
+- [`5.35.6.13`](https://github.com/Ephellon/Twitch-Tools/releases/tag/5.35.6.13) — Stay Live no longer stalls looking for the next channel (it waits 5s at most, and only once the stream has ended); Up Next drops the channel Stay Live just opened instead of counting down to it
 - [`5.35.6.12`](https://github.com/Ephellon/Twitch-Tools/releases/tag/5.35.6.12) — Stay Live moves on from every dead channel again: reverted the 5.35.5.29 change that left channels opened while offline alone, and the memory 5.35.6.10–.11 added for it
 - [`5.35.6.11`](https://github.com/Ephellon/Twitch-Tools/releases/tag/5.35.6.11) — Stay Live's memory of the channel each tab watched live now survives extension updates too (5.35.6.10 kept it somewhere an update clears)
 - [`5.35.6.10`](https://github.com/Ephellon/Twitch-Tools/releases/tag/5.35.6.10) — Stay Live moves on from dead channels again after the extension updates or a tab respawns: the tab remembers the channel it watched live (it used to forget it, so every dead channel counted as one you opened yourself)

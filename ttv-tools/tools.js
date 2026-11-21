@@ -8106,7 +8106,8 @@ let Initialize = async(START_OVER = false) => {
             here = pathname.slice(1).split('/')[0],
             [first] = ALL_FIRST_IN_LINE_JOBS;
 
-        if(!/^first-in-line/i.test(searchParameters?.tool ?? '') || nullish(first) || !parseURL(first).pathname.slice(1).split('/')[0].equals(here))
+        // Stay Live opens the queue's first channel too (`tool=stay-live`, `stay-live--steal`)
+        if(!/^(?:first-in-line|stay-live)/i.test(searchParameters?.tool ?? '') || nullish(first) || !parseURL(first).pathname.slice(1).split('/')[0].equals(here))
             return false;
 
         ALL_FIRST_IN_LINE_JOBS.splice(0, 1);
@@ -13068,8 +13069,7 @@ let Initialize = async(START_OVER = false) => {
     Handlers.stay_live = async() => {
         new StopWatch('stay_live');
 
-        let next = await GetNextStreamer(STREAMER.name),
-            { pathname } = location;
+        let { pathname } = location;
 
         try {
             await Cache.load('UserIntent', async({ UserIntent }) => {
@@ -13095,6 +13095,11 @@ let Initialize = async(START_OVER = false) => {
 
             if(!RegExp(STREAMER?.name, 'i').test(PATHNAME))
                 break NotLive;
+
+            // Look the next channel up only now, one lookup at a time, and never wait on it for long: with nothing to pick it
+            // waits until a channel goes live, and Stay Live stalled on it every tick (while live too), piling up lookups
+            let lookup = (Handlers.stay_live.lookup ??= Promise.resolve(GetNextStreamer(STREAMER.name)).finally(() => delete Handlers.stay_live.lookup)),
+                next = await Promise.race([lookup, wait(5_000, null)]);
 
             if(defined(next)) {
                 $warn(`${ STREAMER?.name } is no longer live. Moving onto next channel (${ next.name })`, next.href, new Date);
