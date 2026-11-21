@@ -3078,3 +3078,220 @@ document.body.onload = async() => {
             INITIAL_LOAD = false;
         });
 };
+
+// Debug Recording: this browser's signing key, and a check for received recordings that reads them without opening them
+// (see "Signing" in lib/debug-recorder.js)
+{
+    const runtime = (globalThis.browser ?? globalThis.chrome)?.runtime;
+    let ownKey = null;
+
+    try {
+        runtime?.sendMessage?.({ action: 'DEBUG_RECORDING_KEY' }, async answer => {
+            void runtime.lastError;
+
+            if(!answer?.key)
+                return;
+
+            ownKey = await keyId(answer.key);
+
+            const shown = document.getElementById('debug-recording--key');
+
+            if(shown)
+                shown.textContent = ownKey;
+        });
+    } catch(error) {
+        // No background
+    }
+
+    document.getElementById('debug-recording--check-input')?.addEventListener('change', async event => {
+        const input = event.currentTarget
+            , [file] = input.files ?? []
+            , shown = document.getElementById('debug-recording--check-result');
+
+        if(!file || !shown)
+            return;
+
+        shown.textContent = `Checking "${ file.name }"...`;
+
+        const result = await checkRecording(await file.text())
+            , { version = '?', browser = '?', channel = '' } = result.meta ?? {}
+            , about = `TTV Tools ${ version }, ${ browser }${ channel ? `, ${ channel }` : '' }`
+            , whose = (result.key && result.key == ownKey) ? ' (this browser)' : '';
+
+        shown.textContent = (false
+            || (result.page && result.valid && `✔ "${ file.name }" is a real TTV Tools recording (${ about }), signed with key ${ result.key }${ whose }. Its log hasn't been changed. It's safe to open.`)
+            || (result.page && result.signed && `✖ "${ file.name }" runs only TTV Tools' own code (safe to open), but ${ result.reason }.`)
+            || (result.page && `⚠ "${ file.name }" runs only TTV Tools' own code (${ about }), so it's safe to open, but it's ${ result.reason }: its log can't be confirmed.`)
+            || `✖ "${ file.name }": ${ result.reason }. Don't open it.`
+        );
+
+        input.value = '';
+    });
+}
+
+// <recording-checker> Generated from v6's src/lib/debug-recorder.js ("Signing"): checks a received Debug Recording
+/** The page TTV Tools builds now (normalized; see `recordingPage`), as SHA-256 hex */
+const CURRENT_RECORDING_PAGE = '035dd507e7a287975c9a43217c7fd31a2b30f434b7dc603ca88c099046098a16';
+
+/**
+ * The recording's title (on the page and its tab).
+ * @simply recordingTitle(meta:object) → string<HTML>
+ *
+ * @param  {object} meta About the recording
+ * @return {string}
+ */
+function recordingTitle(meta = {}) {
+    return `TTV Tools debug recording${ meta.channel ? ` — ${ meta.channel }` : '' }`.replace(/[<>&"]/g, c => `&#${ c.charCodeAt(0) };`);
+}
+
+/** The format of what's signed */
+const SIGNATURE_VERSION = 1;
+
+/**
+ * Recording pages TTV Tools built before (normalized; see `recordingPage`), as SHA-256 hex. The current page is always
+ * known; when `buildRecording`'s page changes, add the old page's hash here so older files still check out.
+ */
+const KNOWN_PAGES = [
+    // Before signing (v5 5.35.5.51 – 5.35.6.14; v6 6.1 test builds)
+    '392751c21bf2c68d3f947369a997e8e5185c6594cd562f279bc09d7ea5ccb8ca',
+    '4456a60163520bb39e4c49b6dede067c011795ac9aeadb7fda22ca0072f2e0ac',
+    '74879b200b360435cc0c6ce3eee1873600358568ac4a6b87abc182f3237cf0cc',
+];
+
+const DATA_OPEN = '<script type="application/json" id=data>'
+    , SIGNATURE_OPEN = '<script type="application/json" id=signature>'
+    , SCRIPT_CLOSE = '</script>';
+
+
+/**
+ * A text's SHA-256, as hex.
+ * @simply sha256(text:string) → Promise~string
+ */
+async function sha256(text = '') {
+    const digest = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(text));
+
+    return [...new Uint8Array(digest)].map(byte => byte.toString(16).padStart(2, '0')).join('');
+}
+
+/**
+ * Splits a recording into its log, its signature, and its page: everything else, with the log, the signature and the
+ * title blanked, and each line trimmed (v5 indents the page). `null` when it isn't laid out like a recording.
+ * @simply recordingPage(html:string) → object?
+ *
+ * @param  {string} html The file's text
+ * @return {{ data: string, signature: string, page: string, meta: object }?}
+ */
+function recordingPage(html = '') {
+    const cut = (text, open) => {
+        const start = text.indexOf(open);
+
+        if(start < 0)
+            return null;
+
+        const end = text.indexOf(SCRIPT_CLOSE, start + open.length);
+
+        if(end < 0)
+            return null;
+
+        return { inner: text.slice(start + open.length, end), rest: text.slice(0, start + open.length) + text.slice(end) };
+    };
+
+    const data = cut(String(html), DATA_OPEN);
+
+    if(!data)
+        return null;
+
+    const signature = cut(data.rest, SIGNATURE_OPEN);
+
+    // Raw `<` in either part could change how a browser reads the page around it; TTV never writes one there
+    if(/</.test(data.inner) || /</.test(signature?.inner ?? ''))
+        return null;
+
+    let meta;
+
+    try {
+        ({ meta } = JSON.parse(data.inner));
+    } catch {
+        return null;
+    }
+
+    const title = recordingTitle(meta ?? {})
+        , page = (signature?.rest ?? data.rest)
+            .replace(`<title>${ title }</title>`, '<title></title>')
+            .replace(`<h1>${ title }</h1>`, '<h1></h1>')
+            .split('\n')
+            .map(line => line.trim())
+            .filter(line => line.length)
+            .join('\n');
+
+    return { data: data.inner, signature: signature?.inner ?? '', page, meta: meta ?? {} };
+}
+
+/**
+ * What a recording's signature signs: the format, its page's hash and its log's hash.
+ * @simply signedText(parts:object) → Promise~string
+ */
+async function signedText({ data, page }) {
+    return `ttv-recording/${ SIGNATURE_VERSION }\n${ await sha256(page) }\n${ await sha256(data) }`;
+}
+
+/**
+ * A short, readable ID for a public key (the same key always gets the same ID).
+ * @simply keyId(key:object<JWK>) → Promise~string
+ */
+async function keyId(key = {}) {
+    const hash = (await sha256(`${ key.x }.${ key.y }`)).slice(0, 8).toUpperCase();
+
+    return `${ hash.slice(0, 4) }-${ hash.slice(4) }`;
+}
+
+/**
+ * Checks a recording without opening it.
+ * @simply checkRecording(html:string) → Promise~object
+ *
+ * @param  {string} html The file's text
+ * @return {Promise<{ page: boolean, signed: boolean, valid: boolean, key: string?, meta: object?, reason: string? }>}
+ * `page`: the page is one TTV Tools builds (safe to open). `signed`: it carries a signature. `valid`: the signature
+ * matches its log and page. `key`: the signing key's ID.
+ */
+async function checkRecording(html = '') {
+    const parts = recordingPage(html)
+        , result = { page: false, signed: false, valid: false, key: null, meta: parts?.meta ?? null, reason: null };
+
+    if(!parts)
+        return { ...result, reason: 'not a TTV Tools recording' };
+
+    const known = new Set([...KNOWN_PAGES, CURRENT_RECORDING_PAGE]);
+
+    result.page = known.has(await sha256(parts.page));
+
+    if(!result.page)
+        return { ...result, reason: 'its page was changed, or made by a newer TTV Tools' };
+
+    if(!parts.signature.trim())
+        return { ...result, reason: 'not signed (saved before signing was added, or signing failed)' };
+
+    try {
+        const { v, alg, key, sig } = JSON.parse(parts.signature);
+
+        result.signed = true;
+
+        if(v != SIGNATURE_VERSION || alg != 'ES256' || !key?.x || !key?.y || typeof sig != 'string')
+            return { ...result, reason: 'unknown signature format' };
+
+        result.key = await keyId(key);
+
+        const publicKey = await crypto.subtle.importKey('jwk', { kty: 'EC', crv: 'P-256', x: key.x, y: key.y, ext: true }, { name: 'ECDSA', namedCurve: 'P-256' }, false, ['verify'])
+            , bytes = Uint8Array.from(atob(sig), char => char.charCodeAt(0));
+
+        result.valid = await crypto.subtle.verify({ name: 'ECDSA', hash: 'SHA-256' }, publicKey, bytes, new TextEncoder().encode(await signedText(parts)));
+
+        if(!result.valid)
+            result.reason = 'the log was changed after it was saved';
+    } catch(error) {
+        result.reason = `the signature can't be read (${ error?.message ?? error })`;
+    }
+
+    return result;
+}
+// </recording-checker>

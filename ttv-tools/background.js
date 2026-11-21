@@ -180,6 +180,57 @@ const SHARED_DATA_KEYS = ['USERNAME', 'THEME', 'ANTITHEME', 'ACTIVITY'];
 const DEBUG_RECORDINGS = new Map;
 
 /**
+ * Debug Recording: this browser profile's signing key (ECDSA P-256), made on first use and kept in IndexedDB. Its
+ * private half can't be exported (not even by TTV), so only this extension, in this profile, signs with it.
+ * @simply RecordingKey() → Promise~{ privateKey: CryptoKey, publicKey: object<JWK> }
+ */
+function RecordingKey() {
+    return RecordingKey.promise ??= new Promise((resolve, reject) => {
+        const request = indexedDB.open('ttv-tools:debug-recording', 1);
+
+        request.onupgradeneeded = () => request.result.createObjectStore('keys');
+        request.onerror = () => reject(request.error);
+        request.onsuccess = () => {
+            const db = request.result
+                , read = db.transaction('keys').objectStore('keys').get('signing');
+
+            read.onerror = () => reject(read.error);
+            read.onsuccess = async() => {
+                if(read.result?.privateKey)
+                    return resolve(read.result);
+
+                try {
+                    const pair = await crypto.subtle.generateKey({ name: 'ECDSA', namedCurve: 'P-256' }, false, ['sign', 'verify'])
+                        , { x, y } = await crypto.subtle.exportKey('jwk', pair.publicKey)
+                        , kept = { privateKey: pair.privateKey, publicKey: { x, y } }
+                        , write = db.transaction('keys', 'readwrite').objectStore('keys').put(kept, 'signing');
+
+                    write.onerror = () => reject(write.error);
+                    write.onsuccess = () => resolve(kept);
+                } catch(error) {
+                    reject(error);
+                }
+            };
+        };
+    }).catch(error => {
+        delete RecordingKey.promise;
+
+        throw error;
+    });
+}
+
+/**
+ * Signs a recording's signed text (see `signedText` in lib/debug-recorder.js).
+ * @simply SignRecording(text:string) → Promise~{ v: number, alg: string, key: object, sig: string }
+ */
+async function SignRecording(text) {
+    const { privateKey, publicKey } = await RecordingKey()
+        , signature = await crypto.subtle.sign({ name: 'ECDSA', hash: 'SHA-256' }, privateKey, new TextEncoder().encode(text));
+
+    return { v: 1, alg: 'ES256', key: publicKey, sig: btoa(String.fromCharCode(...new Uint8Array(signature))) };
+}
+
+/**
  * Reloads the specified tab.
  * @simply ReloadTab(tab:object<Tab>, onlineOnly:boolean?, forced:boolean?) → undefined
  *
@@ -818,6 +869,19 @@ Runtime.onMessage.addListener((request, sender, respond) => {
 
             DEBUG_RECORDINGS.set(id, kept);
             respond(null);
+        } break;
+
+        // Debug Recording: sign a saved recording; or tell the Settings page this profile's key
+        case 'SIGN_RECORDING': {
+            SignRecording(String(request.text ?? ''))
+                .then(signature => respond({ signature }))
+                .catch(error => respond({ error: String(error?.message ?? error) }));
+        } break;
+
+        case 'DEBUG_RECORDING_KEY': {
+            RecordingKey()
+                .then(({ publicKey }) => respond({ key: publicKey }))
+                .catch(error => respond({ error: String(error?.message ?? error) }));
         } break;
 
         case 'RESPAWN_THIS_TAB': {
