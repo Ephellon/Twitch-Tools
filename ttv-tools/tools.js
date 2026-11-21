@@ -3940,6 +3940,30 @@ let DO_NOT_AUTO_ADD = []; // List of names to ignore for auto-adding; the user a
 let ALREADY_EXPANDED = false;
 
 /**
+ * Restarts a one-shot placement job once the stream's live timer (`.live-time`) appears, if the feature is still on.
+ * One wait per job; an offline channel otherwise restarted these every second.
+ * @simply WaitForLiveTime(job:string) → Promise
+ *
+ * @param  {string} job The job to restart
+ * @return {Promise<void>}
+ */
+function WaitForLiveTime(job) {
+    WaitForLiveTime.waiting ??= new Set;
+
+    if(WaitForLiveTime.waiting.has(job))
+        return;
+
+    WaitForLiveTime.waiting.add(job);
+
+    return when.defined(() => $('.live-time'), 2_500).then(() => {
+        WaitForLiveTime.waiting.delete(job);
+
+        if(defined(Settings[job]) && `${ Settings[job] }`.unlike('null'))
+            RestartJob(job, 'live_time');
+    });
+}
+
+/**
  * Intializes the extension
  * @simply Initialize(START_OVER:boolean) → undefined
  */
@@ -15658,8 +15682,12 @@ let Initialize = async(START_OVER = false) => {
 
             let live_time = $('.live-time');
 
-            if(nullish(live_time))
-                return RestartJob('points_receipt_placement', 'missing:live_time');
+            // No live timer yet (an offline channel): wait for one quietly, then place once, instead of restarting every second
+            if(nullish(live_time)) {
+                StopWatch.stop('points_receipt_placement');
+
+                return WaitForLiveTime('points_receipt_placement');
+            }
 
             let classes = element => [...element.classList].map(label => '.' + label).join('');
 
@@ -16333,8 +16361,9 @@ let Initialize = async(START_OVER = false) => {
 
         let live_time = $('.live-time');
 
+        // No live timer yet (an offline channel): wait for one quietly, then place once, instead of restarting every second
         if(nullish(live_time))
-            return RestartJob('watch_time_placement', 'missing:live_time');
+            return WaitForLiveTime('watch_time_placement');
 
         switch(placement) {
             // Option 1 "over" - video overlay, volume control area
@@ -17950,8 +17979,13 @@ let Initialize = async(START_OVER = false) => {
                 return String(arg);
             }).join(' ');
 
-            for(const term of terms)
-                line = line.split(term).join(maskText(term));
+            // Whole words only: a rule word like "mod" mustn't hide part of "away_mode"
+            for(const term of terms) {
+                const escaped = term.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+                    , pattern = (/^\w/.test(term) ? '\\b' : '') + escaped + (/\w$/.test(term) ? '\\b' : '');
+
+                line = line.replace(new RegExp(pattern, 'g'), maskText);
+            }
 
             return line.length > max ? `${ line.slice(0, max - 1) }…` : line;
         }
@@ -19192,6 +19226,10 @@ if(top == window) {
                                             (parseBool(Settings.away_mode) && (Settings.away_mode_placement ?? 'null') != 'null')?
                                                 (false
                                                     || $.defined('#away-mode')
+                                                    // No player to put the button on (an offline channel)
+                                                    || $.nullish('[data-a-target="player-controls"i]')
+                                                    // A stream that has ended: Lurk waits for the next one
+                                                    || !STREAMER.live
 
                                                     || !NOT_LOADED_CORRECTLY.push('away_mode')
                                                 ):
