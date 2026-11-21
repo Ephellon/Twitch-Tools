@@ -552,14 +552,18 @@ try {
                 else
                     $remark(`Disabling feature: ${ name }`, new Date);
 
-                UnregisterJob(key, 'disable');
+                // Only features with a job: a sub-option (e.g. `away_mode__hide_chat`) has none, and stopping one listed it as a
+                // job that the next page change then failed to restart ("Job Handler ... is not function")
+                if(typeof Handlers[key] == 'function')
+                    UnregisterJob(key, 'disable');
             } else if(newValue === true) {
                 if(~EXPERIMENTAL_FEATURES.findIndex(feature => feature.test(key)))
                     $warn(`Enabling experimental feature: ${ name }`, new Date);
                 else
                     $remark(`Enabling feature: ${ name }`, new Date);
 
-                RegisterJob(key, 'enable');
+                if(typeof Handlers[key] == 'function')
+                    RegisterJob(key, 'enable');
             } else {
                 if(~EXPERIMENTAL_FEATURES.findIndex(feature => feature.test(key)))
                     $warn(`Modifying experimental feature: ${ name }`, { oldValue, newValue }, new Date);
