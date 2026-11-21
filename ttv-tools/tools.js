@@ -1329,6 +1329,23 @@ class Search {
 
                         let channelData = await Search.convertResults({ async json() { return json } });
 
+                        // Live status changes: after 5 min a read re-fetches in the background and updates this object in place,
+                        // so every holder (SEARCH_CACHE, ALL_CHANNELS, Up Next rows) sees it; it used to last the whole page
+                        if(channelData && typeof channelData == 'object') {
+                            let lease = { live: channelData.live, at: +new Date };
+
+                            Object.defineProperty(channelData, 'live', { configurable: true, enumerable: true, get() {
+                                if(+new Date - lease.at > 300_000) {
+                                    lease.at = +new Date;
+                                    SEARCH_CACHE.delete(name);
+                                    // Read the fresh cache entry, not `convertResults`: its `parseType` may belong to another search by then
+                                    new Search(name).then(() => lease.live = parseBool(SEARCH_CACHE.get(name)?.live ?? lease.live)).catch($warn);
+                                }
+
+                                return lease.live;
+                            } });
+                        }
+
                         // Marks it as converted: a later lookup returns this cached object, and its callers convert it again
                         Object.defineProperty(channelData, Search.CONVERTED, { value: true });
 
@@ -4253,15 +4270,11 @@ let Initialize = async(START_OVER = false) => {
             // There isn't a channel that fits the criteria
             if(parseBool(Settings.stay_live) && nullish(GetNextStreamer?.cachedStreamer) && online?.length) {
                 let preference = Settings.next_channel_preference,
-                    channels = (GetNextStreamer.cachedStreamer ??= randomChannel);
+                    channel = (GetNextStreamer.cachedStreamer ??= randomChannel);
 
-                if(!channels?.length)
-                    return randomChannel;
-
-                let [channel] = channels,
-                    { name } = channel;
-
-                $warn(`No channel fits the "${ preference }" criteria. Assuming a random channel ("${ name }") is desired:`, channel);
+                // `randomChannel` is one channel (not a list), so this warning never used to show
+                if(defined(channel))
+                    $warn(`No channel fits the "${ preference }" criteria. Assuming a random channel ("${ channel.name }") is desired:`, channel);
             }
 
             // @performance
@@ -4526,7 +4539,7 @@ let Initialize = async(START_OVER = false) => {
                         for(let metadata of commands) {
                             let { aliases, command, reply, accessLevel, enabled, count = 0, cooldown, cost } = metadata;
 
-                            COMMANDS.push({ aliases: [...aliases, ...commands.filter(command => command.reply?.contains(command))], command, reply, availability: match(accessLevel), enabled, origin: 'StreamElements', variables: { count, coolDown: cooldown.global, cost } });
+                            COMMANDS.push({ aliases: [...aliases, ...commands.filter(alias => alias.reply?.contains(command)).map(alias => alias.command)], command, reply, availability: match(accessLevel), enabled, origin: 'StreamElements', variables: { count, coolDown: cooldown.global, cost } });
                         }
                     })
                     .catch($warn);
@@ -5458,10 +5471,15 @@ let Initialize = async(START_OVER = false) => {
                         // usualStartTime:string<Date-Time<{HH:MM}>>
                         // usualStopTime:string<Date-Time<{HH:MM}>>
                     www_twitchmetrics_net: if(!FETCHED_OK) {
-                        when(() => defined(STREAMER.sole)? STREAMER: false).then(({ name, sole }) => {
+                        // Keep the ID that was checked: `STREAMER.sole` is a getter, and a second read can be empty (`/c/undefined-…`)
+                        when(() => (sole => defined(sole)? { name: STREAMER.name, sole }: false)(STREAMER.sole)).then(({ name, sole }) => {
                             fetchURL.fromDisk(`https://www.twitchmetrics.net/c/${ sole }-${ name.toLowerCase() }/stream_time_values`, { mode: 'cors', hoursUntilEntryExpires: 168 })
                                 .then(response => response.json())
                                 .then(json => {
+                                    // A list of `[start, stop]` pairs; anything else is an error page (e.g. a CORS proxy's own error, sent as a 200)
+                                    if(defined(json) && !Array.isArray(json))
+                                        throw `Unexpected stream-time data: ${ JSON.stringify(json)?.slice(0, 120) }`;
+
                                     let data = { dailyBroadcastTime: 0, activeDaysPerWeek: 0, usualStartTime: '00:00', usualStopTime: '00:00', daysStreaming: [], dailyStartTimes: {}, dailyStopTimes: {} },
                                         today = new Date;
 
@@ -5787,16 +5805,19 @@ let Initialize = async(START_OVER = false) => {
                         //     created_at:string<Date.UTC>,
                         // }>
                     api_twitch_tv: if(!FETCHED_OK)
-                        fetchURL.fromDisk(`https://api.twitch.tv/helix/users?id=${ STREAMER.sole }`, {
+                        // The OAuth token loads later (Search helpers, below); asking before it's set gets a 401
+                            // Signed-out viewers never get one: stop waiting after 30s
+                        when.defined((until => () => (Search.validated? Search.authorization: undefined) ?? (+new Date > until? when.null: undefined))(+new Date + 30_000), 250).then(authorization => fetchURL.fromDisk(`https://api.twitch.tv/helix/users?id=${ STREAMER.sole }`, {
                             headers: {
-                                Authorization: Search.authorization,
+                                Authorization: authorization,
                                 'Client-Id': Search.clientID,
                             },
                             mode: 'cors',
                             hoursUntilEntryExpires: 168,
-                        })
+                        }))
                             .then(response => response.json())
-                            .then(json => JSON.parse(json.data ?? "null"))
+                            // Helix answers `{ data: [user] }` (not a JSON string)
+                            .then(json => json.data?.[0])
                             .then(json => {
                                 if(nullish(json))
                                     throw "Fine Detail JSON data could not be parsed...";
@@ -5936,7 +5957,7 @@ let Initialize = async(START_OVER = false) => {
                     Search.authorization = `Bearer ${ oauthToken }`;
                     Search.clientID = client_id;
 
-                    Cache.save({ clientID: clientID, oauthToken });
+                    Cache.save({ clientID: client_id, oauthToken });
                 }).catch(error => {
                     $warn(error);
 
@@ -5959,6 +5980,13 @@ let Initialize = async(START_OVER = false) => {
                 });
             });
         }
+
+        // The token decides the Client-Id: a cached, default or `null` one gets a 401 from every Helix call. Ask Twitch
+        when.defined(() => Search.authorization, 1000).then(authorization => fetchURL(`https://id.twitch.tv/oauth2/validate`, { headers: { Authorization: authorization.replace(/^Bearer\b/, 'OAuth') } }))
+            .then(response => response.json())
+            .then(({ client_id }) => client_id && Cache.save({ clientID: Search.clientID = client_id }))
+            .catch($warn)
+            .finally(() => Search.validated = true);
     } else {
         top.UP_NEXT_ALLOW_THIS_TAB = UP_NEXT_ALLOW_THIS_TAB = true;
         Runtime.sendMessage({ action: 'WAIVE_UP_NEXT' });
@@ -6659,8 +6687,9 @@ let Initialize = async(START_OVER = false) => {
 
             let controls = $(':is(video, [class*="video"i][class*="render"i]) ~ * .player-controls');
 
+            // Only coloured while Lurking really controls the volume
             if(defined(controls))
-                controls.dataset.automatic = MAINTAIN_VOLUME_CONTROL;
+                controls.dataset.automatic = MAINTAIN_VOLUME_CONTROL && enabled && parseBool(Settings.away_mode__volume_control);
 
             // Sets the size according to the video's physical size
             let size = (parseBool(Settings.low_data_mode)? getOffset($('video')).height.floorToNearest(100): -1);
@@ -6760,7 +6789,7 @@ let Initialize = async(START_OVER = false) => {
 
         // Set the color and control scheme
         when.defined(() => $(':is(video, [class*="video"i][class*="render"i]) ~ * .player-controls'))
-            .then(controls => controls.dataset.automatic = MAINTAIN_VOLUME_CONTROL);
+            .then(controls => controls.dataset.automatic = MAINTAIN_VOLUME_CONTROL && AwayModeStatus && parseBool(Settings.away_mode__volume_control));
 
         // Scheduling logic...
         when.defined(() => $('#away-mode'), 3000).then(awayMode => {
@@ -7806,11 +7835,21 @@ let Initialize = async(START_OVER = false) => {
      */
     top.REDO_FIRST_IN_LINE_QUEUE =
     async function REDO_FIRST_IN_LINE_QUEUE(url, search = null) {
-        if(nullish(url) || (FIRST_IN_LINE_HREF === url && [FIRST_IN_LINE_JOB, FIRST_IN_LINE_WARNING_JOB, FIRST_IN_LINE_WARNING_TEXT_UPDATE].filter(nullish).length < 1))
+        // Skip only if a job for this URL is really running: cleared intervals keep their IDs, and callers often set
+        // `FIRST_IN_LINE_HREF = url` first, so the old check skipped every restart (no "Coming up next" prompt)
+        let { running } = REDO_FIRST_IN_LINE_QUEUE,
+            requested = String(url ?? '');
+
+        if(nullish(url) || (running?.url === requested && (+new Date - running.at) < 2_500))
             return;
-        else if(nullish(search))
-            url = parseURL(url).addSearch(location.search);
-        else
+        else if(nullish(search)) {
+            // The page's search rides along, but never over the job's own, and never the job-only `redo`/`tool`:
+            // the page's `redo` named another channel, so a redo job wasn't re-queued when it arrived
+            let job = parseURL(url),
+                { redo, tool, ...page } = (parseURL(location.href).searchParameters ?? {});
+
+            url = job.addSearch({ ...page, ...(job.searchParameters ?? {}) });
+        } else
             url = parseURL(url).addSearch((_ => { for(let k in _) if(_[k] === "") delete _[k]; return _ })(search));
 
         let { href, pathname } = url,
@@ -7890,7 +7929,9 @@ let Initialize = async(START_OVER = false) => {
                     FIRST_IN_LINE_DUE_DATE = NEW_DUE_DATE(CHANNEL_WAIT());
 
                     if(defined(next))
-                        REDO_FIRST_IN_LINE_QUEUE(next, { redo: (parseURL(removed).searchParameters?.redo ?? "") });
+                        // The next job keeps its own `redo`: passing the removed job's overwrote it, so a redo channel
+                        // arrived with another channel's name and wasn't re-queued
+                        REDO_FIRST_IN_LINE_QUEUE(next, { redo: (parseURL(next).searchParameters?.redo ?? "") });
 
                     Cache.save({ ALL_FIRST_IN_LINE_JOBS, FIRST_IN_LINE_DUE_DATE }, () => {
                         if(action) {
@@ -7917,6 +7958,9 @@ let Initialize = async(START_OVER = false) => {
         }, 1000);
 
         FIRST_IN_LINE_JOB = setInterval(() => {
+            // Heartbeat: tells a later REDO_FIRST_IN_LINE_QUEUE which job is still running
+            REDO_FIRST_IN_LINE_QUEUE.running = { url: requested, at: +new Date };
+
             // If the channel disappears (or goes offline), kill the job for it
             // @FIXME: Reanimating First in Line jobs may cause reloading issues?
             let index = ALL_CHANNELS.findIndex(channel => RegExp(parseURL(channel.href).pathname + '\\b', 'i').test(FIRST_IN_LINE_HREF)),
@@ -8113,12 +8157,18 @@ let Initialize = async(START_OVER = false) => {
 
         let timeRemaining = parseInt(job.getAttribute('time'));
 
-        if(timeRemaining <= 60_000 && nullish('.tt-confirm'))
+        // If the normal Up Next switch hasn't happened a minute after it was due, ask instead (it tested the string
+        // '.tt-confirm', not the element, so it never ran)
+        if(timeRemaining <= 60_000 && $.nullish('.tt-confirm'))
             wait(60_000).then(() => {
+                let name = GetNextStreamer.cachedStreamer?.name;
+
+                // Another prompt is up, or there's nowhere to go
+                if($.defined('.tt-confirm') || nullish(name))
+                    return;
+
                 $warn(`Mitigation for Up Next: Loose interval @ ${ location } / ${ new Date }`)
                     // .toNativeStack();
-
-                let { name } = GetNextStreamer.cachedStreamer;
 
                 confirm
                     .timed(`Coming up next: <a href='./${ name }'>${ name }</a>`, timeRemaining)
@@ -9334,12 +9384,16 @@ let Initialize = async(START_OVER = false) => {
                                         Cache.save({ ALL_FIRST_IN_LINE_JOBS });
                                     }
 
-                                    if(time < 60_000 && nullish(FIRST_IN_LINE_HREF)) {
+                                    // Start the first job whenever none is running: a live notification sets FIRST_IN_LINE_HREF
+                                    // without starting it, so waiting for `nullish(FIRST_IN_LINE_HREF)` left no prompt and no switch
+                                    if(index == 0 && (+new Date - (REDO_FIRST_IN_LINE_QUEUE.running?.at ?? 0)) > 5_000 && (+new Date - (REDO_FIRST_IN_LINE_QUEUE.restarted ?? 0)) > 5_000) {
+                                        REDO_FIRST_IN_LINE_QUEUE.restarted = +new Date;
                                         FIRST_IN_LINE_DUE_DATE = NEW_DUE_DATE(time);
 
                                         $warn('Creating job to avoid [Job Listing] mitigation event', channel);
 
-                                        return StopWatch.stop('up_next_balloon__subheader_timer_animation', 1000), REDO_FIRST_IN_LINE_QUEUE(FIRST_IN_LINE_HREF = channel.href);
+                                        // The job's own URL, not the channel's: that one has no `?redo`
+                                        return StopWatch.stop('up_next_balloon__subheader_timer_animation', 1000), REDO_FIRST_IN_LINE_QUEUE(FIRST_IN_LINE_HREF = ALL_FIRST_IN_LINE_JOBS[0] ?? channel.href);
                                     }
 
                                     if(time < 1000)
@@ -9621,12 +9675,15 @@ let Initialize = async(START_OVER = false) => {
                                 Cache.save({ ALL_FIRST_IN_LINE_JOBS });
                             }
 
-                            if(time < 60_000 && nullish(FIRST_IN_LINE_HREF)) {
+                            // Start the first job whenever none is running (see the balloon's row animation)
+                            if(index == 0 && (+new Date - (REDO_FIRST_IN_LINE_QUEUE.running?.at ?? 0)) > 5_000 && (+new Date - (REDO_FIRST_IN_LINE_QUEUE.restarted ?? 0)) > 5_000) {
+                                REDO_FIRST_IN_LINE_QUEUE.restarted = +new Date;
                                 FIRST_IN_LINE_DUE_DATE = NEW_DUE_DATE(time);
 
                                 $warn('Creating job to avoid [First in Line] mitigation event', channel);
 
-                                return StopWatch.stop('first_in_line__job_watcher', 1000), REDO_FIRST_IN_LINE_QUEUE(FIRST_IN_LINE_HREF = channel.href);
+                                // The job's own URL, not the channel's: that one has no `?redo`
+                                return StopWatch.stop('first_in_line__job_watcher', 1000), REDO_FIRST_IN_LINE_QUEUE(FIRST_IN_LINE_HREF = ALL_FIRST_IN_LINE_JOBS[0] ?? channel.href);
                             }
 
                             if(time < 1000)
@@ -9858,7 +9915,7 @@ let Initialize = async(START_OVER = false) => {
                             $notice(`Necromancy work:`, removed);
 
                             // Necromancer
-                            REDO_FIRST_IN_LINE_QUEUE(ALL_FIRST_IN_LINE_JOBS[0], { redo: (parseURL(removed).searchParameters?.redo ?? "") });
+                            REDO_FIRST_IN_LINE_QUEUE(ALL_FIRST_IN_LINE_JOBS[0], { redo: (parseURL(ALL_FIRST_IN_LINE_JOBS[0]).searchParameters?.redo ?? "") });
 
                         Cache.save({ ALL_FIRST_IN_LINE_JOBS }, () => {
                             $warn(`Unable to perform search for "${ name }" - ${ error }`, removed);
@@ -9878,7 +9935,7 @@ let Initialize = async(START_OVER = false) => {
                 $notice(`Doppleganger work:`, removed);
 
                 // Doppleganger
-                REDO_FIRST_IN_LINE_QUEUE(ALL_FIRST_IN_LINE_JOBS[0], { redo: (parseURL(removed).searchParameters?.redo ?? "") });
+                REDO_FIRST_IN_LINE_QUEUE(ALL_FIRST_IN_LINE_JOBS[0], { redo: (parseURL(ALL_FIRST_IN_LINE_JOBS[0]).searchParameters?.redo ?? "") });
 
                 [FIRST_IN_LINE_JOB, FIRST_IN_LINE_WARNING_JOB, FIRST_IN_LINE_WARNING_TEXT_UPDATE].forEach(clearInterval);
 
@@ -12233,7 +12290,8 @@ let Initialize = async(START_OVER = false) => {
             for(let { aliases, command, reply, availability, enabled, origin, variables } of await STREAMER.coms)
                 // Wait here to keep from lagging the page...
                 await wait(1).then(() => {
-                    let regexp = RegExp(`([!](?:${ [command, ...aliases].map(s => s.replace(/[\.\\\/\?\+\(\)\[\]\{\}\$\*\|]/g, '\\$&')).join('|') })(?!\\p{L}))`, 'igu');
+                    // Aliases can be missing or not text (StreamElements): only words go into the pattern
+                    let regexp = RegExp(`([!](?:${ [command, ...aliases].filter(s => typeof s == 'string' && s.length).map(s => s.replace(/[\.\\\/\?\+\(\)\[\]\{\}\$\*\|]/g, '\\$&')).join('|') })(?!\\p{L}))`, 'igu');
 
                     if(!regexp.test(element.innerHTML))
                         return;
@@ -16981,7 +17039,7 @@ let Initialize = async(START_OVER = false) => {
                             FIRST_IN_LINE_DUE_DATE = NEW_DUE_DATE(CHANNEL_WAIT());
 
                             // Skipper
-                            REDO_FIRST_IN_LINE_QUEUE(ALL_FIRST_IN_LINE_JOBS[0], { redo: (parseURL(removed).searchParameters?.redo ?? "") });
+                            REDO_FIRST_IN_LINE_QUEUE(ALL_FIRST_IN_LINE_JOBS[0], { redo: (parseURL(ALL_FIRST_IN_LINE_JOBS[0]).searchParameters?.redo ?? "") });
 
                             Cache.save({ ALL_FIRST_IN_LINE_JOBS, FIRST_IN_LINE_DUE_DATE }, () => {
                                 $log('Skipping queue in favor of a DVR channel', job);

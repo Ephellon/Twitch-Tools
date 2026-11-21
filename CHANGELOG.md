@@ -42,6 +42,7 @@
 ## Release History
 
 ### Version 5.35.\*
+- [`5.35.6.8`](https://github.com/Ephellon/Twitch-Tools/releases/tag/5.35.6.8) — Fixes brought over from v6: Up Next restarts its job (and the one-minute "Coming up next" prompt) when none is running, its safety prompt works, and redo channels keep their own mark; channel details load again ("Failed to get CHANNEL details (4)", "STREAM details (1§1)"); a looked-up channel's live status refreshes every 5 minutes; Parse Commands handles StreamElements aliases; hidden page frames no longer join chat; a hidden dialog peeks 10px so its buttons can be clicked; Lurk only colours the volume controls while it controls them
 - [`5.35.6.7`](https://github.com/Ephellon/Twitch-Tools/releases/tag/5.35.6.7) — On an offline channel's page, TTV no longer reloads every couple of minutes over the Lurk button (it has no place there) or restarts Watch Time and the Points Receipt every second, so Up Next can move on again; Debug Recording hides rule words only as whole words
 - [`5.35.6.6`](https://github.com/Ephellon/Twitch-Tools/releases/tag/5.35.6.6) — A channel queued while Up Next is paused gets the set wait, not more (#98)
 - [`5.35.6.5`](https://github.com/Ephellon/Twitch-Tools/releases/tag/5.35.6.5) — Debug Recording reads whether chat is shown or collapsed correctly (it said "collapsed" while chat was shown) (#93)
