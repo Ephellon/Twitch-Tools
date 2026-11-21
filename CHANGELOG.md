@@ -42,6 +42,7 @@
 ## Release History
 
 ### Version 5.35.\*
+- [`5.35.6.18`](https://github.com/Ephellon/Twitch-Tools/releases/tag/5.35.6.18) — Added Max Watchtime: mark a channel with the button under DVR on its About panel; when it goes live, a tab with Up Next off goes to it right away and stays until the stream ends (first come, first served; with no such tab, nothing happens)
 - [`5.35.6.17`](https://github.com/Ephellon/Twitch-Tools/releases/tag/5.35.6.17) — A stream that ends while its page is open now reads as offline (the OFFLINE pill showed and the video was gone, but TTV still saw it as live): after 10 seconds without video, TTV asks Twitch again
 - [`5.35.6.16`](https://github.com/Ephellon/Twitch-Tools/releases/tag/5.35.6.16) — No more "Job Handler for … is not function: received undefined" errors: turning a sub-option (e.g. Easy Lurk's) on or off no longer treats it as a feature to start, stop or restart
 - [`5.35.6.15`](https://github.com/Ephellon/Twitch-Tools/releases/tag/5.35.6.15) — Debug Recording: saved files are signed; Settings → Debug Recording → Check a file tells you, without opening a received file, whether it runs only TTV Tools' own code and whether its log was changed

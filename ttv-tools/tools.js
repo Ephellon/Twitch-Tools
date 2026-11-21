@@ -4013,26 +4013,43 @@ function StreamEnded(login) {
     if(!state.ended && now - state.since >= 10_000 && now - state.checked >= 30_000) {
         state.checked = now;
 
-        fetch(`/${ name }`, { cache: 'no-store' })
-            .then(response => response.ok? response.text(): Promise.reject(response.status))
-            .then(html => {
-                let doc = (new DOMParser).parseFromString(html, 'text/html'),
-                    data = doc.querySelector('head>script[type^="application"i][type$="json"i]')?.textContent;
+        FetchLiveStatus(name).then(live => {
+            if(live !== false || StreamEnded.state !== state)
+                return;
 
-                if(!data || StreamEnded.state !== state)
-                    return;
-
-                let graph = JSON.parse(data)?.['@graph'] ?? [];
-
-                state.ended = !graph.some(item => parseBool(item?.publication?.isLiveBroadcast));
-
-                if(state.ended)
-                    $warn(`${ name }'s stream ended on this page (no video, and Twitch no longer lists it as live)`);
-            })
-            .catch(() => {});
+            state.ended = true;
+            $warn(`${ name }'s stream ended on this page (no video, and Twitch no longer lists it as live)`);
+        });
     }
 
     return state.ended;
+}
+
+/**
+ * Asks Twitch whether a channel is live right now: fetches its page (never from a cache) and reads it the way `Search`
+ * does. `null` when that can't be told (no answer, or no listing on the page).
+ * @simply FetchLiveStatus(login:string) → Promise~boolean?
+ *
+ * @param  {string} login The channel's name, as in its address
+ * @return {Promise<boolean?>}
+ */
+async function FetchLiveStatus(login) {
+    try {
+        let response = await fetch(`/${ encodeURIComponent(login) }`, { cache: 'no-store' });
+
+        if(!response.ok)
+            return null;
+
+        let doc = (new DOMParser).parseFromString(await response.text(), 'text/html'),
+            data = doc.querySelector('head>script[type^="application"i][type$="json"i]')?.textContent;
+
+        if(!data)
+            return null;
+
+        return (JSON.parse(data)?.['@graph'] ?? []).some(item => parseBool(item?.publication?.isLiveBroadcast));
+    } catch(error) {
+        return null;
+    }
 }
 
 /**
@@ -17228,6 +17245,151 @@ let Initialize = async(START_OVER = false) => {
 
         AUTO_DVR__CHECKING?.();
         RegisterJob('video_clips__dvr');
+    }
+
+    /*** Max Watchtime
+     * A per-channel status, like DVR and Live Reminders: when a marked channel goes live, a tab with Up Next off goes to it
+     * right away (no queue, no countdown) and stays until the stream ends (Stay Live moves it on then).
+     * - One Twitch tab checks the marked channels every minute (a lock picks it; another tab takes over when it closes)
+     * - The background picks the tab: a random channel tab with Up Next off that isn't already on a marked live channel.
+     *   None → nothing (it tries again on the next check). Several marked channels live: first come, first served
+     * - The button sits under DVR on the channel's About panel
+     */
+    let MaxWatchtimeLoad = () => new Promise(resolve => {
+        Cache.load('MaxWatchtime', ({ MaxWatchtime }) => {
+            try {
+                MaxWatchtime = JSON.parse(MaxWatchtime || '{}');
+            } catch(error) {
+                // Already an object
+            }
+
+            resolve((MaxWatchtime && typeof MaxWatchtime == 'object')? MaxWatchtime: {});
+        });
+    });
+
+    let MaxWatchtimeLabel = (name, on) => [
+        ['Turn Max Watchtime on', `A tab with Up Next off goes to ${ name } as soon as they're live`, 'fire'],
+        ['Turn Max Watchtime off', `A tab with Up Next off goes to ${ name } as soon as they're live`, 'leave'],
+    ][+!!on];
+
+    Handlers.max_watchtime = async() => {
+        new StopWatch('max_watchtime');
+
+        let actionPanel = $('.about-section__actions'),
+            login = location.pathname.split('/')[1]?.toLowerCase(),
+            name = STREAMER?.name ?? login;
+
+        if(nullish(actionPanel) || !/^\w+$/.test(login ?? '') || RESERVED_TWITCH_PATHNAMES.test(location.pathname))
+            return StopWatch.stop('max_watchtime');
+
+        let action = $('[tt-action="max-watchtime"i]', actionPanel),
+            dvr = $('[tt-action="auto-dvr"i]', actionPanel);
+
+        // Already there: keep it under DVR (DVR's button can come after it)
+        if(defined(action)) {
+            if(defined(dvr) && dvr.nextElementSibling != action)
+                dvr.after(action);
+
+            return StopWatch.stop('max_watchtime');
+        }
+
+        let enabled = defined((await MaxWatchtimeLoad())[login]),
+            [title, subtitle, icon] = MaxWatchtimeLabel(name, enabled),
+            f = furnish;
+
+        // Another run placed it while this one waited
+        if($.defined('[tt-action="max-watchtime"i]', actionPanel))
+            return StopWatch.stop('max_watchtime');
+
+        action =
+        f('div', { 'tt-action': 'max-watchtime', 'for': login, enabled, 'action-origin': 'foreign', style: `animation:1s fade-in 1;` },
+            f('button', {
+                onmouseup: async event => {
+                    let { currentTarget, button = -1 } = event;
+
+                    if(!!button)
+                        return /* Not the primary button */;
+
+                    let MaxWatchtime = await MaxWatchtimeLoad(),
+                        on = nullish(MaxWatchtime[login]),
+                        [title, subtitle, icon] = MaxWatchtimeLabel(name, on);
+
+                    if(on)
+                        MaxWatchtime[login] = name;
+                    else
+                        delete MaxWatchtime[login];
+
+                    $('.tt-action-icon', currentTarget).innerHTML = Glyphs.modify(icon, { style: 'fill:var(--user-contrast-color)!important', height: '20px', width: '20px' });
+                    $('.tt-action-title', currentTarget).textContent = title;
+                    $('.tt-action-subtitle', currentTarget).textContent = subtitle;
+                    currentTarget.closest('[tt-action]').setAttribute('enabled', on);
+
+                    Cache.save({ MaxWatchtime }, () => Settings.set({ 'MAX_WATCHTIME': Object.keys(MaxWatchtime) })
+                        .then(() => alert.timed(on? `A tab with Up Next off will go to ${ name } as soon as they're live.`: `Max Watchtime is off for ${ name }.`, 7000))
+                        .catch($warn)
+                    );
+                },
+            }, f.div(
+                f('.tt-action-icon').html(Glyphs.modify(icon, { style: 'fill:var(--user-contrast-color)!important', height: '20px', width: '20px' })),
+                f.div(
+                    f('p.tw-title.tt-action-title').with(title),
+                    f('p.tt-action-subtitle').with(subtitle)
+                )
+            ))
+        );
+
+        if(defined(dvr))
+            dvr.after(action);
+        else
+            actionPanel.append(action);
+
+        StopWatch.stop('max_watchtime');
+    };
+    Timers.max_watchtime = 1000;
+
+    Unhandlers.max_watchtime = () => {
+        $.all('[tt-action="max-watchtime"i]').map(action => action.remove());
+    };
+
+    // The checker: one Twitch tab at a time (a lock; it's held until the tab closes, then the next tab in line takes it)
+    let MaxWatchtimeChecker = () => {
+        if(top != window || defined(top.MAX_WATCHTIME_CHECKER) || nullish(navigator.locks))
+            return;
+
+        top.MAX_WATCHTIME_CHECKER = navigator.locks.request('tt-max-watchtime', async() => {
+            while(true) {
+                try {
+                    if(nullish(Settings.max_watchtime) || parseBool(Settings.max_watchtime)) {
+                        let channels = await MaxWatchtimeLoad(),
+                            live = [];
+
+                        for(let login in channels)
+                            if(await FetchLiveStatus(login))
+                                live.push({ name: login, href: `${ location.origin }/${ login }` });
+
+                        if(Object.keys(channels).length)
+                            Runtime.sendMessage({ action: 'MAX_WATCHTIME', live }, placed => {
+                                void Runtime.lastError;
+
+                                for(let { name, tab } of placed?.moved ?? [])
+                                    $remark(`Max Watchtime: ${ name } is live; sent tab #${ tab } to it`);
+                            });
+                    }
+                } catch(error) {
+                    // The extension was reloaded (this page is about to be replaced), or a check failed: try again next time
+                }
+
+                await wait(60_000);
+            }
+        }).catch($ignore);
+    };
+
+    __MaxWatchtime__:
+    if(nullish(Settings.max_watchtime) || parseBool(Settings.max_watchtime)) {
+        $remark('Adding Max Watchtime...');
+
+        RegisterJob('max_watchtime');
+        MaxWatchtimeChecker();
     }
 
     /*** Video Recovery

@@ -128,6 +128,8 @@ let // These are option names. Anything else will be removed
         'kill_extensions',
         // Auto Accept Mature Content
         'auto_accept_mature',
+        // Max Watchtime
+        'max_watchtime',
         // Auto-Focus*
         'auto_focus',
             'auto_focus_detection_threshold',
