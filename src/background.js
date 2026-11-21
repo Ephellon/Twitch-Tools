@@ -200,7 +200,8 @@ const DEBUG_RECORDINGS = new Map;
 /**
  * Stay Live: the channel each tab watched live, by tab ID. A respawned tab is a new tab (its `sessionStorage` is empty),
  * so it gets its old tab's entry here; otherwise Stay Live treated every dead channel as one the viewer opened (#82)
- * and never moved on. Kept in `storage.session` (when there is one), so a sleeping service worker keeps it too.
+ * and never moved on. Kept in the extension's storage, so a sleeping service worker and an update (which respawns
+ * every tab) keep it too; tab IDs start over with the browser, so it's cleared then.
  * @type {Map<number, string>}
  */
 const WATCHED_LIVE_TABS = new Map;
@@ -210,7 +211,7 @@ const WATCHED_LIVE_TABS = new Map;
  * @simply WatchedLiveReady() → Promise~undefined
  */
 function WatchedLiveReady() {
-    return WatchedLiveReady.promise ??= Promise.resolve(Container.storage?.session?.get?.('WatchedLiveTabs'))
+    return WatchedLiveReady.promise ??= Promise.resolve(Storage.get('WatchedLiveTabs'))
         .then(({ WatchedLiveTabs = [] } = {}) => {
             for(const [id, name] of WatchedLiveTabs)
                 if(!WATCHED_LIVE_TABS.has(id))
@@ -229,7 +230,7 @@ function KeepWatchedLive(id, name = null) {
     else if(!WATCHED_LIVE_TABS.delete(id))
         return;
 
-    Promise.resolve(Container.storage?.session?.set?.({ WatchedLiveTabs: [...WATCHED_LIVE_TABS] })).catch(() => {});
+    Promise.resolve(Storage.set({ WatchedLiveTabs: [...WATCHED_LIVE_TABS] })).catch(() => {});
 }
 
 /**
@@ -1014,6 +1015,12 @@ Container.tabs.onRemoved.addListener(id => setTimeout(() => {
     DEBUG_RECORDINGS.delete(id);
     WatchedLiveReady().then(() => KeepWatchedLive(id, null));
 }, 60_000));
+
+// Stay Live: tab IDs start over with the browser, so the kept watched-live channels go
+Container.runtime.onStartup?.addListener(() => {
+    WATCHED_LIVE_TABS.clear();
+    WatchedLiveReady.promise = Promise.resolve(Storage.remove('WatchedLiveTabs')).catch(() => {});
+});
 
 // Handle and manage dead or dying tabs
 const REPORTS = new Map
