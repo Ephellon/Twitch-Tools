@@ -42,6 +42,7 @@
 ## Release History
 
 ### Version 5.35.\*
+- [`5.35.6.12`](https://github.com/Ephellon/Twitch-Tools/releases/tag/5.35.6.12) — Stay Live moves on from every dead channel again: reverted the 5.35.5.29 change that left channels opened while offline alone, and the memory 5.35.6.10–.11 added for it
 - [`5.35.6.11`](https://github.com/Ephellon/Twitch-Tools/releases/tag/5.35.6.11) — Stay Live's memory of the channel each tab watched live now survives extension updates too (5.35.6.10 kept it somewhere an update clears)
 - [`5.35.6.10`](https://github.com/Ephellon/Twitch-Tools/releases/tag/5.35.6.10) — Stay Live moves on from dead channels again after the extension updates or a tab respawns: the tab remembers the channel it watched live (it used to forget it, so every dead channel counted as one you opened yourself)
 - [`5.35.6.9`](https://github.com/Ephellon/Twitch-Tools/releases/tag/5.35.6.9) — More fixes brought over from v6: channels missing from the side bar are checked directly instead of counted as offline; the side bar is opened and closed more gently when reading channels; a page that can't get ready reloads at most once every 5 minutes; chat works when not logged in; Store Integration stops re-fetching game pages every 5 seconds and keeps store catalogs in the browser cache (old copies, ~50 MB, are cleared); Settings Export/Restore now carries Live Reminders, saves after a restore, lists any skipped settings, and works with non-Latin text

@@ -13056,81 +13056,7 @@ let Initialize = async(START_OVER = false) => {
      *                       __/ |
      *                      |___/
      */
-    let ClearIntent,
-        USER_INTENT,        // A channel the viewer chose themselves
-        WATCHED_LIVE,       // The channel seen live in this tab (its display name)
-        WATCHED_LIVE_PATH;  // ...and its path (`/name`'s name, lowercase)
-
-    let WatchedLivePath = () => (location.pathname.split('/')[1] ?? '').toLowerCase();
-
-    /**
-     * Remembers (or, without a name, forgets) the channel this tab watched live. A reload keeps it (`sessionStorage`); a
-     * respawn is a new tab, so the background keeps a copy and hands it over: losing it (every tab respawns when the
-     * extension updates) made Stay Live treat every dead channel as one the viewer opened (#82). It's forgotten once the
-     * tab is on another page, so a channel the viewer comes back to later stays theirs to look at.
-     * Only the tab's own page keeps it: frames share its `sessionStorage`.
-     */
-    let KeepWatchedLive = (name = null, path = WatchedLivePath()) => {
-        if(top != window)
-            return;
-
-        let changed = (WATCHED_LIVE ?? null) !== (name ?? null) || (WATCHED_LIVE_PATH ?? null) !== (name? path: null);
-
-        WATCHED_LIVE = name ?? void null;
-        WATCHED_LIVE_PATH = name? path: void null;
-
-        try {
-            if(name)
-                sessionStorage.setItem('ttv-tools:watched-live', JSON.stringify({ name, path }));
-            else
-                sessionStorage.removeItem('ttv-tools:watched-live');
-        } catch(error) {
-            // No storage: the background's copy still counts
-        }
-
-        if(changed)
-            try {
-                Runtime.sendMessage({ action: 'WATCHED_LIVE', name: (name? { name, path }: null) }, () => void Runtime.lastError);
-            } catch(error) {
-                // The extension was reloaded: this page is about to be respawned
-            }
-    };
-
-    if(top == window) {
-        let kept = {};
-
-        try {
-            kept = JSON.parse(sessionStorage.getItem('ttv-tools:watched-live') ?? '{}') ?? {};
-        } catch(error) {
-            // No storage
-        }
-
-        if(kept.name && kept.path == WatchedLivePath())
-            WATCHED_LIVE = kept.name, WATCHED_LIVE_PATH = kept.path;
-        else if(kept.name)
-            // This tab is on another page now: forget it here and in the background
-            try {
-                sessionStorage.removeItem('ttv-tools:watched-live');
-                Runtime.sendMessage({ action: 'WATCHED_LIVE', name: null }, () => void Runtime.lastError);
-            } catch(error) {
-                // No storage, or the extension was reloaded
-            }
-        else
-            // Nothing kept in this tab: a respawned tab gets its old tab's channel from the background
-            try {
-                Runtime.sendMessage({ action: 'WATCHED_LIVE' }, saved => {
-                    void Runtime.lastError;
-
-                    if(nullish(WATCHED_LIVE) && saved?.name)
-                        if(saved.path == WatchedLivePath())
-                            KeepWatchedLive(saved.name, saved.path);
-                        else
-                            Runtime.sendMessage({ action: 'WATCHED_LIVE', name: null }, () => void Runtime.lastError);
-                });
-            } catch(error) {
-                // The extension was reloaded
-            }
-    }
+    let ClearIntent;
 
     let twitch_pathnames = [
         USERNAME,
@@ -13147,23 +13073,14 @@ let Initialize = async(START_OVER = false) => {
 
         try {
             await Cache.load('UserIntent', async({ UserIntent }) => {
-                // `reserved_twitch_pathnames` was built from a copy of TWITCH_PATHNAMES, so pushing here never
-                // counted; remember the intent and check it below (#50, #82)
                 if(parseBool(UserIntent))
-                    TWITCH_PATHNAMES.push(USER_INTENT = UserIntent);
+                    TWITCH_PATHNAMES.push(UserIntent);
 
                 Cache.remove('UserIntent');
             });
         } catch(error) {
             return StopWatch.stop('stay_live'), Cache.remove('UserIntent');
         }
-
-        // The tab moved on (Twitch changes pages without a reload)
-        if(defined(WATCHED_LIVE) && WATCHED_LIVE_PATH != WatchedLivePath())
-            KeepWatchedLive(null);
-
-        if(STREAMER.live && !(parseBool(Settings.stay_live__ignore_channel_reruns) && STREAMER.redo) && defined(STREAMER.name))
-            KeepWatchedLive(STREAMER.name);
 
         NotLive:
         if(false
@@ -13177,13 +13094,6 @@ let Initialize = async(START_OVER = false) => {
                 break NotLive;
 
             if(!RegExp(STREAMER?.name, 'i').test(PATHNAME))
-                break NotLive;
-
-            // Only move on when the stream ended while being watched, or the extension brought the viewer here; a
-            // channel the viewer opened while it was offline is theirs to look at (#50, #82)
-            let broughtHere = defined(parseURL(location).searchParameters?.tool);
-
-            if(USER_INTENT?.equals?.(STREAMER?.name) || !(WATCHED_LIVE?.equals?.(STREAMER?.name) || broughtHere))
                 break NotLive;
 
             if(defined(next)) {
