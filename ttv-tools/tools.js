@@ -13058,17 +13058,78 @@ let Initialize = async(START_OVER = false) => {
      */
     let ClearIntent,
         USER_INTENT,        // A channel the viewer chose themselves
-        WATCHED_LIVE;       // The channel seen live during this visit
+        WATCHED_LIVE,       // The channel seen live in this tab (its display name)
+        WATCHED_LIVE_PATH;  // ...and its path (`/name`'s name, lowercase)
 
-    // A reload of a dead page must not forget it (Stay Live would treat the channel as one the viewer opened); kept per
-    // tab, and only briefly, so it never moves the viewer off a channel they return to
-    try {
-        let { name, at } = JSON.parse(sessionStorage.getItem('ttv-tools:watched-live') ?? '{}');
+    let WatchedLivePath = () => (location.pathname.split('/')[1] ?? '').toLowerCase();
 
-        if(name && (+new Date - at) < 600_000)
-            WATCHED_LIVE = name;
-    } catch(error) {
-        // No storage: remember this visit only
+    /**
+     * Remembers (or, without a name, forgets) the channel this tab watched live. A reload keeps it (`sessionStorage`); a
+     * respawn is a new tab, so the background keeps a copy and hands it over: losing it (every tab respawns when the
+     * extension updates) made Stay Live treat every dead channel as one the viewer opened (#82). It's forgotten once the
+     * tab is on another page, so a channel the viewer comes back to later stays theirs to look at.
+     * Only the tab's own page keeps it: frames share its `sessionStorage`.
+     */
+    let KeepWatchedLive = (name = null, path = WatchedLivePath()) => {
+        if(top != window)
+            return;
+
+        let changed = (WATCHED_LIVE ?? null) !== (name ?? null) || (WATCHED_LIVE_PATH ?? null) !== (name? path: null);
+
+        WATCHED_LIVE = name ?? void null;
+        WATCHED_LIVE_PATH = name? path: void null;
+
+        try {
+            if(name)
+                sessionStorage.setItem('ttv-tools:watched-live', JSON.stringify({ name, path }));
+            else
+                sessionStorage.removeItem('ttv-tools:watched-live');
+        } catch(error) {
+            // No storage: the background's copy still counts
+        }
+
+        if(changed)
+            try {
+                Runtime.sendMessage({ action: 'WATCHED_LIVE', name: (name? { name, path }: null) }, () => void Runtime.lastError);
+            } catch(error) {
+                // The extension was reloaded: this page is about to be respawned
+            }
+    };
+
+    if(top == window) {
+        let kept = {};
+
+        try {
+            kept = JSON.parse(sessionStorage.getItem('ttv-tools:watched-live') ?? '{}') ?? {};
+        } catch(error) {
+            // No storage
+        }
+
+        if(kept.name && kept.path == WatchedLivePath())
+            WATCHED_LIVE = kept.name, WATCHED_LIVE_PATH = kept.path;
+        else if(kept.name)
+            // This tab is on another page now: forget it here and in the background
+            try {
+                sessionStorage.removeItem('ttv-tools:watched-live');
+                Runtime.sendMessage({ action: 'WATCHED_LIVE', name: null }, () => void Runtime.lastError);
+            } catch(error) {
+                // No storage, or the extension was reloaded
+            }
+        else
+            // Nothing kept in this tab: a respawned tab gets its old tab's channel from the background
+            try {
+                Runtime.sendMessage({ action: 'WATCHED_LIVE' }, saved => {
+                    void Runtime.lastError;
+
+                    if(nullish(WATCHED_LIVE) && saved?.name)
+                        if(saved.path == WatchedLivePath())
+                            KeepWatchedLive(saved.name, saved.path);
+                        else
+                            Runtime.sendMessage({ action: 'WATCHED_LIVE', name: null }, () => void Runtime.lastError);
+                });
+            } catch(error) {
+                // The extension was reloaded
+            }
     }
 
     let twitch_pathnames = [
@@ -13097,15 +13158,12 @@ let Initialize = async(START_OVER = false) => {
             return StopWatch.stop('stay_live'), Cache.remove('UserIntent');
         }
 
-        if(STREAMER.live && !(parseBool(Settings.stay_live__ignore_channel_reruns) && STREAMER.redo)) {
-            WATCHED_LIVE = STREAMER.name;
+        // The tab moved on (Twitch changes pages without a reload)
+        if(defined(WATCHED_LIVE) && WATCHED_LIVE_PATH != WatchedLivePath())
+            KeepWatchedLive(null);
 
-            try {
-                sessionStorage.setItem('ttv-tools:watched-live', JSON.stringify({ name: WATCHED_LIVE, at: +new Date }));
-            } catch(error) {
-                // No storage: remember this visit only
-            }
-        }
+        if(STREAMER.live && !(parseBool(Settings.stay_live__ignore_channel_reruns) && STREAMER.redo) && defined(STREAMER.name))
+            KeepWatchedLive(STREAMER.name);
 
         NotLive:
         if(false

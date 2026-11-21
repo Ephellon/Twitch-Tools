@@ -180,6 +180,41 @@ const SHARED_DATA_KEYS = ['USERNAME', 'THEME', 'ANTITHEME', 'ACTIVITY'];
 const DEBUG_RECORDINGS = new Map;
 
 /**
+ * Stay Live: the channel each tab watched live, by tab ID. A respawned tab is a new tab (its `sessionStorage` is empty),
+ * so it gets its old tab's entry here; otherwise Stay Live treated every dead channel as one the viewer opened (#82)
+ * and never moved on. Kept in `storage.session` (when there is one), so a sleeping service worker keeps it too.
+ * @type {Map<number, string>}
+ */
+const WATCHED_LIVE_TABS = new Map;
+
+/**
+ * Loads the kept entries once (the service worker may have restarted).
+ * @simply WatchedLiveReady() → Promise~undefined
+ */
+function WatchedLiveReady() {
+    return WatchedLiveReady.promise ??= Promise.resolve(Container.storage?.session?.get?.('WatchedLiveTabs'))
+        .then(({ WatchedLiveTabs = [] } = {}) => {
+            for(let [id, name] of WatchedLiveTabs)
+                if(!WATCHED_LIVE_TABS.has(id))
+                    WATCHED_LIVE_TABS.set(id, name);
+        })
+        .catch(() => {});
+}
+
+/**
+ * Sets (or, without a name, removes) a tab's watched-live channel.
+ * @simply KeepWatchedLive(id:number, name:string?) → undefined
+ */
+function KeepWatchedLive(id, name = null) {
+    if(name)
+        WATCHED_LIVE_TABS.set(id, name);
+    else if(!WATCHED_LIVE_TABS.delete(id))
+        return;
+
+    Promise.resolve(Container.storage?.session?.set?.({ WatchedLiveTabs: [...WATCHED_LIVE_TABS] })).catch(() => {});
+}
+
+/**
  * Reloads the specified tab.
  * @simply ReloadTab(tab:object<Tab>, onlineOnly:boolean?, forced:boolean?) → undefined
  *
@@ -259,6 +294,12 @@ function RemoveTab(tab, duplicateTab = false, forced = true) {
                 kept.events.push({ t: Date.now(), type: 'respawn', from: tab.id, forced });
                 DEBUG_RECORDINGS.set(_.id, kept);
             }
+
+            // Stay Live: the new tab watched what this one did
+            WatchedLiveReady().then(() => {
+                if(WATCHED_LIVE_TABS.has(tab.id))
+                    KeepWatchedLive(_.id, WATCHED_LIVE_TABS.get(tab.id));
+            });
 
             // The new tab replaces this one: Up Next stays with it, instead of going to whichever tab claims first (#68)
             Storage.get(['UP_NEXT_OWNER'], ({ UP_NEXT_OWNER = null }) => {
@@ -820,6 +861,23 @@ Runtime.onMessage.addListener((request, sender, respond) => {
             respond(null);
         } break;
 
+        // Stay Live: `{ name }` sets the tab's watched-live channel (`name: null` forgets it); always answers with it
+        case 'WATCHED_LIVE': {
+            const id = sender.tab?.id;
+
+            if(nullish(id) || sender.frameId) {
+                respond(null);
+                break;
+            }
+
+            WatchedLiveReady().then(() => {
+                if('name' in request)
+                    KeepWatchedLive(id, request.name);
+
+                respond(WATCHED_LIVE_TABS.get(id) ?? null);
+            });
+        } break;
+
         case 'RESPAWN_THIS_TAB': {
             if(!request.meta?.isActive)
                 Container.tabs.get(sender.tab.id, tab => {
@@ -861,7 +919,10 @@ Runtime.onMessage.addListener((request, sender, respond) => {
 });
 
 // Debug Recording: a closed tab's log goes (after a while, so a respawn can pick it up first)
-Container.tabs.onRemoved.addListener(id => setTimeout(() => DEBUG_RECORDINGS.delete(id), 60_000));
+Container.tabs.onRemoved.addListener(id => setTimeout(() => {
+    DEBUG_RECORDINGS.delete(id);
+    WatchedLiveReady().then(() => KeepWatchedLive(id, null));
+}, 60_000));
 
 // Handle and manage dead or dying tabs
 let REPORTS = new Map,
