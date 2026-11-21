@@ -1802,7 +1802,7 @@ $('#sync-settings--upload-json-input').onchange = async event => {
 
     const [file] = files;
 
-    file.text().then(json => {
+    file.text().then(async json => {
         const data = JSON.parse(json);
 
         reading: for(let index = 0; index < usable_settings.length; ++index) {
@@ -1869,11 +1869,25 @@ $('#sync-settings--upload-json-input').onchange = async event => {
         }
 
         $.all('[data-rest-id]').map(e => { delete e.dataset.restId });
+
+        // Live Reminders join the ones already kept; each Twitch tab merges them in on its next load (see `Cache.load`)
+        if(data.LiveReminders__backup && typeof data.LiveReminders__backup == 'object') {
+            let { LiveReminders__backup = {} } = await Storage.get('LiveReminders__backup') ?? {};
+            let merged = { ...LiveReminders__backup, ...data.LiveReminders__backup };
+
+            await Storage.set({ LiveReminders__backup: merged, LIVE_REMINDERS: Object.keys(merged) });
+        }
+
+        // SaveSettings() skips fields whose value fails the field's own checks (range, step, pattern)
+        let skipped = Object.keys(data).filter(id => $(`#${ id }:invalid`)).map(depadName);
+
+        await SaveSettings();
+
+        PostSyncStatus(`Restored and saved "${ file.name }".${ skipped.length? ` Not saved (invalid values): ${ skipped.join(', ') }.`: '' }`);
     }).catch(e => {
         $warn(e);
-        PostSyncStatus(`Failed to parse JSON file. See the console for more information.`);
+        PostSyncStatus(`Failed to restore "${ file.name }": ${ e?.message ?? e }`);
     }).finally(() => {
-        // SaveSettings();
         currentTarget.nextElementSibling.classList.remove('spin');
     });
 };
@@ -1989,14 +2003,20 @@ $('#sync-settings--download-json').onmouseup = async event => {
         settings[ID] = value;
     }
 
+    // Live Reminders aren't a form field: their copy in the extension's storage goes along (see `Cache.save`)
+    let { LiveReminders__backup } = await Storage.get('LiveReminders__backup') ?? {};
+
+    if(LiveReminders__backup && typeof LiveReminders__backup == 'object')
+        settings.LiveReminders__backup = LiveReminders__backup;
+
     try {
         PostSyncStatus('Making file...');
 
+        // URI-encoded, not `btoa`: that throws on any character outside Latin-1 (e.g. a rule in another script)
         const j = JSON.stringify(settings);
-        const b = btoa(j);
         const a = furnish('a', {
             download: `TTV Settings.json`,
-            href: `data:application/json;base64,${ b }`,
+            href: `data:application/json;charset=utf-8,${ encodeURIComponent(j) }`,
         }, `Download Settings`);
 
         document.head.appendChild(a);

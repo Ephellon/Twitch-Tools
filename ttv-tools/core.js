@@ -1963,6 +1963,20 @@ Object.defineProperties(fetchURL, {
                 Cache.large.load(DB_KEY, cache => {
                     for(let [org, map] of (cache?.[DB_KEY] ?? []))
                         fetchURL.persistentCache.set(org, map);
+
+                    // Store catalogs moved to the HTTP cache; drop copies older builds kept here (~50 MB)
+                    let stale = fetchURL.persistentCache.get('https://raw.githubusercontent.com'), dropped = 0;
+
+                    for(let fullpath of [...(stale?.keys() ?? [])])
+                        if(fullpath.startsWith('/Ephellon/game-store-catalog/'))
+                            stale.delete(fullpath), ++dropped;
+
+                    if(dropped) {
+                        if(stale.size < 1)
+                            fetchURL.persistentCache.delete('https://raw.githubusercontent.com');
+
+                        Cache.large.save({ [DB_KEY]: fetchURL.persistentCache });
+                    }
                 });
 
                 // Clean the DataBase periodically...
@@ -2254,6 +2268,11 @@ let Cache = window.Cache = {
         for(let key in properties)
             set(key, JSON.stringify(properties[key]));
 
+        // Live Reminders live in twitch.tv's localStorage, which the Settings page can't read: keep a copy in the
+        // extension's storage so Export/Restore carries them (and a new browser gets them back)
+        if('LiveReminders' in properties)
+            await window.Storage?.set?.({ LiveReminders__backup: properties.LiveReminders ?? {} })?.catch?.($warn);
+
         if(typeof callback == 'function')
             callback();
     },
@@ -2293,6 +2312,22 @@ let Cache = window.Cache = {
                 for(let key in properties)
                     results[key] = get(key) ?? properties[key];
                 break;
+        }
+
+        // Reminders restored from a backup (Settings → Restore, or a new browser) join the ones this page knows
+        if('LiveReminders' in results) {
+            // Either copy may still be a JSON string (older saves); spreading a string would invent "0", "1", … entries
+            let asObject = value => {
+                if(typeof value == 'string')
+                    try { value = JSON.parse(value) } catch(error) { return null }
+
+                return (value && typeof value == 'object' && !Array.isArray(value))? value: null;
+            };
+
+            let backup = asObject((await window.Storage?.get?.('LiveReminders__backup'))?.LiveReminders__backup);
+
+            if(backup)
+                results.LiveReminders = { ...backup, ...(asObject(results.LiveReminders) ?? {}) };
         }
 
         if(typeof callback == 'function')

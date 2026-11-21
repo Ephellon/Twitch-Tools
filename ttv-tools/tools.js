@@ -3754,7 +3754,7 @@ async function update() {
                         let parent = $(`[id*="side"i][id*="nav"i] .side-nav-section [href$="${ pathname }"i]`);
 
                         if(nullish(parent))
-                            return false;
+                            return UnlistedLive(pathname);
 
                         let live = defined(parent)
                             && $.nullish(`[class*="--offline"i]`, parent);
@@ -3792,7 +3792,7 @@ async function update() {
                         let parent = $(`[id*="side"i][id*="nav"i] .side-nav-section[aria-label][tt-svg-label="followed"i] [href$="${ pathname }"i]`);
 
                         if(nullish(parent))
-                            return false;
+                            return UnlistedLive(pathname);
 
                         let live = defined(parent)
                             && $.nullish(`[class*="--offline"i]`, parent);
@@ -3979,6 +3979,48 @@ function WaitForLiveTime(job) {
             RestartJob(job, 'live_time');
     });
 }
+
+/**
+ * The live status of a channel that isn't listed right now (side nav collapsed, trimmed or scrolled). Unlisted isn't
+ * offline: use its Search result (which refreshes itself every 5 minutes), asked for once; `false` only until that answers.
+ * @simply UnlistedLive(pathname:string) → boolean
+ *
+ * @param  {string} pathname The channel's path (`/name`)
+ * @return {boolean}
+ */
+function UnlistedLive(pathname) {
+    let name = String(pathname).slice(1).toLowerCase();
+
+    if(!SEARCH_CACHE.has(name) && !(UnlistedLive.asked ??= new Set).has(name))
+        UnlistedLive.asked.add(name), new Search(name).catch($ignore);
+
+    return SEARCH_CACHE.get(name)?.live ?? false;
+}
+
+/**
+ * The left-hand navigation. Twitch re-renders it, so its state is read fresh and every change is checked (#42: a toggle
+ * captured earlier, or a one-time "was it open?" guess, could leave it collapsed).
+ */
+const SideNav = {
+    /** Whether the navigation is expanded */
+    get open() {
+        return $.defined('[data-a-target="side-nav-header-expanded"i], [data-a-target="side-nav-search-input"i]')
+            && $.nullish('[data-a-target="side-nav-header-collapsed"i]');
+    },
+
+    /**
+     * Expands or collapses the navigation, clicking its (freshly found) toggle until it reports the wanted state.
+     * @simply SideNav.set(open:boolean) → Promise~boolean
+     */
+    async set(open) {
+        for(let tries = 0; tries < 3 && this.open != open; ++tries) {
+            $('[data-a-target="side-nav-arrow"i]')?.click();
+            await wait(250);
+        }
+
+        return this.open == open;
+    },
+};
 
 /**
  * Intializes the extension
@@ -4395,7 +4437,7 @@ let Initialize = async(START_OVER = false) => {
                             let parent = $(`.search-tray [href$="${ pathname }"i]:not([href*="/search?"])`);
 
                             if(nullish(parent))
-                                return false;
+                                return UnlistedLive(pathname);
 
                             let live = $.defined(`[data-test-selector="live-badge"i]`, parent);
 
@@ -5164,15 +5206,12 @@ let Initialize = async(START_OVER = false) => {
 
         let element, max_show_more = 10, max_show_less = 10, max_panel_size = 10;
 
-        // Is the nav open?
-        let alreadyOpen = $.defined('[data-a-target="side-nav-search-input"i], [data-a-target="side-nav-header-expanded"i]'),
-            sidenav = $('[data-a-target="side-nav-arrow"i]');
+        // Open the Side Nav (only if it isn't already), and remember how it was
+        let alreadyOpen = SideNav.open;
 
-        // Open the Side Nav
-        // Only open it if it isn't already
         if(!alreadyOpen && !SIDENAV_OPENED_ONCE) {
             SIDENAV_OPENED_ONCE = true;
-            sidenav?.click();
+            await SideNav.set(true);
         }
 
         // Click "show more" as many times as possible
@@ -5210,7 +5249,7 @@ let Initialize = async(START_OVER = false) => {
                                 let parent = $(`[id*="side"i][id*="nav"i] .side-nav-section [href$="${ pathname }"i]`);
 
                                 if(nullish(parent))
-                                    return false;
+                                    return UnlistedLive(pathname);
 
                                 // The "is it offline" result
                                 let live = defined(parent) && $.nullish(`[class*="--offline"i]`, parent);
@@ -5255,7 +5294,7 @@ let Initialize = async(START_OVER = false) => {
                                 let parent = $(`[id*="side"i][id*="nav"i] .side-nav-section [href$="${ pathname }"i]`);
 
                                 if(nullish(parent))
-                                    return false;
+                                    return UnlistedLive(pathname);
 
                                 let live = defined(parent) && $.nullish(`[class*="--offline"i]`, parent);
 
@@ -5296,7 +5335,7 @@ let Initialize = async(START_OVER = false) => {
                                 let parent = $(`[id*="side"i][id*="nav"i] .side-nav-section[aria-label][tt-svg-label="followed"i] [href$="${ pathname }"i]`);
 
                                 if(nullish(parent))
-                                    return false;
+                                    return UnlistedLive(pathname);
 
                                 let live = defined(parent) && $.nullish(`[class*="--offline"i]`, parent);
 
@@ -5336,7 +5375,7 @@ let Initialize = async(START_OVER = false) => {
 
         // Close the Side Nav
         if(!alreadyOpen && SIDENAV_OPENED_ONCE) // Only close it if it wasn't open in the first place
-            wait().then(() => sidenav?.click());
+            wait().then(() => SideNav.set(false));
     }
 
     // Every channel
@@ -9999,18 +10038,9 @@ let Initialize = async(START_OVER = false) => {
             FOLLOWED_RERENDERED_AT = location.pathname;
 
             wait(3000).then(() => {
-                // Is the nav open?
-                let alreadyOpen = $.defined('[data-a-target="side-nav-search-input"i], [data-a-target="side-nav-header-expanded"i]'),
-                    sidenav = $('[data-a-target="side-nav-arrow"i]')
-                        ?.closest('[class*="expand"i]')
-                        ?.querySelector('button');
-
-                // Toggle the Side Nav
-                if(alreadyOpen) {
-                    sidenav?.click();
-
-                    wait(1e3).then(() => sidenav?.click());
-                }
+                // Collapse and re-expand an open Side Nav so Twitch re-renders the followed channels (read fresh: #42)
+                if(SideNav.open)
+                    SideNav.set(false).then(() => wait(1e3)).then(() => SideNav.set(true));
 
                 if($.nullish('[id*="side"i][id*="nav"i] .side-nav-section:is([tt-svg-label="followed"i], [aria-label*="followed"i]) a[class*="side-nav-card"i]'))
                     return;
@@ -10412,7 +10442,8 @@ let Initialize = async(START_OVER = false) => {
                 let [title, description, image] = ["title", "description", "image"].map(get),
                     error = DOM.querySelector('parsererror')?.textContent;
 
-                let ok = $.defined('meta[property="og:image"i]');
+                // The fetched game page's metadata, not Twitch's own page: checking the page threw every time, so the card was never placed and the game page was re-fetched every 5s
+                let ok = defined(DOM.querySelector('meta[property="og:image"i]'));
 
                 if(!ok)
                     throw `No metadata available for "${ STREAMER.game }"`;
@@ -10596,7 +10627,7 @@ let Initialize = async(START_OVER = false) => {
                  */
                 Steam: if(parseBool(Settings.store_integration__steam)) {
                     async function fetchSteamGame(game) {
-                        return fetchURL.fromDisk(`https://raw.githubusercontent.com/Ephellon/game-store-catalog/main/steam/${ (game[0].toLowerCase().replace(/[^a-z]/, '_')) }.json`, { hoursUntilEntryExpires: 168 })
+                        return fetchURL(`https://raw.githubusercontent.com/Ephellon/game-store-catalog/main/steam/${ (game[0].toLowerCase().replace(/[^a-z]/, '_')) }.json`)
                             .then(r => r.json())
                             .then(data => {
                                 let [best, ...othr] = data.sort((prev, next) =>
@@ -10812,7 +10843,7 @@ let Initialize = async(START_OVER = false) => {
                  */
                 PlayStation: if(parseBool(Settings.store_integration__playstation)) {
                     async function fetchPlayStationGame(game, index = 1, pages = 1) {
-                        return fetchURL.fromDisk(`https://raw.githubusercontent.com/Ephellon/game-store-catalog/main/psn/${ (game[0].toLowerCase().replace(/[^a-z]/, '_')) }.json`, { hoursUntilEntryExpires: 168 })
+                        return fetchURL(`https://raw.githubusercontent.com/Ephellon/game-store-catalog/main/psn/${ (game[0].toLowerCase().replace(/[^a-z]/, '_')) }.json`)
                             .then(r => r.json())
                             .then(data => {
                                 let [best, ...othr] = data.sort((prev, next) =>
@@ -11106,7 +11137,7 @@ let Initialize = async(START_OVER = false) => {
                  */
                 Xbox: if(parseBool(Settings.store_integration__xbox)) {
                     async function fetchXboxGame(game) {
-                        return fetchURL.fromDisk(`https://raw.githubusercontent.com/Ephellon/game-store-catalog/main/xbox/${ (game[0].toLowerCase().replace(/[^a-z]/, '_')) }.json`, { hoursUntilEntryExpires: 168 })
+                        return fetchURL(`https://raw.githubusercontent.com/Ephellon/game-store-catalog/main/xbox/${ (game[0].toLowerCase().replace(/[^a-z]/, '_')) }.json`)
                             .then(r => r.json())
                             .then(data => {
                                 let [best, ...othr] = data.sort((prev, next) =>
@@ -11464,7 +11495,7 @@ let Initialize = async(START_OVER = false) => {
                  */
                 Nintendo: if(parseBool(Settings.store_integration__nintendo)) {
                     async function fetchNintendoGame(game) {
-                        return fetchURL.fromDisk(`https://raw.githubusercontent.com/Ephellon/game-store-catalog/main/nintendo/${ (game[0].toLowerCase().replace(/[^a-z]/, '_')) }.json`, { hoursUntilEntryExpires: 168 })
+                        return fetchURL(`https://raw.githubusercontent.com/Ephellon/game-store-catalog/main/nintendo/${ (game[0].toLowerCase().replace(/[^a-z]/, '_')) }.json`)
                             .then(r => r.json())
                             .then(data => {
                                 let [best, ...othr] = data.sort((prev, next) =>
@@ -11826,7 +11857,7 @@ let Initialize = async(START_OVER = false) => {
                  */
                 Epic: if(parseBool(Settings.store_integration__epic)) {
                     async function fetchEpicGame(game) {
-                        return fetchURL.fromDisk(`https://raw.githubusercontent.com/Ephellon/game-store-catalog/main/epic/${ (game[0].toLowerCase().replace(/[^a-z]/, '_')) }.json`, { hoursUntilEntryExpires: 168 })
+                        return fetchURL(`https://raw.githubusercontent.com/Ephellon/game-store-catalog/main/epic/${ (game[0].toLowerCase().replace(/[^a-z]/, '_')) }.json`)
                             .then(r => r.json())
                             .then(data => {
                                 let [best, ...othr] = data.sort((prev, next) =>
@@ -19362,10 +19393,42 @@ if(top == window) {
                                     RestartJob(job, 'FAILED_TO_ACTIVATE');
 
                             if(parseBool(Settings.recover_pages)) {
+                                if(++RECOVERY_TRIALS <= 10)
+                                    return false;
+
                                 // A hidden page is throttled and loads slowly: reload it once it's seen, not in the background.
                                 // A channel's About/Schedule/Videos/Clips page has no stream for the features to load on: never reload it (#91)
-                                if(++RECOVERY_TRIALS > 10 && !document.hidden && !/^\/[^/]+\/(?:about|schedule|videos|clips)\b/i.test(location.pathname))
-                                    addReport(NOT_LOADED_CORRECTLY.map(fail => ({ [`fail-to-load-${ fail }`]: true })), true);
+                                if(document.hidden || /^\/[^/]+\/(?:about|schedule|videos|clips)\b/i.test(location.pathname))
+                                    return false;
+
+                                // Reload once per page every 5 minutes at most: a page that still can't load its features
+                                // after that reloaded forever (every check after the 10th). The jobs above keep restarting
+                                // until they load (e.g. once an offline channel goes live); only the reload waits
+                                let RELOADED = {};
+
+                                try {
+                                    RELOADED = JSON.parse(sessionStorage.getItem('ttv-tools:reinit-reload') || '{}');
+                                } catch(error) {
+                                    // No storage: allow the reload
+                                }
+
+                                if(RELOADED.path == location.pathname && (+new Date - RELOADED.at) < 300_000) {
+                                    if(!PAGE_IS_READY)
+                                        $warn(`Still not activated after a reload: ${ NOT_LOADED_CORRECTLY }. Retrying without reloading.`);
+
+                                    PAGE_IS_READY = true;
+
+                                    return false;
+                                }
+
+                                try {
+                                    sessionStorage.setItem('ttv-tools:reinit-reload', JSON.stringify({ path: location.pathname, at: +new Date }));
+                                } catch(error) {
+                                    // No storage
+                                }
+
+                                addReport(NOT_LOADED_CORRECTLY.map(fail => ({ [`fail-to-load-${ fail }`]: true })), true);
+
                                 return false;
                             }
 
