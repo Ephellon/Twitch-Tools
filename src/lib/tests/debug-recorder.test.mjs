@@ -4,7 +4,7 @@
 
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { DebugLog, MASK, browserName, buildRecording, describeElement, isSensitive, logLine, maskSetting, maskText, mergeHistory, sensitiveTerms } from '../debug-recorder.js';
+import { DebugLog, MASK, browserName, buildRecording, checkRecording, describeElement, isSensitive, keyId, logLine, maskSetting, maskText, mergeHistory, recordingPage, sensitiveTerms, signedText } from '../debug-recorder.js';
 
 /** A small stand-in for an element: a tag, attributes, a parent, and the selectors it sits inside */
 const element = (tag, { attrs = {}, text = '', parent = null, inside = [] } = {}) => ({
@@ -111,7 +111,7 @@ test('buildRecording makes one page that can\'t be broken by what it holds', () 
     });
 
     assert.match(html, /^<!doctype html>/);
-    assert.equal(html.match(/<\/script>/g).length, 2);
+    assert.equal(html.match(/<\/script>/g).length, 3);
     assert.ok(!html.includes('<b>x</b>'));
     assert.ok(html.includes('\\u003c/script>'));
 });
@@ -165,4 +165,35 @@ test('logLine hides rule words only as whole words', () => {
     assert.equal(logLine(['The following did not activate properly: away_mode'], 300, ['mod']), 'The following did not activate properly: away_mode');
     assert.equal(logLine(['user matches: mod'], 300, ['mod']), `user matches: ${ MASK.repeat(3) }`);
     assert.equal(logLine(['a.b (x)'], 300, ['a.b']), `${ MASK.repeat(3) } (x)`);
+});
+
+test('checkRecording: a signed file checks out; a changed log, a changed page or a forged page don\'t', async() => {
+    const pair = await crypto.subtle.generateKey({ name: 'ECDSA', namedCurve: 'P-256' }, false, ['sign', 'verify'])
+        , { x, y } = await crypto.subtle.exportKey('jwk', pair.publicKey)
+        , recording = { meta: { version: '6.1', channel: 'x', browser: 'Chrome/1' }, events: [{ t: 1, type: 'log', text: 'hi' }] }
+        , unsigned = buildRecording(recording)
+        , text = await signedText(recordingPage(unsigned))
+        , sig = btoa(String.fromCharCode(...new Uint8Array(await crypto.subtle.sign({ name: 'ECDSA', hash: 'SHA-256' }, pair.privateKey, new TextEncoder().encode(text)))))
+        , signed = buildRecording(recording, JSON.stringify({ v: 1, alg: 'ES256', key: { x, y }, sig }));
+
+    const good = await checkRecording(signed);
+    assert.equal(good.page && good.signed && good.valid, true);
+    assert.equal(good.key, await keyId({ x, y }));
+    assert.equal(good.meta.channel, 'x');
+
+    // v5 indents the page: still the same page
+    assert.equal((await checkRecording(signed.split('\n').map(line => `        ${ line }`).join('\n'))).valid, true);
+
+    // A changed log
+    const edited = await checkRecording(signed.replace('"hi"', '"ho"'));
+    assert.equal(edited.page && edited.signed && !edited.valid, true);
+
+    // A changed page (a script added), or a raw `<` slipped into the log
+    assert.equal((await checkRecording(signed.replace('</body>', '<script>alert(1)</script></body>'))).page, false);
+    assert.equal((await checkRecording(signed.replace('"hi"', '"<!--<script>"'))).page, false);
+
+    // Unsigned, and older pages
+    const plain = await checkRecording(unsigned);
+    assert.equal(plain.page && !plain.signed, true);
+    assert.equal((await checkRecording('<html>nope</html>')).page, false);
 });

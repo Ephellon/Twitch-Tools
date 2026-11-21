@@ -7,7 +7,7 @@
  */
 
 import { plugin } from '../../lib/plugins.js';
-import { DebugLog, browserName, buildRecording, describeElement, logLine, maskSetting, mergeHistory, sensitiveTerms } from '../../lib/debug-recorder.js';
+import { DebugLog, browserName, buildRecording, describeElement, logLine, maskSetting, mergeHistory, recordingPage, sensitiveTerms, signedText } from '../../lib/debug-recorder.js';
 
 const STORE_KEY = 'ttv-debug-recording';
 const LOG_LEVELS = ['$log', '$warn', '$error', '$remark', '$notice'];
@@ -94,17 +94,44 @@ function share(message = {}, callback) {
 }
 
 /**
- * Downloads the log as an `.html` file.
- * @simply saveRecording() → undefined
+ * Signs a built recording in the background (see "Signing" in lib/debug-recorder.js). The file is saved unsigned if
+ * that fails or takes over 5s.
+ * @simply signRecording(html:string) → Promise~string?
  */
-function saveRecording() {
+async function signRecording(html) {
+    try {
+        const text = await signedText(recordingPage(html))
+            , answer = await Promise.race([
+                new Promise(resolve => Runtime.sendMessage({ action: 'SIGN_RECORDING', text }, answer => resolve(void Runtime.lastError ?? answer))),
+                new Promise(resolve => setTimeout(resolve, 5000, null)),
+            ]);
+
+        if(answer?.signature)
+            return JSON.stringify(answer.signature);
+
+        $warn('Debug Recording: the file is saved unsigned', answer?.error ?? 'no answer from the background');
+    } catch(error) {
+        $warn('Debug Recording: the file is saved unsigned', error);
+    }
+
+    return null;
+}
+
+/**
+ * Downloads the log as a signed `.html` file.
+ * @simply saveRecording() → Promise~undefined
+ */
+async function saveRecording() {
     if(!RECORDER)
         return;
 
     const { log } = RECORDER
         , saved = Date.now()
         , channel = STREAMER?.name ?? pagePath().split('/')[1] ?? 'twitch'
-        , html = buildRecording({ meta: { ...log.meta, channel, saved }, events: log.events })
+        , recording = { meta: { ...log.meta, channel, saved }, events: [...log.events] }
+        , unsigned = buildRecording(recording)
+        , signature = await signRecording(unsigned)
+        , html = signature ? buildRecording(recording, signature) : unsigned
         , link = document.createElement('a')
         , local = new Date(saved - new Date(saved).getTimezoneOffset() * 60_000)
         , stamp = local.toISOString().replace(/\.\d+Z$/, '').replace(/:/g, '-');
@@ -115,7 +142,7 @@ function saveRecording() {
 
     setTimeout(() => URL.revokeObjectURL(link.href), 10_000);
 
-    alert.timed?.(`Debug recording saved (${ log.events.length } events).`, 5000);
+    alert.timed?.(`Debug recording saved (${ recording.events.length } events${ signature ? ', signed' : ', not signed' }).`, 5000);
 }
 
 /**

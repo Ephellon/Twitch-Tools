@@ -328,19 +328,31 @@ export function browserName(agent = '') {
 }
 
 /**
+ * The recording's title (on the page and its tab).
+ * @simply recordingTitle(meta:object) → string<HTML>
+ *
+ * @param  {object} meta About the recording
+ * @return {string}
+ */
+export function recordingTitle(meta = {}) {
+    return `TTV Tools debug recording${ meta.channel ? ` — ${ meta.channel }` : '' }`.replace(/[<>&"]/g, c => `&#${ c.charCodeAt(0) };`);
+}
+
+/**
  * Builds the `.html` file: the log, and a small page that shows it as a timeline with filters. It works offline, with
  * nothing loaded from elsewhere.
- * @simply buildRecording(recording:object) → string<HTML>
+ * @simply buildRecording(recording:object, signature:string?) → string<HTML>
  *
  * @param  {object} recording        From `DebugLog#toJSON()`
  * @param  {object} recording.meta   About the recording
  * @param  {Array}  recording.events The events, oldest first
+ * @param  {string} [signature]      Its signature (JSON; see "Signing" below), or none
  * @return {string}
  */
-export function buildRecording({ meta = {}, events = [] }) {
+export function buildRecording({ meta = {}, events = [] }, signature = '') {
     // `<` can't end the script early once escaped
     const data = JSON.stringify({ meta, events }).replace(/</g, '\\u003c').replace(/\u2028/g, '\\u2028').replace(/\u2029/g, '\\u2029');
-    const title = `TTV Tools debug recording${ meta.channel ? ` — ${ meta.channel }` : '' }`.replace(/[<>&"]/g, (c, $$, $_) => `&#${ c.charCodeAt(0) };`);
+    const title = recordingTitle(meta);
 
     return `<!doctype html>
 <html lang=en>
@@ -381,12 +393,14 @@ tr[data-type=load] td, tr[data-type=unload] td, tr[data-type=respawn] td { font-
 <header>
 <h1>${ title }</h1>
 <div class=meta id=meta></div>
+<div class=meta>To check that this is a real TTV Tools recording: TTV Tools Settings → Troubleshooting → Debug Recording → Check a file.</div>
 </header>
 <div id=strip title="Video status over time"></div>
 <div class=legend><span><i style="background:var(--live)"></i>live</span><span><i style="background:var(--rerun)"></i>rerun</span><span><i style="background:var(--offline)"></i>offline</span><span><i style="background:var(--ad)"></i>ad</span><span><i style="background:var(--none)"></i>no video</span></div>
 <div id=controls><input id=search type=search placeholder="Filter (text)"><span id=types></span></div>
 <div class=wrap><table><tbody id=rows></tbody></table></div>
 <script type="application/json" id=data>${ data }</script>
+<script type="application/json" id=signature>${ String(signature).replace(/</g, '') }</script>
 <script>
 (() => {
     const { meta, events } = JSON.parse(document.getElementById('data').textContent);
@@ -457,4 +471,162 @@ tr[data-type=load] td, tr[data-type=unload] td, tr[data-type=respawn] td { font-
 </body>
 </html>
 `;
+}
+
+/*** Signing
+ * A saved recording is signed, so a received file can be checked (Settings → Debug Recording → Check a file) without
+ * opening it. TTV Tools is open source, so no key in it is secret: a signature can't prove that TTV made a file. It
+ * proves two things:
+ * - the page (everything but the log) is one TTV Tools builds, so the file runs only TTV's own code and is safe to open;
+ * - the log hasn't changed since it was saved, signed by a key made for (and kept in) that one browser profile.
+ */
+
+/** The format of what's signed */
+export const SIGNATURE_VERSION = 1;
+
+/**
+ * Recording pages TTV Tools built before (normalized; see `recordingPage`), as SHA-256 hex. The current page is always
+ * known; when `buildRecording`'s page changes, add the old page's hash here so older files still check out.
+ */
+export const KNOWN_PAGES = [
+    // Before signing (v5 5.35.5.51 – 5.35.6.14; v6 6.1 test builds)
+    '392751c21bf2c68d3f947369a997e8e5185c6594cd562f279bc09d7ea5ccb8ca',
+    '4456a60163520bb39e4c49b6dede067c011795ac9aeadb7fda22ca0072f2e0ac',
+    '74879b200b360435cc0c6ce3eee1873600358568ac4a6b87abc182f3237cf0cc',
+];
+
+const DATA_OPEN = '<script type="application/json" id=data>'
+    , SIGNATURE_OPEN = '<script type="application/json" id=signature>'
+    , SCRIPT_CLOSE = '</script>';
+
+/**
+ * A text's SHA-256, as hex.
+ * @simply sha256(text:string) → Promise~string
+ */
+export async function sha256(text = '') {
+    const digest = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(text));
+
+    return [...new Uint8Array(digest)].map(byte => byte.toString(16).padStart(2, '0')).join('');
+}
+
+/**
+ * Splits a recording into its log, its signature, and its page: everything else, with the log, the signature and the
+ * title blanked, and each line trimmed (v5 indents the page). `null` when it isn't laid out like a recording.
+ * @simply recordingPage(html:string) → object?
+ *
+ * @param  {string} html The file's text
+ * @return {{ data: string, signature: string, page: string, meta: object }?}
+ */
+export function recordingPage(html = '') {
+    const cut = (text, open) => {
+        const start = text.indexOf(open);
+
+        if(start < 0)
+            return null;
+
+        const end = text.indexOf(SCRIPT_CLOSE, start + open.length);
+
+        if(end < 0)
+            return null;
+
+        return { inner: text.slice(start + open.length, end), rest: text.slice(0, start + open.length) + text.slice(end) };
+    };
+
+    const data = cut(String(html), DATA_OPEN);
+
+    if(!data)
+        return null;
+
+    const signature = cut(data.rest, SIGNATURE_OPEN);
+
+    // Raw `<` in either part could change how a browser reads the page around it; TTV never writes one there
+    if(/</.test(data.inner) || /</.test(signature?.inner ?? ''))
+        return null;
+
+    let meta;
+
+    try {
+        ({ meta } = JSON.parse(data.inner));
+    } catch {
+        return null;
+    }
+
+    const title = recordingTitle(meta ?? {})
+        , page = (signature?.rest ?? data.rest)
+            .replace(`<title>${ title }</title>`, '<title></title>')
+            .replace(`<h1>${ title }</h1>`, '<h1></h1>')
+            .split('\n')
+            .map(line => line.trim())
+            .filter(line => line.length)
+            .join('\n');
+
+    return { data: data.inner, signature: signature?.inner ?? '', page, meta: meta ?? {} };
+}
+
+/**
+ * What a recording's signature signs: the format, its page's hash and its log's hash.
+ * @simply signedText(parts:object) → Promise~string
+ */
+export async function signedText({ data, page }) {
+    return `ttv-recording/${ SIGNATURE_VERSION }\n${ await sha256(page) }\n${ await sha256(data) }`;
+}
+
+/**
+ * A short, readable ID for a public key (the same key always gets the same ID).
+ * @simply keyId(key:object<JWK>) → Promise~string
+ */
+export async function keyId(key = {}) {
+    const hash = (await sha256(`${ key.x }.${ key.y }`)).slice(0, 8).toUpperCase();
+
+    return `${ hash.slice(0, 4) }-${ hash.slice(4) }`;
+}
+
+/**
+ * Checks a recording without opening it.
+ * @simply checkRecording(html:string) → Promise~object
+ *
+ * @param  {string} html The file's text
+ * @return {Promise<{ page: boolean, signed: boolean, valid: boolean, key: string?, meta: object?, reason: string? }>}
+ * `page`: the page is one TTV Tools builds (safe to open). `signed`: it carries a signature. `valid`: the signature
+ * matches its log and page. `key`: the signing key's ID.
+ */
+export async function checkRecording(html = '') {
+    const parts = recordingPage(html)
+        , result = { page: false, signed: false, valid: false, key: null, meta: parts?.meta ?? null, reason: null };
+
+    if(!parts)
+        return { ...result, reason: 'not a TTV Tools recording' };
+
+    const known = new Set([...KNOWN_PAGES, await sha256(recordingPage(buildRecording({ meta: {}, events: [] })).page)]);
+
+    result.page = known.has(await sha256(parts.page));
+
+    if(!result.page)
+        return { ...result, reason: 'its page was changed, or made by a newer TTV Tools' };
+
+    if(!parts.signature.trim())
+        return { ...result, reason: 'not signed (saved before signing was added, or signing failed)' };
+
+    try {
+        const { v, alg, key, sig } = JSON.parse(parts.signature);
+
+        result.signed = true;
+
+        if(v != SIGNATURE_VERSION || alg != 'ES256' || !key?.x || !key?.y || typeof sig != 'string')
+            return { ...result, reason: 'unknown signature format' };
+
+        result.key = await keyId(key);
+
+        const publicKey = await crypto.subtle.importKey('jwk', { kty: 'EC', crv: 'P-256', x: key.x, y: key.y, ext: true }, { name: 'ECDSA', namedCurve: 'P-256' }, false, ['verify'])
+            , bytes = Uint8Array.from(atob(sig), char => char.charCodeAt(0));
+
+        result.valid = await crypto.subtle.verify({ name: 'ECDSA', hash: 'SHA-256' }, publicKey, bytes, new TextEncoder().encode(await signedText(parts)));
+
+        if(!result.valid)
+            result.reason = 'the log was changed after it was saved';
+    } catch(error) {
+        result.reason = `the signature can't be read (${ error?.message ?? error })`;
+    }
+
+    return result;
 }
