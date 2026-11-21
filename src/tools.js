@@ -1558,6 +1558,57 @@ const SideNav = {
 };
 
 /**
+ * Whether the open channel's stream ended on this page. Twitch can swap the LIVE pill for OFFLINE and drop the video
+ * while the rest of the page still reads as live (owner report: waited 2 min, TTV still treated the channel as live).
+ * After 10s with no video on the page, the channel's own page is fetched again (every 30s at most) and read the way
+ * `Search` reads it: no live broadcast listed there means the stream ended. Unknown (no listing at all) isn't "ended".
+ * @simply StreamEnded(login:string) → boolean
+ *
+ * @param  {string} login The channel's name, as in its address
+ * @return {boolean}
+ */
+function StreamEnded(login) {
+    let name = String(login ?? '').toLowerCase(),
+        now = +new Date,
+        state = StreamEnded.state;
+
+    // A video is showing (or this isn't a channel): nothing ended. A new video (a rerun, the stream back) starts over
+    if(!/^\w+$/.test(name) || $.defined('video')) {
+        if(state?.name == name)
+            StreamEnded.state = null;
+
+        return false;
+    }
+
+    if(state?.name != name)
+        state = StreamEnded.state = { name, since: now, checked: 0, ended: false };
+
+    if(!state.ended && now - state.since >= 10_000 && now - state.checked >= 30_000) {
+        state.checked = now;
+
+        fetch(`/${ name }`, { cache: 'no-store' })
+            .then(response => response.ok? response.text(): Promise.reject(response.status))
+            .then(html => {
+                let doc = (new DOMParser).parseFromString(html, 'text/html'),
+                    data = doc.querySelector('head>script[type^="application"i][type$="json"i]')?.textContent;
+
+                if(!data || StreamEnded.state !== state)
+                    return;
+
+                let graph = JSON.parse(data)?.['@graph'] ?? [];
+
+                state.ended = !graph.some(item => parseBool(item?.publication?.isLiveBroadcast));
+
+                if(state.ended)
+                    $warn(`${ name }'s stream ended on this page (no video, and Twitch no longer lists it as live)`);
+            })
+            .catch(() => {});
+    }
+
+    return state.ended;
+}
+
+/**
  * The live status of a channel that isn't listed right now (side nav collapsed, trimmed or scrolled). Unlisted isn't offline:
  * use its Search result (which refreshes itself every 5 minutes), asked for once; `false` only until that answers.
  * @param {string} pathname - The channel's path (`/name`)
@@ -2345,6 +2396,7 @@ let Initialize = async(START_OVER = false) => {
                 `)
                 && $.nullish(`[class*="offline-recommendations"i], [data-test-selector="follow-panel-overlay"i]`)
                 && !looksOffline
+                && !StreamEnded(location.pathname.split('/')[1])
             );
         },
 
