@@ -102,7 +102,7 @@ async function signRecording(html) {
     try {
         const text = await signedText(recordingPage(html))
             , answer = await Promise.race([
-                new Promise(resolve => Runtime.sendMessage({ action: 'SIGN_RECORDING', text }, answer => resolve(void Runtime.lastError ?? answer))),
+                new Promise(resolve => Runtime.sendMessage({ action: 'SIGN_RECORDING', text }, answer => { void Runtime.lastError; resolve(answer); })),
                 new Promise(resolve => setTimeout(resolve, 5000, null)),
             ]);
 
