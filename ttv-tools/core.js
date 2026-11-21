@@ -2827,6 +2827,10 @@ __STATIC__: {
         if(JobReason?.unlike('default'))
             console.log(`Restarting job (${ JobName }): ${ JobReason }`);
 
+        // Not a job (no handler): nothing to restart
+        if(typeof Handlers[JobName] != 'function')
+            return;
+
         new Promise((resolve, reject) => {
             try {
                 if(Limbo.has(JobName))

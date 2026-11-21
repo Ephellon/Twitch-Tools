@@ -42,6 +42,7 @@
 ## Release History
 
 ### Version 5.35.\*
+- [`5.35.6.16`](https://github.com/Ephellon/Twitch-Tools/releases/tag/5.35.6.16) — No more "Job Handler for … is not function: received undefined" errors: turning a sub-option (e.g. Easy Lurk's) on or off no longer treats it as a feature to start, stop or restart
 - [`5.35.6.15`](https://github.com/Ephellon/Twitch-Tools/releases/tag/5.35.6.15) — Debug Recording: saved files are signed; Settings → Debug Recording → Check a file tells you, without opening a received file, whether it runs only TTV Tools' own code and whether its log was changed
 - [`5.35.6.14`](https://github.com/Ephellon/Twitch-Tools/releases/tag/5.35.6.14) — Settings: each group's settings are in alphabetical order
 - [`5.35.6.13`](https://github.com/Ephellon/Twitch-Tools/releases/tag/5.35.6.13) — Stay Live no longer stalls looking for the next channel (it waits 5s at most, and only once the stream has ended); Up Next drops the channel Stay Live just opened instead of counting down to it
