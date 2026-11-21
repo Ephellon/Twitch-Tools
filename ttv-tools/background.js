@@ -182,15 +182,21 @@ const DEBUG_RECORDINGS = new Map;
 /**
  * Max Watchtime: sends tabs with Up Next off to the marked channels that are live (see tools.js, "Max Watchtime").
  * Each live channel gets one tab for its stream: a channel already open in a tab keeps it; otherwise a random channel tab
- * that isn't the Up Next tab or already on a marked live channel goes. None free → nothing (the next check tries again).
+ * with Up Next off, not already on a marked live channel, goes. Up Next is off in a tab only when Up Next runs in one tab
+ * ("Up Next in one tab only": every tab but that one), or when Up Next is off altogether (every tab); otherwise every tab
+ * runs it and nothing moves. None free → nothing (the next check tries again).
  * First come, first served: channels are placed in the order they were first seen live. A channel that's no longer live
- * frees its place (its tab stays: Stay Live moves it on).
+ * frees its place (its tab stays: Stay Live moves it on). A tab that's gone frees its place too, and so does a tab that
+ * only happened to be on the channel once it leaves; a tab sent there that the viewer moves on is left alone.
  * @simply MaxWatchtime(live:array<{ name: string, href: string }>) → Promise~{ moved: array }
  */
 async function MaxWatchtime(live = []) {
-    const { MaxWatchtimeState = {}, UP_NEXT_OWNER = null } = await Storage.get(['MaxWatchtimeState', 'UP_NEXT_OWNER'])
+    const stored = await Storage.get(['MaxWatchtimeState', 'UP_NEXT_OWNER', 'up_next__one_instance', 'first_in_line', 'first_in_line_plus', 'first_in_line_all', 'first_in_line_now'])
+        , { MaxWatchtimeState = {}, UP_NEXT_OWNER = null } = stored
+        , upNext = ['first_in_line', 'first_in_line_plus', 'first_in_line_all', 'first_in_line_now'].some(key => stored[key] === true || stored[key] === 'true')
+        , oneTab = stored.up_next__one_instance === true || stored.up_next__one_instance === 'true'
         , before = JSON.stringify(MaxWatchtimeState)
-        , placed = { ...(MaxWatchtimeState.placed ?? {}) }
+        , placed = {}
         , names = live.map(channel => String(channel.name).toLowerCase())
         , moved = [];
 
@@ -200,10 +206,6 @@ async function MaxWatchtime(live = []) {
     for(const name of names)
         if(!order.includes(name))
             order.push(name);
-
-    for(const name in placed)
-        if(!names.includes(name))
-            delete placed[name];
 
     const tabs = await Container.tabs.query({ url: ['*://www.twitch.tv/*', '*://twitch.tv/*'] });
 
@@ -219,17 +221,36 @@ async function MaxWatchtime(live = []) {
         }
     };
 
+    // Kept places: `{ tab, sent }` (older builds kept the tab's ID alone)
+    for(const [name, kept] of Object.entries(MaxWatchtimeState.placed ?? {})) {
+        const place = (kept && typeof kept == 'object') ? kept : { tab: kept, sent: false }
+            , tab = tabs.find(tab => tab.id == place.tab);
+
+        if(names.includes(name) && tab && (place.sent || channelOf(tab) == name))
+            placed[name] = place;
+    }
+
     // A marked channel that's already open keeps that tab
-    for(const name of order)
-        placed[name] ??= tabs.find(tab => channelOf(tab) == name)?.id;
+    for(const name of order) {
+        const open = tabs.find(tab => channelOf(tab) == name);
+
+        if(nullish(placed[name]) && defined(open))
+            placed[name] = { tab: open.id, sent: false };
+    }
+
+    /**
+     * Whether a tab has Up Next off (see above).
+     * @simply upNextOff(tab:object<Tab>) → boolean
+     */
+    const upNextOff = tab => !upNext || (oneTab && defined(UP_NEXT_OWNER) && tab.id != UP_NEXT_OWNER);
 
     for(const name of order) {
         if(defined(placed[name]))
             continue;
 
-        const busy = new Set(Object.values(placed))
+        const busy = new Set(Object.values(placed).map(place => place.tab))
             , free = tabs.filter(tab => true
-                && tab.id != UP_NEXT_OWNER
+                && upNextOff(tab)
                 && !busy.has(tab.id)
                 && /^\w+$/.test(channelOf(tab))
                 && !RESERVED_TWITCH_PATHNAMES.has(channelOf(tab))
@@ -245,14 +266,10 @@ async function MaxWatchtime(live = []) {
         url.searchParams.set('tool', 'max-watchtime');
         await Container.tabs.update(tab.id, { url: url.href });
 
-        placed[name] = tab.id;
+        placed[name] = { tab: tab.id, sent: true };
         moved.push({ name, tab: tab.id });
         console.warn(`[MAX WATCHTIME] ${ name } is live: sent tab #${ tab.id } (${ tab.url }) to it`);
     }
-
-    for(const name in placed)
-        if(nullish(placed[name]))
-            delete placed[name];
 
     const MaxWatchtimeStateNow = { placed, order };
 

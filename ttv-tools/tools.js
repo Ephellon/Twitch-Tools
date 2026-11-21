@@ -5161,7 +5161,8 @@ let Initialize = async(START_OVER = false) => {
         get vods() {
             let { name, sole } = STREAMER;
 
-            if(Number.isNaN(sole))
+            // No channel ID (it can be unknown, not just NaN): Twitch's own page; twitchmetrics needs the ID ("/c/undefined-name")
+            if(!(sole > 0))
                 return fetchURL.fromDisk(`https://www.twitch.tv/${ name }/videos`, { hoursUntilEntryExpires: 1 })
                     .then(r => r.text())
                     .then(html => {
@@ -10071,8 +10072,9 @@ let Initialize = async(START_OVER = false) => {
      */
     let OLD_STREAMERS, NEW_STREAMERS, BAD_STREAMERS, ON_INSTALLED_REASON;
 
-    await Cache.load(['OLD_STREAMERS', 'BAD_STREAMERS'], cache => {
-        OLD_STREAMERS = cache.OLD_STREAMERS ?? "";
+    await Cache.load(['OLD_STREAMERS', 'OLD_STREAMERS_READ', 'BAD_STREAMERS'], cache => {
+        // Saved before the followed list could be read (5.35.6.19): not a baseline to compare with (see the burst check)
+        OLD_STREAMERS = (cache.OLD_STREAMERS_READ == 2)? (cache.OLD_STREAMERS ?? ""): null;
         BAD_STREAMERS = cache.BAD_STREAMERS ?? "";
     });
 
@@ -10086,10 +10088,7 @@ let Initialize = async(START_OVER = false) => {
 
         NEW_STREAMERS = streamers.join(',').toLowerCase();
 
-        if(nullish(OLD_STREAMERS))
-            OLD_STREAMERS = NEW_STREAMERS;
-
-        let old_names = OLD_STREAMERS.split(',').filter(defined),
+        let old_names = (OLD_STREAMERS ?? '').split(',').filter(defined),
             new_names = NEW_STREAMERS.split(',').filter(defined),
             bad_names = BAD_STREAMERS?.split(',')?.filter(defined)?.filter(parseBool);
 
@@ -10130,15 +10129,33 @@ let Initialize = async(START_OVER = false) => {
             return /* Fail "gracefully" */;
         }
 
+        // No baseline yet (the first read since 5.35.6.19): the first full list is it
+        if(nullish(OLD_STREAMERS)) {
+            if(STREAMERS.length < 1)
+                return StopWatch.stop('first_in_line_plus');
+
+            OLD_STREAMERS = NEW_STREAMERS;
+        }
+
         if(OLD_STREAMERS == NEW_STREAMERS)
-            return StopWatch.stop('first_in_line_plus'), Cache.save({ OLD_STREAMERS });
+            return StopWatch.stop('first_in_line_plus'), Cache.save({ OLD_STREAMERS, OLD_STREAMERS_READ: 2 });
 
         new_names = new_names
             .filter(name => old_names.missing(name))
             .filter(name => bad_names.missing(name));
 
+        // A burst isn't channels going live: it's the followed list read fresh (the side bar opening, "Show More"). Take it as
+        // the baseline instead of queuing every followed channel at once (5.35.5.49 froze pages that way)
+        if(new_names.length > 3) {
+            $warn(`[Up Next+] ${ new_names.length } followed channels appeared at once (the side bar was read fresh): not queued`);
+
+            new_names = [];
+        }
+
+        // Nothing new (a burst, or channels that went offline): the current list is the baseline, so a channel that comes back
+        // live is new again
         if(new_names.length < 1)
-            return StopWatch.stop('first_in_line_plus'), Cache.save({ OLD_STREAMERS });
+            return StopWatch.stop('first_in_line_plus'), Cache.save({ OLD_STREAMERS: OLD_STREAMERS = NEW_STREAMERS, OLD_STREAMERS_READ: 2 });
 
         // Try to detect if the extension was just re-installed?
         installation_viewer:
@@ -10180,7 +10197,7 @@ let Initialize = async(START_OVER = false) => {
 
         OLD_STREAMERS = NEW_STREAMERS;
 
-        Cache.save({ OLD_STREAMERS });
+        Cache.save({ OLD_STREAMERS, OLD_STREAMERS_READ: 2 });
 
         StopWatch.stop('first_in_line_plus');
     };
@@ -13190,7 +13207,9 @@ let Initialize = async(START_OVER = false) => {
 
                         goto(parseURL(next).addSearch({ obit, tool: 'stay-live--steal' }).href);
                     });
-            } else  {
+            } else if(Handlers.stay_live.alone != STREAMER?.name) {
+                // Once per channel: this ran every 3s
+                Handlers.stay_live.alone = STREAMER?.name;
                 $warn(`${ STREAMER?.name } is no longer live. There doesn't seem to be any followed channels on right now`, new Date);
             }
 
@@ -17285,10 +17304,12 @@ let Initialize = async(START_OVER = false) => {
         let action = $('[tt-action="max-watchtime"i]', actionPanel),
             dvr = $('[tt-action="auto-dvr"i]', actionPanel);
 
-        // Already there: keep it under DVR (DVR's button can come after it)
+        // Already there: keep it under DVR (DVR's button can come after it), or last without DVR
         if(defined(action)) {
             if(defined(dvr) && dvr.nextElementSibling != action)
                 dvr.after(action);
+            else if(nullish(dvr) && actionPanel.lastElementChild != action)
+                actionPanel.append(action);
 
             return StopWatch.stop('max_watchtime');
         }
@@ -20006,6 +20027,18 @@ if(top == window) {
                                     observer.observe(container, { attributes: true, subtree: true });
                                 });
                 }
+
+                // The followed section, by its header: its class isn't translated, and it's there whether the side bar is
+                // open or not (the icon match above fails in some browsers, and the open side bar has no icon to match).
+                // Twitch re-renders sections: keep checking
+                top.FOLLOWED_SECTION_LABELER ??= setInterval(() => {
+                    for(let header of $.all('[id*="side"i][id*="nav"i] .followed-side-nav-header')) {
+                        let container = header.closest('.side-nav-section[aria-label]');
+
+                        if(container && container.getAttribute('tt-svg-label') != 'followed')
+                            container.setAttribute('tt-svg-label', 'followed');
+                    }
+                }, 1000);
             }
 
             top.onlocationchange = () => {

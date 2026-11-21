@@ -25,7 +25,9 @@
     - Resolve "Up Next Owner" tab synchronization and URL mimicking.
     - The Pin list's unpinned names are hard to read (dark on dark); not reproduced in a live test, needs a screenshot and the theme used.
     - The Pin list can show a stream title (from a lookup) as a channel.
-    - The channel list (`ALL_CHANNELS`) can hold only a few channels and one without a name, so Pins can't tell which channels are live (the first pin is used even when offline) and show no avatars. Matching the full side bar's followed section (5.35.5.49) froze pages: every followed channel counted as newly live for Up Next+, so this needs a live-check that works in the full side bar first.
+    - The channel list (`ALL_CHANNELS`) can hold only a few channels and one without a name, so Pins can't tell which channels are live (the first pin is used even when offline) and show no avatars. (5.35.6.19 reads the followed channels in either side bar state; check whether this still happens.)
+    - The countdown keeps running on an empty queue after Stay Live empties it (cosmetic).
+    - "Show More" in the open side bar can make up to 3 already-live followed channels look newly live to Up Next+ (more than 3 at once are ignored).
 - [ ] **Performance:**
     - Fix background script stalls when tabs disappear.
     - Resolve memory leaks related to Hardware Acceleration and excessive iframes.
@@ -42,6 +44,7 @@
 ## Release History
 
 ### Version 5.35.\*
+- [`5.35.6.19`](https://github.com/Ephellon/Twitch-Tools/releases/tag/5.35.6.19) — Followed channels are read again in the open and the collapsed side bar (TTV saw none in some browsers, so Stay Live and Next Channel found nowhere to go); Up Next+ no longer queues every followed channel when the list is first read. Max Watchtime: never moves an Up Next tab, and a channel whose tab closed gets another. Stay Live says "no followed channels on" once, not every 3 seconds
 - [`5.35.6.18`](https://github.com/Ephellon/Twitch-Tools/releases/tag/5.35.6.18) — Added Max Watchtime: mark a channel with the button under DVR on its About panel; when it goes live, a tab with Up Next off goes to it right away and stays until the stream ends (first come, first served; with no such tab, nothing happens)
 - [`5.35.6.17`](https://github.com/Ephellon/Twitch-Tools/releases/tag/5.35.6.17) — A stream that ends while its page is open now reads as offline (the OFFLINE pill showed and the video was gone, but TTV still saw it as live): after 10 seconds without video, TTV asks Twitch again
 - [`5.35.6.16`](https://github.com/Ephellon/Twitch-Tools/releases/tag/5.35.6.16) — No more "Job Handler for … is not function: received undefined" errors: turning a sub-option (e.g. Easy Lurk's) on or off no longer treats it as a feature to start, stop or restart
