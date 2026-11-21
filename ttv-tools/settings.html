@@ -39,6 +39,194 @@
     <!-- Up Next & Channel Hopping -->
     <header id=group-up-next tr-id='header:up-next' subtitle='Keep watching without babysitting the page.'>Up Next &amp; Channel Hopping</header>
     <article>
+        <!-- Follows → follows,avenue,board,bulletin,bureau,button,cabinet,carrier,channels,charge,collectibles,commission,current,extras,flood,flow,follow,forum,group,handling,jury,knob,management,manipulation,means,medium,notice,notification,oversight,panel,plan,policy,proclamation,reminders,route,rush,spate,strategy,streams,surge,tab,task force,tide,torrent,transaction,treatment,tribunal,tributary,tunnel,warning -->
+        <section>
+            <div class=title tr-id=auto-follow><span small glyph=favorite></span> Auto-Follow</div>
+            <div class=summary>
+                <p tr-id>
+                    While watching a channel that is not followed, follow it automatically.
+                </p>
+
+                <div>
+                    <!-- EMPTY OFFSET -->
+                </div>
+
+                <details>
+                    <summary tr-id=options subtitle='Adjust options for &quot;Auto-Follow&quot;'>Options</summary>
+                    <div>
+                        <div class=radio>
+                            <input id=auto_follow_none type=radio name=auto-follow checked>
+                            <label tr-id='auto-follow:none' for=auto_follow_none>
+                                <h2>Disabled</h2>
+                                Do not use this feature
+                            </label>
+                        </div>
+
+                        <div class=radio>
+                            <input id=auto_follow_raids type=radio name=auto-follow>
+                            <label tr-id='auto-follow:raids' for=auto_follow_raids>
+                                <h2>Raids</h2>
+                                When participating in a raid, follow the channel being raided
+                            </label>
+                        </div>
+
+                        <div class=radio>
+                            <input id=auto_follow_time type=radio name=auto-follow>
+                            <label tr-id='auto-follow:time' for=auto_follow_time>
+                                <h2>Viewership</h2>
+                                After watching <span unit=min><input id=auto_follow_time_minutes type=number value=15 min=5 step=5></span> of content, follow the channel
+                            </label>
+                        </div>
+
+                        <div class=radio>
+                            <input id=auto_follow_all type=radio name=auto-follow>
+                            <label tr-id='auto-follow:all' for=auto_follow_all>
+                                <h2>Automatic</h2>
+                                Follow all channels automatically
+                            </label>
+                        </div>
+                    </div>
+                </details>
+            </div>
+        </section>
+
+        <!-- Auto-Join → audiences,auto join,celebration,congregation,crowd,current,dinner,flood,flow,gallery,gathering,market,ominous,parties,public,rush,spate,stream,surge,tide,timepiece,torrent,tributary,warning,watch,wristwatch -->
+        <section>
+            <div class=title tr-id=auto-join><span small glyph=mod></span> Auto-Join</div>
+            <div class=summary>
+                <div class=toggle>
+                    <input id=auto_accept_mature type=checkbox>
+                    <label for=auto_accept_mature></label>
+                </div>
+                <p tr-id>
+                    When presented with a warning that the stream is intended for <b warning-text>mature audiences</b>, proceed automatically.
+                </p>
+                <p tr-id>
+                    This will also join <a href='https://help.twitch.tv/s/article/watch-parties' top-tooltip='Watch Parties'>Watch Parties</a> automatically.
+                </p>
+            </div>
+        </section>
+
+        <!-- Next Channel → next channel,avenue,carrier,channel,current,flood,flow,means,medium,offline,route,rush,spate,stream,surge,tide,torrent,tributary,tunnel -->
+        <section new='4.1.8'>
+            <div class=title tr-id=next-channel-preference><span small glyph=favorite></span> Next Channel Pick</div>
+            <div class=summary>
+                <p tr-id>
+                    How should the next channel be chosen when <b>Up Next</b> is empty?
+                </p>
+                <p tr-id>
+                    <b warning-text>This only activates when the current stream goes offline</b>.
+                </p>
+                <select id=next_channel_preference>
+                    <option value=none tr-id='next-channel-preference:options'>Disabled</option>
+                    <option value=random tr-id selected>Go to a random channel</option>
+                    <option value=unpopular tr-id>Go with the least viewers</option>
+                    <option value=popular tr-id>Go with the most viewers</option>
+                    <option value=poor tr-id>Go with the least channel points</option>
+                    <option value=rich tr-id>Go with the most channel points</option>
+                    <option value=closest tr-id>Go with the closest to having all channel point rewards</option>
+                    <option value=furthest tr-id>Go with the furthest from having all channel point rewards</option>
+                </select>
+            </div>
+        </section>
+
+        <!-- Prevent Hosting → avenue,carrier,channels,charge,handling,management,manipulation,means,medium,oversight,plan,policy,route,strategy,transaction,treatment,tunnel -->
+        <section>
+            <div class=title tr-id=prevent-hosting><span small glyph=people></span> Prevent Hosting</div>
+            <div class=summary>
+                <p tr-id>
+                    Prevent certain or all channels from hosting by going to the <b>Next Channel</b>.
+                </p>
+                <select id=prevent_hosting>
+                    <option value=none selected tr-id='prevent-hosting:options'>Allow all channels to host</option>
+                    <option value=all tr-id>Prevent all channels from hosting</option>
+                    <option value=unfollowed tr-id>Prevent unfollowed channels from being hosted</option>
+                </select>
+            </div>
+        </section>
+
+        <!-- Prevent Raiding → arrest,assault,avenue,break in,capture,carrier,channels,charge,handling,incursion,invasion,management,manipulation,means,medium,onslaught,oversight,plan,policy,raiding,route,sortie,strategy,surprise attack,sweep,transaction,treatment,tunnel -->
+        <section new='4.12.11'>
+            <div class=title tr-id=prevent-raiding><span small glyph=people></span> Prevent Raiding</div>
+            <div class=summary>
+                <p tr-id>
+                    Prevent certain or all channels from raiding by going to the <b>Next Channel</b>.
+                </p>
+                <select id=prevent_raiding>
+                    <option value=none selected tr-id='prevent-raiding:options'>Allow all channels to raid</option>
+                    <option value=greed tr-id>Only raid to collect channel points</option>
+                    <option value=all tr-id>Prevent all channels from raiding</option>
+                    <option value=unfollowed tr-id>Prevent unfollowed channels from being raided</option>
+                </select>
+                <details>
+                    <summary tr-id=extras subtitle='Adjust settings for &quot;Prevent Raiding&quot;'>Extras</summary>
+                    <div>
+                        <div opt>
+                            <!-- Greedy Raiding -->
+                            <div class=title tr-id='@@greedy-raiding'>Greedy Raiding</div>
+                            <div class=summary>
+                                <div class=toggle>
+                                    <input id=greedy_raiding type=checkbox requires='#prevent_raiding'>
+                                    <label for=greedy_raiding></label>
+                                </div>
+                                <p tr-id>
+                                    Go to <b attention-text top-tooltip='Followed channels with Channel Points'>certain channels</b> when they begin a raid.
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                </details>
+            </div>
+        </section>
+
+        <!-- Stay Live → avenue,carrier,channel,current,deadline,edge,ends,flood,flow,holiday,means,medium,offline,point,route,rush,sojourn,spate,stay,stopover,streams,surge,term,tide,top,torrent,tributary,tributary,tunnel,vacation -->
+        <section new='4.5'>
+            <div class=title tr-id=stay-live><span small glyph=stream></span> Stay Live</div>
+            <div class=summary>
+                <div class=toggle>
+                    <input id=stay_live type=checkbox checked>
+                    <label for=stay_live></label>
+                </div>
+                <p tr-id>
+                    After the current stream ends, go to the <b>Next Channel</b>.
+                </p>
+                <details>
+                    <summary tr-id=extras subtitle='Adjust settings for &quot;Stay Live&quot;'>Extras</summary>
+                    <div>
+                        <div opt>
+                            <div class=title><span class=offline>Rerun</span> → <span class=offline>Offline</span></div>
+                            <div class=summary>
+                                <div class=toggle>
+                                    <input id=stay_live__ignore_channel_reruns type=checkbox requires='#stay_live'>
+                                    <label for=stay_live__ignore_channel_reruns></label>
+                                </div>
+                                <p tr-id='stay-live:vod-is-offline'>
+                                    Treat <a href='https://help.twitch.tv/s/article/video-on-demand#reruns' top-tooltip=Reruns>reruns</a> as offline streams.
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                </details>
+            </div>
+        </section>
+
+        <!-- Streak Saver → chain,keep,miss,missed,recover,rescue,save,streak,streaks,watch -->
+        <section new='5.35.5.11'>
+            <div class=title tr-id=streak-saver><span small glyph=fire></span> Streak Saver</div>
+            <div class=summary>
+                <div class=toggle>
+                    <input id=streak_saver type=checkbox>
+                    <label for=streak_saver></label>
+                </div>
+                <p tr-id>
+                    Lists the <b>Watch Streaks</b> you can still save in Up Next, each with a one-click <b>Save</b>.
+                </p>
+                <p tr-id>
+                    <b warning-text>Twitch needs a clip from the last day to save a streak; without one, watch the channel live.</b>
+                </p>
+            </div>
+        </section>
+
         <!-- First in Line / Up Next → first in line,avenue,blink,carrier,channel,current,flood,flow,flutter,jerk,jiggle,keep,keep reminders,live,live reminders,means,medium,route,rush,shudder,spate,stream,surge,tide,torrent,tremble,tributary,tunnel,twitch -->
         <section beta='5.34.0.1'>
             <div class=title tr-id=first-in-line><span small glyph=favorite></span> Up Next</div>
@@ -173,194 +361,6 @@
             </div>
         </section>
 
-        <!-- Next Channel → next channel,avenue,carrier,channel,current,flood,flow,means,medium,offline,route,rush,spate,stream,surge,tide,torrent,tributary,tunnel -->
-        <section new='4.1.8'>
-            <div class=title tr-id=next-channel-preference><span small glyph=favorite></span> Next Channel Pick</div>
-            <div class=summary>
-                <p tr-id>
-                    How should the next channel be chosen when <b>Up Next</b> is empty?
-                </p>
-                <p tr-id>
-                    <b warning-text>This only activates when the current stream goes offline</b>.
-                </p>
-                <select id=next_channel_preference>
-                    <option value=none tr-id='next-channel-preference:options'>Disabled</option>
-                    <option value=random tr-id selected>Go to a random channel</option>
-                    <option value=unpopular tr-id>Go with the least viewers</option>
-                    <option value=popular tr-id>Go with the most viewers</option>
-                    <option value=poor tr-id>Go with the least channel points</option>
-                    <option value=rich tr-id>Go with the most channel points</option>
-                    <option value=closest tr-id>Go with the closest to having all channel point rewards</option>
-                    <option value=furthest tr-id>Go with the furthest from having all channel point rewards</option>
-                </select>
-            </div>
-        </section>
-
-        <!-- Stay Live → avenue,carrier,channel,current,deadline,edge,ends,flood,flow,holiday,means,medium,offline,point,route,rush,sojourn,spate,stay,stopover,streams,surge,term,tide,top,torrent,tributary,tributary,tunnel,vacation -->
-        <section new='4.5'>
-            <div class=title tr-id=stay-live><span small glyph=stream></span> Stay Live</div>
-            <div class=summary>
-                <div class=toggle>
-                    <input id=stay_live type=checkbox checked>
-                    <label for=stay_live></label>
-                </div>
-                <p tr-id>
-                    After the current stream ends, go to the <b>Next Channel</b>.
-                </p>
-                <details>
-                    <summary tr-id=extras subtitle='Adjust settings for &quot;Stay Live&quot;'>Extras</summary>
-                    <div>
-                        <div opt>
-                            <div class=title><span class=offline>Rerun</span> → <span class=offline>Offline</span></div>
-                            <div class=summary>
-                                <div class=toggle>
-                                    <input id=stay_live__ignore_channel_reruns type=checkbox requires='#stay_live'>
-                                    <label for=stay_live__ignore_channel_reruns></label>
-                                </div>
-                                <p tr-id='stay-live:vod-is-offline'>
-                                    Treat <a href='https://help.twitch.tv/s/article/video-on-demand#reruns' top-tooltip=Reruns>reruns</a> as offline streams.
-                                </p>
-                            </div>
-                        </div>
-                    </div>
-                </details>
-            </div>
-        </section>
-
-        <!-- Streak Saver → chain,keep,miss,missed,recover,rescue,save,streak,streaks,watch -->
-        <section new='5.35.5.11'>
-            <div class=title tr-id=streak-saver><span small glyph=fire></span> Streak Saver</div>
-            <div class=summary>
-                <div class=toggle>
-                    <input id=streak_saver type=checkbox>
-                    <label for=streak_saver></label>
-                </div>
-                <p tr-id>
-                    Lists the <b>Watch Streaks</b> you can still save in Up Next, each with a one-click <b>Save</b>.
-                </p>
-                <p tr-id>
-                    <b warning-text>Twitch needs a clip from the last day to save a streak; without one, watch the channel live.</b>
-                </p>
-            </div>
-        </section>
-
-        <!-- Follows → follows,avenue,board,bulletin,bureau,button,cabinet,carrier,channels,charge,collectibles,commission,current,extras,flood,flow,follow,forum,group,handling,jury,knob,management,manipulation,means,medium,notice,notification,oversight,panel,plan,policy,proclamation,reminders,route,rush,spate,strategy,streams,surge,tab,task force,tide,torrent,transaction,treatment,tribunal,tributary,tunnel,warning -->
-        <section>
-            <div class=title tr-id=auto-follow><span small glyph=favorite></span> Auto-Follow</div>
-            <div class=summary>
-                <p tr-id>
-                    While watching a channel that is not followed, follow it automatically.
-                </p>
-
-                <div>
-                    <!-- EMPTY OFFSET -->
-                </div>
-
-                <details>
-                    <summary tr-id=options subtitle='Adjust options for &quot;Auto-Follow&quot;'>Options</summary>
-                    <div>
-                        <div class=radio>
-                            <input id=auto_follow_none type=radio name=auto-follow checked>
-                            <label tr-id='auto-follow:none' for=auto_follow_none>
-                                <h2>Disabled</h2>
-                                Do not use this feature
-                            </label>
-                        </div>
-
-                        <div class=radio>
-                            <input id=auto_follow_raids type=radio name=auto-follow>
-                            <label tr-id='auto-follow:raids' for=auto_follow_raids>
-                                <h2>Raids</h2>
-                                When participating in a raid, follow the channel being raided
-                            </label>
-                        </div>
-
-                        <div class=radio>
-                            <input id=auto_follow_time type=radio name=auto-follow>
-                            <label tr-id='auto-follow:time' for=auto_follow_time>
-                                <h2>Viewership</h2>
-                                After watching <span unit=min><input id=auto_follow_time_minutes type=number value=15 min=5 step=5></span> of content, follow the channel
-                            </label>
-                        </div>
-
-                        <div class=radio>
-                            <input id=auto_follow_all type=radio name=auto-follow>
-                            <label tr-id='auto-follow:all' for=auto_follow_all>
-                                <h2>Automatic</h2>
-                                Follow all channels automatically
-                            </label>
-                        </div>
-                    </div>
-                </details>
-            </div>
-        </section>
-
-        <!-- Prevent Raiding → arrest,assault,avenue,break in,capture,carrier,channels,charge,handling,incursion,invasion,management,manipulation,means,medium,onslaught,oversight,plan,policy,raiding,route,sortie,strategy,surprise attack,sweep,transaction,treatment,tunnel -->
-        <section new='4.12.11'>
-            <div class=title tr-id=prevent-raiding><span small glyph=people></span> Prevent Raiding</div>
-            <div class=summary>
-                <p tr-id>
-                    Prevent certain or all channels from raiding by going to the <b>Next Channel</b>.
-                </p>
-                <select id=prevent_raiding>
-                    <option value=none selected tr-id='prevent-raiding:options'>Allow all channels to raid</option>
-                    <option value=greed tr-id>Only raid to collect channel points</option>
-                    <option value=all tr-id>Prevent all channels from raiding</option>
-                    <option value=unfollowed tr-id>Prevent unfollowed channels from being raided</option>
-                </select>
-                <details>
-                    <summary tr-id=extras subtitle='Adjust settings for &quot;Prevent Raiding&quot;'>Extras</summary>
-                    <div>
-                        <div opt>
-                            <!-- Greedy Raiding -->
-                            <div class=title tr-id='@@greedy-raiding'>Greedy Raiding</div>
-                            <div class=summary>
-                                <div class=toggle>
-                                    <input id=greedy_raiding type=checkbox requires='#prevent_raiding'>
-                                    <label for=greedy_raiding></label>
-                                </div>
-                                <p tr-id>
-                                    Go to <b attention-text top-tooltip='Followed channels with Channel Points'>certain channels</b> when they begin a raid.
-                                </p>
-                            </div>
-                        </div>
-                    </div>
-                </details>
-            </div>
-        </section>
-
-        <!-- Prevent Hosting → avenue,carrier,channels,charge,handling,management,manipulation,means,medium,oversight,plan,policy,route,strategy,transaction,treatment,tunnel -->
-        <section>
-            <div class=title tr-id=prevent-hosting><span small glyph=people></span> Prevent Hosting</div>
-            <div class=summary>
-                <p tr-id>
-                    Prevent certain or all channels from hosting by going to the <b>Next Channel</b>.
-                </p>
-                <select id=prevent_hosting>
-                    <option value=none selected tr-id='prevent-hosting:options'>Allow all channels to host</option>
-                    <option value=all tr-id>Prevent all channels from hosting</option>
-                    <option value=unfollowed tr-id>Prevent unfollowed channels from being hosted</option>
-                </select>
-            </div>
-        </section>
-
-        <!-- Auto-Join → audiences,auto join,celebration,congregation,crowd,current,dinner,flood,flow,gallery,gathering,market,ominous,parties,public,rush,spate,stream,surge,tide,timepiece,torrent,tributary,warning,watch,wristwatch -->
-        <section>
-            <div class=title tr-id=auto-join><span small glyph=mod></span> Auto-Join</div>
-            <div class=summary>
-                <div class=toggle>
-                    <input id=auto_accept_mature type=checkbox>
-                    <label for=auto_accept_mature></label>
-                </div>
-                <p tr-id>
-                    When presented with a warning that the stream is intended for <b warning-text>mature audiences</b>, proceed automatically.
-                </p>
-                <p tr-id>
-                    This will also join <a href='https://help.twitch.tv/s/article/watch-parties' top-tooltip='Watch Parties'>Watch Parties</a> automatically.
-                </p>
-            </div>
-        </section>
-
         <!-- Save Footer -->
         <section save tr-id=save>
             <button class='ripple save'>Save</button>
@@ -477,6 +477,20 @@
             </div>
         </section>
 
+        <!-- Kill Extensions → act,array,blink,current,delay,demonstration,development,display,example,exhibit,expansion,extensions,flood,flow,flutter,increase,jerk,jiggle,parade,postponement,presentation,rush,shudder,spate,stream,surge,tide,torrent,tremble,tributary,twitch -->
+        <section>
+            <div class=title tr-id=kill-extensions><span small gold glyph=extensions></span> Kill Extensions</div>
+            <div class=summary>
+                <div class=toggle>
+                    <input id=kill_extensions type=checkbox>
+                    <label for=kill_extensions></label>
+                </div>
+                <p tr-id>
+                    Do not allow Twitch™ extensions to display over the stream.
+                </p>
+            </div>
+        </section>
+
         <!-- Lurking Message → lurking message,channels,charge,directive,handling,information,letter,management,manipulation,memo,memorandum,message,news,note,notice,oversight,plan,policy,report,strategy,transaction,treatment,vip,word -->
         <section new='5.32.5'>
             <div class=title tr-id=auto-chat><span white glyph=thread></span> Lurk Message</div>
@@ -576,20 +590,6 @@
             </div>
         </section>
 
-        <!-- Kill Extensions → act,array,blink,current,delay,demonstration,development,display,example,exhibit,expansion,extensions,flood,flow,flutter,increase,jerk,jiggle,parade,postponement,presentation,rush,shudder,spate,stream,surge,tide,torrent,tremble,tributary,twitch -->
-        <section>
-            <div class=title tr-id=kill-extensions><span small gold glyph=extensions></span> Kill Extensions</div>
-            <div class=summary>
-                <div class=toggle>
-                    <input id=kill_extensions type=checkbox>
-                    <label for=kill_extensions></label>
-                </div>
-                <p tr-id>
-                    Do not allow Twitch™ extensions to display over the stream.
-                </p>
-            </div>
-        </section>
-
         <!-- Save Footer -->
         <section save tr-id=save>
             <button class='ripple save'>Save</button>
@@ -678,21 +678,6 @@
     <!-- Points & Bits Info -->
     <header id=group-points-info tr-id='header:points-info' subtitle='See what you have earned, and what things cost.'>Points &amp; Bits Info</header>
     <article>
-        <!-- Points Receipt Placement → certificate,content,document,idea,musty,noxious,paragraph,passage,points,putrid,quotation,ranking,receipt,text,theme,verse,voucher,wording -->
-        <section>
-            <div class=title tr-id='placement:points-receipt'><span small gold glyph=channelpoints></span> Points Receipt &amp; Rank</div>
-            <div class=summary>
-                <p tr-id>
-                    Where should the <b>Points Receipt &amp; Point Rank</b> text be displayed?
-                </p>
-
-                <select id=points_receipt_placement>
-                    <option value=null selected tr-id='placement:points-receipt:options'>Do not display</option>
-                    <option value=under tr-id>Under the video</option>
-                </select>
-            </div>
-        </section>
-
         <!-- Channel Points Receipt → act,array,assemblage,assortment,avenue,carrier,certificate,channel,collection,compilation,demonstration,display,example,exhibit,lot,means,medium,number,parade,points,presentation,receipt,route,selection,set,store,tunnel,voucher -->
         <section>
             <div class=title tr-id=channel-points-receipt><span small glyph=channelpoints></span> Channel Points Receipt</div>
@@ -707,6 +692,20 @@
                     <option value=round50 tr-id>Round to the nearest 50</option>
                     <option value=round25 tr-id>Round to the nearest 25</option>
                 </select>
+            </div>
+        </section>
+
+        <!-- Convert Bits → amount,bits,bulk,chunk,detritus,dollar,extent,junk,load,lot,measure,money,number,remains,rubbish,rubble,supply,ton,trash,usd,volume,wreck,wreckage -->
+        <section>
+            <div class=title tr-id=convert-bits><span small glyph=bits></span> Convert Bits</div>
+            <div class=summary>
+                <div class=toggle>
+                    <input id=convert_bits type=checkbox checked>
+                    <label for=convert_bits></label>
+                </div>
+                <p tr-id>
+                    When presented with <a href='https://www.twitch.tv/creatorcamp/en/get-rewarded/bits-and-subscriptions/#bits' top-tooltip=Bits><button style='background-color:var(--grey)!important'><img src='bits.gif' alt=Bits height=20 width=20 type=glyph></button></a> show the true <b>USD</b> amount they represent.
+                </p>
             </div>
         </section>
 
@@ -725,17 +724,16 @@
             </div>
         </section>
 
-        <!-- Watch Time Placement → timepiece,watch,wristwatch -->
+        <!-- Points Receipt Placement → certificate,content,document,idea,musty,noxious,paragraph,passage,points,putrid,quotation,ranking,receipt,text,theme,verse,voucher,wording -->
         <section>
-            <div class=title tr-id='placement:watch-time'><span small glyph=latest></span> Watch Time</div>
+            <div class=title tr-id='placement:points-receipt'><span small gold glyph=channelpoints></span> Points Receipt &amp; Rank</div>
             <div class=summary>
                 <p tr-id>
-                    Where should the <b>Watch Time</b> be displayed?
+                    Where should the <b>Points Receipt &amp; Point Rank</b> text be displayed?
                 </p>
 
-                <select id=watch_time_placement>
-                    <option value=null selected tr-id='placement:watch-time:options'>Do not display</option>
-                    <option value=over tr-id>Over the video</option>
+                <select id=points_receipt_placement>
+                    <option value=null selected tr-id='placement:points-receipt:options'>Do not display</option>
                     <option value=under tr-id>Under the video</option>
                 </select>
             </div>
@@ -755,17 +753,19 @@
             </div>
         </section>
 
-        <!-- Convert Bits → amount,bits,bulk,chunk,detritus,dollar,extent,junk,load,lot,measure,money,number,remains,rubbish,rubble,supply,ton,trash,usd,volume,wreck,wreckage -->
+        <!-- Watch Time Placement → timepiece,watch,wristwatch -->
         <section>
-            <div class=title tr-id=convert-bits><span small glyph=bits></span> Convert Bits</div>
+            <div class=title tr-id='placement:watch-time'><span small glyph=latest></span> Watch Time</div>
             <div class=summary>
-                <div class=toggle>
-                    <input id=convert_bits type=checkbox checked>
-                    <label for=convert_bits></label>
-                </div>
                 <p tr-id>
-                    When presented with <a href='https://www.twitch.tv/creatorcamp/en/get-rewarded/bits-and-subscriptions/#bits' top-tooltip=Bits><button style='background-color:var(--grey)!important'><img src='bits.gif' alt=Bits height=20 width=20 type=glyph></button></a> show the true <b>USD</b> amount they represent.
+                    Where should the <b>Watch Time</b> be displayed?
                 </p>
+
+                <select id=watch_time_placement>
+                    <option value=null selected tr-id='placement:watch-time:options'>Do not display</option>
+                    <option value=over tr-id>Over the video</option>
+                    <option value=under tr-id>Under the video</option>
+                </select>
             </div>
         </section>
 
@@ -778,126 +778,6 @@
     <!-- Reading Chat -->
     <header id=group-reading-chat tr-id='header:reading-chat' subtitle='These settings do not apply to banned channels unless otherwise noted.'>Reading Chat</header>
     <article>
-        <!-- Accessible Chat → accessibility,accent,act,array,chatter,colors,conversation,demonstration,display,emphasis,example,exhibit,font,fount,gossip,homogeneous,inflection,inflexible,monotone,orderly,parade,presentation,reliable,resonance,rigid,strength,systematic,timbre,tones,uniform -->
-        <section new='5.32.7' id=accessibility>
-            <div class=title tr-id=simplify-chat><span large help glyph=accessible></span> Simpler Chat</div>
-            <div class=summary>
-                <p tr-id>
-                    Make Twitch&trade; easier to navigate and use.
-                </p>
-                <details>
-                    <summary tr-id=options subtitle='Adjust accessibility options'>Options</summary>
-
-                    <div sect>
-                        <h2><span small gold glyph=chat></span> Chat</h2>
-
-                        <div opt>
-                            <div class=title tr-id='simplify-chat:options'>Dual-tone Chat</div>
-                            <div class=summary>
-                                <div class=toggle>
-                                    <input id=simplify_chat type=checkbox>
-                                    <label for=simplify_chat></label>
-                                </div>
-                                <p tr-id>
-                                    Display the chat dual-toned to make it easier to read.
-                                </p>
-                            </div>
-                        </div>
-
-                        <div opt>
-                            <div class=title tr-id='simplify-chat:options'>Monotone Usernames</div>
-                            <div class=summary>
-                                <div class=toggle>
-                                    <input id=simplify_chat_monotone_usernames type=checkbox>
-                                    <label for=simplify_chat_monotone_usernames></label>
-                                </div>
-                                <p tr-id>
-                                    Keep username colors uniform.
-                                </p>
-                            </div>
-                        </div>
-
-                        <div opt>
-                            <div class=title tr-id>Chat Font</div>
-                            <div class=summary>
-                                <p tr-id>
-                                    Display chat in the following font:
-                                </p>
-
-                                <select id=simplify_chat_font>
-                                    <option value=Roobert style='font-family:Roobert!important' selected>Roobert → TWITCH.tv™</option>
-                                    <option value=Arial style='font-family:Arial!important'>Arial → TWITCH.tv™</option>
-                                    <option value=Calibri style='font-family:Calibri!important'>Calibri → TWITCH.tv™</option>
-                                    <option value=Dyslexie style='font-family:Dyslexie!important'>Dyslexie → TWITCH.tv™</option>
-                                    <option value=Helvetica style='font-family:Helvetica!important'>Helvetica → TWITCH.tv™</option>
-                                    <option value=Monospace style='font-family:Monospace!important'>Monospace → TWITCH.tv™</option>
-                                    <option value=System-UI style='font-family:System-UI!important'>System-UI → TWITCH.tv™</option>
-                                    <option value=Tahoma style='font-family:Tahoma!important'>Tahoma → TWITCH.tv™</option>
-                                    <option value=Verdana style='font-family:Verdana!important'>Verdana → TWITCH.tv™</option>
-                                    <option value=Inter style='font-family:Inter!important'>Inter → TWITCH.tv™</option>
-                                    <option value=04b03 style='font-family:"04b03"!important'>04b03 → TWITCH.tv™</option>
-                                </select>
-                            </div>
-                        </div>
-
-                        <div disabled opt>
-                            <div class=title tr-id>Reverse Emotes</div>
-                            <div class=summary>
-                                <div class=toggle>
-                                    <input id=simplify_chat_reverse_emotes type=checkbox disabled>
-                                    <label for=simplify_chat_reverse_emotes></label>
-                                </div>
-                                <p tr-id>
-                                    Convert emotes back into their text, and display the emote (as a <code>tooltip</code>) only when <code>hovering</code> the text.
-                                </p>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div sect>
-                        <h2><span small gold glyph=video></span> Twitch&trade;</h2>
-
-                        <div opt>
-                            <div class=title tr-id='simplify-look:options'>Marquee Long Text</div>
-
-                            <div class=summary>
-                                <div class=toggle>
-                                    <input id=simplify_look_auto_marquee type=checkbox>
-                                    <label for=simplify_look_auto_marquee></label>
-                                </div>
-                                <p tr-id>
-                                    Text that extends beyond a container's display will be turned into a marquee.
-                                </p>
-                            </div>
-                        </div>
-
-                        <div opt>
-                            <div class=title tr-id>Page Font</div>
-                            <div class=summary>
-                                <p tr-id>
-                                    Display Twitch&trade; (excluding chat) in the following font:
-                                </p>
-
-                                <select id=simplify_page_font>
-                                    <option value=Roobert style='font-family:Roobert!important' selected>Roobert → TWITCH.tv™</option>
-                                    <option value=Arial style='font-family:Arial!important'>Arial → TWITCH.tv™</option>
-                                    <option value=Calibri style='font-family:Calibri!important'>Calibri → TWITCH.tv™</option>
-                                    <option value=Dyslexie style='font-family:Dyslexie!important'>Dyslexie → TWITCH.tv™</option>
-                                    <option value=Helvetica style='font-family:Helvetica!important'>Helvetica → TWITCH.tv™</option>
-                                    <option value=Monospace style='font-family:Monospace!important'>Monospace → TWITCH.tv™</option>
-                                    <option value=System-UI style='font-family:System-UI!important'>System-UI → TWITCH.tv™</option>
-                                    <option value=Tahoma style='font-family:Tahoma!important'>Tahoma → TWITCH.tv™</option>
-                                    <option value=Verdana style='font-family:Verdana!important'>Verdana → TWITCH.tv™</option>
-                                    <option value=Inter style='font-family:Inter!important'>Inter → TWITCH.tv™</option>
-                                    <option value=04b03 style='font-family:"04b03"!important'>04b03 → TWITCH.tv™</option>
-                                </select>
-                            </div>
-                        </div>
-                    </div>
-                </details>
-            </div>
-        </section>
-
         <!-- BetterTTV Emotes → amount,anxiety,area,avenue,bundle,capacity,carrier,cause,channel,consignment,content,district,document,element,emotes,explanation,fluctuation,goods,haul,idea,insecurity,instability,loading,locale,location,matter,means,medium,motivation,motive,neighborhood,origin,packing,paragraph,part,passage,payload,point,position,principle,purpose,quotation,region,root,route,scene,section,shipment,site,situation,source,spot,station,storing,text,theme,tunnel,uncertainty,venue,verse,volatility,vulnerability,weakness,weight,whereabouts,wording,words -->
         <section>
             <div class=title tr-id=bttv-emotes><span small gold glyph=emotes></span> BetterTTV Emotes</div>
@@ -1280,20 +1160,6 @@
             </div>
         </section>
 
-        <!-- Show Pop-ups → arrive,attitude,belief,blooper,character,come,come out,crop up,determination,develop,directive,emerge,information,leader,letter,looper,materialize,memorandum,message,news,note,notice,occur,official,pop ups,present,report,sentiment,show,show up,someone,stance,stand,star,surface,turn out,turn up,view,word -->
-        <section>
-            <div class=title tr-id=highlight-mentions-popup><span gold glyph=thread></span> Show Pop-ups</div>
-            <div class=summary>
-                <div class=toggle>
-                    <input id=highlight_mentions_popup type=checkbox checked>
-                    <label for=highlight_mentions_popup></label>
-                </div>
-                <p tr-id>
-                    When someone mentions you <code purple>@username</code>, make the message stand out by showing a pop-up.
-                </p>
-            </div>
-        </section>
-
         <!-- Notification Sounds → accent,adoption,benefit,bulletin,buzz,character,climax,conditions,expression,feature,flawless,focal point,gossip,handling,harmony,help,highlight,hint,idiom,innuendo,intact,leader,melody,motto,murmur,music,need,noise,note,notice,notification,official,operation,phrases,phrasing,practice,proclamation,purpose,remark,robust,safe,sane,saying,service,sigh,slogan,solid,someone,sounds,stable,star,sturdy,terminology,thorough,tone,treatment,usage,uses,utterance,value,vibrant,vibration,vigorous,voice,warning,whispers,wording,wording -->
         <section new='4.1'>
             <div class=title tr-id=notification-sounds><span small gold glyph=music></span> Notification Sounds</div>
@@ -1453,6 +1319,140 @@
             </div>
         </section>
 
+        <!-- Show Pop-ups → arrive,attitude,belief,blooper,character,come,come out,crop up,determination,develop,directive,emerge,information,leader,letter,looper,materialize,memorandum,message,news,note,notice,occur,official,pop ups,present,report,sentiment,show,show up,someone,stance,stand,star,surface,turn out,turn up,view,word -->
+        <section>
+            <div class=title tr-id=highlight-mentions-popup><span gold glyph=thread></span> Show Pop-ups</div>
+            <div class=summary>
+                <div class=toggle>
+                    <input id=highlight_mentions_popup type=checkbox checked>
+                    <label for=highlight_mentions_popup></label>
+                </div>
+                <p tr-id>
+                    When someone mentions you <code purple>@username</code>, make the message stand out by showing a pop-up.
+                </p>
+            </div>
+        </section>
+
+        <!-- Accessible Chat → accessibility,accent,act,array,chatter,colors,conversation,demonstration,display,emphasis,example,exhibit,font,fount,gossip,homogeneous,inflection,inflexible,monotone,orderly,parade,presentation,reliable,resonance,rigid,strength,systematic,timbre,tones,uniform -->
+        <section new='5.32.7' id=accessibility>
+            <div class=title tr-id=simplify-chat><span large help glyph=accessible></span> Simpler Chat</div>
+            <div class=summary>
+                <p tr-id>
+                    Make Twitch&trade; easier to navigate and use.
+                </p>
+                <details>
+                    <summary tr-id=options subtitle='Adjust accessibility options'>Options</summary>
+
+                    <div sect>
+                        <h2><span small gold glyph=chat></span> Chat</h2>
+
+                        <div opt>
+                            <div class=title tr-id='simplify-chat:options'>Dual-tone Chat</div>
+                            <div class=summary>
+                                <div class=toggle>
+                                    <input id=simplify_chat type=checkbox>
+                                    <label for=simplify_chat></label>
+                                </div>
+                                <p tr-id>
+                                    Display the chat dual-toned to make it easier to read.
+                                </p>
+                            </div>
+                        </div>
+
+                        <div opt>
+                            <div class=title tr-id='simplify-chat:options'>Monotone Usernames</div>
+                            <div class=summary>
+                                <div class=toggle>
+                                    <input id=simplify_chat_monotone_usernames type=checkbox>
+                                    <label for=simplify_chat_monotone_usernames></label>
+                                </div>
+                                <p tr-id>
+                                    Keep username colors uniform.
+                                </p>
+                            </div>
+                        </div>
+
+                        <div opt>
+                            <div class=title tr-id>Chat Font</div>
+                            <div class=summary>
+                                <p tr-id>
+                                    Display chat in the following font:
+                                </p>
+
+                                <select id=simplify_chat_font>
+                                    <option value=Roobert style='font-family:Roobert!important' selected>Roobert → TWITCH.tv™</option>
+                                    <option value=Arial style='font-family:Arial!important'>Arial → TWITCH.tv™</option>
+                                    <option value=Calibri style='font-family:Calibri!important'>Calibri → TWITCH.tv™</option>
+                                    <option value=Dyslexie style='font-family:Dyslexie!important'>Dyslexie → TWITCH.tv™</option>
+                                    <option value=Helvetica style='font-family:Helvetica!important'>Helvetica → TWITCH.tv™</option>
+                                    <option value=Monospace style='font-family:Monospace!important'>Monospace → TWITCH.tv™</option>
+                                    <option value=System-UI style='font-family:System-UI!important'>System-UI → TWITCH.tv™</option>
+                                    <option value=Tahoma style='font-family:Tahoma!important'>Tahoma → TWITCH.tv™</option>
+                                    <option value=Verdana style='font-family:Verdana!important'>Verdana → TWITCH.tv™</option>
+                                    <option value=Inter style='font-family:Inter!important'>Inter → TWITCH.tv™</option>
+                                    <option value=04b03 style='font-family:"04b03"!important'>04b03 → TWITCH.tv™</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div disabled opt>
+                            <div class=title tr-id>Reverse Emotes</div>
+                            <div class=summary>
+                                <div class=toggle>
+                                    <input id=simplify_chat_reverse_emotes type=checkbox disabled>
+                                    <label for=simplify_chat_reverse_emotes></label>
+                                </div>
+                                <p tr-id>
+                                    Convert emotes back into their text, and display the emote (as a <code>tooltip</code>) only when <code>hovering</code> the text.
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div sect>
+                        <h2><span small gold glyph=video></span> Twitch&trade;</h2>
+
+                        <div opt>
+                            <div class=title tr-id='simplify-look:options'>Marquee Long Text</div>
+
+                            <div class=summary>
+                                <div class=toggle>
+                                    <input id=simplify_look_auto_marquee type=checkbox>
+                                    <label for=simplify_look_auto_marquee></label>
+                                </div>
+                                <p tr-id>
+                                    Text that extends beyond a container's display will be turned into a marquee.
+                                </p>
+                            </div>
+                        </div>
+
+                        <div opt>
+                            <div class=title tr-id>Page Font</div>
+                            <div class=summary>
+                                <p tr-id>
+                                    Display Twitch&trade; (excluding chat) in the following font:
+                                </p>
+
+                                <select id=simplify_page_font>
+                                    <option value=Roobert style='font-family:Roobert!important' selected>Roobert → TWITCH.tv™</option>
+                                    <option value=Arial style='font-family:Arial!important'>Arial → TWITCH.tv™</option>
+                                    <option value=Calibri style='font-family:Calibri!important'>Calibri → TWITCH.tv™</option>
+                                    <option value=Dyslexie style='font-family:Dyslexie!important'>Dyslexie → TWITCH.tv™</option>
+                                    <option value=Helvetica style='font-family:Helvetica!important'>Helvetica → TWITCH.tv™</option>
+                                    <option value=Monospace style='font-family:Monospace!important'>Monospace → TWITCH.tv™</option>
+                                    <option value=System-UI style='font-family:System-UI!important'>System-UI → TWITCH.tv™</option>
+                                    <option value=Tahoma style='font-family:Tahoma!important'>Tahoma → TWITCH.tv™</option>
+                                    <option value=Verdana style='font-family:Verdana!important'>Verdana → TWITCH.tv™</option>
+                                    <option value=Inter style='font-family:Inter!important'>Inter → TWITCH.tv™</option>
+                                    <option value=04b03 style='font-family:"04b03"!important'>04b03 → TWITCH.tv™</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                </details>
+            </div>
+        </section>
+
         <!-- Save Footer -->
         <section save tr-id=save>
             <button class='ripple save'>Save</button>
@@ -1462,20 +1462,6 @@
     <!-- Talking in Chat -->
     <header id=group-talking-in-chat tr-id='header:talking-in-chat' subtitle='Type and reply faster.'>Talking in Chat</header>
     <article>
-        <!-- Native Reply → acknowledgment,act,array,attack,attempt,bid,blink,channels,charge,demonstration,display,endeavor,example,exhibit,experiment,feedback,flutter,handling,jerk,jiggle,management,manipulation,oversight,parade,plan,policy,presentation,pursuit,reaction,rejoinder,replies,reply,response,retort,shot,shudder,strategy,struggle,transaction,treatment,tremble,try,twitch -->
-        <section>
-            <div class=title tr-id=native-reply><span small gold glyph=reply></span> Native Reply</div>
-            <div class=summary>
-                <div class=toggle>
-                    <input id=native_twitch_reply type=checkbox>
-                    <label for=native_twitch_reply></label>
-                </div>
-                <p tr-id>
-                    Attempt to display native Twitch™ replies on all channels.
-                </p>
-            </div>
-        </section>
-
         <!-- Link Maker → association,badge,builder,calendar,cards,channel,chatter,check,contact,conversation,element,examination,fairway,gossip,hookup,inventor,label,links,maker,manufacturer,network,poster,preview,producer,program,relationship,sheet,ticket,tie,viewing -->
         <section new='5.16'>
             <div class=title tr-id=link-maker><span small gold glyph=compass></span> Link Maker</div>
@@ -1486,6 +1472,20 @@
                 </div>
                 <p tr-id>
                     Automatically convert links in chat to preview cards.
+                </p>
+            </div>
+        </section>
+
+        <!-- Native Reply → acknowledgment,act,array,attack,attempt,bid,blink,channels,charge,demonstration,display,endeavor,example,exhibit,experiment,feedback,flutter,handling,jerk,jiggle,management,manipulation,oversight,parade,plan,policy,presentation,pursuit,reaction,rejoinder,replies,reply,response,retort,shot,shudder,strategy,struggle,transaction,treatment,tremble,try,twitch -->
+        <section>
+            <div class=title tr-id=native-reply><span small gold glyph=reply></span> Native Reply</div>
+            <div class=summary>
+                <div class=toggle>
+                    <input id=native_twitch_reply type=checkbox>
+                    <label for=native_twitch_reply></label>
+                </div>
+                <p tr-id>
+                    Attempt to display native Twitch™ replies on all channels.
                 </p>
             </div>
         </section>
@@ -1530,80 +1530,6 @@
     <!-- Fix Broken Streams -->
     <header id=group-fix-streams tr-id='header:fix-streams' subtitle='Stop freezes, ads and black screens.'>Fix Broken Streams</header>
     <article>
-        <!-- Recover Stream → attack,attempt,bid,current,endeavor,experiment,flood,flow,pursuit,rush,shot,spate,stream,struggle,surge,tide,torrent,tributary,try -->
-        <section>
-            <div class=title tr-id=recover-stream><span small glyph=video></span> Recover Stream</div>
-            <div class=summary>
-                <div class=toggle>
-                    <input id=recover_stream type=checkbox>
-                    <label for=recover_stream></label>
-                </div>
-                <p tr-id>
-                    When the stream <b attention-text top-tooltip='Fails to play for more than 5 seconds'>freezes</b>, attempt to recover it.
-                </p>
-            </div>
-        </section>
-
-        <!-- Recover Video → cover,curtain,download,load,log in,net,refill,refresh,reload,restock,restore,screen,televised,video,webpage -->
-        <section>
-            <div class=title tr-id=recover-video><span small glyph=video></span> Recover Video</div>
-            <div class=summary>
-                <div class=toggle>
-                    <input id=recover_video type=checkbox checked>
-                    <label for=recover_video></label>
-                </div>
-                <p tr-id>
-                    When the video <b attention-text top-tooltip='Displays an error code or blank screen'>fails to download</b>, reload the webpage.
-                </p>
-            </div>
-        </section>
-
-        <!-- Recover Frames → abnormal,abrogate,annul,attack,attempt,bid,current,damaged,deficient,drops,endeavor,experiment,faulty,flawed,flood,flow,frames,inadequate,insufficient,nullify,override,pursuit,quash,refill,refresh,reload,restock,restore,reverse,revoke,rush,seconds,shot,spate,stream,struggle,surge,televised,tide,torrent,tributary,try,unhealthy,unsound,veto,video,video,webpage -->
-        <section new='4.12.4'>
-            <div class=title tr-id=recover-frames><span small glyph=video></span> Recover Frames</div>
-            <div class=summary>
-                <div class=toggle>
-                    <input id=recover_frames type=checkbox checked>
-                    <label for=recover_frames></label>
-                </div>
-                <p tr-id>
-                    When the video <b attention-text top-tooltip='Fails to play for longer than 15 seconds'>freezes</b>, reload the webpage.
-                </p>
-
-                <details>
-                    <summary tr-id=extras subtitle='Adjust settings for &quot;Recover Frames&quot;'>Extras</summary>
-                    <div>
-                        <div opt>
-                            <div class=title tr-id='recover-frames:extras'>Try Embed</div>
-                            <div class=summary>
-                                <div class=toggle>
-                                    <input id=recover_frames__allow_embed type=checkbox>
-                                    <label for=recover_frames__allow_embed></label>
-                                </div>
-                                <p tr-id>
-                                    Attempt to override the video with an embedded stream.
-                                </p>
-                            </div>
-                        </div>
-                    </div>
-                </details>
-            </div>
-        </section>
-
-        <!-- Recover Ads → ads,advertisement,announcement,attack,attempt,bid,broadcast,commercial,display,endeavor,endorsement,exhibit,experiment,literature,notice,placard,poster,propaganda,publication,publicity,pursuit,shot,struggle,try -->
-        <section>
-            <div class=title tr-id=recover-ads><span small glyph=play></span> Recover Ads</div>
-            <div class=summary>
-                <div class=toggle>
-                    <input id=recover_ads type=checkbox requires='#recover_stream'>
-                    <label for=recover_ads></label>
-                </div>
-                <p tr-id>
-                    When an advertisement <b attention-text top-tooltip='Fails to play for more than 5 seconds'>freezes</b>, attempt to recover it.
-                </p>
-            </div>
-        </section>
-
         <!-- Hide Blank Ads → act,ad,ads,array,blink,demonstration,displays,example,exhibit,flutter,jerk,jiggle,parade,presentation,shudder,tremble,twitch -->
         <section new='4.15'>
             <div class=title tr-id=hide-blank-ads><span small gold glyph=hide></span> Hide Blank Ads</div>
@@ -1615,20 +1541,6 @@
 
                 <p tr-id>
                     When Twitch™ displays a <b attention-text top-tooltip='Purple Screen'>Blank Ad</b>, temporarily hide it.
-                </p>
-            </div>
-        </section>
-
-        <!-- Recover Pages → act,archive,array,attack,attempt,bid,certificate,demonstration,diary,display,endeavor,evidence,example,exhibit,experiment,form,pages,paper,parade,presentation,pursuit,record,report,script,shot,struggle,testimony,try,webpage -->
-        <section>
-            <div class=title tr-id=recover-pages><span small glyph=extensions></span> Recover Pages</div>
-            <div class=summary>
-                <div class=toggle>
-                    <input id=recover_pages type=checkbox>
-                    <label for=recover_pages></label>
-                </div>
-                <p tr-id>
-                    If the webpage fails to display, attempt to recover it.
                 </p>
             </div>
         </section>
@@ -1710,6 +1622,94 @@
             </div>
         </section>
 
+        <!-- Recover Ads → ads,advertisement,announcement,attack,attempt,bid,broadcast,commercial,display,endeavor,endorsement,exhibit,experiment,literature,notice,placard,poster,propaganda,publication,publicity,pursuit,shot,struggle,try -->
+        <section>
+            <div class=title tr-id=recover-ads><span small glyph=play></span> Recover Ads</div>
+            <div class=summary>
+                <div class=toggle>
+                    <input id=recover_ads type=checkbox requires='#recover_stream'>
+                    <label for=recover_ads></label>
+                </div>
+                <p tr-id>
+                    When an advertisement <b attention-text top-tooltip='Fails to play for more than 5 seconds'>freezes</b>, attempt to recover it.
+                </p>
+            </div>
+        </section>
+
+        <!-- Recover Frames → abnormal,abrogate,annul,attack,attempt,bid,current,damaged,deficient,drops,endeavor,experiment,faulty,flawed,flood,flow,frames,inadequate,insufficient,nullify,override,pursuit,quash,refill,refresh,reload,restock,restore,reverse,revoke,rush,seconds,shot,spate,stream,struggle,surge,televised,tide,torrent,tributary,try,unhealthy,unsound,veto,video,video,webpage -->
+        <section new='4.12.4'>
+            <div class=title tr-id=recover-frames><span small glyph=video></span> Recover Frames</div>
+            <div class=summary>
+                <div class=toggle>
+                    <input id=recover_frames type=checkbox checked>
+                    <label for=recover_frames></label>
+                </div>
+                <p tr-id>
+                    When the video <b attention-text top-tooltip='Fails to play for longer than 15 seconds'>freezes</b>, reload the webpage.
+                </p>
+
+                <details>
+                    <summary tr-id=extras subtitle='Adjust settings for &quot;Recover Frames&quot;'>Extras</summary>
+                    <div>
+                        <div opt>
+                            <div class=title tr-id='recover-frames:extras'>Try Embed</div>
+                            <div class=summary>
+                                <div class=toggle>
+                                    <input id=recover_frames__allow_embed type=checkbox>
+                                    <label for=recover_frames__allow_embed></label>
+                                </div>
+                                <p tr-id>
+                                    Attempt to override the video with an embedded stream.
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                </details>
+            </div>
+        </section>
+
+        <!-- Recover Pages → act,archive,array,attack,attempt,bid,certificate,demonstration,diary,display,endeavor,evidence,example,exhibit,experiment,form,pages,paper,parade,presentation,pursuit,record,report,script,shot,struggle,testimony,try,webpage -->
+        <section>
+            <div class=title tr-id=recover-pages><span small glyph=extensions></span> Recover Pages</div>
+            <div class=summary>
+                <div class=toggle>
+                    <input id=recover_pages type=checkbox>
+                    <label for=recover_pages></label>
+                </div>
+                <p tr-id>
+                    If the webpage fails to display, attempt to recover it.
+                </p>
+            </div>
+        </section>
+
+        <!-- Recover Stream → attack,attempt,bid,current,endeavor,experiment,flood,flow,pursuit,rush,shot,spate,stream,struggle,surge,tide,torrent,tributary,try -->
+        <section>
+            <div class=title tr-id=recover-stream><span small glyph=video></span> Recover Stream</div>
+            <div class=summary>
+                <div class=toggle>
+                    <input id=recover_stream type=checkbox>
+                    <label for=recover_stream></label>
+                </div>
+                <p tr-id>
+                    When the stream <b attention-text top-tooltip='Fails to play for more than 5 seconds'>freezes</b>, attempt to recover it.
+                </p>
+            </div>
+        </section>
+
+        <!-- Recover Video → cover,curtain,download,load,log in,net,refill,refresh,reload,restock,restore,screen,televised,video,webpage -->
+        <section>
+            <div class=title tr-id=recover-video><span small glyph=video></span> Recover Video</div>
+            <div class=summary>
+                <div class=toggle>
+                    <input id=recover_video type=checkbox checked>
+                    <label for=recover_video></label>
+                </div>
+                <p tr-id>
+                    When the video <b attention-text top-tooltip='Displays an error code or blank screen'>fails to download</b>, reload the webpage.
+                </p>
+            </div>
+        </section>
+
         <!-- Save Footer -->
         <section save tr-id=save>
             <button class='ripple save'>Save</button>
@@ -1736,23 +1736,6 @@
             </div>
         </section>
 
-        <!-- View Mode → approach,aspect,condition,fashion,form,glimpse,loading,look,mechanism,method,mode,outlook,packing,page,perspective,picture,posture,procedure,process,prospect,quality,scene,sight,situation,status,storing,style,system,technique,tone,view,vision,way -->
-        <section new='3.1.5'>
-            <div class=title tr-id=view-mode><span small gold glyph=video></span> View Mode</div>
-            <div class=summary>
-                <p tr-id>
-                    When the page is done loading, change the view to:
-                </p>
-                <select id=view_mode>
-                    <option value=null selected tr-id='view-mode:options'>Nothing (do not change)</option>
-                    <option value=default tr-id>Default Mode (banner + chat)</option>
-                    <option value=theatre tr-id>Theatre Mode (chat)</option>
-                    <option value=fullwidth tr-id>Fullwidth Mode (banner)</option>
-                    <option value=fullscreen tr-id>Fullscreen Mode</option>
-                </select>
-            </div>
-        </section>
-
         <!-- Block Banners → ads,advertisement,banners,block,hide,remove -->
         <section new='5.33.4.8'>
             <div class=title tr-id=block-banners><span small glyph=hide></span> Block Banners</div>
@@ -1765,180 +1748,6 @@
                 <p tr-id>
                     Remove (ad) banners for: <em>Bits</em>, <em>SUBtember</em>, <em>Turbo</em>, etc.
                 </p>
-            </div>
-        </section>
-
-        <!-- Stream Preview → act,advertisement,amount,announcement,array,breadth,broadcasts,capacity,channels,charge,content,current,demonstration,diameter,display,examination,example,exhibit,extent,extras,flawless,flood,flow,handling,height,intact,intensity,length,magnitude,management,manipulation,newscast,oversight,parade,performance,plan,policy,pop-ups,pop ups,presentation,preview,program,proportion,publication,range,robust,rush,safe,sane,scope,show,simulcast,size,solid,sound,spate,stable,stature,strategy,stream,sturdy,surge,thorough,tide,torrent,transaction,transmission,treatment,tributary,vibrant,viewing,vigorous,volume,width -->
-        <section new='5.15'>
-            <div class=title tr-id=stream-preview><span small gold glyph=video></span> Stream Preview</div>
-            <div class=summary>
-                <div class=toggle>
-                    <input id=stream_preview type=checkbox>
-                    <label for=stream_preview></label>
-                </div>
-                <p tr-id>
-                    When hovering over a streamer's icon, display a preview of their broadcast.
-                </p>
-                <details>
-                    <summary tr-id=extras subtitle='Adjust settings for &quot;Stream Preview&quot;'>Extras</summary>
-                    <div>
-                        <div opt>
-                            <div class=title tr-id='stream-preview:position'>Preview Position</div>
-                            <div class=summary>
-                                <p tr-id>
-                                    Adjust the <b attention-text top-tooltip='In front of, or behind'>orthogonal</b> position of the preview.
-                                </p>
-                                <select id=stream_preview_position>
-                                    <option value=3 selected tr-id='stream-preview:position-options'>Always in front (on top)</option>
-                                    <option value=2 tr-id>Normal</option>
-                                    <option value=1 tr-id>Always behind (on bottom)</option>
-                                </select>
-                            </div>
-                        </div>
-
-                        <div opt>
-                            <div class=title tr-id='stream-preview:size'>Preview Size</div>
-                            <div class=summary>
-                                <p tr-id>
-                                    How large sould the preview be?
-                                </p>
-                                <select id=stream_preview_scale>
-                                    <option value=1 selected tr-id='stream-preview:size-options'>Normal (×1)</option>
-                                    <option value=2 tr-id>Large (×2)</option>
-                                    <option value=3 tr-id>Extra-Large (×3)</option>
-                                </select>
-                            </div>
-                        </div>
-
-                        <div opt>
-                            <div class=title tr-id='stream-preview:sound'>Preview Sound</div>
-                            <div class=summary>
-                                <p tr-id>
-                                    Should the preview be audible?
-                                </p>
-                                <p warning-text tr-id>
-                                    This will temporarily mute the current stream.
-                                </p>
-                                <div class=toggle>
-                                    <input id=stream_preview_sound type=checkbox>
-                                    <label for=stream_preview_sound></label>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </details>
-            </div>
-        </section>
-
-        <!-- Context Menu → click,context,custom,menu,right,over,popup,ride -->
-        <section new='5.34'>
-            <div class=title tr-id=context-menu-override><span small glyph=latest></span> Context Menu Override</div>
-            <div class=summary>
-                <div class=toggle>
-                    <input id=context_menu_override type=checkbox>
-                    <label for=context_menu_override></label>
-                </div>
-
-                <p tr-id>
-                    Use a custom context menu (right-click) on select Twitch pages.
-                </p>
-            </div>
-        </section>
-
-        <!-- Time Zones → area,belt,ground,page,region,section,sector,territory,time zone,zones -->
-        <section new='4.12.14'>
-            <div class=title tr-id=time-zones><span small gold glyph=calendar></span> Time Zones</div>
-            <div class=summary>
-                <div class=toggle>
-                    <input id=time_zones type=checkbox>
-                    <label for=time_zones></label>
-                </div>
-                <p tr-id>
-                    Automatically convert detected times on the page to your local time zone.
-                </p>
-            </div>
-        </section>
-
-        <!-- Store Integration → store integration,acquisition,advance,asset,assimilation,association,boy,buy,channel,contact,cube,current,dsi,element,epic,examination,exploration,flood,flow,game,hookup,hunt,inquiry,inspection,integration,investigation,investment,link,network,nintendo,play,playstation,purchase,pursuit,quest,relationship,research,rush,search,spate,station,stock,store,steam,stream,surge,switch,tide,tie,torrent,tributary,wii,xbox -->
-        <section new='5.29'>
-            <div class=title tr-id=store-integration><span small gold glyph=gift></span> Game Store Links</div>
-            <div class=summary>
-                <div class=toggle>
-                    <input id=store_integration type=checkbox checked>
-                    <label for=store_integration></label>
-                </div>
-                <p tr-id>
-                    When a stream is loaded and a game is detected, search for the game and create a purchase link.
-                </p>
-                <details>
-                    <summary tr-id=options subtitle='Adjust options for &quot;Game Store Links&quot;'>Options</summary>
-                    <div>
-                        <div opt>
-                            <div class=title tr-id='store-integration:steam'>Steam&reg;</div>
-                            <div class=summary>
-                                <p tr-id>
-                                    Enable Steam&reg; store integration.
-                                </p>
-                                <div class=toggle>
-                                    <input id=store_integration__steam type=checkbox checked>
-                                    <label for=store_integration__steam></label>
-                                </div>
-                            </div>
-                        </div>
-
-                        <div opt>
-                            <div class=title tr-id='store-integration:playstation'>PlayStation&reg;</div>
-                            <div class=summary>
-                                <p tr-id>
-                                    Enable PlayStation&reg; store integration.
-                                </p>
-                                <div class=toggle>
-                                    <input id=store_integration__playstation type=checkbox checked>
-                                    <label for=store_integration__playstation></label>
-                                </div>
-                            </div>
-                        </div>
-
-                        <div opt>
-                            <div class=title tr-id='store-integration:xbox'>Xbox&reg;</div>
-                            <div class=summary>
-                                <p tr-id>
-                                    Enable Xbox&reg; store integration.
-                                </p>
-                                <div class=toggle>
-                                    <input id=store_integration__xbox type=checkbox checked>
-                                    <label for=store_integration__xbox></label>
-                                </div>
-                            </div>
-                        </div>
-
-                        <div opt>
-                            <div class=title tr-id='store-integration:nintendo'>Nintendo&reg;</div>
-                            <div class=summary>
-                                <p tr-id>
-                                    Enable Nintendo&reg; store integration.
-                                </p>
-                                <div class=toggle>
-                                    <input id=store_integration__nintendo type=checkbox checked>
-                                    <label for=store_integration__nintendo></label>
-                                </div>
-                            </div>
-                        </div>
-
-                        <div opt>
-                            <div class=title tr-id='store-integration:epic'>Epic Games&reg;</div>
-                            <div class=summary>
-                                <p tr-id>
-                                    Enable Epic Games&reg; store integration.
-                                </p>
-                                <div class=toggle>
-                                    <input id=store_integration__epic type=checkbox checked>
-                                    <label for=store_integration__epic></label>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </details>
             </div>
         </section>
 
@@ -2041,6 +1850,197 @@
             </div>
         </section>
 
+        <!-- Context Menu → click,context,custom,menu,right,over,popup,ride -->
+        <section new='5.34'>
+            <div class=title tr-id=context-menu-override><span small glyph=latest></span> Context Menu Override</div>
+            <div class=summary>
+                <div class=toggle>
+                    <input id=context_menu_override type=checkbox>
+                    <label for=context_menu_override></label>
+                </div>
+
+                <p tr-id>
+                    Use a custom context menu (right-click) on select Twitch pages.
+                </p>
+            </div>
+        </section>
+
+        <!-- Store Integration → store integration,acquisition,advance,asset,assimilation,association,boy,buy,channel,contact,cube,current,dsi,element,epic,examination,exploration,flood,flow,game,hookup,hunt,inquiry,inspection,integration,investigation,investment,link,network,nintendo,play,playstation,purchase,pursuit,quest,relationship,research,rush,search,spate,station,stock,store,steam,stream,surge,switch,tide,tie,torrent,tributary,wii,xbox -->
+        <section new='5.29'>
+            <div class=title tr-id=store-integration><span small gold glyph=gift></span> Game Store Links</div>
+            <div class=summary>
+                <div class=toggle>
+                    <input id=store_integration type=checkbox checked>
+                    <label for=store_integration></label>
+                </div>
+                <p tr-id>
+                    When a stream is loaded and a game is detected, search for the game and create a purchase link.
+                </p>
+                <details>
+                    <summary tr-id=options subtitle='Adjust options for &quot;Game Store Links&quot;'>Options</summary>
+                    <div>
+                        <div opt>
+                            <div class=title tr-id='store-integration:steam'>Steam&reg;</div>
+                            <div class=summary>
+                                <p tr-id>
+                                    Enable Steam&reg; store integration.
+                                </p>
+                                <div class=toggle>
+                                    <input id=store_integration__steam type=checkbox checked>
+                                    <label for=store_integration__steam></label>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div opt>
+                            <div class=title tr-id='store-integration:playstation'>PlayStation&reg;</div>
+                            <div class=summary>
+                                <p tr-id>
+                                    Enable PlayStation&reg; store integration.
+                                </p>
+                                <div class=toggle>
+                                    <input id=store_integration__playstation type=checkbox checked>
+                                    <label for=store_integration__playstation></label>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div opt>
+                            <div class=title tr-id='store-integration:xbox'>Xbox&reg;</div>
+                            <div class=summary>
+                                <p tr-id>
+                                    Enable Xbox&reg; store integration.
+                                </p>
+                                <div class=toggle>
+                                    <input id=store_integration__xbox type=checkbox checked>
+                                    <label for=store_integration__xbox></label>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div opt>
+                            <div class=title tr-id='store-integration:nintendo'>Nintendo&reg;</div>
+                            <div class=summary>
+                                <p tr-id>
+                                    Enable Nintendo&reg; store integration.
+                                </p>
+                                <div class=toggle>
+                                    <input id=store_integration__nintendo type=checkbox checked>
+                                    <label for=store_integration__nintendo></label>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div opt>
+                            <div class=title tr-id='store-integration:epic'>Epic Games&reg;</div>
+                            <div class=summary>
+                                <p tr-id>
+                                    Enable Epic Games&reg; store integration.
+                                </p>
+                                <div class=toggle>
+                                    <input id=store_integration__epic type=checkbox checked>
+                                    <label for=store_integration__epic></label>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </details>
+            </div>
+        </section>
+
+        <!-- Stream Preview → act,advertisement,amount,announcement,array,breadth,broadcasts,capacity,channels,charge,content,current,demonstration,diameter,display,examination,example,exhibit,extent,extras,flawless,flood,flow,handling,height,intact,intensity,length,magnitude,management,manipulation,newscast,oversight,parade,performance,plan,policy,pop-ups,pop ups,presentation,preview,program,proportion,publication,range,robust,rush,safe,sane,scope,show,simulcast,size,solid,sound,spate,stable,stature,strategy,stream,sturdy,surge,thorough,tide,torrent,transaction,transmission,treatment,tributary,vibrant,viewing,vigorous,volume,width -->
+        <section new='5.15'>
+            <div class=title tr-id=stream-preview><span small gold glyph=video></span> Stream Preview</div>
+            <div class=summary>
+                <div class=toggle>
+                    <input id=stream_preview type=checkbox>
+                    <label for=stream_preview></label>
+                </div>
+                <p tr-id>
+                    When hovering over a streamer's icon, display a preview of their broadcast.
+                </p>
+                <details>
+                    <summary tr-id=extras subtitle='Adjust settings for &quot;Stream Preview&quot;'>Extras</summary>
+                    <div>
+                        <div opt>
+                            <div class=title tr-id='stream-preview:position'>Preview Position</div>
+                            <div class=summary>
+                                <p tr-id>
+                                    Adjust the <b attention-text top-tooltip='In front of, or behind'>orthogonal</b> position of the preview.
+                                </p>
+                                <select id=stream_preview_position>
+                                    <option value=3 selected tr-id='stream-preview:position-options'>Always in front (on top)</option>
+                                    <option value=2 tr-id>Normal</option>
+                                    <option value=1 tr-id>Always behind (on bottom)</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div opt>
+                            <div class=title tr-id='stream-preview:size'>Preview Size</div>
+                            <div class=summary>
+                                <p tr-id>
+                                    How large sould the preview be?
+                                </p>
+                                <select id=stream_preview_scale>
+                                    <option value=1 selected tr-id='stream-preview:size-options'>Normal (×1)</option>
+                                    <option value=2 tr-id>Large (×2)</option>
+                                    <option value=3 tr-id>Extra-Large (×3)</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div opt>
+                            <div class=title tr-id='stream-preview:sound'>Preview Sound</div>
+                            <div class=summary>
+                                <p tr-id>
+                                    Should the preview be audible?
+                                </p>
+                                <p warning-text tr-id>
+                                    This will temporarily mute the current stream.
+                                </p>
+                                <div class=toggle>
+                                    <input id=stream_preview_sound type=checkbox>
+                                    <label for=stream_preview_sound></label>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </details>
+            </div>
+        </section>
+
+        <!-- Time Zones → area,belt,ground,page,region,section,sector,territory,time zone,zones -->
+        <section new='4.12.14'>
+            <div class=title tr-id=time-zones><span small gold glyph=calendar></span> Time Zones</div>
+            <div class=summary>
+                <div class=toggle>
+                    <input id=time_zones type=checkbox>
+                    <label for=time_zones></label>
+                </div>
+                <p tr-id>
+                    Automatically convert detected times on the page to your local time zone.
+                </p>
+            </div>
+        </section>
+
+        <!-- View Mode → approach,aspect,condition,fashion,form,glimpse,loading,look,mechanism,method,mode,outlook,packing,page,perspective,picture,posture,procedure,process,prospect,quality,scene,sight,situation,status,storing,style,system,technique,tone,view,vision,way -->
+        <section new='3.1.5'>
+            <div class=title tr-id=view-mode><span small gold glyph=video></span> View Mode</div>
+            <div class=summary>
+                <p tr-id>
+                    When the page is done loading, change the view to:
+                </p>
+                <select id=view_mode>
+                    <option value=null selected tr-id='view-mode:options'>Nothing (do not change)</option>
+                    <option value=default tr-id>Default Mode (banner + chat)</option>
+                    <option value=theatre tr-id>Theatre Mode (chat)</option>
+                    <option value=fullwidth tr-id>Fullwidth Mode (banner)</option>
+                    <option value=fullscreen tr-id>Fullscreen Mode</option>
+                </select>
+            </div>
+        </section>
+
         <!-- Save Footer -->
         <section save tr-id=save>
             <button class='ripple save'>Save</button>
@@ -2050,6 +2050,49 @@
     <!-- Data & Sync -->
     <header id=group-data tr-id='header:data' subtitle='Move, back up or limit your data. Some of these use the Internet.'>Data &amp; Sync</header>
     <article>
+        <!-- Data Usage → data,dossier,evidence,goods,info,input,knowledge,management,picture,statistics,testimony,usage -->
+        <section>
+            <div class=title tr-id=data-usage--browser-storage><span small glyph=poll></span> Data Usage</div>
+            <div class=summary>
+                <p>
+                    <table id=data-usage--browser-storage-itemized>
+                        <thead>
+                            <tr>
+                                <th colspan=999><button id=data-usage--browser-storage-range data-zoomed=false visible style='margin:0;width:100%'></button></th>
+                            </tr>
+                        </thead>
+                    </table>
+                </p>
+            </div>
+        </section>
+
+        <!-- Language → accent,dialect,expression,jargon,language,prose,sound,speech,style,terminology,vocabulary,voice,word,wording -->
+        <section dead='5.30'>
+            <div class=title tr-id=language><span small glyph=translate></span> Language</div>
+            <div class=summary>
+                <select id=user_language_preference disabled>
+                    <option value=en selected>English (North American)</option>
+                </select>
+            </div>
+        </section>
+
+        <!-- Low Data Usage → appraisal,assessment,conclusion,data,delay,development,dossier,estimate,estimation,evaluation,evidence,expansion,extension,freedom,goods,guess,hour,increase,info,input,knowledge,management,measurement,opinion,opportunity,picture,postponement,projection,rating,statistics,survey,testimony,usage,valuation -->
+        <section new='4.30'>
+            <div class=title tr-id='@low-data-mode'><span small glyph=stats></span> Low Data Usage</div>
+            <div class=summary>
+                <div class=toggle>
+                    <input id=low_data_mode type=checkbox when-off=5 when-on=15>
+                    <label for=low_data_mode></label>
+                </div>
+                <p tr-id>
+                    Forces the extension to use less overhead data per hour.
+                </p>
+                <p tr-id>
+                    Current estimate <span><input disabled visible id=est-data-usage type=number value=0 controller='#low_data_mode'></span>
+                </p>
+            </div>
+        </section>
+
         <!-- Export Settings → export settings,sync settings,cloud,download,dump,export,id,load,log in,network,settings,ship,smuggle,transport,upload -->
         <section new='5.32'>
             <div class=title tr-id='networking:sync-settings'><span small glyph=export></span> Sync &amp; Backup</div>
@@ -2089,49 +2132,6 @@
             </div>
         </section>
 
-        <!-- Low Data Usage → appraisal,assessment,conclusion,data,delay,development,dossier,estimate,estimation,evaluation,evidence,expansion,extension,freedom,goods,guess,hour,increase,info,input,knowledge,management,measurement,opinion,opportunity,picture,postponement,projection,rating,statistics,survey,testimony,usage,valuation -->
-        <section new='4.30'>
-            <div class=title tr-id='@low-data-mode'><span small glyph=stats></span> Low Data Usage</div>
-            <div class=summary>
-                <div class=toggle>
-                    <input id=low_data_mode type=checkbox when-off=5 when-on=15>
-                    <label for=low_data_mode></label>
-                </div>
-                <p tr-id>
-                    Forces the extension to use less overhead data per hour.
-                </p>
-                <p tr-id>
-                    Current estimate <span><input disabled visible id=est-data-usage type=number value=0 controller='#low_data_mode'></span>
-                </p>
-            </div>
-        </section>
-
-        <!-- Data Usage → data,dossier,evidence,goods,info,input,knowledge,management,picture,statistics,testimony,usage -->
-        <section>
-            <div class=title tr-id=data-usage--browser-storage><span small glyph=poll></span> Data Usage</div>
-            <div class=summary>
-                <p>
-                    <table id=data-usage--browser-storage-itemized>
-                        <thead>
-                            <tr>
-                                <th colspan=999><button id=data-usage--browser-storage-range data-zoomed=false visible style='margin:0;width:100%'></button></th>
-                            </tr>
-                        </thead>
-                    </table>
-                </p>
-            </div>
-        </section>
-
-        <!-- Language → accent,dialect,expression,jargon,language,prose,sound,speech,style,terminology,vocabulary,voice,word,wording -->
-        <section dead='5.30'>
-            <div class=title tr-id=language><span small glyph=translate></span> Language</div>
-            <div class=summary>
-                <select id=user_language_preference disabled>
-                    <option value=en selected>English (North American)</option>
-                </select>
-            </div>
-        </section>
-
         <!-- Save Footer -->
         <section save tr-id=save>
             <button class='ripple save'>Save</button>
@@ -2141,6 +2141,40 @@
     <!-- Troubleshooting -->
     <header id=group-troubleshooting tr-id='header:troubleshooting' subtitle='Help find a bug. These are advanced features.'>Troubleshooting</header>
     <article id=':settings--developer' danger>
+        <!-- Automatic Tab Reloads → cause,data,extension,loss,reload,reloads,tab,tabs -->
+        <section>
+            <div class=title tr-id='@auto-tab-reloads'><span small glyph=refresh></span> Automatic Tab Reloads</div>
+            <div class=summary>
+                <div class=toggle>
+                    <input id=auto_tab_reloads type=checkbox checked>
+                    <label for=auto_tab_reloads></label>
+                </div>
+                <p tr-id>
+                    Allow the extension to automatically reload tabs.
+                </p>
+                <p warning-text tr-id>
+                    This may cause data loss.
+                </p>
+            </div>
+        </section>
+
+        <!-- Debug Recording → bug,capture,debug,error,history,issue,log,problem,record,recording,replay,report,timeline,trace,troubleshoot -->
+        <section new='5.35.5.51'>
+            <div class=title tr-id='@debug-recording'><span small glyph=stats></span> Debug Recording</div>
+            <div class=summary>
+                <div class=toggle>
+                    <input id=debug_recording type=checkbox>
+                    <label for=debug_recording></label>
+                </div>
+                <p tr-id>
+                    Keep a log of the last <span unit=min><input id=debug_recording__minutes type=number value=5 min=1 max=30></span> of clicks, page changes, the video's status and what the extension did. <strong warning-text tr-id>Messages are hidden.</strong>
+                </p>
+                <p tr-id>
+                    Press <code>Ctrl</code> three times quickly on a Twitch page to save it as a file you can add to an issue.
+                </p>
+            </div>
+        </section>
+
         <!-- Display Console Messages → act,array,assuage,console,delay,demonstration,development,display,example,exhibit,expansion,extension,increase,messages,parade,postponement,presentation,soothe,writing -->
         <section>
             <div class=title tr-id='@console'><span small gold glyph=stats></span> Display Console Messages</div>
@@ -2251,53 +2285,19 @@
             </div>
         </section>
 
-        <!-- Debug Recording → bug,capture,debug,error,history,issue,log,problem,record,recording,replay,report,timeline,trace,troubleshoot -->
-        <section new='5.35.5.51'>
-            <div class=title tr-id='@debug-recording'><span small glyph=stats></span> Debug Recording</div>
-            <div class=summary>
-                <div class=toggle>
-                    <input id=debug_recording type=checkbox>
-                    <label for=debug_recording></label>
-                </div>
-                <p tr-id>
-                    Keep a log of the last <span unit=min><input id=debug_recording__minutes type=number value=5 min=1 max=30></span> of clicks, page changes, the video's status and what the extension did. <strong warning-text tr-id>Messages are hidden.</strong>
-                </p>
-                <p tr-id>
-                    Press <code>Ctrl</code> three times quickly on a Twitch page to save it as a file you can add to an issue.
-                </p>
-            </div>
-        </section>
-
-        <!-- Use Fine Details → accomplished,action,admirable,attractive,background,beautiful,blink,contact,cool,data,delay,details,development,dossier,elegant,evidence,exceptional,expansion,expensive,experience,exquisite,extension,fashionable,fine,first-rate,flutter,goods,great,handsome,increase,info,input,involvement,jerk,jiggle,know-how,knowledge,lovely,magnificent,maturity,minutiae,neat,outstanding,participation,patience,picture,pleasant,postponement,practice,rare,reality,refined,sense,shudder,skill,smart,solid,splendid,statistics,striking,struggle,subtle,superior,testimony,training,tremble,twitch,understanding,well-made,wisdom -->
+        <!-- Experimental Features → accident,act,array,casualty,catastrophe,cause,cost,damage,data,debt,defeat,deficit,delay,demonstration,destruction,development,disaster,display,dossier,element,evidence,example,exhibit,expansion,explanation,extension,failure,fall,goods,increase,info,injury,input,knowledge,loss,markdown,matter,motivation,motive,origin,parade,picture,postponement,presentation,principle,purpose,root,source,statistics,testimony,trouble -->
         <section>
-            <div class=title tr-id='@fine-details'><span small glyph=stats></span> Use Fine Details</div>
+            <div class=title tr-id='@experimental'><span small glyph=stats></span> Experimental Features</div>
             <div class=summary>
                 <div class=toggle>
-                    <input id=fine_details type=checkbox>
-                    <label for=fine_details></label>
+                    <input id=experimental_mode type=checkbox>
+                    <label for=experimental_mode></label>
                 </div>
                 <p tr-id>
-                    Allow the extension to make use of Twitch™ API data to enhance your experience.
+                    Allow the extension to display, and use experimental features.
                 </p>
                 <p warning-text tr-id>
-                    This will not collect any data. It will use the data Twitch™ has already collected.
-                </p>
-            </div>
-        </section>
-
-        <!-- Automatic Tab Reloads → cause,data,extension,loss,reload,reloads,tab,tabs -->
-        <section>
-            <div class=title tr-id='@auto-tab-reloads'><span small glyph=refresh></span> Automatic Tab Reloads</div>
-            <div class=summary>
-                <div class=toggle>
-                    <input id=auto_tab_reloads type=checkbox checked>
-                    <label for=auto_tab_reloads></label>
-                </div>
-                <p tr-id>
-                    Allow the extension to automatically reload tabs.
-                </p>
-                <p warning-text tr-id>
-                    This may cause data loss.
+                    Some features may cause data loss.
                 </p>
             </div>
         </section>
@@ -2334,19 +2334,19 @@
             </div>
         </section>
 
-        <!-- Experimental Features → accident,act,array,casualty,catastrophe,cause,cost,damage,data,debt,defeat,deficit,delay,demonstration,destruction,development,disaster,display,dossier,element,evidence,example,exhibit,expansion,explanation,extension,failure,fall,goods,increase,info,injury,input,knowledge,loss,markdown,matter,motivation,motive,origin,parade,picture,postponement,presentation,principle,purpose,root,source,statistics,testimony,trouble -->
+        <!-- Use Fine Details → accomplished,action,admirable,attractive,background,beautiful,blink,contact,cool,data,delay,details,development,dossier,elegant,evidence,exceptional,expansion,expensive,experience,exquisite,extension,fashionable,fine,first-rate,flutter,goods,great,handsome,increase,info,input,involvement,jerk,jiggle,know-how,knowledge,lovely,magnificent,maturity,minutiae,neat,outstanding,participation,patience,picture,pleasant,postponement,practice,rare,reality,refined,sense,shudder,skill,smart,solid,splendid,statistics,striking,struggle,subtle,superior,testimony,training,tremble,twitch,understanding,well-made,wisdom -->
         <section>
-            <div class=title tr-id='@experimental'><span small glyph=stats></span> Experimental Features</div>
+            <div class=title tr-id='@fine-details'><span small glyph=stats></span> Use Fine Details</div>
             <div class=summary>
                 <div class=toggle>
-                    <input id=experimental_mode type=checkbox>
-                    <label for=experimental_mode></label>
+                    <input id=fine_details type=checkbox>
+                    <label for=fine_details></label>
                 </div>
                 <p tr-id>
-                    Allow the extension to display, and use experimental features.
+                    Allow the extension to make use of Twitch™ API data to enhance your experience.
                 </p>
                 <p warning-text tr-id>
-                    Some features may cause data loss.
+                    This will not collect any data. It will use the data Twitch™ has already collected.
                 </p>
             </div>
         </section>
@@ -2520,16 +2520,6 @@
     <!-- About TTV Tools -->
     <header id=group-about tr-id=about>About TTV Tools</header>
     <article>
-        <!-- Version Information → adaptation,advice,clue,data,form,history,information,instruction,intelligence,interpretation,knowledge,material,message,rendition,report,science,story,tale,tip,translation,variant,version,word -->
-        <section>
-            <div class=title tr-id=version><span small glyph=extensions></span> Version</div>
-            <div class=summary>
-                <a type=button set='subtitle=version.installed'><span small glyph=extensions></span> Installed</a>
-                <a type=button set='subtitle=version.github;from-github=origin.github' href='https://github.com/ephellon/twitch-tools' github><span small glyph=github></span> GitHub </a>
-                <a type=button set='subtitle=version.chrome;from-chrome=origin.chrome' href='https://chrome.google.com/webstore/detail/twitch-tools/fcfodihfdbiiogppbnhabkigcdhkhdjd' chrome><span small glyph=chrome></span> Chrome Web Store </a>
-            </div>
-        </section>
-
         <!-- Support → backing,help,support -->
         <section>
             <div class=title tr-id=support><span small glyph=info></span> Support</div>
@@ -2546,6 +2536,16 @@
                     <span small glyph=unread></span>
                     e-mail
                 </a>
+            </div>
+        </section>
+
+        <!-- Version Information → adaptation,advice,clue,data,form,history,information,instruction,intelligence,interpretation,knowledge,material,message,rendition,report,science,story,tale,tip,translation,variant,version,word -->
+        <section>
+            <div class=title tr-id=version><span small glyph=extensions></span> Version</div>
+            <div class=summary>
+                <a type=button set='subtitle=version.installed'><span small glyph=extensions></span> Installed</a>
+                <a type=button set='subtitle=version.github;from-github=origin.github' href='https://github.com/ephellon/twitch-tools' github><span small glyph=github></span> GitHub </a>
+                <a type=button set='subtitle=version.chrome;from-chrome=origin.chrome' href='https://chrome.google.com/webstore/detail/twitch-tools/fcfodihfdbiiogppbnhabkigcdhkhdjd' chrome><span small glyph=chrome></span> Chrome Web Store </a>
             </div>
         </section>
 
