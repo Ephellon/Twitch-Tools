@@ -126,7 +126,7 @@ export default {
                             toggle: 'filter_messages__bullets_raid',
                         },
                         {
-                            text: "Hide all raid related bulletins.",
+                            text: "Hide raid bulletins.",
                         },
                     ],
                 },
@@ -142,7 +142,7 @@ export default {
                             toggle: 'filter_messages__bullets_coin',
                         },
                         {
-                            text: "Hide all channel point related bulletins.",
+                            text: "Hide channel point bulletins.",
                         },
                     ],
                 },
@@ -158,7 +158,7 @@ export default {
                             toggle: 'filter_messages__bullets_subs',
                         },
                         {
-                            text: "Hide all subscription related bulletins.",
+                            text: "Hide subscription bulletins.",
                         },
                     ],
                 },
@@ -174,7 +174,7 @@ export default {
                             toggle: 'filter_messages__bullets_note',
                         },
                         {
-                            text: "Hide all announcement related bulletins.",
+                            text: "Hide announcements.",
                         },
                     ],
                 },
@@ -190,7 +190,7 @@ export default {
                             toggle: 'filter_messages__bullets_paid',
                         },
                         {
-                            text: "Hide all pinned messages.",
+                            text: "Hide pinned messages.",
                         },
                     ],
                 },

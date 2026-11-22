@@ -29,13 +29,13 @@ export default {
                     choice: 'first_in_line_none',
                     title: "Disabled",
                     tr: 'first-in-line:disabled',
-                    text: "Do not use this feature",
+                    text: "Off",
                 },
                 {
                     choice: 'first_in_line_now',
                     title: "Immediate",
                     tr: 'first-in-line:immediate',
-                    text: "Go to all streams as soon as they go live",
+                    text: "Go to each followed channel as soon as it goes live",
                     attrs: {
                         beta: '',
                     },
@@ -44,19 +44,19 @@ export default {
                     choice: 'first_in_line',
                     title: "Notification",
                     tr: 'first-in-line:notification',
-                    text: "When you receive a notification for a channel going live, go to its stream after {{first_in_line_time_minutes}}",
+                    text: "When Twitch notifies you that a channel went live, go to it after {{first_in_line_time_minutes}}",
                 },
                 {
                     choice: 'first_in_line_plus',
                     title: "Appearance",
                     tr: 'first-in-line:appearance',
-                    text: "When a channel appears in your Followed Channels, go to its stream after {{first_in_line_plus_time_minutes}}",
+                    text: "When a channel shows up in your Followed Channels, go to it after {{first_in_line_plus_time_minutes}}",
                 },
                 {
                     choice: 'first_in_line_all',
                     title: "Automatic",
                     tr: 'first-in-line:smart-notifications',
-                    text: "Go to all streams automatically after {{first_in_line_all_time_minutes}}",
+                    text: "Go to every followed channel that goes live, after {{first_in_line_all_time_minutes}}",
                     titleAttrs: {
                         bubble: 'Smart Notifications',
                     },
@@ -80,7 +80,7 @@ export default {
                             toggle: 'up_next__one_instance',
                         },
                         {
-                            text: "Only the first tab to load <b>Up Next</b> is allowed to use it.",
+                            text: "Only the first tab that loads <b>Up Next</b> runs it. Your other tabs don't.",
                         },
                     ],
                 },

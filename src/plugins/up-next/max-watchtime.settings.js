@@ -16,10 +16,10 @@ export default {
             toggle: 'max_watchtime',
         },
         {
-            text: "When a channel you marked goes live, a tab with <b>Up Next</b> off goes to it right away and stays until the stream ends.",
+            text: "When a marked channel goes live, one of your other Twitch tabs goes to it right away and stays until the stream ends.",
         },
         {
-            text: "Mark a channel with the <b>Max Watchtime</b> button on its About panel (under DVR). With no tab that has Up Next off, nothing happens.",
+            text: "Needs <b>Up Next</b> › <em>One Instance</em> on (the <b>Up Next</b> tab is never used), or <b>Up Next</b> off. Mark a channel with the <b>Max Watchtime</b> button on its About panel, under DVR.",
         },
     ],
     settings: {

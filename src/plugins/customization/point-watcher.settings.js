@@ -10,7 +10,7 @@ export default {
     keywords: 'content,document,idea,paragraph,passage,quotation,text,theme,verse,watcher,wording',
     rows: [
         {
-            text: "Where should the <b>Point Watcher</b> text be displayed?",
+            text: "Where should <b>Point Watcher</b> be shown?",
         },
         {
             select: 'point_watcher_placement',

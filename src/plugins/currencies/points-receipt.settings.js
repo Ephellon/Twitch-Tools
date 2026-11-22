@@ -10,7 +10,7 @@ export default {
     keywords: 'certificate,content,document,idea,musty,noxious,paragraph,passage,points,putrid,quotation,ranking,receipt,text,theme,verse,voucher,wording',
     rows: [
         {
-            text: "Where should the <b>Points Receipt &amp; Point Rank</b> text be displayed?",
+            text: "Where should the <b>Points Receipt &amp; Rank</b> be shown?",
         },
         {
             select: 'points_receipt_placement',

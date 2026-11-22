@@ -37,7 +37,7 @@ export default {
                             toggle: 'mention_audio',
                         },
                         {
-                            text: "When someone mentions you <code purple>@username</code>, play the <b>notification sound</b>.",
+                            text: "Someone mentions you <code purple>@username</code>.",
                         },
                     ],
                 },
@@ -51,7 +51,7 @@ export default {
                             toggle: 'phrase_audio',
                         },
                         {
-                            text: "When someone uses a phrase from <b>Highlight Phrases</b>, play the <b>notification sound</b>.",
+                            text: "A message contains a phrase from <b>Highlight Phrases</b>.",
                         },
                     ],
                 },
@@ -65,7 +65,7 @@ export default {
                             toggle: 'whisper_audio',
                         },
                         {
-                            text: "When someone sends you a whisper, play the <b>notification sound</b>.",
+                            text: "Someone whispers to you.",
                         },
                     ],
                 },

@@ -35,7 +35,7 @@ export default {
                             toggle: 'greedy_raiding',
                         },
                         {
-                            text: "Go to <b attention-text top-tooltip='Followed channels with Channel Points'>certain channels</b> when they begin a raid.",
+                            text: "When a <b attention-text top-tooltip='Followed channels with Channel Points'>followed channel</b> starts a raid, go to it so you join the raid. Needs <b>Experimental Features</b>.",
                         },
                     ],
                 },

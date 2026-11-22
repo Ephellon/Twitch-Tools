@@ -38,7 +38,7 @@ export default {
                             toggle: 'auto_load_bttv_emotes',
                         },
                         {
-                            text: "Automatically convert emote text to <b>BetterTTV</b> emotes.",
+                            text: "Turn emote names in chat into <b>BetterTTV</b> emotes.",
                         },
                     ],
                 },
@@ -52,7 +52,7 @@ export default {
                             toggle: 'bttv_emotes_channel',
                         },
                         {
-                            text: "Load channel specific <b>BetterTTV</b> emotes.",
+                            text: "Also load each channel's own <b>BetterTTV</b> emotes.",
                         },
                     ],
                 },

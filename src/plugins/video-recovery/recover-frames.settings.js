@@ -16,7 +16,7 @@ export default {
             toggle: 'recover_frames',
         },
         {
-            text: "When the video <b attention-text top-tooltip='Fails to play for longer than 15 seconds'>freezes</b>, reload the webpage.",
+            text: "If the video <b attention-text top-tooltip='Fails to play for longer than 15 seconds'>freezes</b>, reload the page.",
         },
         {
             extras: {

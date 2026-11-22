@@ -30,7 +30,7 @@ export default {
                     },
                     rows: [
                         {
-                            text: "What file type should <b>Video Clips</b> be?",
+                            text: "File type for <b>clips</b>:",
                         },
                         {
                             select: 'video_clips__file_type',
@@ -44,7 +44,7 @@ export default {
                     },
                     rows: [
                         {
-                            text: "What quality should <b>Video Clips</b> be?",
+                            text: "Quality for <b>clips</b>:",
                         },
                         {
                             select: 'video_clips__quality',
@@ -58,7 +58,7 @@ export default {
                     },
                     rows: [
                         {
-                            text: "<b>Video Clips</b> should be {{video_clips__length}} by default.",
+                            text: "Clips are {{video_clips__length}} long by default.",
                         },
                     ],
                 },

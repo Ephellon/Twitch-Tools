@@ -20,7 +20,7 @@ export default {
                 </div>`,
         },
         {
-            text: "Show the default values.",
+            text: "Show each setting's default value.",
         },
     ],
     settings: {},

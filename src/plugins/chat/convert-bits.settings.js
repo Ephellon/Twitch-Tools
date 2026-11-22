@@ -13,7 +13,7 @@ export default {
             toggle: 'convert_bits',
         },
         {
-            text: "When presented with <a href='https://www.twitch.tv/creatorcamp/en/get-rewarded/bits-and-subscriptions/#bits' top-tooltip='Bits'><button style='background-color:var(--grey)!important'><img src='bits.gif' alt='Bits' height='20' width='20' type='glyph'></button></a> show the true <b>USD</b> amount they represent.",
+            text: "Show what <a href='https://www.twitch.tv/creatorcamp/en/get-rewarded/bits-and-subscriptions/#bits' top-tooltip='Bits'><button style='background-color:var(--grey)!important'><img src='bits.gif' alt='Bits' height='20' width='20' type='glyph'></button></a> are worth in <b>USD</b>.",
         },
     ],
     settings: {

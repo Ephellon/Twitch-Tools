@@ -19,7 +19,7 @@ export default {
             text: "Use less data each hour.",
         },
         {
-            text: "Current estimate {{est-data-usage}}",
+            text: "Current estimate: {{est-data-usage}}",
         },
     ],
     settings: {

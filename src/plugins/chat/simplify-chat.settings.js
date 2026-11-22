@@ -14,7 +14,7 @@ export default {
     keywords: 'accessibility,accent,act,array,chatter,colors,conversation,demonstration,display,emphasis,example,exhibit,font,fount,gossip,homogeneous,inflection,inflexible,monotone,orderly,parade,presentation,reliable,resonance,rigid,strength,systematic,timbre,tones,uniform',
     rows: [
         {
-            text: "Make Twitch™ easier to navigate and use.",
+            text: "Make Twitch™ easier to read and use.",
         },
         {
             html: `<details>

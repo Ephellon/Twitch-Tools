@@ -16,7 +16,7 @@ export default {
             text: "Skip the <b warning-text>mature audiences</b> warning.",
         },
         {
-            text: "This will also join <a href='https://help.twitch.tv/s/article/watch-parties' top-tooltip='Watch Parties'>Watch Parties</a> automatically.",
+            text: "Also joins <a href='https://help.twitch.tv/s/article/watch-parties' top-tooltip='Watch Parties'>Watch Parties</a> for you.",
         },
     ],
     settings: {

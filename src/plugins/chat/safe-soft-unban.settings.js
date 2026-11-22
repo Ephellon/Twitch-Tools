@@ -41,7 +41,7 @@ export default {
                             toggle: 'soft_unban_fade_old_messages',
                         },
                         {
-                            text: "Messages will be visible for <b>30s</b>.",
+                            text: "Messages fade after <b>30s</b>.",
                         },
                     ],
                 },
@@ -55,7 +55,7 @@ export default {
                             toggle: 'soft_unban_keep_bots',
                         },
                         {
-                            text: "Display bot messages.",
+                            text: "Show bot messages.",
                         },
                     ],
                 },

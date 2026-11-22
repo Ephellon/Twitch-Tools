@@ -35,7 +35,7 @@ export default {
                         },
                         {
                             tr: 'stay-live:vod-is-offline',
-                            text: "Treat <a href='https://help.twitch.tv/s/article/video-on-demand#reruns' top-tooltip='Reruns'>reruns</a> as offline streams.",
+                            text: "Treat <a href='https://help.twitch.tv/s/article/video-on-demand#reruns' top-tooltip='Reruns'>reruns</a> as offline.",
                         },
                     ],
                 },

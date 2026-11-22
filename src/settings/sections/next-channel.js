@@ -13,7 +13,7 @@ export default {
     keywords: 'next channel,avenue,carrier,channel,current,flood,flow,means,medium,offline,route,rush,spate,stream,surge,tide,torrent,tributary,tunnel',
     rows: [
         {
-            text: "How should the next channel be chosen when <b>Up Next</b> is empty?",
+            text: "When <b>Up Next</b> is empty, how should the next channel be picked?",
         },
         {
             text: "<b warning-text>This only happens when the current stream ends</b>.",

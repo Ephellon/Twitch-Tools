@@ -13,7 +13,7 @@ export default {
     keywords: 'approach,aspect,condition,fashion,form,glimpse,loading,look,mechanism,method,mode,outlook,packing,page,perspective,picture,posture,procedure,process,prospect,quality,scene,sight,situation,status,storing,style,system,technique,tone,view,vision,way',
     rows: [
         {
-            text: "When the page is done loading, change the view to:",
+            text: "After a page loads, switch to:",
         },
         {
             select: 'view_mode',

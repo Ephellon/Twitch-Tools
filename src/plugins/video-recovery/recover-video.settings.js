@@ -13,7 +13,7 @@ export default {
             toggle: 'recover_video',
         },
         {
-            text: "When the video <b attention-text top-tooltip='Displays an error code or blank screen'>fails to download</b>, reload the webpage.",
+            text: "If the video <b attention-text top-tooltip='Displays an error code or blank screen'>fails to load</b>, reload the page.",
         },
     ],
     settings: {

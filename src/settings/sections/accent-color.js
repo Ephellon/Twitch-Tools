@@ -13,7 +13,7 @@ export default {
     keywords: 'accent,color,glow,hue,intensity,paint',
     rows: [
         {
-            text: "What should the TTV Tools' accent color be?",
+            text: "TTV Tools' accent color:",
         },
         {
             select: 'accent_color',

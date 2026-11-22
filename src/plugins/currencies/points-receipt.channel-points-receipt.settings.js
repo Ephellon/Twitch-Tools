@@ -10,7 +10,7 @@ export default {
     keywords: 'act,array,assemblage,assortment,avenue,carrier,certificate,channel,collection,compilation,demonstration,display,example,exhibit,lot,means,medium,number,parade,points,presentation,receipt,route,selection,set,store,tunnel,voucher',
     rows: [
         {
-            text: "How should the receipt display <a href='https://help.twitch.tv/s/article/channel-points-guide' top-tooltip='Channel Points'><button style='background-color:var(--grey)!important'><span small purple glyph='channelpoints'></span></button></a> collection?",
+            text: "How should the receipt show the <a href='https://help.twitch.tv/s/article/channel-points-guide' top-tooltip='Channel Points'><button style='background-color:var(--grey)!important'><span small purple glyph='channelpoints'></span></button></a> you collected?",
         },
         {
             select: 'channelpoints_receipt_display',

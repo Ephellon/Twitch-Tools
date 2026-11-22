@@ -32,7 +32,7 @@ export default {
                     },
                     rows: [
                         {
-                            text: "Enable Steam® store integration.",
+                            text: "Show Steam® links.",
                         },
                         {
                             toggle: 'store_integration__steam',
@@ -46,7 +46,7 @@ export default {
                     },
                     rows: [
                         {
-                            text: "Enable PlayStation® store integration.",
+                            text: "Show PlayStation® links.",
                         },
                         {
                             toggle: 'store_integration__playstation',
@@ -60,7 +60,7 @@ export default {
                     },
                     rows: [
                         {
-                            text: "Enable Xbox® store integration.",
+                            text: "Show Xbox® links.",
                         },
                         {
                             toggle: 'store_integration__xbox',
@@ -74,7 +74,7 @@ export default {
                     },
                     rows: [
                         {
-                            text: "Enable Nintendo® store integration.",
+                            text: "Show Nintendo® links.",
                         },
                         {
                             toggle: 'store_integration__nintendo',
@@ -88,7 +88,7 @@ export default {
                     },
                     rows: [
                         {
-                            text: "Enable Epic Games® store integration.",
+                            text: "Show Epic Games® links.",
                         },
                         {
                             toggle: 'store_integration__epic',

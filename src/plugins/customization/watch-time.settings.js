@@ -10,7 +10,7 @@ export default {
     keywords: 'timepiece,watch,wristwatch',
     rows: [
         {
-            text: "Where should the <b>Watch Time</b> be displayed?",
+            text: "Where should <b>Watch Time</b> be shown?",
         },
         {
             select: 'watch_time_placement',
