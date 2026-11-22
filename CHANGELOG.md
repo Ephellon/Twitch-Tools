@@ -44,6 +44,7 @@
 ## Release History
 
 ### Version 5.35.\*
+- [`5.35.6.21`](https://github.com/Ephellon/Twitch-Tools/releases/tag/5.35.6.21) — Greedy Raiding uses one hidden chat at a time, watching each live followed channel in turn (2 minutes each; the turns carry over when Up Next moves on) instead of one per live channel, which overloaded the page (#99); followed channels are read again (checked every 15 seconds)
 - [`5.35.6.20`](https://github.com/Ephellon/Twitch-Tools/releases/tag/5.35.6.20) — Fixed CPU usage issue caused by the section labeler
 - [`5.35.6.19`](https://github.com/Ephellon/Twitch-Tools/releases/tag/5.35.6.19) — Followed channels are read again in the open and the collapsed side bar (TTV saw none in some browsers, so Stay Live and Next Channel found nowhere to go); Up Next+ no longer queues every followed channel when the list is first read. Max Watchtime: never moves an Up Next tab, and a channel whose tab closed gets another. Stay Live says "no followed channels on" once, not every 3 seconds
 - [`5.35.6.18`](https://github.com/Ephellon/Twitch-Tools/releases/tag/5.35.6.18) — Added Max Watchtime: mark a channel with the button under DVR on its About panel; when it goes live, a tab with Up Next off goes to it right away and stays until the stream ends (first come, first served; with no such tab, nothing happens)
