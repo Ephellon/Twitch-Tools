@@ -13131,23 +13131,46 @@ let Initialize = async(START_OVER = false) => {
             since = now;
         }
 
+        // One frame for good: it goes to the next channel instead of being removed and made again (removing it gave no memory
+        // back any sooner). `replace` keeps the turns out of the tab's Back history
+        let goto = (frame, src) => {
+            try {
+                frame.contentWindow.location.replace(new URL(src, location.href).href);
+            } catch(error) {
+                frame.src = src;
+            }
+        };
+
         if(nullish(name)) {
-            frame?.remove();
+            // No live followed channel: the frame waits on a blank page
+            if(defined(frame) && frame.getAttribute('channel')?.length) {
+                goto(frame, 'about:blank');
+                frame.setAttribute('channel', '');
+            }
+
             GREEDY_RAIDING_FRAMES.clear();
         } else if(frame?.getAttribute('channel') != name) {
-            frame?.remove();
+            let src = `./popout/${ name }/chat?hidden=true&parent=twitch.tv&current=${ STREAMER.name.equals(name) }&allow=greedy_raiding`;
+
             GREEDY_RAIDING_FRAMES.clear();
 
-            frame = furnish(`iframe#tt-greedy-raiding--${ name }`, {
-                src: `./popout/${ name }/chat?hidden=true&parent=twitch.tv&current=${ STREAMER.name.equals(name) }&allow=greedy_raiding`,
-                channel: name,
-                since,
+            if(defined(frame)) {
+                goto(frame, src);
+                frame.setAttribute('channel', name);
+                frame.setAttribute('since', since);
+            } else {
+                frame = furnish('iframe#tt-greedy-raiding--frame', {
+                    src,
+                    channel: name,
+                    since,
 
-                // sandbox: `allow-scripts allow-same-origin allow-popups allow-popups-to-escape-sandbox allow-modals`,
-            });
+                    // sandbox: `allow-scripts allow-same-origin allow-popups allow-popups-to-escape-sandbox allow-modals`,
+                });
+
+                container.append(frame);
+            }
 
             GREEDY_RAIDING_FRAMES.set(name, frame);
-            container.append(frame);
 
             try {
                 localStorage.setItem('ttv-tools:greedy-raiding', JSON.stringify({ name, since }));
