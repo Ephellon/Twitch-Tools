@@ -20,7 +20,7 @@ plugin({
     },
 
     /**
-     * Creates hidden iframes for all currently live followed channels to maintain connections.
+     * Watches the live followed channels for raids through one hidden chat frame, one channel at a time.
      */
     handler: () => {
         const online = [STREAMER, ...STREAMERS].filter(isLive).filter(({ name }) => name.unlike(STREAMER.name))
@@ -41,24 +41,59 @@ plugin({
                 })
             );
 
-        for(const channel of online) {
-            const { name } = channel;
-            const frame = (null
-                ?? $(`#tt-greedy-raiding--${ name }`)
-                ?? furnish(`iframe#tt-greedy-raiding--${ name }`, {
-                    src: `./popout/${ name }/chat?hidden=true&parent=twitch.tv&current=${ STREAMER.name.equals(name) }&allow=greedy_raiding`,
-                    destroy: setTimeout(name => $(`#tt-greedy-raiding--${ name }`)?.remove(), 120_000, name),
+        // One channel at a time, at all times: each hidden frame is a whole Twitch chat page, and one per live followed channel
+        // froze pages once the followed channels could be read (v5 #99). The frame watches a channel for 2 minutes, then moves
+        // on to the next live one, in name order. The turn outlives the page (kept in localStorage: only the Up Next tab
+        // runs this): Up Next moves on every few minutes, and starting over on each page left channels without a turn
+        const frames = [...container.querySelectorAll('iframe[id^="tt-greedy-raiding--"i]')]
+            , names = online.map(channel => channel.name).sort((a, b) => a.localeCompare(b))
+            , now = +new Date;
 
-                    // sandbox: `allow-scripts allow-same-origin allow-popups allow-popups-to-escape-sandbox allow-modals`,
-                })
-            );
+        let [frame] = frames
+            , turn = {};
 
-            GREEDY_RAIDING_FRAMES.set(channel.name, frame);
+        for(const extra of frames.slice(1))
+            extra.remove();
 
-            if([...container.children].missing(frame))
-                container.append(frame);
+        try {
+            turn = JSON.parse(localStorage.getItem('ttv-tools:greedy-raiding') ?? '{}') ?? {};
+        } catch {
+            // No storage: this page's frame is the turn
         }
 
+        let name = frame?.getAttribute('channel') ?? turn.name
+            , since = parseInt(frame?.getAttribute('since') ?? turn.since) || 0;
+
+        // The turn is over (2 minutes), or its channel isn't live any more: the next channel's turn
+        if(!names.includes(name) || now - since >= 120_000) {
+            name = names.find(next => next.localeCompare(name ?? '') > 0) ?? names[0];
+            since = now;
+        }
+
+        if(nullish(name)) {
+            frame?.remove();
+            GREEDY_RAIDING_FRAMES.clear();
+        } else if(frame?.getAttribute('channel') != name) {
+            frame?.remove();
+            GREEDY_RAIDING_FRAMES.clear();
+
+            frame = furnish(`iframe#tt-greedy-raiding--${ name }`, {
+                src: `./popout/${ name }/chat?hidden=true&parent=twitch.tv&current=${ STREAMER.name.equals(name) }&allow=greedy_raiding`,
+                channel: name,
+                since,
+
+                // sandbox: `allow-scripts allow-same-origin allow-popups allow-popups-to-escape-sandbox allow-modals`,
+            });
+
+            GREEDY_RAIDING_FRAMES.set(name, frame);
+            container.append(frame);
+
+            try {
+                localStorage.setItem('ttv-tools:greedy-raiding', JSON.stringify({ name, since }));
+            } catch {
+                // No storage
+            }
+        }
         if([...$.body.children].missing(container))
             $.body.append(container);
     },

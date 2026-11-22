@@ -4368,7 +4368,7 @@ if(top == window) {
                         for(const container of $.all('[id*="side"i][id*="nav"i] .side-nav-section[aria-label]'))
                             if(container.getAttribute('tt-svg-label') != 'followed' && $.defined('.followed-side-nav-header, [data-a-id^="followed-channel"i], [data-test-selector="followed-channel"i]', container))
                                 container.setAttribute('tt-svg-label', 'followed');
-                    }, 1000);
+                    }, 15e3);
                 } // :SectionLabeling
 
                 /**
