@@ -13104,7 +13104,7 @@ let Initialize = async(START_OVER = false) => {
             );
 
         // One channel at a time, at all times: each hidden frame is a whole Twitch chat page, and one per live followed channel
-        // froze pages once the followed channels could be read (#99). The frame watches a channel for 2 minutes, then moves
+        // froze pages once the followed channels could be read (#99). The frame watches a channel for 15 seconds, then moves
         // on to the next live one, in name order. The turn outlives the page (kept in localStorage: only the Up Next tab
         // runs this): Up Next moves on every few minutes, and starting over on each page left channels without a turn
         let frames = [...container.querySelectorAll('iframe[id^="tt-greedy-raiding--"i]')],
@@ -13125,8 +13125,9 @@ let Initialize = async(START_OVER = false) => {
         let name = frame?.getAttribute('channel') ?? turn.name,
             since = parseInt(frame?.getAttribute('since') ?? turn.since) || 0;
 
-        // The turn is over (2 minutes), or its channel isn't live any more: the next channel's turn
-        if(!names.includes(name) || now - since >= 120_000) {
+        // The turn is over (15 seconds: a raid's countdown is 90, so with up to 6 channels live each one is looked at during it),
+        // or its channel isn't live any more: the next channel's turn
+        if(!names.includes(name) || now - since >= 15_000) {
             name = names.find(next => next.localeCompare(name ?? '') > 0) ?? names[0];
             since = now;
         }
