@@ -44,6 +44,7 @@
 ## Release History
 
 ### Version 5.35.\*
+- [`5.35.6.20`](https://github.com/Ephellon/Twitch-Tools/releases/tag/5.35.6.20) — Fixed CPU usage issue caused by the section labeler
 - [`5.35.6.19`](https://github.com/Ephellon/Twitch-Tools/releases/tag/5.35.6.19) — Followed channels are read again in the open and the collapsed side bar (TTV saw none in some browsers, so Stay Live and Next Channel found nowhere to go); Up Next+ no longer queues every followed channel when the list is first read. Max Watchtime: never moves an Up Next tab, and a channel whose tab closed gets another. Stay Live says "no followed channels on" once, not every 3 seconds
 - [`5.35.6.18`](https://github.com/Ephellon/Twitch-Tools/releases/tag/5.35.6.18) — Added Max Watchtime: mark a channel with the button under DVR on its About panel; when it goes live, a tab with Up Next off goes to it right away and stays until the stream ends (first come, first served; with no such tab, nothing happens)
 - [`5.35.6.17`](https://github.com/Ephellon/Twitch-Tools/releases/tag/5.35.6.17) — A stream that ends while its page is open now reads as offline (the OFFLINE pill showed and the video was gone, but TTV still saw it as live): after 10 seconds without video, TTV asks Twitch again

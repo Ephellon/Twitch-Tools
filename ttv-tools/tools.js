@@ -17400,7 +17400,7 @@ let Initialize = async(START_OVER = false) => {
                     // The extension was reloaded (this page is about to be replaced), or a check failed: try again next time
                 }
 
-                await wait(60_000);
+                await wait(60e3);
             }
         }).catch($ignore);
     };
@@ -20035,10 +20035,10 @@ if(top == window) {
                     for(let header of $.all('[id*="side"i][id*="nav"i] .followed-side-nav-header')) {
                         let container = header.closest('.side-nav-section[aria-label]');
 
-                        if(container && container.getAttribute('tt-svg-label') != 'followed')
+                        if(container?.getAttribute?.('tt-svg-label')?.unlike('followed'))
                             container.setAttribute('tt-svg-label', 'followed');
                     }
-                }, 1000);
+                }, 15 * 60e3);
             }
 
             top.onlocationchange = () => {
