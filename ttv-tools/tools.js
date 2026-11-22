@@ -17346,8 +17346,8 @@ let Initialize = async(START_OVER = false) => {
     });
 
     let MaxWatchtimeLabel = (name, on) => [
-        ['Turn Max Watchtime on', `A tab with Up Next off goes to ${ name } as soon as they're live`, 'fire'],
-        ['Turn Max Watchtime off', `A tab with Up Next off goes to ${ name } as soon as they're live`, 'leave'],
+        ['Turn Max Watchtime on', `When ${ name } goes live, another tab goes there (Up Next › One Instance)`, 'fire'],
+        ['Turn Max Watchtime off', `When ${ name } goes live, another tab goes there (Up Next › One Instance)`, 'leave'],
     ][+!!on];
 
     Handlers.max_watchtime = async() => {
@@ -17405,7 +17405,7 @@ let Initialize = async(START_OVER = false) => {
                     currentTarget.closest('[tt-action]').setAttribute('enabled', on);
 
                     Cache.save({ MaxWatchtime }, () => Settings.set({ 'MAX_WATCHTIME': Object.keys(MaxWatchtime) })
-                        .then(() => alert.timed(on? `A tab with Up Next off will go to ${ name } as soon as they're live.`: `Max Watchtime is off for ${ name }.`, 7000))
+                        .then(() => alert.timed(on? `When ${ name } goes live, one of your other tabs will go there. Needs Up Next › One Instance (or Up Next off).`: `Max Watchtime is off for ${ name }.`, 7000))
                         .catch($warn)
                     );
                 },

@@ -44,6 +44,7 @@
 ## Release History
 
 ### Version 5.35.\*
+- [`5.35.6.24`](https://github.com/Ephellon/Twitch-Tools/releases/tag/5.35.6.24) — Settings: clearer, shorter descriptions throughout; Max Watchtime now names the setting it needs (Up Next › One Instance), on the Settings page and on its button
 - [`5.35.6.23`](https://github.com/Ephellon/Twitch-Tools/releases/tag/5.35.6.23) — Greedy Raiding's hidden chat takes 15-second turns (was 2 minutes), so a raid's 90-second countdown is seen on each of up to 6 live channels
 - [`5.35.6.22`](https://github.com/Ephellon/Twitch-Tools/releases/tag/5.35.6.22) — Greedy Raiding keeps its one hidden chat and moves it to the next channel, instead of removing it and making a new one each turn (and the turns stay out of the tab's Back history)
 - [`5.35.6.21`](https://github.com/Ephellon/Twitch-Tools/releases/tag/5.35.6.21) — Greedy Raiding uses one hidden chat at a time, watching each live followed channel in turn (2 minutes each; the turns carry over when Up Next moves on) instead of one per live channel, which overloaded the page (#99); followed channels are read again (checked every 15 seconds)

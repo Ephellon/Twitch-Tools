@@ -44,7 +44,7 @@
             <div class=title tr-id=auto-follow><span small glyph=favorite></span> Auto-Follow</div>
             <div class=summary>
                 <p tr-id>
-                    While watching a channel that is not followed, follow it automatically.
+                    Follow the channels you watch, by the option you pick below.
                 </p>
 
                 <div>
@@ -58,7 +58,7 @@
                             <input id=auto_follow_none type=radio name=auto-follow checked>
                             <label tr-id='auto-follow:none' for=auto_follow_none>
                                 <h2>Disabled</h2>
-                                Do not use this feature
+                                Off
                             </label>
                         </div>
 
@@ -66,7 +66,7 @@
                             <input id=auto_follow_raids type=radio name=auto-follow>
                             <label tr-id='auto-follow:raids' for=auto_follow_raids>
                                 <h2>Raids</h2>
-                                When participating in a raid, follow the channel being raided
+                                When you join a raid, follow the raided channel
                             </label>
                         </div>
 
@@ -74,7 +74,7 @@
                             <input id=auto_follow_time type=radio name=auto-follow>
                             <label tr-id='auto-follow:time' for=auto_follow_time>
                                 <h2>Viewership</h2>
-                                After watching <span unit=min><input id=auto_follow_time_minutes type=number value=15 min=5 step=5></span> of content, follow the channel
+                                After you watch a channel for <span unit=min><input id=auto_follow_time_minutes type=number value=15 min=5 step=5></span>, follow it
                             </label>
                         </div>
 
@@ -82,7 +82,7 @@
                             <input id=auto_follow_all type=radio name=auto-follow>
                             <label tr-id='auto-follow:all' for=auto_follow_all>
                                 <h2>Automatic</h2>
-                                Follow all channels automatically
+                                Follow every channel you watch
                             </label>
                         </div>
                     </div>
@@ -99,10 +99,10 @@
                     <label for=auto_accept_mature></label>
                 </div>
                 <p tr-id>
-                    When presented with a warning that the stream is intended for <b warning-text>mature audiences</b>, proceed automatically.
+                    Skip the <b warning-text>mature audiences</b> warning and start the stream.
                 </p>
                 <p tr-id>
-                    This will also join <a href='https://help.twitch.tv/s/article/watch-parties' top-tooltip='Watch Parties'>Watch Parties</a> automatically.
+                    Also joins <a href='https://help.twitch.tv/s/article/watch-parties' top-tooltip='Watch Parties'>Watch Parties</a> for you.
                 </p>
             </div>
         </section>
@@ -116,10 +116,10 @@
                     <label for=max_watchtime></label>
                 </div>
                 <p tr-id>
-                    When a channel you marked goes live, a tab with <b>Up Next</b> off goes to it right away and stays until the stream ends.
+                    When a marked channel goes live, one of your other Twitch tabs goes to it right away and stays until the stream ends.
                 </p>
                 <p tr-id>
-                    Mark a channel with the <b>Max Watchtime</b> button on its About panel (under DVR). With no tab that has Up Next off, nothing happens.
+                    Needs <b>Up Next</b> › <em>One Instance</em> on (the <b>Up Next</b> tab is never used), or <b>Up Next</b> off. Mark a channel with the <b>Max Watchtime</b> button on its About panel, under DVR.
                 </p>
             </div>
         </section>
@@ -129,20 +129,20 @@
             <div class=title tr-id=next-channel-preference><span small glyph=favorite></span> Next Channel Pick</div>
             <div class=summary>
                 <p tr-id>
-                    How should the next channel be chosen when <b>Up Next</b> is empty?
+                    When <b>Up Next</b> is empty, how should the next channel be picked?
                 </p>
                 <p tr-id>
-                    <b warning-text>This only activates when the current stream goes offline</b>.
+                    <b warning-text>Only used when the current stream ends</b>.
                 </p>
                 <select id=next_channel_preference>
-                    <option value=none tr-id='next-channel-preference:options'>Disabled</option>
-                    <option value=random tr-id selected>Go to a random channel</option>
-                    <option value=unpopular tr-id>Go with the least viewers</option>
-                    <option value=popular tr-id>Go with the most viewers</option>
-                    <option value=poor tr-id>Go with the least channel points</option>
-                    <option value=rich tr-id>Go with the most channel points</option>
-                    <option value=closest tr-id>Go with the closest to having all channel point rewards</option>
-                    <option value=furthest tr-id>Go with the furthest from having all channel point rewards</option>
+                    <option value=none tr-id='next-channel-preference:options'>Off</option>
+                    <option value=random tr-id selected>A random channel</option>
+                    <option value=unpopular tr-id>The one with the fewest viewers</option>
+                    <option value=popular tr-id>The one with the most viewers</option>
+                    <option value=poor tr-id>The one where you have the fewest channel points</option>
+                    <option value=rich tr-id>The one where you have the most channel points</option>
+                    <option value=closest tr-id>The one closest to unlocking all channel point rewards</option>
+                    <option value=furthest tr-id>The one furthest from unlocking all channel point rewards</option>
                 </select>
             </div>
         </section>
@@ -152,12 +152,12 @@
             <div class=title tr-id=prevent-hosting><span small glyph=people></span> Prevent Hosting</div>
             <div class=summary>
                 <p tr-id>
-                    Prevent certain or all channels from hosting by going to the <b>Next Channel</b>.
+                    When a channel starts hosting another, go to the <b>Next Channel</b> instead.
                 </p>
                 <select id=prevent_hosting>
-                    <option value=none selected tr-id='prevent-hosting:options'>Allow all channels to host</option>
-                    <option value=all tr-id>Prevent all channels from hosting</option>
-                    <option value=unfollowed tr-id>Prevent unfollowed channels from being hosted</option>
+                    <option value=none selected tr-id='prevent-hosting:options'>Off (allow every host)</option>
+                    <option value=all tr-id>Leave every host</option>
+                    <option value=unfollowed tr-id>Leave when the hosted channel isn't followed</option>
                 </select>
             </div>
         </section>
@@ -167,13 +167,13 @@
             <div class=title tr-id=prevent-raiding><span small glyph=people></span> Prevent Raiding</div>
             <div class=summary>
                 <p tr-id>
-                    Prevent certain or all channels from raiding by going to the <b>Next Channel</b>.
+                    When a channel raids another, go to the <b>Next Channel</b> instead of following the raid.
                 </p>
                 <select id=prevent_raiding>
-                    <option value=none selected tr-id='prevent-raiding:options'>Allow all channels to raid</option>
-                    <option value=greed tr-id>Only raid to collect channel points</option>
-                    <option value=all tr-id>Prevent all channels from raiding</option>
-                    <option value=unfollowed tr-id>Prevent unfollowed channels from being raided</option>
+                    <option value=none selected tr-id='prevent-raiding:options'>Off (follow every raid)</option>
+                    <option value=greed tr-id>Only follow raids that earn channel points</option>
+                    <option value=all tr-id>Never follow a raid</option>
+                    <option value=unfollowed tr-id>Leave when the raided channel isn't followed</option>
                 </select>
                 <details>
                     <summary tr-id=extras subtitle='Adjust settings for &quot;Prevent Raiding&quot;'>Extras</summary>
@@ -187,7 +187,7 @@
                                     <label for=greedy_raiding></label>
                                 </div>
                                 <p tr-id>
-                                    Go to <b attention-text top-tooltip='Followed channels with Channel Points'>certain channels</b> when they begin a raid.
+                                    When a <b attention-text top-tooltip='Followed channels with Channel Points'>followed channel</b> starts a raid, go to it so you join the raid. Needs <b>Experimental Features</b>.
                                 </p>
                             </div>
                         </div>
@@ -218,7 +218,7 @@
                                     <label for=stay_live__ignore_channel_reruns></label>
                                 </div>
                                 <p tr-id='stay-live:vod-is-offline'>
-                                    Treat <a href='https://help.twitch.tv/s/article/video-on-demand#reruns' top-tooltip=Reruns>reruns</a> as offline streams.
+                                    Treat <a href='https://help.twitch.tv/s/article/video-on-demand#reruns' top-tooltip=Reruns>reruns</a> as offline.
                                 </p>
                             </div>
                         </div>
@@ -249,10 +249,10 @@
             <div class=title tr-id=first-in-line><span small glyph=favorite></span> Up Next</div>
             <div class=summary>
                 <p tr-id>
-                    When a channel goes live, head to its stream automatically.
+                    When a channel goes live, go to its stream for you.
                 </p>
                 <p tr-id>
-                    <b>Up Next</b> adds a queueing service to Twitch™.
+                    <b>Up Next</b> keeps a queue of live channels and takes you to each one in turn.
                 </p>
 
                 <details>
@@ -262,7 +262,7 @@
                             <input id=first_in_line_none type=radio name=first-in-line checked>
                             <label tr-id='first-in-line:disabled' for=first_in_line_none>
                                 <h2>Disabled</h2>
-                                Do not ues this feature
+                                Off
                             </label>
                         </div>
 
@@ -270,7 +270,7 @@
                             <input id=first_in_line_now type=radio name=first-in-line>
                             <label tr-id='first-in-line:immediate' for=first_in_line_now>
                                 <h2>Immediate</h2>
-                                Go to all streams as soon as they go live
+                                Go to each followed channel as soon as it goes live
                             </label>
                         </div>
 
@@ -278,7 +278,7 @@
                             <input id=first_in_line type=radio name=first-in-line>
                             <label tr-id='first-in-line:notification' for=first_in_line>
                                 <h2>Notification</h2>
-                                When you receive a notification for a channel going live, go to its stream after
+                                When Twitch notifies you that a channel went live, go to it after
                                 <span unit=min><input id=first_in_line_time_minutes type=number value=15 min=5 step=5></span>
                             </label>
                         </div>
@@ -287,7 +287,7 @@
                             <input id=first_in_line_plus type=radio name=first-in-line>
                             <label tr-id='first-in-line:appearance' for=first_in_line_plus>
                                 <h2>Appearance</h2>
-                                When a channel appears in your Followed Channels, go to its stream after
+                                When a channel shows up in your Followed Channels, go to it after
                                 <span unit=min><input id=first_in_line_plus_time_minutes type=number value=15 min=5 step=5></span>
                             </label>
                         </div>
@@ -296,7 +296,7 @@
                             <input id=first_in_line_all type=radio name=first-in-line>
                             <label tr-id='first-in-line:smart-notifications' for=first_in_line_all>
                                 <h2 bubble='Smart Notifications'>Automatic</h2>
-                                Go to all streams automatically after
+                                Go to every followed channel that goes live, after
                                 <span unit=min><input id=first_in_line_all_time_minutes type=number value=15 min=5 step=5></span>
                             </label>
                         </div>
@@ -314,7 +314,7 @@
                                     <label for=up_next__one_instance></label>
                                 </div>
                                 <p tr-id>
-                                    Only the first tab to load <b>Up Next</b> is allowed to use it.
+                                    Only the first tab that loads <b>Up Next</b> runs it. Your other tabs don't.
                                 </p>
                             </div>
                         </div>
@@ -356,7 +356,7 @@
                                     <label for=live_reminders></label>
                                 </div>
                                 <p tr-id>
-                                    Adds a <b attention-text top-tooltip='A notification will display when a channel goes live'>reminder</b> button in the <b>about me</b> panel.
+                                    Adds a <b attention-text top-tooltip='A notification will display when a channel goes live'>reminder</b> button to a channel's About panel.
                                 </p>
                             </div>
                         </div>
@@ -369,7 +369,7 @@
                                     <label for=keep_live_reminders></label>
                                 </div>
                                 <p tr-id>
-                                    When enabled, <span class=live>LIVE</span> Reminders will not be automatically removed.
+                                    Keep a <span class=live>LIVE</span> Reminder after it goes off, instead of removing it.
                                 </p>
                             </div>
                         </div>
@@ -396,10 +396,10 @@
                     <label for=away_mode></label>
                 </div>
                 <p tr-id>
-                    Adds a button to toggle <b attention-text top-tooltip='Watching (one or more) streams with little to no engagement'>lurking</b>.
+                    Adds a button to turn <b attention-text top-tooltip='Watching (one or more) streams with little to no engagement'>lurking</b> on and off.
                 </p>
                 <p tr-id>
-                    The keyboard shortcut <code id='key:alt-a'>Alt + A</code> can also be used.
+                    Or press <code id='key:alt-a'>Alt + A</code>.
                 </p>
 
                 <details>
@@ -503,7 +503,7 @@
                     <label for=kill_extensions></label>
                 </div>
                 <p tr-id>
-                    Do not allow Twitch™ extensions to display over the stream.
+                    Hide Twitch™ extensions that show over the stream.
                 </p>
             </div>
         </section>
@@ -513,10 +513,10 @@
             <div class=title tr-id=auto-chat><span white glyph=thread></span> Lurk Message</div>
             <div class=summary>
                 <p tr-id>
-                    Send message(s) in specific channels based on rules you set. If multiple messages are defined for the same rule, a random one will be chosen.
+                    Send a chat message for you, by rules you set. When a rule has several messages, one is picked at random.
                 </p>
                 <p tr-id>
-                    When you have the following <a href='https://help.twitch.tv/s/article/twitch-chat-badges-guide' top-tooltip='Chat Badges'>special badge</a>, it will send a <em>general message</em> on your behalf:
+                    Send a <em>general message</em> for you where you have this <a href='https://help.twitch.tv/s/article/twitch-chat-badges-guide' top-tooltip='Chat Badges'>badge</a>:
 
                     <div>
                         <select id=auto_chat__vip>
@@ -640,7 +640,7 @@
                     <label for=claim_drops></label>
                 </div>
                 <p tr-id>
-                    While viewing supported streams, automatically claim <a href='https://help.twitch.tv/s/article/mission-based-drops' top-tooltip='Drops'>Drops</a> in your inventory every <span fix-unit=min><input id=claim_drops__interval type=number value=10 step=1 min=5 max=60></span>.
+                    While you watch, claim the <a href='https://help.twitch.tv/s/article/mission-based-drops' top-tooltip='Drops'>Drops</a> in your inventory every <span fix-unit=min><input id=claim_drops__interval type=number value=10 step=1 min=5 max=60></span>.
                 </p>
             </div>
         </section>
@@ -668,7 +668,7 @@
                     <label for=claim_prime></label>
                 </div>
                 <p tr-id>
-                    Automatically reclaim your <a href='https://help.twitch.tv/s/article/how-to-use-twitch-prime-subscriptions' top-tooltip='Prime Gaming Subscription'>Prime Subscription</a> every month.
+                    Use your free <a href='https://help.twitch.tv/s/article/how-to-use-twitch-prime-subscriptions' top-tooltip='Prime Gaming Subscription'>Prime Subscription</a> again every month.
                 </p>
                 <details>
                     <summary tr-id=options subtitle='Adjust options for &quot;Prime Subscription&quot;'>Options</summary>
@@ -700,11 +700,11 @@
             <div class=title tr-id=channel-points-receipt><span small glyph=channelpoints></span> Channel Points Receipt</div>
             <div class=summary>
                 <p tr-id>
-                    How should the receipt display <a href='https://help.twitch.tv/s/article/channel-points-guide' top-tooltip='Channel Points'><button style='background-color:var(--grey)!important'><span small purple glyph=channelpoints></span></button></a> collection?
+                    How should the receipt show the <a href='https://help.twitch.tv/s/article/channel-points-guide' top-tooltip='Channel Points'><button style='background-color:var(--grey)!important'><span small purple glyph=channelpoints></span></button></a> you collected?
                 </p>
 
                 <select id=channelpoints_receipt_display>
-                    <option value=null selected tr-id='channel-points-receipt:options'>Display the exact amount collected</option>
+                    <option value=null selected tr-id='channel-points-receipt:options'>The exact amount</option>
                     <option value=round100 tr-id>Round to the nearest 100</option>
                     <option value=round50 tr-id>Round to the nearest 50</option>
                     <option value=round25 tr-id>Round to the nearest 25</option>
@@ -721,7 +721,7 @@
                     <label for=convert_bits></label>
                 </div>
                 <p tr-id>
-                    When presented with <a href='https://www.twitch.tv/creatorcamp/en/get-rewarded/bits-and-subscriptions/#bits' top-tooltip=Bits><button style='background-color:var(--grey)!important'><img src='bits.gif' alt=Bits height=20 width=20 type=glyph></button></a> show the true <b>USD</b> amount they represent.
+                    Show what <a href='https://www.twitch.tv/creatorcamp/en/get-rewarded/bits-and-subscriptions/#bits' top-tooltip=Bits><button style='background-color:var(--grey)!important'><img src='bits.gif' alt=Bits height=20 width=20 type=glyph></button></a> are worth in <b>USD</b>.
                 </p>
             </div>
         </section>
@@ -731,7 +731,7 @@
             <div class=title tr-id='placement:point-watcher'><span small gold glyph=channelpoints></span> Point Watcher</div>
             <div class=summary>
                 <p tr-id>
-                    Where should the <b>Point Watcher</b> text be displayed?
+                    Where should <b>Point Watcher</b> be shown?
                 </p>
 
                 <select id=point_watcher_placement>
@@ -746,7 +746,7 @@
             <div class=title tr-id='placement:points-receipt'><span small gold glyph=channelpoints></span> Points Receipt &amp; Rank</div>
             <div class=summary>
                 <p tr-id>
-                    Where should the <b>Points Receipt &amp; Point Rank</b> text be displayed?
+                    Where should the <b>Points Receipt &amp; Rank</b> be shown?
                 </p>
 
                 <select id=points_receipt_placement>
@@ -765,7 +765,7 @@
                     <label for=rewards_calculator></label>
                 </div>
                 <p tr-id>
-                    Estimates how long a stream needs to be watched to redeem <a href='https://help.twitch.tv/s/article/channel-points-guide' top-tooltip='Channel Points'><button style='background-color:var(--grey)!important'><span small purple glyph=channelpoints></span></button></a> rewards.
+                    Shows how long you need to watch to afford each <a href='https://help.twitch.tv/s/article/channel-points-guide' top-tooltip='Channel Points'><button style='background-color:var(--grey)!important'><span small purple glyph=channelpoints></span></button></a> reward.
                 </p>
             </div>
         </section>
@@ -775,7 +775,7 @@
             <div class=title tr-id='placement:watch-time'><span small glyph=latest></span> Watch Time</div>
             <div class=summary>
                 <p tr-id>
-                    Where should the <b>Watch Time</b> be displayed?
+                    Where should <b>Watch Time</b> be shown?
                 </p>
 
                 <select id=watch_time_placement>
@@ -793,7 +793,7 @@
     </article>
 
     <!-- Reading Chat -->
-    <header id=group-reading-chat tr-id='header:reading-chat' subtitle='These settings do not apply to banned channels unless otherwise noted.'>Reading Chat</header>
+    <header id=group-reading-chat tr-id='header:reading-chat' subtitle='Except where noted, these don't apply in channels you're banned from.'>Reading Chat</header>
     <article>
         <!-- BetterTTV Emotes → amount,anxiety,area,avenue,bundle,capacity,carrier,cause,channel,consignment,content,district,document,element,emotes,explanation,fluctuation,goods,haul,idea,insecurity,instability,loading,locale,location,matter,means,medium,motivation,motive,neighborhood,origin,packing,paragraph,part,passage,payload,point,position,principle,purpose,quotation,region,root,route,scene,section,shipment,site,situation,source,spot,station,storing,text,theme,tunnel,uncertainty,venue,verse,volatility,vulnerability,weakness,weight,whereabouts,wording,words -->
         <section>
@@ -804,10 +804,10 @@
                     <label for=bttv_emotes></label>
                 </div>
                 <p tr-id>
-                    Enable the usage of BetterTTV emotes.
+                    Use BetterTTV emotes in chat.
                 </p>
                 <p warning-text tr-id>
-                    This may cause instability while loading emotes.
+                    The page may be slow while emotes load.
                 </p>
                 <details>
                     <summary tr-id=options subtitle='Adjust options for &quot;BetterTTV emotes&quot;'>Options</summary>
@@ -820,7 +820,7 @@
                                     <label for=auto_load_bttv_emotes></label>
                                 </div>
                                 <p tr-id>
-                                    Automatically convert emote text to <b>BetterTTV</b> emotes.
+                                    Turn emote names in chat into <b>BetterTTV</b> emotes.
                                 </p>
                             </div>
                         </div>
@@ -833,7 +833,7 @@
                                     <label for=bttv_emotes_channel></label>
                                 </div>
                                 <p tr-id>
-                                    Load channel specific <b>BetterTTV</b> emotes.
+                                    Also load each channel's own <b>BetterTTV</b> emotes.
                                 </p>
                             </div>
                         </div>
@@ -890,7 +890,7 @@
                         Handles <b alert-text top-tooltip='!command'>commands</b> in <b attention-text top-tooltip='Type "#mine" to claim channels you own'>your</b> chat(s).
                     </p>
                     <p tr-id>
-                        Please see <a href='https://github.com/Ephellon/Twitch-Tools/wiki/Chat-Commands'>TTV Tools Wiki — Chat Commands</a> for assistance.
+                        For help, see <a href='https://github.com/Ephellon/Twitch-Tools/wiki/Chat-Commands'>TTV Tools Wiki — Chat Commands</a>.
                     </p>
                     <details>
                         <summary tr-id='command-handling:options' subtitle='View, or remove commands'>Commands</summary>
@@ -915,10 +915,10 @@
                     <label for=filter_messages></label>
                 </div>
                 <p tr-id>
-                    Remove messages/rules across all channels.
+                    Hide messages that match your rules, in every channel.
                 </p>
                 <p tr-id>
-                    Please see <a href='https://github.com/Ephellon/Twitch-Tools/wiki/Filter-Messages'>TTV Tools Wiki — Filter Messages</a> for assistance.
+                    For help, see <a href='https://github.com/Ephellon/Twitch-Tools/wiki/Filter-Messages'>TTV Tools Wiki — Filter Messages</a>.
                 </p>
                 <p>
                     <input id=filter_rules-input type=text value left-tooltip='Case insensitive • Comma separated' placeholder='/channel <badge> @user :emote: text reg.exp?'>
@@ -1001,7 +1001,7 @@
                                     <label for=filter_messages__bullets_raid></label>
                                 </div>
                                 <p tr-id>
-                                    Hide all raid related bulletins.
+                                    Hide raid bulletins.
                                 </p>
                             </div>
                         </div>
@@ -1014,7 +1014,7 @@
                                     <label for=filter_messages__bullets_coin></label>
                                 </div>
                                 <p tr-id>
-                                    Hide all channel point related bulletins.
+                                    Hide channel point bulletins.
                                 </p>
                             </div>
                         </div>
@@ -1027,7 +1027,7 @@
                                     <label for=filter_messages__bullets_subs></label>
                                 </div>
                                 <p tr-id>
-                                    Hide all subscription related bulletins.
+                                    Hide subscription bulletins.
                                 </p>
                             </div>
                         </div>
@@ -1040,7 +1040,7 @@
                                     <label for=filter_messages__bullets_note></label>
                                 </div>
                                 <p tr-id>
-                                    Hide all announcement related bulletins.
+                                    Hide announcements.
                                 </p>
                             </div>
                         </div>
@@ -1053,7 +1053,7 @@
                                     <label for=filter_messages__bullets_paid></label>
                                 </div>
                                 <p tr-id>
-                                    Hide all pinned messages.
+                                    Hide pinned messages.
                                 </p>
                             </div>
                         </div>
@@ -1071,7 +1071,7 @@
                     <label for=highlight_mentions></label>
                 </div>
                 <p tr-id>
-                    When someone mentions you <code purple>@username</code>, make the message stand out by highlighting it.
+                    Highlight messages that mention you <code purple>@username</code>.
                 </p>
                 <details>
                     <summary tr-id=extras subtitle='Adjust settings for &quot;Highlight Mentions&quot;'>Extras</summary>
@@ -1083,7 +1083,7 @@
                                 <label for=highlight_mentions_extra></label>
                             </div>
                             <p tr-id>
-                                When someone sends a general mention <code purple>@all</code> <code purple>@chat</code> <code purple>@everyone</code>, make the message stand out by highlighting it.
+                                Also highlight messages to <code purple>@all</code> <code purple>@chat</code> <code purple>@everyone</code>.
                             </p>
                         </div>
                     </div>
@@ -1100,10 +1100,10 @@
                     <label for=highlight_phrases></label>
                 </div>
                 <p tr-id>
-                    When someone sends a message with one of the following phrases, make the message stand out by highlighting it.
+                    Highlight messages that contain one of your phrases.
                 </p>
                 <p tr-id>
-                    Please see <a href='https://github.com/Ephellon/Twitch-Tools/wiki/Highlight-Phrases'>TTV Tools Wiki — Highlight Phrases</a> for assistance.
+                    For help, see <a href='https://github.com/Ephellon/Twitch-Tools/wiki/Highlight-Phrases'>TTV Tools Wiki — Highlight Phrases</a>.
                 </p>
                 <p>
                     <input id=phrase_rules-input type=text value left-tooltip='Case insensitive • Comma separated' placeholder='/channel <badge> @user :emote: text reg.exp?'>
@@ -1182,7 +1182,7 @@
             <div class=title tr-id=notification-sounds><span small gold glyph=music></span> Notification Sounds</div>
             <div class=summary>
                 <p tr-id>
-                    When one (or more) of the following conditions are met, play a notification sound.
+                    Play a sound when any of these happen.
                 </p>
 
                 <div>
@@ -1200,7 +1200,7 @@
                                     <label for=mention_audio></label>
                                 </div>
                                 <p tr-id>
-                                    When someone mentions you <code purple>@username</code>, play the <b>notification sound</b>.
+                                    Someone mentions you <code purple>@username</code>.
                                 </p>
                             </div>
                         </div>
@@ -1213,7 +1213,7 @@
                                     <label for=phrase_audio></label>
                                 </div>
                                 <p tr-id>
-                                    When someone uses a phrase from <b>Highlight Phrases</b>, play the <b>notification sound</b>.
+                                    A message contains a phrase from <b>Highlight Phrases</b>.
                                 </p>
                             </div>
                         </div>
@@ -1226,7 +1226,7 @@
                                     <label for=whisper_audio></label>
                                 </div>
                                 <p tr-id>
-                                    When someone sends you a whisper, play the <b>notification sound</b>.
+                                    Someone whispers to you.
                                 </p>
                             </div>
                         </div>
@@ -1272,7 +1272,7 @@
                     <label for=prevent_spam></label>
                 </div>
                 <p tr-id>
-                    When repetitive messages are detected in chat, hide them.
+                    Hide repeated messages in chat.
                 </p>
                 <details>
                     <summary tr-id=options subtitle='Adjust options for &quot;Prevent Spam&quot;'>Options</summary>
@@ -1281,7 +1281,7 @@
                             <div class=title tr-id='prevent-spam:options'>Message History</div>
                             <div class=summary>
                                 <p tr-id>
-                                    <b>Prevent Spam</b> will look back <span unit='¶'><input id=prevent_spam_look_back type=number value=15 min=1 max=250 step=1></span> lines to detect <b attention-text top-tooltip='This will look for messages that match word-for-word'>plagiarism</b>.
+                                    Compare each message with the last <span unit='¶'><input id=prevent_spam_look_back type=number value=15 min=1 max=250 step=1></span> lines to find <b attention-text top-tooltip='Messages that match word-for-word'>copies</b>.
                                 </p>
                             </div>
                         </div>
@@ -1290,7 +1290,7 @@
                             <div class=title tr-id>Minimum Word Length</div>
                             <div class=summary>
                                 <p tr-id>
-                                    <b>Prevent Spam</b> will ignore messages if there are not any words longer than <span unit='🔣'><input id=prevent_spam_minimum_length type=number value=5 min=3 max=500 step=1></span> characters.
+                                    Skip messages with no word longer than <span unit='🔣'><input id=prevent_spam_minimum_length type=number value=5 min=3 max=500 step=1></span> characters.
                                 </p>
                             </div>
                         </div>
@@ -1299,7 +1299,7 @@
                             <div class=title tr-id>Maximum Occurrences</div>
                             <div class=summary>
                                 <p tr-id>
-                                    <b>Prevent Spam</b> will mark any message as <b>repetitious</b> after any word appears <span unit='≥'><input id=prevent_spam_ignore_under type=number value=5 min=1 max=150 step=1></span> or more times.
+                                    Treat a message as spam when one word appears <span unit='≥'><input id=prevent_spam_ignore_under type=number value=5 min=1 max=150 step=1></span> or more times.
                                 </p>
                             </div>
                         </div>
@@ -1317,7 +1317,7 @@
                     <label for=recover_chat></label>
                 </div>
                 <p tr-id>
-                    When the chat object is not loaded (or suddenly destroyed), attempt to recover it.
+                    If chat doesn't load, or disappears, bring it back.
                 </p>
             </div>
         </section>
@@ -1331,7 +1331,7 @@
                     <label for=recover_messages></label>
                 </div>
                 <p tr-id>
-                    When a message is deleted, attempt to recover it.
+                    Try to bring back deleted messages.
                 </p>
             </div>
         </section>
@@ -1345,7 +1345,7 @@
                     <label for=highlight_mentions_popup></label>
                 </div>
                 <p tr-id>
-                    When someone mentions you <code purple>@username</code>, make the message stand out by showing a pop-up.
+                    Show a pop-up when someone mentions you <code purple>@username</code>.
                 </p>
             </div>
         </section>
@@ -1355,7 +1355,7 @@
             <div class=title tr-id=simplify-chat><span large help glyph=accessible></span> Simpler Chat</div>
             <div class=summary>
                 <p tr-id>
-                    Make Twitch&trade; easier to navigate and use.
+                    Make Twitch&trade; easier to read and use.
                 </p>
                 <details>
                     <summary tr-id=options subtitle='Adjust accessibility options'>Options</summary>
@@ -1371,7 +1371,7 @@
                                     <label for=simplify_chat></label>
                                 </div>
                                 <p tr-id>
-                                    Display the chat dual-toned to make it easier to read.
+                                    Shade every other chat line, for easier reading.
                                 </p>
                             </div>
                         </div>
@@ -1384,7 +1384,7 @@
                                     <label for=simplify_chat_monotone_usernames></label>
                                 </div>
                                 <p tr-id>
-                                    Keep username colors uniform.
+                                    Show all usernames in one color.
                                 </p>
                             </div>
                         </div>
@@ -1393,7 +1393,7 @@
                             <div class=title tr-id>Chat Font</div>
                             <div class=summary>
                                 <p tr-id>
-                                    Display chat in the following font:
+                                    Chat font:
                                 </p>
 
                                 <select id=simplify_chat_font>
@@ -1420,7 +1420,7 @@
                                     <label for=simplify_chat_reverse_emotes></label>
                                 </div>
                                 <p tr-id>
-                                    Convert emotes back into their text, and display the emote (as a <code>tooltip</code>) only when <code>hovering</code> the text.
+                                    Show emotes as their text. Hover over the text to see the emote.
                                 </p>
                             </div>
                         </div>
@@ -1438,7 +1438,7 @@
                                     <label for=simplify_look_auto_marquee></label>
                                 </div>
                                 <p tr-id>
-                                    Text that extends beyond a container's display will be turned into a marquee.
+                                    Scroll text that is too long to fit.
                                 </p>
                             </div>
                         </div>
@@ -1447,7 +1447,7 @@
                             <div class=title tr-id>Page Font</div>
                             <div class=summary>
                                 <p tr-id>
-                                    Display Twitch&trade; (excluding chat) in the following font:
+                                    Font for the rest of Twitch&trade; (not chat):
                                 </p>
 
                                 <select id=simplify_page_font>
@@ -1488,7 +1488,7 @@
                     <label for=link_maker__chat></label>
                 </div>
                 <p tr-id>
-                    Automatically convert links in chat to preview cards.
+                    Turn links in chat into preview cards.
                 </p>
             </div>
         </section>
@@ -1502,7 +1502,7 @@
                     <label for=native_twitch_reply></label>
                 </div>
                 <p tr-id>
-                    Attempt to display native Twitch™ replies on all channels.
+                    Use Twitch™'s own replies in every channel.
                 </p>
             </div>
         </section>
@@ -1516,7 +1516,7 @@
                     <label for=parse_commands></label>
                 </div>
                 <p tr-id>
-                    When a <b alert-text top-tooltip='!command'>command</b> has been found on the page, retrieve the contents of the command.
+                    When a <b alert-text top-tooltip='!command'>command</b> appears, look up what it says.
                 </p>
                 <details>
                     <summary tr-id=options subtitle='Adjust options for &quot;Parse Commands&quot;'>Options</summary>
@@ -1529,7 +1529,7 @@
                                     <label for=parse_commands__create_links></label>
                                 </div>
                                 <p tr-id>
-                                    <b>Parse Commands</b> will turn commands that contain links into their <b attention-text top-tooltip='Most fulfilled (missing the least number of components)'>best</b> link.
+                                    Turn commands that contain links into their <b attention-text top-tooltip='The most complete one'>best</b> link.
                                 </p>
                             </div>
                         </div>
@@ -1557,7 +1557,7 @@
                 </div>
 
                 <p tr-id>
-                    When Twitch™ displays a <b attention-text top-tooltip='Purple Screen'>Blank Ad</b>, temporarily hide it.
+                    Hide Twitch™'s <b attention-text top-tooltip='Purple Screen'>blank ads</b> while they play.
                 </p>
             </div>
         </section>
@@ -1571,7 +1571,7 @@
                     <label for=keep_popout></label>
                 </div>
                 <p tr-id>
-                    When moving to another page, prevent the extension from destroying the small videos (pop-outs) of any streams.
+                    Keep small stream videos (pop-outs) open when you go to another page.
                 </p>
             </div>
         </section>
@@ -1581,7 +1581,7 @@
             <div class=title tr-id=ram-alarms><span small gold glyph=flag></span> RAM Alarms</div>
             <div class=summary>
                 <p tr-id>
-                    When a tab's page memory reaches a certain level, what should the extension do? (The browser's Task Manager shows more, because it counts the whole tab.)
+                    What should TTV Tools do when a page uses a lot of memory? (The browser's Task Manager shows a bigger number: it counts the whole tab.)
                 </p>
 
                 <details>
@@ -1648,7 +1648,7 @@
                     <label for=recover_ads></label>
                 </div>
                 <p tr-id>
-                    When an advertisement <b attention-text top-tooltip='Fails to play for more than 5 seconds'>freezes</b>, attempt to recover it.
+                    If an ad <b attention-text top-tooltip='Fails to play for more than 5 seconds'>freezes</b>, try to get it playing again.
                 </p>
             </div>
         </section>
@@ -1662,7 +1662,7 @@
                     <label for=recover_frames></label>
                 </div>
                 <p tr-id>
-                    When the video <b attention-text top-tooltip='Fails to play for longer than 15 seconds'>freezes</b>, reload the webpage.
+                    If the video <b attention-text top-tooltip='Fails to play for longer than 15 seconds'>freezes</b>, reload the page.
                 </p>
 
                 <details>
@@ -1676,7 +1676,7 @@
                                     <label for=recover_frames__allow_embed></label>
                                 </div>
                                 <p tr-id>
-                                    Attempt to override the video with an embedded stream.
+                                    First try replacing the video with an embedded stream.
                                 </p>
                             </div>
                         </div>
@@ -1694,7 +1694,7 @@
                     <label for=recover_pages></label>
                 </div>
                 <p tr-id>
-                    If the webpage fails to display, attempt to recover it.
+                    If a page doesn't load properly, try to fix it.
                 </p>
             </div>
         </section>
@@ -1708,7 +1708,7 @@
                     <label for=recover_stream></label>
                 </div>
                 <p tr-id>
-                    When the stream <b attention-text top-tooltip='Fails to play for more than 5 seconds'>freezes</b>, attempt to recover it.
+                    If the stream <b attention-text top-tooltip='Fails to play for more than 5 seconds'>freezes</b>, try to get it playing again.
                 </p>
             </div>
         </section>
@@ -1722,7 +1722,7 @@
                     <label for=recover_video></label>
                 </div>
                 <p tr-id>
-                    When the video <b attention-text top-tooltip='Displays an error code or blank screen'>fails to download</b>, reload the webpage.
+                    If the video <b attention-text top-tooltip='Displays an error code or blank screen'>fails to load</b>, reload the page.
                 </p>
             </div>
         </section>
@@ -1741,7 +1741,7 @@
             <div class=title tr-id=accent-color><span small glyph=latest></span> Accent Color</div>
             <div class=summary>
                 <p tr-id>
-                    What should the TTV Tools' accent color be?
+                    TTV Tools' accent color:
                 </p>
 
                 <select id=accent_color>
@@ -1763,7 +1763,7 @@
                 </div>
 
                 <p tr-id>
-                    Remove (ad) banners for: <em>Bits</em>, <em>SUBtember</em>, <em>Turbo</em>, etc.
+                    Hide ad banners for <em>Bits</em>, <em>SUBtember</em>, <em>Turbo</em> and others.
                 </p>
             </div>
         </section>
@@ -1773,7 +1773,7 @@
             <div class=title tr-id='networking:video-clips'><span small glyph=download></span> Clips &amp; DVR</div>
             <div class=summary>
                 <p tr-id>
-                    Allows recording portions of streams. Use <code id='key:alt-z'>Alt + Z</code> to start/stop recording.
+                    Record parts of streams. Press <code id='key:alt-z'>Alt + Z</code> to start or stop.
                 </p>
                 <details>
                     <summary tr-id=options subtitle='Adjust settings for &quot;Clips &amp; DVR&quot;'>Options</summary>
@@ -1782,7 +1782,7 @@
                             <div class=title tr-id='video-clips:file-type'>File Type</div>
                             <div class=summary>
                                 <p tr-id>
-                                    What file type should <b>Video Clips</b> be?
+                                    File type for <b>clips</b>:
                                 </p>
                                 <select id=video_clips__file_type>
                                     <option value=x-matroska selected tr-id='video-clips:file-type-options'>Easiest to share (MKV)</option>
@@ -1801,7 +1801,7 @@
                             <div class=title tr-id='video-clips:quality'>Quality</div>
                             <div class=summary>
                                 <p tr-id>
-                                    What quality should <b>Video Clips</b> be?
+                                    Quality for <b>clips</b>:
                                 </p>
                                 <select id=video_clips__quality>
                                     <option value=auto selected tr-id='video-clips:quality-options'>Auto</option>
@@ -1819,7 +1819,7 @@
                             <div class=title tr-id='video-clips:length'>Default Length</div>
                             <div class=summary>
                                 <p tr-id>
-                                    <b>Video Clips</b> should be <span fix-unit=sec><input id=video_clips__length type=number value=60 step=15 min=15 max=300></span> by default.
+                                    Clips are <span fix-unit=sec><input id=video_clips__length type=number value=60 step=15 min=15 max=300></span> long by default.
                                 </p>
                             </div>
                         </div>
@@ -1832,7 +1832,7 @@
                                     <label for=video_clips__dvr></label>
                                 </div>
                                 <p tr-id>
-                                    Automatically record (and save) certain streams. Channels marked as <b>DVR</b> will skip and pause the <b>First in Line</b> queue.
+                                    Record (and save) the streams of channels you mark with <b>DVR</b>. A DVR channel skips the <b>Up Next</b> queue and pauses it.
                                 </p>
                             </div>
                         </div>
@@ -1845,7 +1845,7 @@
                                     <label for=video_clips__trophy></label>
                                 </div>
                                 <p tr-id>
-                                    Automatically record (and save) channel point redemption clips. Clips will be <span fix-unit=sec><input id=video_clips__trophy_length type=number value=60 step=15 min=15 max=1800></span> long.
+                                    Record (and save) a clip when you redeem a channel point reward. Clips are <span fix-unit=sec><input id=video_clips__trophy_length type=number value=60 step=15 min=15 max=1800></span> long.
                                 </p>
                             </div>
                         </div>
@@ -1858,7 +1858,7 @@
                                     <label for=record_foreign_rewards></label>
                                 </div>
                                 <p tr-id>
-                                    When another user redeems a channel point item you have saved to your "Buy Later" list, record their redemption.
+                                    When someone else redeems a reward on your <b>Buy Later</b> list, record it.
                                 </p>
                             </div>
                         </div>
@@ -1877,7 +1877,7 @@
                 </div>
 
                 <p tr-id>
-                    Use a custom context menu (right-click) on select Twitch pages.
+                    Use TTV Tools' own right-click menu on some Twitch pages.
                 </p>
             </div>
         </section>
@@ -1891,7 +1891,7 @@
                     <label for=store_integration></label>
                 </div>
                 <p tr-id>
-                    When a stream is loaded and a game is detected, search for the game and create a purchase link.
+                    Add store links for the game being played.
                 </p>
                 <details>
                     <summary tr-id=options subtitle='Adjust options for &quot;Game Store Links&quot;'>Options</summary>
@@ -1900,7 +1900,7 @@
                             <div class=title tr-id='store-integration:steam'>Steam&reg;</div>
                             <div class=summary>
                                 <p tr-id>
-                                    Enable Steam&reg; store integration.
+                                    Show Steam&reg; links.
                                 </p>
                                 <div class=toggle>
                                     <input id=store_integration__steam type=checkbox checked>
@@ -1913,7 +1913,7 @@
                             <div class=title tr-id='store-integration:playstation'>PlayStation&reg;</div>
                             <div class=summary>
                                 <p tr-id>
-                                    Enable PlayStation&reg; store integration.
+                                    Show PlayStation&reg; links.
                                 </p>
                                 <div class=toggle>
                                     <input id=store_integration__playstation type=checkbox checked>
@@ -1926,7 +1926,7 @@
                             <div class=title tr-id='store-integration:xbox'>Xbox&reg;</div>
                             <div class=summary>
                                 <p tr-id>
-                                    Enable Xbox&reg; store integration.
+                                    Show Xbox&reg; links.
                                 </p>
                                 <div class=toggle>
                                     <input id=store_integration__xbox type=checkbox checked>
@@ -1939,7 +1939,7 @@
                             <div class=title tr-id='store-integration:nintendo'>Nintendo&reg;</div>
                             <div class=summary>
                                 <p tr-id>
-                                    Enable Nintendo&reg; store integration.
+                                    Show Nintendo&reg; links.
                                 </p>
                                 <div class=toggle>
                                     <input id=store_integration__nintendo type=checkbox checked>
@@ -1952,7 +1952,7 @@
                             <div class=title tr-id='store-integration:epic'>Epic Games&reg;</div>
                             <div class=summary>
                                 <p tr-id>
-                                    Enable Epic Games&reg; store integration.
+                                    Show Epic Games&reg; links.
                                 </p>
                                 <div class=toggle>
                                     <input id=store_integration__epic type=checkbox checked>
@@ -1974,7 +1974,7 @@
                     <label for=stream_preview></label>
                 </div>
                 <p tr-id>
-                    When hovering over a streamer's icon, display a preview of their broadcast.
+                    Hover over a channel's picture to preview its stream.
                 </p>
                 <details>
                     <summary tr-id=extras subtitle='Adjust settings for &quot;Stream Preview&quot;'>Extras</summary>
@@ -1983,7 +1983,7 @@
                             <div class=title tr-id='stream-preview:position'>Preview Position</div>
                             <div class=summary>
                                 <p tr-id>
-                                    Adjust the <b attention-text top-tooltip='In front of, or behind'>orthogonal</b> position of the preview.
+                                    Show the preview in front of, or behind, the page.
                                 </p>
                                 <select id=stream_preview_position>
                                     <option value=3 selected tr-id='stream-preview:position-options'>Always in front (on top)</option>
@@ -1997,7 +1997,7 @@
                             <div class=title tr-id='stream-preview:size'>Preview Size</div>
                             <div class=summary>
                                 <p tr-id>
-                                    How large sould the preview be?
+                                    How large should the preview be?
                                 </p>
                                 <select id=stream_preview_scale>
                                     <option value=1 selected tr-id='stream-preview:size-options'>Normal (×1)</option>
@@ -2011,10 +2011,10 @@
                             <div class=title tr-id='stream-preview:sound'>Preview Sound</div>
                             <div class=summary>
                                 <p tr-id>
-                                    Should the preview be audible?
+                                    Play the preview's sound?
                                 </p>
                                 <p warning-text tr-id>
-                                    This will temporarily mute the current stream.
+                                    The current stream is muted while the preview plays.
                                 </p>
                                 <div class=toggle>
                                     <input id=stream_preview_sound type=checkbox>
@@ -2036,7 +2036,7 @@
                     <label for=time_zones></label>
                 </div>
                 <p tr-id>
-                    Automatically convert detected times on the page to your local time zone.
+                    Show times on the page in your time zone.
                 </p>
             </div>
         </section>
@@ -2046,10 +2046,10 @@
             <div class=title tr-id=view-mode><span small gold glyph=video></span> View Mode</div>
             <div class=summary>
                 <p tr-id>
-                    When the page is done loading, change the view to:
+                    After a page loads, switch to:
                 </p>
                 <select id=view_mode>
-                    <option value=null selected tr-id='view-mode:options'>Nothing (do not change)</option>
+                    <option value=null selected tr-id='view-mode:options'>Don't change it</option>
                     <option value=default tr-id>Default Mode (banner + chat)</option>
                     <option value=theatre tr-id>Theatre Mode (chat)</option>
                     <option value=fullwidth tr-id>Fullwidth Mode (banner)</option>
@@ -2102,10 +2102,10 @@
                     <label for=low_data_mode></label>
                 </div>
                 <p tr-id>
-                    Forces the extension to use less overhead data per hour.
+                    Use less data per hour.
                 </p>
                 <p tr-id>
-                    Current estimate <span><input disabled visible id=est-data-usage type=number value=0 controller='#low_data_mode'></span>
+                    Current estimate: <span><input disabled visible id=est-data-usage type=number value=0 controller='#low_data_mode'></span>
                 </p>
             </div>
         </section>
@@ -2115,7 +2115,7 @@
             <div class=title tr-id='networking:sync-settings'><span small glyph=export></span> Sync &amp; Backup</div>
             <div class=summary style='width:fit-content'>
                 <p tr-id>
-                    If you would like to <b attention-text top-tooltip='Save settings from somewhere else to this device'>download settings</b>, enter the <b attention-text top-tooltip='6 or more letters, numbers and/or dashes'>Upload ID</b>.
+                    To <b attention-text top-tooltip='Save settings from somewhere else to this device'>download settings</b>, enter their <b attention-text top-tooltip='6 or more letters, numbers and/or dashes'>Upload ID</b>.
                 </p>
                 <p>
                     <input id=sync-token type=text value=TTV-TOOL style='width:-webkit-fill-available; width:-moz-available; font-family: monospace; letter-spacing:1em; text-align:center; --text-transform:uppercase; text-overflow:clip' placeholder=ABC123 pattern='[\w\-]{6,}'>
@@ -2167,10 +2167,10 @@
                     <label for=auto_tab_reloads></label>
                 </div>
                 <p tr-id>
-                    Allow the extension to automatically reload tabs.
+                    Let TTV Tools reload tabs when needed.
                 </p>
                 <p warning-text tr-id>
-                    This may cause data loss.
+                    Unsaved work in those tabs may be lost.
                 </p>
             </div>
         </section>
@@ -2212,7 +2212,7 @@
                     <label for=display_in_console></label>
                 </div>
                 <p tr-id>
-                    Allow the extension to display messages in the console.
+                    Show TTV Tools messages in the browser console.
                 </p>
                 <details>
                     <summary tr-id=extras subtitle='Adjust settings for &quot;Display Console Messages&quot;'>Extras</summary>
@@ -2308,7 +2308,7 @@
                     <label for=show_stats></label>
                 </div>
                 <p tr-id>
-                    Allow the extension to display statistics from certain features, such as calculated data, images, errors, etc.
+                    Show extra details from some features, such as calculations, images and errors.
                 </p>
             </div>
         </section>
@@ -2322,10 +2322,10 @@
                     <label for=experimental_mode></label>
                 </div>
                 <p tr-id>
-                    Allow the extension to display, and use experimental features.
+                    Show and use features that are still being tested.
                 </p>
                 <p warning-text tr-id>
-                    Some features may cause data loss.
+                    Some of them may lose data.
                 </p>
             </div>
         </section>
@@ -2339,10 +2339,10 @@
                     <label for=extra_keyboard_shortcuts></label>
                 </div>
                 <p tr-id>
-                    Allow the extension to add extra keyboard shortcuts.
+                    Add extra keyboard shortcuts.
                 </p>
                 <p tr-id>
-                    Keyboard shortcuts can be viewed by invoking <code id='key:?'>?</code> on any stream.
+                    Press <code id='key:?'>?</code> on a stream to see them.
                 </p>
             </div>
         </section>
@@ -2357,7 +2357,7 @@
                     </a>
                 </div>
                 <p tr-id>
-                    Show the default values.
+                    Show each setting's default value.
                 </p>
             </div>
         </section>
@@ -2371,10 +2371,10 @@
                     <label for=fine_details></label>
                 </div>
                 <p tr-id>
-                    Allow the extension to make use of Twitch™ API data to enhance your experience.
+                    Use data from Twitch™'s API to improve some features.
                 </p>
                 <p warning-text tr-id>
-                    This will not collect any data. It will use the data Twitch™ has already collected.
+                    TTV Tools collects no data: it only uses what Twitch™ already has.
                 </p>
             </div>
         </section>
@@ -2397,10 +2397,10 @@
                     <label for=auto_focus></label>
                 </div>
                 <p tr-id>
-                    Automatically adjust <b>Up Next</b> and <b>Easy Lurk</b> based upon stream activity.
+                    Adjust <b>Up Next</b> and <b>Easy Lurk</b> by how active the stream is.
                 </p>
                 <p warning-text tr-id>
-                    This will <b>not</b> stop the <b>Up Next / First in Line</b> one minute timer.
+                    This does <b>not</b> stop <b>Up Next</b>'s one-minute timer.
                 </p>
                 <details>
                     <summary tr-id=options subtitle='Adjust options for &quot;Auto-Focus&quot;'>Options</summary>
@@ -2468,13 +2468,13 @@
                     <label for=convert_emotes></label>
                 </div>
                 <p tr-id>
-                    When presented with Twitch™ emotes, collect them for usage (without requiring a subscription).
+                    Collect the Twitch™ emotes you see, so you can use them without subscribing.
                 </p>
                 <p tr-id>
-                    This only works for the current stream you are viewing.
+                    Only on the stream you're watching.
                 </p>
                 <p warning-text tr-id>
-                    This does <b>not</b> save/unlock the emote.
+                    This does <b>not</b> unlock or keep the emote.
                 </p>
             </div>
         </section>
@@ -2488,10 +2488,10 @@
                     <label for=soft_unban></label>
                 </div>
                 <p tr-id>
-                    Re-enable chat for channels you've been banned from.
+                    See chat in channels you're banned from.
                 </p>
                 <p warning-text tr-id>
-                    This only re-enables viewing the chat.
+                    You can read chat, but not send messages.
                 </p>
                 <details>
                     <summary tr-id=options subtitle='Adjust options for &quot;Soft Unban&quot;'>Options</summary>
@@ -2504,7 +2504,7 @@
                                     <label for=soft_unban_fade_old_messages></label>
                                 </div>
                                 <p tr-id>
-                                    Messages will be visible for <b>30s</b>.
+                                    Messages fade after <b>30s</b>.
                                 </p>
                             </div>
                         </div>
@@ -2517,7 +2517,7 @@
                                     <label for=soft_unban_keep_bots></label>
                                 </div>
                                 <p tr-id>
-                                    Display bot messages.
+                                    Show bot messages.
                                 </p>
                             </div>
                         </div>
