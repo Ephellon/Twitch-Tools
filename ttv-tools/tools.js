@@ -15535,7 +15535,7 @@ let Initialize = async(START_OVER = false) => {
 
         // Play sound on new message
         NOTIFICATION_EVENTS.onphrase ??= Chat.onmessage = line => {
-            when(line => (defined(line.element)? line: false), 1000, line).then(element => {
+            when(line => (defined(line.element)? line: false), 1000, line).then(({ element }) => {
                 if(element.hasAttribute('tt-light') && !NOTIFICATION_SOUND?.playing)
                     NOTIFICATION_SOUND?.play();
             });
@@ -20717,7 +20717,8 @@ if(top == window) {
                             );
 
                             $.all('a.anchor, svg.action-link', article).map(a => a.remove());
-                            $.all('[href]').map(a => a.target = '_blank');
+                            // Only the article's own links: without it, every link on the page (Up Next's queue too) opened a new tab (#100)
+                            $.all('[href]', article).map(a => a.target = '_blank');
 
                             return article.outerHTML;
                         })
