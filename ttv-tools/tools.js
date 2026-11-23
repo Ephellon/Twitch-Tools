@@ -17922,6 +17922,10 @@ let Initialize = async(START_OVER = false) => {
         RECOVER_PAGE_FROM_LAG__EXACT,
         RECOVER_PAGE_FROM_LAG__WARNINGS = 0;
 
+    function RestartLagClock() {
+        RECOVER_PAGE_FROM_LAG__EXACT = +(new Date);
+    }
+
     Handlers.recover_pages = async() => {
         new StopWatch('recover_pages');
 
@@ -17954,7 +17958,16 @@ let Initialize = async(START_OVER = false) => {
 
         RECOVER_PAGE_FROM_LAG__EXACT = +(new Date);
 
+        // The browser slows (or freezes) a hidden tab's timers: that's not lag, so the clock starts over when the tab comes back (#97)
+        // The same function each time: it's only ever added once
+        for(let type of ['visibilitychange', 'resume'])
+            document.addEventListener(type, RestartLagClock);
+
         RECOVER_PAGE_FROM_LAG = setInterval(() => {
+            // Hidden: no lag check (#97)
+            if(document.hidden)
+                return RestartLagClock();
+
             let now = +(new Date),
                 span = (now - RECOVER_PAGE_FROM_LAG__EXACT);
 
