@@ -139,7 +139,7 @@ export default [
         header: 'Reading Chat',
         tr: 'header:reading-chat',
         headerAttrs: {
-            subtitle: 'These settings do not apply to banned channels unless otherwise noted.',
+            subtitle: "Except where noted, these don't apply in channels you're banned from.",
         },
         save: true,
         sections: [
