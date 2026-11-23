@@ -8,6 +8,13 @@ import { plugin } from '../../lib/plugins.js';
 // The feature's state; init() resets it whenever the page (re)initializes
 let RECOVER_PAGE_FROM_LAG, RECOVER_PAGE_FROM_LAG__EXACT, RECOVER_PAGE_FROM_LAG__WARNINGS;
 
+/**
+ * Starts the lag clock over (the tab was hidden, or frozen, and came back).
+ */
+function RestartLagClock() {
+    RECOVER_PAGE_FROM_LAG__EXACT = +(new Date);
+}
+
 plugin({
     id: 'recover_pages',
     timer: 5000,
@@ -59,7 +66,16 @@ plugin({
     setup() {
         RECOVER_PAGE_FROM_LAG__EXACT = +(new Date);
 
+        // The browser slows (or freezes) a hidden tab's timers: that's not lag, so the clock starts over when the tab comes back (#97)
+        // The same function each time: it's only ever added once
+        for(let type of ['visibilitychange', 'resume'])
+            document.addEventListener(type, RestartLagClock);
+
         RECOVER_PAGE_FROM_LAG = setInterval(() => {
+            // Hidden: no lag check (#97)
+            if(document.hidden)
+                return RestartLagClock();
+
             const now = +(new Date)
                 , span = (now - RECOVER_PAGE_FROM_LAG__EXACT);
 
