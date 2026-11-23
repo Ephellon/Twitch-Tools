@@ -13084,6 +13084,18 @@ let Initialize = async(START_OVER = false) => {
      */
     let GREEDY_RAIDING_FRAMES = new Map;
 
+    // The hidden chat can't take focus (it's inert); should it get it anyway, focus goes straight back where it was
+    if(top == window && !top.GREEDY_RAIDING_FOCUS_GUARD) {
+        top.GREEDY_RAIDING_FOCUS_GUARD = true;
+
+        document.addEventListener('focusout', ({ target }) => {
+            setTimeout(() => {
+                if(document.activeElement?.id == 'tt-greedy-raiding--frame' && target?.isConnected)
+                    target.focus({ preventScroll: true });
+            });
+        }, true);
+    }
+
     Handlers.greedy_raiding = () => {
         let online = [STREAMER, ...STREAMERS].filter(isLive).filter(({ name }) => name.unlike(STREAMER.name)),
             container = (null
@@ -13164,6 +13176,11 @@ let Initialize = async(START_OVER = false) => {
                     src,
                     channel: name,
                     since,
+
+                    // Each turn loads a Twitch chat page, which focuses its own chat box: the frame must never take focus
+                    // from what the viewer is typing in (see the focus guard below)
+                    inert: '',
+                    tabindex: -1,
 
                     // sandbox: `allow-scripts allow-same-origin allow-popups allow-popups-to-escape-sandbox allow-modals`,
                 });

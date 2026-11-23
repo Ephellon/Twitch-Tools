@@ -44,6 +44,7 @@
 ## Release History
 
 ### Version 5.35.\*
+- [`5.35.6.26`](https://github.com/Ephellon/Twitch-Tools/releases/tag/5.35.6.26) — Greedy Raiding: the hidden chat no longer takes focus away from chat and other input boxes
 - [`5.35.6.25`](https://github.com/Ephellon/Twitch-Tools/releases/tag/5.35.6.25) — Settings: the "Reading Chat" subtitle is no longer cut off
 - [`5.35.6.24`](https://github.com/Ephellon/Twitch-Tools/releases/tag/5.35.6.24) — Settings: clearer, shorter descriptions throughout; Max Watchtime now names the setting it needs (Up Next › One Instance), on the Settings page and on its button
 - [`5.35.6.23`](https://github.com/Ephellon/Twitch-Tools/releases/tag/5.35.6.23) — Greedy Raiding's hidden chat takes 15-second turns (was 2 minutes), so a raid's 90-second countdown is seen on each of up to 6 live channels
