@@ -1,5 +1,5 @@
 (* ==========================================================================
-   TTV DSL - grammar v2.1.1
+   TTV DSL - grammar v2.1.2
    Companion to dsl/SPEC.md. ISO-style EBNF.
 
      =    definition        |    alternation      { }  zero or more
@@ -401,7 +401,13 @@ context_sel    = "." , IDENT ;
                    a nested template. A "${" with no "}" before such a line
                    break, or before EOF, is a lexical error AT the "${". (v2 to
                    v2.1 read it as the literal text "${" - but any later "}" in
-                   the script then closed it, far from the mistake.) *]
+                   the script then closed it, far from the mistake.)
+                   (v2.1.2) A "${" followed on its line by nothing but spaces,
+                   tabs or a "//" comment reads OVER LINES instead: each later
+                   line must be indented deeper than the "${" line (blank lines
+                   aside, nested-template lines included); the first line back
+                   at that indentation or less must begin with the closing "}",
+                   else the "${" is the same lexical error. *]
 
   STRING      = "\"" ( [^"\\\n] | "\\" . )* "\""
               | "'"  ( [^'\\\n] | "\\" . )* "'"                      [* v2 *]

@@ -1,6 +1,6 @@
 # TTV DSL — Language Specification
 
-**Language version 2.1.1.** TTV DSL is the script language of the **TTV Tools** browser
+**Language version 2.1.2.** TTV DSL is the script language of the **TTV Tools** browser
 extension. A script tells the extension what to do in Twitch chat: "every five minutes, post
 one of these lines", or "when someone types `!hello`, say hi back". You do not need to know
 JavaScript to write one.
@@ -326,8 +326,10 @@ await (.message is SOMETHING)
 - Templates may nest: a `${ }` may hold a template, which may hold another `${ }`.
 - An error inside `${ ... }` is reported at its real line and column.
 
-**A `${` must be closed by a `}`.** Close it on the same line. The code inside may go onto
-more lines only inside parentheses or square brackets:
+**A `${` must be closed by a `}`.** There are two ways to write one.
+
+**On one line.** When code comes after the `${` on its line, close it on that line. The code
+may go onto more lines only inside parentheses or square brackets:
 
 ```ttv
 POST `I pick ${ any from (
@@ -336,14 +338,37 @@ POST `I pick ${ any from (
 ) }!`
 ```
 
+**Over several lines.** When the `${` is the last thing on its line, the code goes on the
+lines after it. Those lines must be indented **deeper** than the line with the `${`. Close it
+with `}` at the start of a line that is back at the `${` line's indentation:
+
+```ttv
+await (.message is SOMETHING)
+    POST `hi ${
+        any from (
+            .sender
+            `friend`
+        )
+    }!`
+```
+
+- Blank lines inside are fine. A `//` comment may follow the `${`.
+- A template inside may span lines too, if its lines are deeper. Its text keeps that
+  indentation, so `` `a `` ⏎ `` b` `` indented by 8 holds eight spaces before `b`.
+- The `}` may also end a deeper line: `` .sender }!` `` closes it there.
+
 A `${` that is not closed is an error, reported at the `${` itself:
 
 ```text
 POST `cost: ${ dollars`     <- error: This `${` is never closed
 ```
 
-The same error comes when the line ends first (outside brackets), when the script ends first,
-or when a quote inside `${ ... }` is never closed.
+The same error comes when the script ends first, when a quote inside `${ ... }` is never
+closed, and:
+
+- **on one line:** when the line ends outside brackets;
+- **over several lines:** when a line comes back to the `${` line's indentation (or less)
+  without starting with `}`.
 
 **To show the characters `${` in a message, write `\${`.** The backslash makes the `$` plain
 text:
@@ -1709,6 +1734,11 @@ await * with (#live is true)
 ```
 
 ---
+
+## New in version 2.1.2
+
+- A `${` that ends its line reads the deeper lines after it, up to a `}` back at its line's
+  indentation (§5.2).
 
 ## New in version 2.1.1
 

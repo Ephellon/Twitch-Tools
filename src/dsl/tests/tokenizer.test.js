@@ -503,8 +503,13 @@
             assert.equal(token.value.expressions.length, 1);
         });
 
-        it('stops at a line break outside brackets', () => {
-            failsAt('POST `${\n    .sender\n}`\n', 1, 7);
+        it('stops at a line break outside brackets, when code follows the "${"', () => {
+            failsAt('POST `${ .sender\n}`\n', 1, 7);
+        });
+
+        it('still stops a "${" with code after it, even before a nested template that spans lines', () => {
+            // From in here this is the very shape of the bug, so it cannot be allowed
+            failsAt('POST `${ `first line\nsecond line` }`\n', 1, 7);
         });
 
         it('reports a quote that never closes inside "${ }" at the "${"', () => {
@@ -541,6 +546,96 @@
             assert.equal(token.value.expressions.length, 1);
             assert.equal(token.value.expressions[0].source.trim(), '"${x}"');
         });
+    });
+
+    describe('tokenizer / a "${" that ends its line', () => {
+        /** The one interpolation's source, trimmed. */
+        const inside = (source) => tokenize(source).find(token => TokenType.TEMPLATE === token.type).value.expressions.map(expression => expression.source.trim());
+
+        /** Asserts that `source` fails at the `${` on `line`, `column`, explaining the rule for lines. */
+        const failsAt = (source, line, column) => {
+            let error = null;
+
+            try {
+                tokenize(source);
+            } catch(thrown) {
+                error = thrown;
+            }
+
+            assert.ok(error, 'expected a DSLSyntaxError');
+            assert.equal(error.name, 'DSLSyntaxError', error.message);
+            assert.ok(/never closed\. When `\$\{` ends a line/.test(error.message), error.message);
+            assert.equal(error.loc.line, line);
+            assert.equal(error.loc.column, column);
+        };
+
+        it('reads the deeper lines after it, up to a "}" back at its own indentation', () => {
+            assert.deepEqual(inside('POST `${\n    .sender\n}`\n'), ['.sender']);
+            assert.deepEqual(inside('await *\n    POST `hi ${\n        .sender\n    }!`\n'), ['.sender']);
+        });
+
+        it('lets a "}" on a deeper line close it too', () => {
+            assert.deepEqual(inside('POST `${\n    .sender }`\n'), ['.sender']);
+        });
+
+        it('lets a nested template span lines, when its lines are deeper', () => {
+            assert.deepEqual(inside('POST `${\n    `first line\n    second line`\n}`\n'), ['`first line\n    second line`']);
+        });
+
+        it('skips blank lines, and a comment after the "${"', () => {
+            assert.deepEqual(inside('POST `${   // who\n\n    .sender\n\n}`\n'), ['// who\n\n    .sender']);
+        });
+
+        it('nests: a "${" that ends a line inside one', () => {
+            const source = 'POST `a ${\n    `b ${\n        .sender\n    } c`\n} d`\n';
+
+            assert.deepEqual(inside(source), ['`b ${\n        .sender\n    } c`']);
+            assert.deepEqual(globalThis.TTV_DSL.check(source), []);
+        });
+
+        it('measures the real indentation of a line inside a template interpolation', () => {
+            // The inner `${` sits on a line indented 4, inside code that began mid-line
+            assert.deepEqual(globalThis.TTV_DSL.check('POST `${ any from (\n    `x ${\n        .sender\n    }`\n    `y`\n) }`\n'), []);
+        });
+
+        it('reads Windows line endings and tabs the same way', () => {
+            assert.deepEqual(inside('POST `${\r\n    .sender\r\n}`\r\n'), ['.sender']);
+            assert.deepEqual(inside('await *\n\tPOST `${\n\t\t.sender\n\t}`\n'), ['.sender']);
+        });
+
+        it('reports a forgotten "}" at the "${", not at a later "}"', () => {
+            failsAt('POST `hi ${\n    .sender\nPOST `next`\nPOST `a }`\n', 1, 10);
+        });
+
+        it('reports a line pulled back to the opening indentation', () => {
+            failsAt('await *\n    POST `${\n        .sender\n    .name\n    }`\n', 2, 11);
+        });
+
+        it('reports a nested template whose line is not deeper', () => {
+            failsAt('POST `${\n    `first line\nsecond line`\n}`\n', 1, 7);
+        });
+
+        it('reports a "${" at the very end of the script', () => {
+            failsAt('POST `${', 1, 7);
+            failsAt('POST `${\n', 1, 7);
+        });
+
+        it('keeps a missing ")" inside the block it belongs to', () => {
+            // The `}` closes the `${`; what is missing is the `)`, reported before the next line
+            const found = globalThis.TTV_DSL.check('POST `${\n    any from (\n        `a`\n}`\nPOST `after`\n');
+
+            assert.equal(found.length, 1);
+            assert.ok(/Unclosed "\("/.test(found[0].message), found[0].message);
+            assert.ok(found[0].loc.line <= 4, `reported on line ${ found[0].loc.line }`);
+        });
+
+        it('keeps the highlighter in step: a valid script has no invalid span', () => {
+            const spans = globalThis.TTV_DSL.highlight('await *\n    POST `a ${\n        `b ${\n            .sender\n        } c`\n    } d`\n');
+
+            assert.equal(spans.filter(span => 'invalid' === span.type).length, 0);
+            assert.ok(spans.some(span => 'selector' === span.type && 'sender' === span.text));
+        });
+
     });
 
     describe('tokenizer / block comments', () => {

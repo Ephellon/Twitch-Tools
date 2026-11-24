@@ -188,7 +188,7 @@ if(typeof require === 'function' && typeof module === 'object') {
      */
     const scan = (source, from, to, verbs, spans, lineStart = true) => {
         const text = source.slice(from, to)
-            , tokens = tokenizeLeniently(text)
+            , tokens = tokenizeLeniently(text, { offset: from, source })
             , fault = (tokens instanceof Error ? tokens : null);
 
         if(fault) {
@@ -250,14 +250,16 @@ if(typeof require === 'function' && typeof module === 'object') {
      * are closed virtually and anything past the real text is dropped, so every real
      * character keeps its proper colour.
      * @param {String} text
+     * @param {{ offset: Number, source: String }} within - the whole script `text` was cut
+     *   from, so a `${` that ends a line measures that line's real indentation
      * @return {Array<Object>|Error} the tokens, or the fault that stopped them
      */
-    const tokenizeLeniently = (text) => {
+    const tokenizeLeniently = (text, within) => {
         let suffix = '';
 
         for(let attempt = 0; attempt <= MAX_BORROWED_PARENS; ++attempt) {
             try {
-                return new Tokenizer(text + suffix, { fragment: true }).tokenize()
+                return new Tokenizer(text + suffix, { fragment: true, within }).tokenize()
                     .filter(token => token.loc.start < text.length || STRUCTURAL.has(token.type))
                     .map(token => (token.loc.end > text.length ? Object.assign({}, token, { loc: Object.assign({}, token.loc, { end: text.length }) }) : token));
             } catch(error) {

@@ -99,6 +99,20 @@ the fix uses line breaks instead: an interpolation may continue onto another lin
 outside them — the one right after the template that really ended — stops the search, and the
 `${` is reported. A quote that never closes inside an interpolation is reported the same way.
 
+*(v2.1.2)* A `${` that **ends its line** is read the other way: over lines, bounded by the
+off-side rule. Every following line must be indented deeper than the `${` line (blank lines
+aside), lines inside a nested template included; the first line back at that indentation must
+start with the closing `}`, or the `${` is reported. This brings back the multi-line forms 2.1.1
+had to refuse (`${` ⏎ `.sender` ⏎ `}`, and a nested template over lines), and a forgotten `}`
+still cannot run past the indented block. The trigger is exact: nothing but spaces, tabs or a
+`//` comment after the `${`. A `${` with code after it keeps the one-line rule, because
+`` ${ `a `` ⏎ … is the bug's own shape. Indentation is measured on the whole script, even when the
+`${` sits inside an interpolation that began mid-line (the tokenizer's `within` option; the
+highlighter passes it too). Greedy reading — try each later `}` and keep the first whose
+contents parse — was rejected: it silently accepts junk that happens to parse (an ALL-CAPS
+function call swallowing a template), it makes the editor recolour far-away lines on every key,
+and it cannot be explained in one rule.
+
 ## A.8 Host calls
 
 - **No text ever becomes code.** There is no `eval` and no `new Function` anywhere, and
@@ -516,7 +530,21 @@ that changes what an existing v2 script does.
   **Behaviour change:** a template holding a lone `${` (`` `cost: ${ dollars` ``) was text and
   is now an error — write `\${`. An interpolation whose `}` sits on a later line outside
   brackets (`` `${`` newline `.sender` newline `` }` ``) is now an error too; no known script
-  wrote one.
+  wrote one. *(v2.1.2 allows it again.)*
+
+## C.4a Changed in v2.1.2
+
+- **A `${` that ends its line reads over lines** — Proposed by the owner ("fat" reading after a
+  `${` that ends a line), bounded by indentation (A.7). Lines after the `${` must be deeper; a
+  line back at its indentation must start with `}`. Restores `${` ⏎ `.sender` ⏎ `}` and nested
+  templates over lines in that form. New message for this form: "This `${` is never closed.
+  When `${` ends a line, indent the lines after it deeper, then close it with `}` at the start
+  of a line. To show `${` as text, write `\${`". **Still refused**, by design: a `${` with code
+  after it, then a nested template that runs onto the next line (`` ${ `first `` ⏎
+  `` second` } ``) — the bug's own shape. Write it with the `${` ending the line instead.
+- **Fixed on the way: exponential scanning.** 2.1.0 took exponential time on lines that each
+  hold an unclosed `${` and a backtick (highlighting 38 lines of `` POST `a ${ `` took over 10 s;
+  tokenizing 50 never finished). 2.1.1 and 2.1.2 scan them in linear time.
 
 ## C.5 Still open
 

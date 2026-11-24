@@ -101,6 +101,10 @@ if(typeof require === 'function' && typeof module === 'object') {
      * a host constant everywhere else. */
     const UPPER_PATTERN = /^[A-Z][A-Z0-9_]*$/;
 
+    /** What the search for an interpolation's `}` returns when a `${` that ends its line
+     * never closes — so the error can explain the rule for reading over lines. */
+    const MULTILINE_UNCLOSED = -2;
+
     /** Recognized backslash escapes inside strings and templates. */
     const ESCAPES = Object.freeze({
         n: '\n',
@@ -168,6 +172,10 @@ if(typeof require === 'function' && typeof module === 'object') {
         #locate;
         #reportSource;
 
+        /** The whole text this one was cut from, and where it starts — for measuring the
+         * indentation of a line that began before the cut. */
+        #within;
+
         /**
          * @param {String} source - the text to scan
          * @param {Object} [options]
@@ -177,8 +185,10 @@ if(typeof require === 'function' && typeof module === 'object') {
          * @param {Boolean} [options.fragment = false] - suppress `INDENT`/`DEDENT`
          *   entirely. A template interpolation begins mid-line, so its leading whitespace
          *   is an artifact of the enclosing script and must not be read as structure.
+         * @param {{ offset: Number, source: String }} [options.within] - like `origin`, but
+         *   only for measuring indentation; locations stay local. `origin` implies it.
          */
-        constructor(source, { origin = null, fragment = false } = {}) {
+        constructor(source, { origin = null, fragment = false, within = null } = {}) {
             this.#source = String(source);
             this.#length = this.#source.length;
 
@@ -186,6 +196,25 @@ if(typeof require === 'function' && typeof module === 'object') {
             this.#originOffset = (origin ? origin.offset | 0 : 0);
             this.#reportSource = (origin ? origin.source : this.#source);
             this.#locate = makeLocator(this.#reportSource);
+            this.#within = (origin ?? within ?? { offset: 0, source: this.#source });
+        }
+
+        /** The indentation width of the line holding `index` — measured in the whole text,
+         * so a fragment that starts mid-line still sees its first line's real indentation.
+         * @param {Number} index - a local offset
+         * @return {Number} leading spaces and tabs, counted as the off-side rule counts them
+         */
+        #lineIndentAt(index) {
+            const { source, offset } = this.#within
+                , before = offset + index - 1;
+
+            let at = (before < 0 ? 0 : source.lastIndexOf('\n', before) + 1)
+                , width = 0;
+
+            while(' ' === source[at] || '\t' === source[at])
+                ++at, ++width;
+
+            return width;
         }
 
         /** Scans the whole input.
@@ -935,7 +964,9 @@ if(typeof require === 'function' && typeof module === 'object') {
                     // but then any `}` later in the script — even in another template —
                     // closed it, and the error landed far from the mistake. `\${` is the
                     // literal spelling.
-                    if(close < 0)
+                    if(MULTILINE_UNCLOSED === close)
+                        this.#fail('This `${` is never closed. When `${` ends a line, indent the lines after it deeper, then close it with `}` at the start of a line. To show `${` as text, write `\\${`', this.#index, this.#index + 2);
+                    else if(close < 0)
                         this.#fail('This `${` is never closed. Close it with `}` on the same line, or write `\\${` to show `${` as text', this.#index, this.#index + 2);
 
                     quasis.push(chunk);
@@ -959,34 +990,90 @@ if(typeof require === 'function' && typeof module === 'object') {
             this.#emit(TokenType.TEMPLATE, start, this.#index, { quasis, expressions });
         }
 
+        /** Whether nothing but spaces, tabs or a `//` comment follows `from` on its line.
+         * @param {Number} from
+         * @return {Boolean}
+         */
+        #endsLine(from) {
+            let index = from;
+
+            while(' ' === this.#source[index] || '\t' === this.#source[index])
+                ++index;
+
+            if('/' === this.#source[index] && '/' === this.#source[index + 1])
+                while(index < this.#length && '\n' !== this.#source[index])
+                    ++index;
+
+            if('\r' === this.#source[index])
+                ++index;
+
+            return index >= this.#length || '\n' === this.#source[index];
+        }
+
+        /** The line that starts after the line break at `at`.
+         * @param {Number} at - index of a `\n`
+         * @return {{ width: Number, first: Number, blank: Boolean }} its indentation, the
+         *   index of its first other character, and whether it holds nothing else
+         */
+        #lineAfter(at) {
+            let index = at + 1
+                , width = 0;
+
+            while(' ' === this.#source[index] || '\t' === this.#source[index])
+                ++index, ++width;
+
+            return { width, first: index, blank: '\n' === this.#source[index] || '\r' === this.#source[index] };
+        }
+
         /** Finds the `}` that closes an interpolation opened just before `from`.
          *
          * Tracks brace depth while stepping over nested strings, nested templates (which
          * may themselves interpolate) and line comments, so a `}` inside `` `a}b` `` does
          * not close the interpolation early.
          *
-         * The interpolation may run onto another line only inside `( )` or `[ ]`, as in
-         * `${ any from ( … ) }`. A line break anywhere else — including inside what looks
-         * like a nested template, which is how the template's own closing backtick reads
-         * from in here — means the `}` is missing.
+         * From in here, the template's own closing backtick reads exactly like the start of
+         * a nested template, so where lines may break is what keeps a missing `}` from
+         * pairing with one far away. There are two ways to read:
+         *
+         * - **On one line** (code follows the `${`): the interpolation may run onto another
+         *   line only inside `( )` or `[ ]`, as in `${ any from ( … ) }`.
+         * - **Over lines** (the `${` ends its line): every following line must be indented
+         *   deeper than the line holding the `${`, blank lines aside — including lines inside
+         *   a nested template — until a line at that indentation or less, which must start
+         *   with the closing `}`.
          * @param {Number} from - index of the first character of the expression
-         * @return {Number} index of the closing `}`, or `-1` when there is none
+         * @return {Number} index of the closing `}`; or `-1` when there is none, `-2`
+         *   (`MULTILINE_UNCLOSED`) when there is none for one read over lines
          */
         #skipInterpolation(from) {
+            const multiline = this.#endsLine(from)
+                , opening = (multiline ? this.#lineIndentAt(from) : 0)
+                , unclosed = (multiline ? MULTILINE_UNCLOSED : -1);
+
             let index = from
                 , depth = 1
                 , brackets = 0;
+
+            /** May the code go on past the line break at `at`, inside a nested template? */
+            const mayBreak = (at) => {
+                if(!multiline)
+                    return brackets > 0;
+
+                const line = this.#lineAfter(at);
+
+                return line.blank || line.width > opening;
+            };
 
             while(index < this.#length) {
                 const character = this.#source[index];
 
                 if('"' === character || '\'' === character || '`' === character) {
-                    const past = this.#skipQuoted(index, 0 === brackets);
+                    const past = this.#skipQuoted(index, mayBreak);
 
                     // A quote that never closes means this `${` cannot be shown to have a
                     // matching `}` either.
                     if(past < 0)
-                        return -1;
+                        return unclosed;
 
                     index = past;
 
@@ -1000,8 +1087,16 @@ if(typeof require === 'function' && typeof module === 'object') {
                     continue;
                 }
 
-                if('\n' === character && 0 === brackets)
-                    return -1;
+                if('\n' === character) {
+                    if(multiline) {
+                        const line = this.#lineAfter(index);
+
+                        if(!line.blank && line.width <= opening)
+                            return ('}' === this.#source[line.first] && 1 === depth ? line.first : unclosed);
+                    } else if(0 === brackets) {
+                        return unclosed
+                    }
+                }
 
                 if('(' === character || '[' === character)
                     ++brackets;
@@ -1020,7 +1115,7 @@ if(typeof require === 'function' && typeof module === 'object') {
                 ++index;
             }
 
-            return -1;
+            return unclosed;
         }
 
         /** Steps over a complete string or template beginning at `from`.
@@ -1029,10 +1124,11 @@ if(typeof require === 'function' && typeof module === 'object') {
          * quote is not a fault here — it is evidence that the `${` has no `}`. The caller
          * reports that at the `${`.
          * @param {Number} from - index of the opening quote or backtick
-         * @param {Boolean} [oneLine = false] - a template must close on this line too
+         * @param {function(Number): Boolean} mayBreak - whether a template may go on past
+         *   the line break at an index (the enclosing interpolation's rule)
          * @return {Number} index just past the closing quote, or `-1` when there is none
          */
-        #skipQuoted(from, oneLine = false) {
+        #skipQuoted(from, mayBreak) {
             let quote = this.#source[from]
                 , index = from + 1;
 
@@ -1048,8 +1144,8 @@ if(typeof require === 'function' && typeof module === 'object') {
                 if(character === quote)
                     return index + 1;
 
-                // Strings never span lines; a template inside `${ }` may only inside brackets
-                if('\n' === character && ('`' !== quote || oneLine))
+                // Strings never span lines; a template inside `${ }` only where its rule allows
+                if('\n' === character && ('`' !== quote || !mayBreak(index)))
                     return -1;
 
                 if('`' === quote && '$' === character && '{' === this.#source[index + 1]) {
