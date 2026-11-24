@@ -1,6 +1,6 @@
 # TTV DSL — Language Specification
 
-**Language version 2.1.** TTV DSL is the script language of the **TTV Tools** browser
+**Language version 2.1.1.** TTV DSL is the script language of the **TTV Tools** browser
 extension. A script tells the extension what to do in Twitch chat: "every five minutes, post
 one of these lines", or "when someone types `!hello`, say hi back". You do not need to know
 JavaScript to write one.
@@ -326,21 +326,33 @@ await (.message is SOMETHING)
 - Templates may nest: a `${ }` may hold a template, which may hold another `${ }`.
 - An error inside `${ ... }` is reported at its real line and column.
 
-**A `${` with no `}` anywhere after it is plain text.** `` `cost: ${ dollars` `` is an
-ordinary message. But if a `}` comes later in the script, even in another template, that `}`
-closes the `${`. So write a lone `${` only near the end of a script, or use the string trick
-below.
-
-**A `${` with a matching `}` is always code.** If the code inside is wrong, that is an
-error. To write the characters `${x}` in a message, put them in a string inside the
-interpolation:
+**A `${` must be closed by a `}`.** Close it on the same line. The code inside may go onto
+more lines only inside parentheses or square brackets:
 
 ```ttv
-POST `${ "${whatever}" }`
+POST `I pick ${ any from (
+    `red`
+    `blue`
+) }!`
 ```
 
-If a quote inside `${ ... }` never closes before the end, the `${` is read as plain text, not
-as an unclosed string.
+A `${` that is not closed is an error, reported at the `${` itself:
+
+```text
+POST `cost: ${ dollars`     <- error: This `${` is never closed
+```
+
+The same error comes when the line ends first (outside brackets), when the script ends first,
+or when a quote inside `${ ... }` is never closed.
+
+**To show the characters `${` in a message, write `\${`.** The backslash makes the `$` plain
+text:
+
+```ttv
+POST `cost: \${ dollars`         // sends: cost: ${ dollars
+```
+
+**The code inside `${ ... }` must be correct.** If it is wrong, that is an error.
 
 ### 5.3 Numbers
 
@@ -1585,7 +1597,7 @@ The kinds of error:
 
 | Kind | Means | Examples |
 | :--- | :--- | :--- |
-| `DSLSyntaxError` | a character or word that cannot be read | a stray character; bad indentation; an unclosed string, template or bracket; a bad grant or `\u` escape; an old spelling (`<badge>`, `:emote:`, `$:`) |
+| `DSLSyntaxError` | a character or word that cannot be read | a stray character; bad indentation; an unclosed string, template, `${` or bracket; a bad grant or `\u` escape; an old spelling (`<badge>`, `:emote:`, `$:`) |
 | `DSLParseError` | words in an order the language does not allow | a missing block; `where` after a yes/no test; a `write`/`eval` grant with no description; `+scope` below the top level |
 | `DSLPermissionError` | a grant that does not exist, or a missing grant | `+read:htlm.*`; a host call without its grant |
 | `DSLRuntimeError` | something wrong found when a line runs | an unknown verb or constant; a bad range; `after` given a non-duration; an unknown host call; reading a function or calling a constant |
@@ -1697,6 +1709,12 @@ await * with (#live is true)
 ```
 
 ---
+
+## New in version 2.1.1
+
+- A `${` that is never closed is now an error, reported at the `${`. Before, it was plain
+  text — but a `}` anywhere later in the script closed it, and the error showed up far away.
+  To show `${` in a message, write `\${` (§5.2).
 
 ## New in version 2.1
 

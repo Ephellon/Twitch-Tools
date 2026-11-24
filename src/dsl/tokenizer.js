@@ -931,18 +931,12 @@ if(typeof require === 'function' && typeof module === 'object') {
                     const open = this.#index + 2
                         , close = this.#skipInterpolation(open);
 
-                    // An unterminated `${` is literal text, not a fault — a chat message
-                    // that mentions `${` is ordinary. Note that a *matched* `${ … }` stays
-                    // an interpolation and stays an error when its contents are
-                    // ungrammatical: degrading that to text would silently swallow real
-                    // typos, and the escape idiom `${ "${x}" }` only means anything if the
-                    // outer, matched pair is genuinely evaluated.
-                    if(close < 0) {
-                        chunk += '${';
-                        this.#index += 2;
-
-                        continue;
-                    }
+                    // A `${` that never closes is reported where it is. It used to be text,
+                    // but then any `}` later in the script — even in another template —
+                    // closed it, and the error landed far from the mistake. `\${` is the
+                    // literal spelling.
+                    if(close < 0)
+                        this.#fail('This `${` is never closed. Close it with `}` on the same line, or write `\\${` to show `${` as text', this.#index, this.#index + 2);
 
                     quasis.push(chunk);
                     chunk = '';
@@ -970,22 +964,27 @@ if(typeof require === 'function' && typeof module === 'object') {
          * Tracks brace depth while stepping over nested strings, nested templates (which
          * may themselves interpolate) and line comments, so a `}` inside `` `a}b` `` does
          * not close the interpolation early.
+         *
+         * The interpolation may run onto another line only inside `( )` or `[ ]`, as in
+         * `${ any from ( … ) }`. A line break anywhere else — including inside what looks
+         * like a nested template, which is how the template's own closing backtick reads
+         * from in here — means the `}` is missing.
          * @param {Number} from - index of the first character of the expression
          * @return {Number} index of the closing `}`, or `-1` when there is none
          */
         #skipInterpolation(from) {
             let index = from
-                , depth = 1;
+                , depth = 1
+                , brackets = 0;
 
             while(index < this.#length) {
                 const character = this.#source[index];
 
                 if('"' === character || '\'' === character || '`' === character) {
-                    const past = this.#skipQuoted(index);
+                    const past = this.#skipQuoted(index, 0 === brackets);
 
                     // A quote that never closes means this `${` cannot be shown to have a
-                    // matching `}` either, so it is text — `\`cost: ${ dollars\`` is an
-                    // ordinary message, not a broken interpolation.
+                    // matching `}` either.
                     if(past < 0)
                         return -1;
 
@@ -1000,6 +999,14 @@ if(typeof require === 'function' && typeof module === 'object') {
 
                     continue;
                 }
+
+                if('\n' === character && 0 === brackets)
+                    return -1;
+
+                if('(' === character || '[' === character)
+                    ++brackets;
+                else if((')' === character || ']' === character) && brackets > 0)
+                    --brackets;
 
                 if('{' === character) {
                     ++depth
@@ -1019,12 +1026,13 @@ if(typeof require === 'function' && typeof module === 'object') {
         /** Steps over a complete string or template beginning at `from`.
          *
          * Only ever called while looking for the `}` of an interpolation, so an unterminated
-         * quote is not a fault here — it is evidence that the `${` was never an
-         * interpolation at all. The caller turns that into literal text.
+         * quote is not a fault here — it is evidence that the `${` has no `}`. The caller
+         * reports that at the `${`.
          * @param {Number} from - index of the opening quote or backtick
+         * @param {Boolean} [oneLine = false] - a template must close on this line too
          * @return {Number} index just past the closing quote, or `-1` when there is none
          */
-        #skipQuoted(from) {
+        #skipQuoted(from, oneLine = false) {
             let quote = this.#source[from]
                 , index = from + 1;
 
@@ -1039,6 +1047,10 @@ if(typeof require === 'function' && typeof module === 'object') {
 
                 if(character === quote)
                     return index + 1;
+
+                // Strings never span lines; a template inside `${ }` may only inside brackets
+                if('\n' === character && ('`' !== quote || oneLine))
+                    return -1;
 
                 if('`' === quote && '$' === character && '{' === this.#source[index + 1]) {
                     const close = this.#skipInterpolation(index + 2);

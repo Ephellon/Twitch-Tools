@@ -88,10 +88,16 @@ would print `${ .sendr }` instead of saying the property is misspelled. The esca
 `` `${ "${whatever}" }` ``, also only works if the outer, matched pair is really evaluated: it
 interpolates a *string* that reads `${whatever}`.
 
-An **unmatched** `${` is text, which answers v1's open question about escaping. The same rule
-covers a quote that never closes inside an interpolation: if the tokenizer cannot find the end
-of a nested string while hunting for the `}`, it decides the `${` was never an interpolation,
-instead of reporting an unclosed string the author never wrote. (See C.4 for one sharp edge.)
+An **unmatched** `${` is an error at the `${` *(v2.1.1)*, and `\${` is the literal spelling.
+From v2 to v2.1 an unmatched `${` was text. That failed in a way no reader could predict:
+while hunting for the `}`, the tokenizer reads the template's own closing backtick as the
+start of a nested template, so any `}` later in the script — even in another template —
+closed the `${`, and the error landed lines away from the mistake. From inside an
+interpolation, "the template ends here" and "a nested template starts here" look the same, so
+the fix uses line breaks instead: an interpolation may continue onto another line only inside
+`( )` or `[ ]`, the one place valid scripts do it (`${ any from ( … ) }`). The first line break
+outside them — the one right after the template that really ended — stops the search, and the
+`${` is reported. A quote that never closes inside an interpolation is reported the same way.
 
 ## A.8 Host calls
 
@@ -414,7 +420,8 @@ Each entry keeps the title v1 filed it under.
   told from a constant by its shape: an interior underscore (`mod_msg`), checked only where a
   name is created. *(Changed in v2.1: a lower-case letter, not an underscore.)*
 - **No escape syntax inside templates for `${`** — Resolved. An unterminated `${` is text; a
-  matched one is still an interpolation. The escape idiom is `${ "${x}" }`.
+  matched one is still an interpolation. The escape idiom is `${ "${x}" }`. *(Changed in
+  v2.1.1: an unterminated `${` is an error at the `${`, and `\${` is the literal spelling.)*
 - **No block comments** — Resolved. `/* ... */` may span lines.
 
 New in v2, with no v1 entry:
@@ -431,7 +438,7 @@ New in v2, with no v1 entry:
   refused it. This was the only v1 behaviour v2 changed: the fault is still reported at the same
   place with more information, but its class changed from `DSLSyntaxError` to `DSLParseError`.
   An unterminated `${` also stopped being a lexical fault and became legal. *(v2.1 removed the
-  emote job of `:`, leaving three.)*
+  emote job of `:`, leaving three. v2.1.1 made an unterminated `${` a lexical fault again.)*
 
 ## C.3 Changed in v2.1
 
@@ -500,16 +507,23 @@ that changes what an existing v2 script does.
 - **The host** — The v6 extension implements `HOST.md` in `src/lib/dsl-host.js`, held to the
   contract by `host/host-conformance.test.js` and `host/extension-adapter.test.mjs`.
 
-## C.4 Still open
+## C.4 Changed in v2.1.1
+
+- **A lone `${` was closed by a much later `}`** — Found while rewriting `SPEC.md` for
+  readability; the owner ruled to fix it. A `${` that never closes is now a `DSLSyntaxError`
+  at the `${`: "This `${` is never closed. Close it with `}` on the same line, or write `\${`
+  to show `${` as text". An interpolation may span lines only inside `( )` or `[ ]` (A.7).
+  **Behaviour change:** a template holding a lone `${` (`` `cost: ${ dollars` ``) was text and
+  is now an error — write `\${`. An interpolation whose `}` sits on a later line outside
+  brackets (`` `${`` newline `.sender` newline `` }` ``) is now an error too; no known script
+  wrote one.
+
+## C.5 Still open
 
 - **`DISCORD` is unimplemented.** `idea.ttv` uses it; the runtime does not register it. A
   script naming it has that one block skipped, with one error reported.
-- **A lone `${` can be closed by a much later `}`.** `` `cost: ${ dollars` `` is text only when
-  no `}` follows anywhere in the script. If a later line holds a `}` (even inside another
-  template), the tokenizer pairs them and reports an error far from the `${`. Found while
-  rewriting `SPEC.md` for readability; documented as it behaves (SPEC §5.2). Not yet ruled on.
 
-## C.5 Settled — do not reopen by accident
+## C.6 Settled — do not reopen by accident
 
 - **`+` and `?` are reserved** for a later, distinct use. They will not become shorthands for
   `SOMETHING` / `NOTHING`.

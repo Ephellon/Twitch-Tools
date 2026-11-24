@@ -1,5 +1,5 @@
 (* ==========================================================================
-   TTV DSL - grammar v2.1
+   TTV DSL - grammar v2.1.1
    Companion to dsl/SPEC.md. ISO-style EBNF.
 
      =    definition        |    alternation      { }  zero or more
@@ -388,19 +388,20 @@ context_sel    = "." , IDENT ;
                    stack; one reached mid-line is skipped like whitespace, so
                    `/* note */ POST `hi`` still measures its indentation. *]
 
-  TEMPLATE    = "`" ( [^`\\$] | "\\" . | "$" !"{" | RAW_OPEN | INTERPOLATION )* "`"
+  TEMPLATE    = "`" ( [^`\\$] | "\\" . | "$" !"{" | INTERPOLATION )* "`"
+                [* "\${" is the literal two characters "${": the "\\" . escape *]
   INTERPOLATION
               = "${" <balanced braces, stepping over nested strings,
                       templates and comments> "}"
                 [* emitted as ONE token carrying quasis[] and the raw text plus
                    absolute offset of each interpolation; the parser re-parses
-                   those substrings so locations stay file-accurate *]
-  RAW_OPEN    = "${" with NO matching "}"                            [* v2 *]
-                [* contributes the literal two characters "${" to the current
-                   quasi. A "${" that DOES close is still an interpolation, and
-                   still an error when its contents are ungrammatical -
-                   degrading that would swallow real typos, and the escape
-                   idiom `${ "${x}" }` only works if the outer pair evaluates. *]
+                   those substrings so locations stay file-accurate.
+                   (v2.1.1) A line break may come between "${" and "}" only
+                   inside "( )" or "[ ]" - including one inside what reads as
+                   a nested template. A "${" with no "}" before such a line
+                   break, or before EOF, is a lexical error AT the "${". (v2 to
+                   v2.1 read it as the literal text "${" - but any later "}" in
+                   the script then closed it, far from the mistake.) *]
 
   STRING      = "\"" ( [^"\\\n] | "\\" . )* "\""
               | "'"  ( [^'\\\n] | "\\" . )* "'"                      [* v2 *]
@@ -511,8 +512,10 @@ context_sel    = "." , IDENT ;
   Hard lexical errors: leading whitespace mixing tabs and spaces; a dedent that
   matches no enclosing level; an unterminated string or template; an
   unterminated "/*"; an unclosed "(" at EOF; an unmatched ")"; a bare "<", ".",
-  "@", "+", "&" or "--" with no valid continuation; any "$" outside a template.
+  "@", "+", "&" or "--" with no valid continuation; any "$" outside a template;
+  (v2.1.1) a "${" that never closes (see INTERPOLATION).
 
-  NO LONGER a lexical error, as of v2: a bare ":" (see COLON) and an
-  unterminated "${" (see RAW_OPEN).
+  NO LONGER a lexical error, as of v2: a bare ":" (see COLON). (v2 also made
+  an unterminated "${" literal text; v2.1.1 made it an error again, reported
+  at the "${".)
 *)

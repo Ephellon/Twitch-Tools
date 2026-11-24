@@ -455,12 +455,76 @@
     });
 
     describe('tokenizer / templates and a literal "${"', () => {
-        it('treats an unterminated "${" as text', () => {
-            const token = first('`cost: ${ dollars`\n');
+        /** Asserts that `source` fails at the `${` on `line`, `column`. */
+        const failsAt = (source, line, column) => {
+            let error = null;
+
+            try {
+                tokenize(source);
+            } catch(thrown) {
+                error = thrown;
+            }
+
+            assert.ok(error, 'expected a DSLSyntaxError');
+            assert.equal(error.name, 'DSLSyntaxError', error.message);
+            assert.ok(/This `\$\{` is never closed/.test(error.message), error.message);
+            assert.equal(error.loc.line, line);
+            assert.equal(error.loc.column, column);
+            assert.equal(error.loc.end - error.loc.start, 2);
+        };
+
+        it('reports a "${" that never closes, at the "${"', () => {
+            failsAt('POST `cost: ${ dollars`\n', 1, 13);
+        });
+
+        it('does not let a "}" in a later template close it', () => {
+            // This used to pair with the `}` on line 3 and fail somewhere in between
+            failsAt('POST `cost: ${ dollars`\nPOST `ok`\nPOST `a }`\n', 1, 13);
+        });
+
+        it('reads "\\${" as the literal text "${"', () => {
+            const token = first('`cost: \\${ dollars`\n');
 
             assert.equal(token.type, TokenType.TEMPLATE);
             assert.deepEqual(token.value.quasis, ['cost: ${ dollars']);
             assert.equal(token.value.expressions.length, 0);
+        });
+
+        it('still reads a template nested inside an interpolation', () => {
+            const token = first('`${ `a${ .b }` }`\n');
+
+            assert.equal(token.value.expressions.length, 1);
+            assert.equal(token.value.expressions[0].source.trim(), '`a${ .b }`');
+        });
+
+        it('lets an interpolation span lines inside brackets', () => {
+            const token = first('`${ any from (\n    `a`\n    `b`\n) }`\n');
+
+            assert.equal(token.value.expressions.length, 1);
+        });
+
+        it('stops at a line break outside brackets', () => {
+            failsAt('POST `${\n    .sender\n}`\n', 1, 7);
+        });
+
+        it('reports a quote that never closes inside "${ }" at the "${"', () => {
+            failsAt('POST `${ "abc }`\n', 1, 7);
+        });
+
+        it('shows the editor one problem, at the "${"', () => {
+            const source = 'POST `cost: ${ dollars`\nPOST `ok`\nPOST `a }`\n'
+                , found = globalThis.TTV_DSL.check(source);
+
+            assert.equal(found.length, 1);
+            assert.equal(found[0].loc.line, 1);
+            assert.equal(found[0].loc.column, 13);
+
+            const spans = globalThis.TTV_DSL.highlight(source);
+
+            // The broken template is marked; the later lines keep their colours
+            assert.equal(spans.map(span => span.text).join(''), source);
+            assert.ok(spans.some(span => 'invalid' === span.type && span.text.includes('${')));
+            assert.equal(spans.filter(span => 'template' === span.type).length, 2);
         });
 
         it('still interpolates a "${" that closes', () => {
