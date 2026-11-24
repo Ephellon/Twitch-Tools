@@ -22,7 +22,7 @@ def script(name):
 
 INSTALL = """## Try it
 
-1. In TTV Tools, open **Settings → User Scripts** and choose **New script** (or save the
+1. In TTV Tools, open **Settings › User Scripts** and choose **New script** (or save the
    script below as a `.ttv` file and use **Import .ttv…**).
 2. Paste the script and save. It appears in the list with its own switch and settings.
 3. Turn it on. If it asks for permissions, you'll be shown what and why before it runs."""
@@ -137,7 +137,7 @@ answers are always current.
   for mixing text with values.
 - **Cleaning up text.** `%` replaces line breaks (and the spaces around them) with what follows
   it — here a single space — so a multi-line title fits in one chat message.
-- **Formatting time.** `#uptime` is a duration. `as "h'h 'm'm'"` formats it: `h` and `m` are
+- **Formatting time.** `#uptime` is a duration. `as "h'h' m'm'"` formats it: `h` and `m` are
   hours and minutes, and anything in single quotes is kept as written. `as "hh:mm:ss"` would
   give `02:03:00`. (`~` means the same as `as`.)
 - **`if` / `else`.** `if #live` is true while streaming.
@@ -351,11 +351,25 @@ bot:  🎱 Without a doubt.
 """
 
 
+# User Scripts aren't in the store build (v5): every page says so under its title
+BANNER = {
+    'TTV-DSL-Examples': "> **v6 only.** [[User Scripts]] are in the `v6` pre-release, not in the Chrome Web Store version (`v5`). These scripts use TTV DSL **v2.1**.",
+}
+EXAMPLE_BANNER = "> **v6 only.** [[User Scripts]] are in the `v6` pre-release. This script uses TTV DSL **v2.1**."
+
+
+def with_banner(name, text):
+    """The page with its "v6 only" banner after the title line."""
+    title, rest = text.split('\n', 1)
+
+    return f"{title}\n\n{BANNER.get(name, EXAMPLE_BANNER)}\n{rest}"
+
+
 def main():
     WIKI.mkdir(exist_ok=True)
 
     for name, text in PAGES.items():
-        (WIKI / f'{name}.md').write_text(text, encoding='utf-8', newline='\n')
+        (WIKI / f'{name}.md').write_text(with_banner(name, text), encoding='utf-8', newline='\n')
         print(f'wrote {name}.md')
 
 

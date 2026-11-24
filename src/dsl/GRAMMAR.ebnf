@@ -16,14 +16,14 @@
    v2.1 is NOT a superset of v2: `else`, `above` and `below` became keywords.
    Productions it added or changed are marked (v2.1). Its behaviour changes
    (`*` matching empty, the arrows as synonyms, bare `%`) are semantic and are
-   listed in SPEC 14.1a.
+   listed in SPEC-notes.md C.3.
    ========================================================================== *)
 
 (* Railroad viewer: https://matthijsgroen.github.io/ebnf2railroad/try-yourself.html *)
 
 (* -- program and blocks -------------------------------------------------- *)
 
-(* (v2.1) An optional plugin header comes first; see SPEC 6.12. *)
+(* (v2.1) An optional plugin header comes first; see SPEC 8.13. *)
 program        = [ plugin_header ] , { statement } , EOF ;
 
 plugin_header  = "plugin" , PLUGIN_ID , [ DESCRIBE , STRING ] , NEWLINE ,
@@ -169,7 +169,7 @@ expr_stmt      = ( assign_expr | js_invoke ) , NEWLINE ;   (* v2.1: a host call 
 
 (* -- expressions --------------------------------------------------------- *)
 
-(* The cascade encodes the precedence table in SPEC.md section 5.1, loosest
+(* The cascade encodes the precedence table in SPEC.md section 7.1, loosest
    first. The parser implements it by precedence climbing over a table rather
    than as literal nested functions, but the language it accepts is this one. *)
 
@@ -181,7 +181,7 @@ expression     = assign_expr ;
    [ ... ] and not { ... }.
 
    (v2.1) The two arrows are SYNONYMS. Where the name lands is decided by the
-   script's `+scope` mode (SPEC 9.2), never by the arrow.
+   script's `+scope` mode (SPEC 8.10), never by the arrow.
 
    VAR_NAME must contain a lower-case letter; ALL-CAPS is the host's (and the
    script's functions'). Checked at the BINDING site only; a reference site
@@ -220,7 +220,7 @@ pipe_expr      = where_expr , { ( "<|" | "of" ) , where_expr } ;
 (* (v2) `|` is an ALIAS for `where` - same token type, same precedence, same
    node. Because where_expr binds tighter than cmp_expr, a predicate that
    CONTAINS a comparison must be parenthesized. That is the canonical spelling,
-   and a settled rule rather than a rough edge - see SPEC 5.2:
+   and a settled rule rather than a rough edge - see SPEC 7.8 and SPEC-notes.md A.3:
        .links | ("x" in .href)     [* a filter *]
        .links | "x" in .href       [* (.links where "x") in .href - a boolean *] *)
 where_expr     = range_expr , { ( "where" | "|" ) , range_expr } ;
@@ -324,7 +324,7 @@ literal        = STRING
 
 boolean        = "true" | "false" ;
 
-(* Always a presence test, never multiplication; see SPEC 3.7.
+(* Always a presence test, never multiplication; see SPEC 5.7 and 5.8.
    (v2.1) `*` is ANYTHING - present, empty values included. SOMETHING (present
    and non-empty) and NOTHING (absent or empty) are resolved by the PARSER from
    UPPER_IDENT, so a host constant cannot shadow them. *)
@@ -432,7 +432,7 @@ context_sel    = "." , IDENT ;
                    one followed directly by ":", ".", "*" or a word character
                    (`+read:*`, `+a:b:c`). Whether the name is on the permission
                    list, and whether a write/eval grant carries a description,
-                   is checked later - see SPEC 6.8. *]
+                   is checked later - see SPEC 10. *]
 
   JS_PATH     = "&" [A-Za-z_$][A-Za-z0-9_$]*
                        ( "." [A-Za-z_$][A-Za-z0-9_$]* )*             [* v2 *]

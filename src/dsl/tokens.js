@@ -383,7 +383,7 @@ globalThis.TTV_DSL ??= {};
         NOTHING: 'nothing',
     });
 
-    /** What `+scope` may be set to, and what a bare `+scope` means. See SPEC §5.5. */
+    /** What `+scope` may be set to, and what a bare `+scope` means. See SPEC §8.10. */
     const SCOPE_MODES = Object.freeze(new Set(['local', 'global', 'universal']));
     const DEFAULT_SCOPE_MODE = 'global';
 

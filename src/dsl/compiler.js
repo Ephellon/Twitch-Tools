@@ -1343,7 +1343,7 @@ if(typeof require === 'function' && typeof module === 'object') {
             };
         },
 
-        /** `<value> ~ <pattern>` — renders the value through a pattern (§5.14). */
+        /** `<value> ~ <pattern>` — renders the value through a pattern (SPEC §7.11). */
         [NodeType.FormatExpression](node, scope) {
             let { runtime } = scope
                 , subject = compileNode(node.subject, scope)

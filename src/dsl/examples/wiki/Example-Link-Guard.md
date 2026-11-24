@@ -1,5 +1,7 @@
 # Example: Link Guard
 
+> **v6 only.** [[User Scripts]] are in the `v6` pre-release. This script uses TTV DSL **v2.1**.
+
 Asks viewers not to post links — except to Twitch and YouTube. Moderators and VIPs can post
 anything. (A script can't delete messages; this one just says something.)
 
@@ -54,7 +56,7 @@ vip1: https://spam.example/vip                     (vip1 is a VIP)
 
 ## Try it
 
-1. In TTV Tools, open **Settings → User Scripts** and choose **New script** (or save the
+1. In TTV Tools, open **Settings › User Scripts** and choose **New script** (or save the
    script below as a `.ttv` file and use **Import .ttv…**).
 2. Paste the script and save. It appears in the list with its own switch and settings.
 3. Turn it on. If it asks for permissions, you'll be shown what and why before it runs.

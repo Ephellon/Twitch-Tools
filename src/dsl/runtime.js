@@ -270,7 +270,7 @@ if(typeof require === 'function' && typeof module === 'object')
     /**
      * `<text> %… <replacement>` — trim, then replace matching runs.
      *
-     * Three rules, all recorded in SPEC §5.9:
+     * Three rules, all recorded in SPEC §7.10:
      *
      * 1. **The trim is unconditional**, not gated on `%c`. `%c` is accepted and ignored so
      *    that scripts spelling it out still work.

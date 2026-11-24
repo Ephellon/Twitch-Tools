@@ -1,5 +1,7 @@
 # Example: Raid Shoutouts
 
+> **v6 only.** [[User Scripts]] are in the `v6` pre-release. This script uses TTV DSL **v2.1**.
+
 Thanks raiders automatically after a short pause, in the style you pick, and lets moderators
 shout out the last raider again with a bare `!so`.
 
@@ -94,7 +96,7 @@ zip:  !so
 
 ## Try it
 
-1. In TTV Tools, open **Settings → User Scripts** and choose **New script** (or save the
+1. In TTV Tools, open **Settings › User Scripts** and choose **New script** (or save the
    script below as a `.ttv` file and use **Import .ttv…**).
 2. Paste the script and save. It appears in the list with its own switch and settings.
 3. Turn it on. If it asks for permissions, you'll be shown what and why before it runs.

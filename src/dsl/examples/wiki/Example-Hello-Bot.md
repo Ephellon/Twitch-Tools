@@ -1,5 +1,7 @@
 # Example: Hello Bot
 
+> **v6 only.** [[User Scripts]] are in the `v6` pre-release. This script uses TTV DSL **v2.1**.
+
 Greets chat on `!hello`, waves on `!bye`, remembers who it greeted last, salutes moderators,
 and reminds chat it's there every fifteen minutes — but only while you're live. This is the
 script TTV Tools ships with, grown a little.
@@ -93,7 +95,7 @@ bot:   Type !hello and I'll say hi 🤖
 
 ## Try it
 
-1. In TTV Tools, open **Settings → User Scripts** and choose **New script** (or save the
+1. In TTV Tools, open **Settings › User Scripts** and choose **New script** (or save the
    script below as a `.ttv` file and use **Import .ttv…**).
 2. Paste the script and save. It appears in the list with its own switch and settings.
 3. Turn it on. If it asks for permissions, you'll be shown what and why before it runs.

@@ -1,5 +1,7 @@
 # Example: Stream Timers
 
+> **v6 only.** [[User Scripts]] are in the `v6` pre-release. This script uses TTV DSL **v2.1**.
+
 Hydration reminders every half hour and a stretch break every hour — only while live — a
 one-time "I'm here" when the script starts, and `!time` for the streamer's local clock.
 
@@ -71,7 +73,7 @@ bot:  🧘 Stretch break! Roll those shoulders.
 
 ## Try it
 
-1. In TTV Tools, open **Settings → User Scripts** and choose **New script** (or save the
+1. In TTV Tools, open **Settings › User Scripts** and choose **New script** (or save the
    script below as a `.ttv` file and use **Import .ttv…**).
 2. Paste the script and save. It appears in the list with its own switch and settings.
 3. Turn it on. If it asks for permissions, you'll be shown what and why before it runs.

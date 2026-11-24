@@ -225,7 +225,7 @@
             await run(SOURCE, runtime, { channel: realm.current });
             await clock.advance(95 * MINUTE);
 
-            // `await <duration>` is a recurring trigger (SPEC §6.1), so 95 minutes is three
+            // `await <duration>` is a recurring trigger (SPEC §8.1), so 95 minutes is three
             // ticks — at 30, 60 and 90.
             assert.deepEqual(runtime.sink.map(entry => entry.at), [30 * MINUTE, 60 * MINUTE, 90 * MINUTE]);
         });

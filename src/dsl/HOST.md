@@ -3,8 +3,9 @@
 What the language needs from whatever runs it. The extension is the intended host, but
 nothing here assumes it: the test suite, the playground and `fake-page.js` are hosts too.
 
-The language side of this contract is implemented and tested (`tests/host.test.js`). The
-host side is what the extension rewrite should provide. Where this document and `SPEC.md`
+The language side of this contract is implemented and tested (`tests/host.test.js`). The v6
+extension provides the host side in `src/lib/dsl-host.js`, checked by
+`host/host-conformance.test.js` and `host/extension-adapter.test.mjs`. Where this document and `SPEC.md`
 disagree about the *language*, `SPEC.md` wins; where they disagree about the *host*, this
 wins.
 
@@ -15,9 +16,9 @@ wins.
 ```js
 let runtime = TTV_DSL.createRuntime({ /* §2 */ });
 
-let { meta } = TTV_DSL.inspect(source, { file }); // plugin id, frames, settings (SPEC §6.12)
+let { meta } = TTV_DSL.inspect(source, { file }); // §9.1 — plugin id, frames, settings
 let report = TTV_DSL.grants(source);          // §6 — before running: what will it ask for?
-let problems = TTV_DSL.check(source);         // diagnostics, for an editor
+let problems = TTV_DSL.check(source);         // §9.2 — diagnostics, for an editor
 
 let context = await TTV_DSL.run(source, runtime, {
     channel: runtime.realm('TWITCH').current, // the channel `#` means at the top level
@@ -48,7 +49,7 @@ context.stop();                               // cancels every timer and handler
 | `jsBindings` | `{}` | the object `&Path.fn()` walks (§7). **Empty by default.** |
 | `jsPermissions` | `{}` | `{ 'path.fn': 'permission' }`. **Every** bound function must be listed. |
 | `permissions` | — | extra names for the permission list (§6). |
-| `settings` | `{}` | the script's stored plugin settings by **short** name (`delay`, not `raid__delay`), after any `scale`. Missing names read as their declared default. See SPEC §6.12. |
+| `settings` | `{}` | the script's stored plugin settings by **short** name (`delay`, not `raid__delay`), after any `scale`. Missing names read as their declared default. See §9.1. |
 | `clock` | real timers | `{ now, setTimeout, clearTimeout }`. |
 | `wallClock` | `datetime.now` | wall time for the budget. |
 | `random` | `Math.random` | `[0, 1)`, for `any from`. |
@@ -204,6 +205,7 @@ decision. Restricting `write:html.*` to extension-owned regions is recommended.
 
 | Call | Permission | Returns |
 | :--- | :--- | :--- |
+| `datetime.now()` | `read:datetime` | the time now, in milliseconds |
 | `datetime.time()` | `read:datetime` | the local time, formatted for chat (e.g. `"9:42pm"`) |
 
 ### 7.3 Built-ins — `eval:js`
@@ -230,3 +232,171 @@ Anything else — `&Object.keys`, `&Math.toString`, `&Array.prototype` — is re
 `tests/host.test.js` runs the contract against `fake-page.js`. A real host can be checked
 the same way: swap `createFakePage(html).bindings` for the host's `jsBindings` and run the
 same scripts.
+
+The injected options (§2) are what make this possible. A fake clock and a seeded random
+source make `await 15:00` and `any from ( ... )` testable: the whole suite runs under Node in
+milliseconds, with no browser and no Twitch connection.
+
+`node dsl/tests/run.js` runs the language's suite under Node. `dsl/tests/index.html` runs the
+same suite in a browser with plain `<script>` tags. Neither needs a build step or
+`node_modules`.
+
+## 9. Tools for editors
+
+These read a script **without running it**. They never throw on a bad script; they report.
+
+### 9.1 `TTV_DSL.inspect(source, { file })` — the plugin header
+
+Reads the `plugin` header (SPEC §8.13) and returns `{ meta, diagnostics }`. For the header in
+SPEC §8.13, `meta` is:
+
+```js
+{
+    id: 'raid_shoutouts',
+    name: 'Raid shoutouts',
+    description: 'Shouts out raiders and lets mods re-shout them.',
+    frames: ['chat', 'main'],
+    settings: {                                           // SETTINGS.md schema
+        raid_shoutouts: { type: 'checkbox', default: false },          // the enable toggle
+        raid_shoutouts__delay: { type: 'number', default: 5, min: 0, max: 60, step: 1, unit: 's' },
+        raid_shoutouts__loud: { type: 'checkbox', default: false },
+        raid_shoutouts__greeting: { type: 'text', default: 'welcome in!', placeholder: 'what to say' },
+        raid_shoutouts__style: { type: 'select', options: [
+            { value: 'short', label: 'Short', default: true },
+            { value: 'long', label: 'Long' },
+        ] },
+    },
+    section: {                                            // a ready SETTINGS.md section
+        title: 'Raid shoutouts',
+        rows: [
+            { toggle: 'raid_shoutouts' },
+            { text: 'Shouts out raiders and lets mods re-shout them.', tr: false },
+            { text: 'Seconds before the shoutout: {{raid_shoutouts__delay}}', tr: false },
+            …
+        ],
+        settings: /* the same object as above */,
+    },
+    permissions: [{ permissions: ['read:datetime'], description: null, line: 13 }],
+}
+```
+
+- **Keys.** The enable toggle is `<id>` and defaults to `false`: a script runs only once the
+  viewer turns it on. Each setting is stored under `<id>__<name>`, the `SETTINGS.md`
+  convention (`away_mode__volume`). A select marks its default on the option, as
+  `SETTINGS.md` does, instead of carrying `default` itself.
+- **Handing values back.** Pass the stored values to `createRuntime({ settings })` by **short**
+  name — `{ delay: 9, loud: true }` — after applying any `scale`. A name left out reads as its
+  declared default.
+- **No header.** `meta` comes from `file`: `My Raid-Bot.ttv` gives id `my_raid_bot` and name
+  `My Raid-Bot`. An id that would start with a digit gets a `ttv_` prefix. Frames default to
+  `['chat']`, and `settings` holds only the toggle.
+- **Permissions** are collected from the script's `using` lines, with their descriptions.
+- **Diagnostics** are `check`'s (§9.2). `meta` is returned even when there are some. When the
+  script's body does not even scan, the header lines are read on their own, so the extension
+  can still name and place a broken script.
+
+### 9.2 `TTV_DSL.check(source, { runtime })` — diagnostics
+
+Returns a plain array of `{ name, message, loc, frame }`, in source order, `[]` when clean.
+This shape is **stable**.
+
+- `name` is the error class (SPEC §12).
+- `loc` is `{ line, column, start, end }`. `line` and `column` are **1-based**. `start` and
+  `end` are **0-based** character offsets, and `end` is exclusive.
+- `frame` is a ready excerpt with a caret line.
+- A script that parses cleanly is also **compiled** — never run — so compile-time mistakes
+  are reported too: an off-list permission, an undeclared `setting.name`, an unknown
+  function, too many arguments. These come one at a time.
+- Passing the host's `runtime` makes its extra permissions count. `check` never changes the
+  runtime.
+
+### 9.3 `TTV_DSL.highlight(source)` — colours
+
+Cuts a script into `{ type, text, start, end }` spans for an editor to colour.
+
+- The spans cover **every character, in order**, with the same 0-based offsets as `check`.
+  Neighbouring spans of one type are merged.
+- It **never throws.** It uses the real tokenizer. A lexical fault marks the rest of its line
+  `invalid`, and scanning goes on at the next line. Brackets still open at the end of a
+  half-typed script are closed virtually, so the line keeps its colours.
+- Code inside a template's `${ }` is coloured as code.
+- `type` is one of a fixed list, exported as `TTV_DSL.HIGHLIGHT_TYPES`: `keyword`, `verb`,
+  `string`, `template`, `number`, `duration`, `selector`, `sigil`, `operator`, `comment`,
+  `identifier`, `punctuation`, `whitespace`, `invalid`.
+- A sigil (`#`, `/`, `@`, `.`, `&`, `+`, `$`) is split from what it names, which is a
+  `selector`.
+- An ALL-CAPS word is a `verb` where it starts a line, or when the script `define`s it.
+  Elsewhere it is an `identifier`.
+
+### 9.4 `parse` and `parseTolerant`
+
+`TTV_DSL.parseTolerant(source)` returns `{ program, errors }`, recovering after each parse
+fault (SPEC §12.1). `TTV_DSL.parse(source)` throws the first fault.
+
+## 10. Wiring into the extension
+
+The language publishes one global, **`globalThis.TTV_DSL`**. It is not called `TTV_LANG`, and
+not `LANGUAGE`, which `ext/polyfill.js` already defines. The code targets ES2020 / Chrome 88,
+lives in `dsl/` (in v6, `src/dsl/`), and has no dependencies and no build step of its own.
+
+### 10.1 `manifest.json`
+
+The DSL files must load **in this order**, before any script that uses them, with `index.js`
+last. In the content-script entry, immediately before the first file that uses the DSL:
+
+```json
+"dsl/errors.js", "dsl/tokens.js", "dsl/tokenizer.js", "dsl/ast.js", "dsl/parser.js", "dsl/runtime.js", "dsl/compiler.js", "dsl/highlight.js", "dsl/index.js"
+```
+
+`fake-page.js` is for tests and the playground; the extension does not load it.
+
+No new extension permission is needed. The compiler builds closures, never source text, so
+the `content_security_policy` needs no `unsafe-eval`.
+
+### 10.2 The Settings editor
+
+The editor is a `<textarea>` over a highlighted `<pre>`, plus a diagnostics panel. In v6 this
+is `src/settings/user-scripts.js`.
+
+1. Put a transparent `<textarea>` over a `<pre>`.
+2. On every `input`, render `TTV_DSL.highlight(textarea.value)` into the `<pre>` as
+   `<span class="ttv-dsl-<type>">` elements (§9.3). This takes about 1 ms for a 500-line
+   script.
+3. On `input` (debounced, ~150 ms), call `TTV_DSL.check(textarea.value, { runtime })`. Render
+   each `{ message, loc, frame }` into the panel: `loc.start`/`loc.end` underline the span,
+   `loc.line`/`loc.column` name it, and `frame` is a ready monospace excerpt.
+4. On save, call `TTV_DSL.inspect(source, { file })` for the plugin id, frames and settings
+   section (§9.1), and store the script text with the extension's settings.
+
+Locations are threaded through the tokenizer, the parser and template interpolations, so this
+needs no changes to `dsl/`. `playground.html` is a working example of steps 1–3.
+
+### 10.3 Starting a script
+
+In outline, the content script supplies:
+
+```js
+let runtime = TTV_DSL.createRuntime({
+    realms: { TWITCH: /* an adapter over the real channel/chat state */ },
+    verbs: { POST: /* send to chat */, REPLY: /* send a reply */ },
+    constants: { USERNAME: window.USERNAME },
+
+    // Nothing here is registered by default. A script naming a path the host has not
+    // published fails loudly rather than silently gaining the capability (§7).
+    jsBindings: { datetime: { now: () => Date.now() } },
+    jsPermissions: { 'datetime.now': 'read:datetime' },
+});
+
+let context = await TTV_DSL.run(scriptText, runtime);
+// ... and `context.stop()` on teardown.
+```
+
+Chat messages are delivered with `runtime.dispatch(event)`; every live `await` sees them. In
+v6 this adapter is `src/lib/dsl-host.js`.
+
+### 10.4 The playground
+
+`dsl/playground.html` is an editor with highlighting and live diagnostics, the permission
+report from `TTV_DSL.grants`, a fake clock, a fake channel, an event composer and a fake page
+for `&html.*`. Some browsers refuse `<script src>` over `file://`; any static server works,
+for example `python -m http.server --directory src/dsl`.
