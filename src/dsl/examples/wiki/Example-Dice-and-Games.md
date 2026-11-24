@@ -1,6 +1,6 @@
 # Example: Dice & Games
 
-> **v6 only.** [[User Scripts]] are in the `v6` pre-release. This script uses TTV DSL **v2.1**.
+> **v6 only.** [[User Scripts]] are in the `v6` pre-release. This script uses TTV DSL **2.1.2**.
 
 `!roll` (or `!roll 3`, up to ten dice), `!coin` and `!8ball`.
 

@@ -353,9 +353,9 @@ bot:  🎱 Without a doubt.
 
 # User Scripts aren't in the store build (v5): every page says so under its title
 BANNER = {
-    'TTV-DSL-Examples': "> **v6 only.** [[User Scripts]] are in the `v6` pre-release, not in the Chrome Web Store version (`v5`). These scripts use TTV DSL **v2.1**.",
+    'TTV-DSL-Examples': "> **v6 only.** [[User Scripts]] are in the `v6` pre-release, not in the Chrome Web Store version (`v5`). These scripts use TTV DSL **2.1.2**.",
 }
-EXAMPLE_BANNER = "> **v6 only.** [[User Scripts]] are in the `v6` pre-release. This script uses TTV DSL **v2.1**."
+EXAMPLE_BANNER = "> **v6 only.** [[User Scripts]] are in the `v6` pre-release. This script uses TTV DSL **2.1.2**."
 
 
 def with_banner(name, text):

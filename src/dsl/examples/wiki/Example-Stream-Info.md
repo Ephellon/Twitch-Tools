@@ -1,6 +1,6 @@
 # Example: Stream Info
 
-> **v6 only.** [[User Scripts]] are in the `v6` pre-release. This script uses TTV DSL **v2.1**.
+> **v6 only.** [[User Scripts]] are in the `v6` pre-release. This script uses TTV DSL **2.1.2**.
 
 `!game`, `!title`, `!viewers` and `!uptime` — answered from the channel's live data, so the
 answers are always current.

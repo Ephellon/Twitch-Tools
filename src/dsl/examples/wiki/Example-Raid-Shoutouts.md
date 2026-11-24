@@ -1,6 +1,6 @@
 # Example: Raid Shoutouts
 
-> **v6 only.** [[User Scripts]] are in the `v6` pre-release. This script uses TTV DSL **v2.1**.
+> **v6 only.** [[User Scripts]] are in the `v6` pre-release. This script uses TTV DSL **2.1.2**.
 
 Thanks raiders automatically after a short pause, in the style you pick, and lets moderators
 shout out the last raider again with a bare `!so`.

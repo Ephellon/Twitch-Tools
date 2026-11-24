@@ -1,6 +1,6 @@
 # Example: Link Guard
 
-> **v6 only.** [[User Scripts]] are in the `v6` pre-release. This script uses TTV DSL **v2.1**.
+> **v6 only.** [[User Scripts]] are in the `v6` pre-release. This script uses TTV DSL **2.1.2**.
 
 Asks viewers not to post links — except to Twitch and YouTube. Moderators and VIPs can post
 anything. (A script can't delete messages; this one just says something.)

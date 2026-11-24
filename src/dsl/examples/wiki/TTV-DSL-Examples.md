@@ -1,6 +1,6 @@
 # TTV DSL examples
 
-> **v6 only.** [[User Scripts]] are in the `v6` pre-release, not in the Chrome Web Store version (`v5`). These scripts use TTV DSL **v2.1**.
+> **v6 only.** [[User Scripts]] are in the `v6` pre-release, not in the Chrome Web Store version (`v5`). These scripts use TTV DSL **2.1.2**.
 
 Ready-to-use scripts for **User Scripts** in TTV Tools, each one small enough to read in a
 minute and each one showing a different part of the language. Copy one, change the words,

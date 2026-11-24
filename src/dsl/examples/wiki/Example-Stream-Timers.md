@@ -1,6 +1,6 @@
 # Example: Stream Timers
 
-> **v6 only.** [[User Scripts]] are in the `v6` pre-release. This script uses TTV DSL **v2.1**.
+> **v6 only.** [[User Scripts]] are in the `v6` pre-release. This script uses TTV DSL **2.1.2**.
 
 Hydration reminders every half hour and a stretch break every hour — only while live — a
 one-time "I'm here" when the script starts, and `!time` for the streamer's local clock.

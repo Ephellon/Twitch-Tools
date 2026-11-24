@@ -1,6 +1,6 @@
 # Example: Hello Bot
 
-> **v6 only.** [[User Scripts]] are in the `v6` pre-release. This script uses TTV DSL **v2.1**.
+> **v6 only.** [[User Scripts]] are in the `v6` pre-release. This script uses TTV DSL **2.1.2**.
 
 Greets chat on `!hello`, waves on `!bye`, remembers who it greeted last, salutes moderators,
 and reminds chat it's there every fifteen minutes — but only while you're live. This is the
