@@ -4070,6 +4070,22 @@ function UnlistedLive(pathname) {
 }
 
 /**
+ * Whether a followed channel that left the side bar's list is still live. The list only shows some live channels (sorted
+ * by viewers), so leaving it isn't going offline: yes until the channel's own Search result says otherwise.
+ * @simply StillLive(name:string) → boolean
+ *
+ * @param  {string} name The channel's name
+ * @return {boolean}
+ */
+function StillLive(name) {
+    name = String(name).toLowerCase();
+
+    UnlistedLive(`/${ name }`);
+
+    return SEARCH_CACHE.get(name)?.live ?? true;
+}
+
+/**
  * The left-hand navigation. Twitch re-renders it, so its state is read fresh and every change is checked (#42: a toggle
  * captured earlier, or a one-time "was it open?" guess, could leave it collapsed).
  */
@@ -10091,6 +10107,12 @@ let Initialize = async(START_OVER = false) => {
         let old_names = (OLD_STREAMERS ?? '').split(',').filter(defined),
             new_names = NEW_STREAMERS.split(',').filter(defined),
             bad_names = BAD_STREAMERS?.split(',')?.filter(defined)?.filter(parseBool);
+
+        // The side bar lists only some live channels, sorted by viewers: one that drops out of the list hasn't gone offline, and
+        // coming back into view queued it again. It stays in the baseline until its own lookup says it's offline
+        let kept = old_names.filter(name => new_names.missing(name) && StillLive(name));
+
+        NEW_STREAMERS = [...new_names, ...kept].isolate().sort().join(',');
 
         // Detect if the channels got removed incorrectly?
         if(bad_names?.length) {
