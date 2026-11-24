@@ -36,6 +36,12 @@ plugin({
                 , new_names = NEW_STREAMERS.split(',').filter(defined)
                 , bad_names = BAD_STREAMERS?.split(',')?.filter(defined)?.filter(parseBool);
 
+            // The side bar lists only some live channels, sorted by viewers: one that drops out of the list hasn't gone offline, and
+            // coming back into view queued it again. It stays in the baseline until its own lookup says it's offline
+            let kept = old_names.filter(name => new_names.missing(name) && StillLive(name));
+
+            NEW_STREAMERS = [...new_names, ...kept].isolate().sort().join(',');
+
             // Detect if the channels got removed incorrectly?
             if(bad_names?.length) {
                 $warn("Twitch failed to add these channels correctly:", bad_names);

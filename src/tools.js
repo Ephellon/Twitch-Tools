@@ -1641,6 +1641,22 @@ function UnlistedLive(pathname) {
 }
 
 /**
+ * Whether a followed channel that left the side bar's list is still live. The list only shows some live channels (sorted
+ * by viewers), so leaving it isn't going offline: yes until the channel's own Search result says otherwise.
+ * @simply StillLive(name:string) → boolean
+ *
+ * @param  {string} name The channel's name
+ * @return {boolean}
+ */
+function StillLive(name) {
+    name = String(name).toLowerCase();
+
+    UnlistedLive(`/${ name }`);
+
+    return SEARCH_CACHE.get(name)?.live ?? true;
+}
+
+/**
  * Intializes the extension
  * @simply Initialize(START_OVER:boolean) → undefined
  * Shared between features and their plugins (src/plugins/); Initialize() assigns them
