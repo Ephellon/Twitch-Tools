@@ -90,16 +90,16 @@ plugin({
             const ALL_JOBS_PREFERENCE_SORTED = (preferredPlace.toString().anyOf('begin', 'beginning', 'first', 'head', 'start', '0', '1', '^') ? [href, ...ALL_FIRST_IN_LINE_JOBS] : [...ALL_FIRST_IN_LINE_JOBS, href]);
 
             if(defined(FIRST_IN_LINE_HREF ??= ALL_FIRST_IN_LINE_JOBS[0])) {
-                if([...ALL_FIRST_IN_LINE_JOBS, FIRST_IN_LINE_HREF].missing(href)) {
+                if(!HasJob([...ALL_FIRST_IN_LINE_JOBS, FIRST_IN_LINE_HREF], href)) {
                     $log("Pushing to First in Line:", href, new Date);
 
                     // $log('Accessing here... #2');
-                    ALL_FIRST_IN_LINE_JOBS = ALL_JOBS_PREFERENCE_SORTED.map(url => url?.toLowerCase?.()).isolate().filter(url => url?.length);
+                    ALL_FIRST_IN_LINE_JOBS = UniqueJobs(ALL_JOBS_PREFERENCE_SORTED);
                 } else {
                     $warn("Not pushing to First in Line:", href, new Date);
                     $log("Reason(s):", [FIRST_IN_LINE_JOB, ...ALL_FIRST_IN_LINE_JOBS],
-                        `It is the next job? ${ ['No', 'Yes'][+(FIRST_IN_LINE_HREF === href)] }`,
-                        `It is in the queue already? ${ ['No', 'Yes'][+(ALL_FIRST_IN_LINE_JOBS.contains(href))] }`
+                        `It is the next job? ${ ['No', 'Yes'][+HasJob([FIRST_IN_LINE_HREF], href)] }`,
+                        `It is in the queue already? ${ ['No', 'Yes'][+HasJob(ALL_FIRST_IN_LINE_JOBS, href)] }`
                     );
                 }
 
@@ -112,7 +112,7 @@ plugin({
 
                 // Add the new job...
                 // $log('Accessing here... #3');
-                ALL_FIRST_IN_LINE_JOBS = ALL_JOBS_PREFERENCE_SORTED.map(url => url?.toLowerCase?.()).isolate().filter(url => url?.length);
+                ALL_FIRST_IN_LINE_JOBS = UniqueJobs(ALL_JOBS_PREFERENCE_SORTED);
                 FIRST_IN_LINE_DUE_DATE = NEW_DUE_DATE();
 
                 // To wait, or not to wait
@@ -370,7 +370,7 @@ plugin({
                     , fiveMin = 5.5 * oneMin
                     , tenMin = 10 * oneMin;
 
-                [FIRST_IN_LINE_HREF] = ALL_FIRST_IN_LINE_JOBS = (cache.ALL_FIRST_IN_LINE_JOBS ?? []);
+                [FIRST_IN_LINE_HREF] = ALL_FIRST_IN_LINE_JOBS = UniqueJobs(cache.ALL_FIRST_IN_LINE_JOBS ?? []);
                 DROP_ARRIVED_CHANNEL();
                 FIRST_IN_LINE_BOOST = parseBool(cache.FIRST_IN_LINE_BOOST) && parseBool(ALL_FIRST_IN_LINE_JOBS?.length);
                 RUSH_LOADED(cache);

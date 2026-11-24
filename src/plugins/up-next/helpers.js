@@ -257,7 +257,7 @@ plugin({
                             ALL_FIRST_IN_LINE_JOBS[index] = restored;
                         })
                         .catch(error => {
-                            ALL_FIRST_IN_LINE_JOBS = ALL_FIRST_IN_LINE_JOBS.map(url => url?.toLowerCase?.()).isolate().filter(url => url?.length).filter(url => parseURL(url).pathname != parseURL(FIRST_IN_LINE_HREF).pathname);
+                            ALL_FIRST_IN_LINE_JOBS = UniqueJobs(ALL_FIRST_IN_LINE_JOBS).filter(url => parseURL(url).pathname != parseURL(FIRST_IN_LINE_HREF).pathname);
                             FIRST_IN_LINE_DUE_DATE = NEW_DUE_DATE();
 
                             Cache.save({ ALL_FIRST_IN_LINE_JOBS, FIRST_IN_LINE_DUE_DATE }, () => {
@@ -1302,7 +1302,7 @@ plugin({
                             , fiveMin = 5.5 * oneMin
                             , tenMin = 10 * oneMin;
 
-                        [FIRST_IN_LINE_HREF] = ALL_FIRST_IN_LINE_JOBS = (cache.ALL_FIRST_IN_LINE_JOBS ?? []);
+                        [FIRST_IN_LINE_HREF] = ALL_FIRST_IN_LINE_JOBS = UniqueJobs(cache.ALL_FIRST_IN_LINE_JOBS ?? []);
                         DROP_ARRIVED_CHANNEL();
                         FIRST_IN_LINE_BOOST = parseBool(cache.FIRST_IN_LINE_BOOST) && parseBool(ALL_FIRST_IN_LINE_JOBS?.length);
                         RUSH_LOADED(cache);
@@ -1440,7 +1440,7 @@ plugin({
                             FIRST_IN_LINE_DUE_DATE = NEW_DUE_DATE();
 
                         // $log('Accessing here... #1');
-                        ALL_FIRST_IN_LINE_JOBS = [...ALL_FIRST_IN_LINE_JOBS, href].map(url => url?.toLowerCase?.()).isolate().filter(url => url?.length);
+                        ALL_FIRST_IN_LINE_JOBS = UniqueJobs([...ALL_FIRST_IN_LINE_JOBS, href]);
 
                         Cache.save({ ALL_FIRST_IN_LINE_JOBS, FIRST_IN_LINE_DUE_DATE }, () => {
                             REDO_FIRST_IN_LINE_QUEUE(ALL_FIRST_IN_LINE_JOBS[0]);

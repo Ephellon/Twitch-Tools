@@ -1657,6 +1657,41 @@ function StillLive(name) {
 }
 
 /**
+ * The Up Next queue with one job per channel, in order (the first stays). A job's link can carry `?redo=…`, so jobs are
+ * matched by channel, not by their whole link: the same channel was queued twice, with and without it.
+ * @simply UniqueJobs(jobs:array<string>) → array<string>
+ *
+ * @param  {string[]} jobs The queue's links
+ * @return {string[]}
+ */
+function UniqueJobs(jobs = []) {
+    let seen = new Set;
+
+    return jobs.map(url => url?.toLowerCase?.()).filter(url => {
+        let path = (url?.length? parseURL(url).pathname: null);
+
+        if(!path || path.length < 2 || seen.has(path))
+            return false;
+
+        return seen.add(path), true;
+    });
+}
+
+/**
+ * Whether a channel already has a job in the queue (matched by channel, whatever the link's `?redo=…`).
+ * @simply HasJob(jobs:array<string>, href:string) → boolean
+ *
+ * @param  {string[]} jobs The queue's links
+ * @param  {string} href The channel's link
+ * @return {boolean}
+ */
+function HasJob(jobs = [], href = '') {
+    let path = parseURL(String(href).toLowerCase()).pathname;
+
+    return jobs.some(url => url?.length && parseURL(url.toLowerCase()).pathname == path);
+}
+
+/**
  * Intializes the extension
  * @simply Initialize(START_OVER:boolean) → undefined
  * Shared between features and their plugins (src/plugins/); Initialize() assigns them
