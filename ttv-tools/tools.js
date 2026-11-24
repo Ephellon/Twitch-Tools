@@ -4086,6 +4086,41 @@ function StillLive(name) {
 }
 
 /**
+ * The Up Next queue with one job per channel, in order (the first stays). A job's link can carry `?redo=…`, so jobs are
+ * matched by channel, not by their whole link: the same channel was queued twice, with and without it.
+ * @simply UniqueJobs(jobs:array<string>) → array<string>
+ *
+ * @param  {string[]} jobs The queue's links
+ * @return {string[]}
+ */
+function UniqueJobs(jobs = []) {
+    let seen = new Set;
+
+    return jobs.map(url => url?.toLowerCase?.()).filter(url => {
+        let path = (url?.length? parseURL(url).pathname: null);
+
+        if(!path || path.length < 2 || seen.has(path))
+            return false;
+
+        return seen.add(path), true;
+    });
+}
+
+/**
+ * Whether a channel already has a job in the queue (matched by channel, whatever the link's `?redo=…`).
+ * @simply HasJob(jobs:array<string>, href:string) → boolean
+ *
+ * @param  {string[]} jobs The queue's links
+ * @param  {string} href The channel's link
+ * @return {boolean}
+ */
+function HasJob(jobs = [], href = '') {
+    let path = parseURL(String(href).toLowerCase()).pathname;
+
+    return jobs.some(url => url?.length && parseURL(url.toLowerCase()).pathname == path);
+}
+
+/**
  * The left-hand navigation. Twitch re-renders it, so its state is read fresh and every change is checked (#42: a toggle
  * captured earlier, or a one-time "was it open?" guess, could leave it collapsed).
  */
@@ -8135,7 +8170,7 @@ let Initialize = async(START_OVER = false) => {
                         ALL_CHANNELS = [...ALL_CHANNELS, restored].filter(defined).filter(uniqueChannels);
                     })
                     .catch(error => {
-                        ALL_FIRST_IN_LINE_JOBS = ALL_FIRST_IN_LINE_JOBS.map(url => url?.toLowerCase?.()).isolate().filter(url => url?.length).filter(url => parseURL(url).pathname != parseURL(FIRST_IN_LINE_HREF).pathname);
+                        ALL_FIRST_IN_LINE_JOBS = UniqueJobs(ALL_FIRST_IN_LINE_JOBS).filter(url => parseURL(url).pathname != parseURL(FIRST_IN_LINE_HREF).pathname);
                         FIRST_IN_LINE_DUE_DATE = NEW_DUE_DATE();
 
                         Cache.save({ ALL_FIRST_IN_LINE_JOBS, FIRST_IN_LINE_DUE_DATE }, () => {
@@ -9179,7 +9214,7 @@ let Initialize = async(START_OVER = false) => {
                     fiveMin = 5.5 * oneMin,
                     tenMin = 10 * oneMin;
 
-                [FIRST_IN_LINE_HREF] = ALL_FIRST_IN_LINE_JOBS = (cache.ALL_FIRST_IN_LINE_JOBS ?? []);
+                [FIRST_IN_LINE_HREF] = ALL_FIRST_IN_LINE_JOBS = UniqueJobs(cache.ALL_FIRST_IN_LINE_JOBS ?? []);
                 DROP_ARRIVED_CHANNEL();
                 FIRST_IN_LINE_BOOST = parseBool(cache.FIRST_IN_LINE_BOOST) && parseBool(ALL_FIRST_IN_LINE_JOBS?.length);
                 RUSH_LOADED(cache);
@@ -9317,7 +9352,7 @@ let Initialize = async(START_OVER = false) => {
                     FIRST_IN_LINE_DUE_DATE = NEW_DUE_DATE();
 
                 // $log('Accessing here... #1');
-                ALL_FIRST_IN_LINE_JOBS = [...ALL_FIRST_IN_LINE_JOBS, href].map(url => url?.toLowerCase?.()).isolate().filter(url => url?.length);
+                ALL_FIRST_IN_LINE_JOBS = UniqueJobs([...ALL_FIRST_IN_LINE_JOBS, href]);
 
                 Cache.save({ ALL_FIRST_IN_LINE_JOBS, FIRST_IN_LINE_DUE_DATE }, () => {
                     REDO_FIRST_IN_LINE_QUEUE(ALL_FIRST_IN_LINE_JOBS[0]);
@@ -9651,16 +9686,16 @@ let Initialize = async(START_OVER = false) => {
             let ALL_JOBS_PREFERENCE_SORTED = (preferredPlace.toString().anyOf('begin', 'beginning', 'first', 'head', 'start', '0', '1', '^')? [href, ...ALL_FIRST_IN_LINE_JOBS]: [...ALL_FIRST_IN_LINE_JOBS, href]);
 
             if(defined(FIRST_IN_LINE_HREF ??= ALL_FIRST_IN_LINE_JOBS[0])) {
-                if([...ALL_FIRST_IN_LINE_JOBS, FIRST_IN_LINE_HREF].missing(href)) {
+                if(!HasJob([...ALL_FIRST_IN_LINE_JOBS, FIRST_IN_LINE_HREF], href)) {
                     $log('Pushing to First in Line:', href, new Date);
 
                     // $log('Accessing here... #2');
-                    ALL_FIRST_IN_LINE_JOBS = ALL_JOBS_PREFERENCE_SORTED.map(url => url?.toLowerCase?.()).isolate().filter(url => url?.length);
+                    ALL_FIRST_IN_LINE_JOBS = UniqueJobs(ALL_JOBS_PREFERENCE_SORTED);
                 } else {
                     $warn('Not pushing to First in Line:', href, new Date);
                     $log('Reason(s):', [FIRST_IN_LINE_JOB, ...ALL_FIRST_IN_LINE_JOBS],
-                        `It is the next job? ${ ['No', 'Yes'][+(FIRST_IN_LINE_HREF === href)] }`,
-                        `It is in the queue already? ${ ['No', 'Yes'][+(ALL_FIRST_IN_LINE_JOBS.contains(href))] }`
+                        `It is the next job? ${ ['No', 'Yes'][+HasJob([FIRST_IN_LINE_HREF], href)] }`,
+                        `It is in the queue already? ${ ['No', 'Yes'][+HasJob(ALL_FIRST_IN_LINE_JOBS, href)] }`
                     );
                 }
 
@@ -9673,7 +9708,7 @@ let Initialize = async(START_OVER = false) => {
 
                 // Add the new job...
                 // $log('Accessing here... #3');
-                ALL_FIRST_IN_LINE_JOBS = ALL_JOBS_PREFERENCE_SORTED.map(url => url?.toLowerCase?.()).isolate().filter(url => url?.length);
+                ALL_FIRST_IN_LINE_JOBS = UniqueJobs(ALL_JOBS_PREFERENCE_SORTED);
                 FIRST_IN_LINE_DUE_DATE = NEW_DUE_DATE();
 
                 // To wait, or not to wait
@@ -9911,7 +9946,7 @@ let Initialize = async(START_OVER = false) => {
                 fiveMin = 5.5 * oneMin,
                 tenMin = 10 * oneMin;
 
-            [FIRST_IN_LINE_HREF] = ALL_FIRST_IN_LINE_JOBS = (cache.ALL_FIRST_IN_LINE_JOBS ?? []);
+            [FIRST_IN_LINE_HREF] = ALL_FIRST_IN_LINE_JOBS = UniqueJobs(cache.ALL_FIRST_IN_LINE_JOBS ?? []);
             DROP_ARRIVED_CHANNEL();
             FIRST_IN_LINE_BOOST = parseBool(cache.FIRST_IN_LINE_BOOST) && parseBool(ALL_FIRST_IN_LINE_JOBS?.length);
             RUSH_LOADED(cache);

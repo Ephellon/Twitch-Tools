@@ -44,6 +44,7 @@
 ## Release History
 
 ### Version 5.35.\*
+- [`5.35.6.30`](https://github.com/Ephellon/Twitch-Tools/releases/tag/5.35.6.30) — Up Next no longer queues the same channel twice
 - [`5.35.6.29`](https://github.com/Ephellon/Twitch-Tools/releases/tag/5.35.6.29) — Up Next+ no longer re-adds live channels that drop out of the followed list and come back
 - [`5.35.6.28`](https://github.com/Ephellon/Twitch-Tools/releases/tag/5.35.6.28) — Recover Pages: a tab no longer reloads when you come back to it (#97)
 - [`5.35.6.27`](https://github.com/Ephellon/Twitch-Tools/releases/tag/5.35.6.27) — Up Next's queue (and other links) no longer opens channels in a new tab after News loads (#100); Phrase Audio plays again
