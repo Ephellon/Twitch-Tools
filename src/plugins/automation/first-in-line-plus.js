@@ -77,6 +77,11 @@ plugin({
                 return /* Fail "gracefully" */;
             }
 
+            // The followed list is only read from a labeled section (see FOLLOWED_SECTION_LABELER): until it's labeled, nobody seems
+            // live. That isn't true, and taking it as the baseline queued the channels again once the list could be read
+            if($.nullish('[id*="side"i][id*="nav"i] .side-nav-section[aria-label][tt-svg-label="followed"i]'))
+                return StopWatch.stop('first_in_line_plus');
+
             // No baseline yet (the first read since 6.1): the first full list is it
             if(nullish(OLD_STREAMERS)) {
                 if(STREAMERS.length < 1)

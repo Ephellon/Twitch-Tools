@@ -4415,11 +4415,19 @@ if(top == window) {
                     // The followed section, by its header: its class isn't translated, and it's there whether the side bar is
                     // open or not (the icon match fails in some browsers; the cards' `followed-channel` marks only exist while
                     // it's open). Twitch re-renders sections: keep checking (#42)
-                    top.FOLLOWED_SECTION_LABELER ??= setInterval(() => {
-                        for(const container of $.all('[id*="side"i][id*="nav"i] .side-nav-section[aria-label]'))
-                            if(container.getAttribute('tt-svg-label') != 'followed' && $.defined('.followed-side-nav-header, [data-a-id^="followed-channel"i], [data-test-selector="followed-channel"i]', container))
-                                container.setAttribute('tt-svg-label', 'followed');
-                    }, 15e3);
+                    // Right away too: the followed list can't be read (Up Next+, Stay Live) until it's labeled, and the first run used
+                    // to come 15 s after the page loaded
+                    if(nullish(top.FOLLOWED_SECTION_LABELER)) {
+                        const LabelFollowedSection = () => {
+                            for(const container of $.all('[id*="side"i][id*="nav"i] .side-nav-section[aria-label]'))
+                                if(container.getAttribute('tt-svg-label') != 'followed' && $.defined('.followed-side-nav-header, [data-a-id^="followed-channel"i], [data-test-selector="followed-channel"i]', container))
+                                    container.setAttribute('tt-svg-label', 'followed');
+                        };
+
+                        LabelFollowedSection();
+
+                        top.FOLLOWED_SECTION_LABELER = setInterval(LabelFollowedSection, 15e3);
+                    }
                 } // :SectionLabeling
 
                 /**
