@@ -10186,6 +10186,11 @@ let Initialize = async(START_OVER = false) => {
             return /* Fail "gracefully" */;
         }
 
+        // The followed list is only read from a labeled section (see FOLLOWED_SECTION_LABELER): until it's labeled, nobody seems
+        // live. That isn't true, and taking it as the baseline queued the channels again once the list could be read
+        if($.nullish('[id*="side"i][id*="nav"i] .side-nav-section[aria-label][tt-svg-label="followed"i]'))
+            return StopWatch.stop('first_in_line_plus');
+
         // No baseline yet (the first read since 5.35.6.19): the first full list is it
         if(nullish(OLD_STREAMERS)) {
             if(STREAMERS.length < 1)
@@ -20177,14 +20182,22 @@ if(top == window) {
                 // The followed section, by its header: its class isn't translated, and it's there whether the side bar is
                 // open or not (the icon match above fails in some browsers, and the open side bar has no icon to match).
                 // Twitch re-renders sections: keep checking
-                top.FOLLOWED_SECTION_LABELER ??= setInterval(() => {
-                    for(let header of $.all('[id*="side"i][id*="nav"i] .followed-side-nav-header')) {
-                        let container = header.closest('.side-nav-section[aria-label]');
+                // Right away too: the followed list can't be read (Up Next+, Stay Live) until it's labeled, and the first run used
+                // to come 15 s after the page loaded
+                if(nullish(top.FOLLOWED_SECTION_LABELER)) {
+                    let LabelFollowedSection = () => {
+                        for(let header of $.all('[id*="side"i][id*="nav"i] .followed-side-nav-header')) {
+                            let container = header.closest('.side-nav-section[aria-label]');
 
-                        if(container && container.getAttribute('tt-svg-label') != 'followed')
-                            container.setAttribute('tt-svg-label', 'followed');
-                    }
-                }, 15e3);
+                            if(container && container.getAttribute('tt-svg-label') != 'followed')
+                                container.setAttribute('tt-svg-label', 'followed');
+                        }
+                    };
+
+                    LabelFollowedSection();
+
+                    top.FOLLOWED_SECTION_LABELER = setInterval(LabelFollowedSection, 15e3);
+                }
             }
 
             top.onlocationchange = () => {
