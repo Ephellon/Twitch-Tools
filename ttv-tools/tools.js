@@ -3985,14 +3985,15 @@ function WaitForLiveTime(job) {
 }
 
 /**
- * The status pill on the player's top bar: `live`, `offline` or `rerun`; `null` when there's none. Twitch changes it the
- * moment a stream ends, before the rest of the page does.
+ * The status pill on the player's top bar: `live`, `offline` or `rerun`; `null` when there's none. LIVE is a channel
+ * status indicator, OFFLINE and RERUN a media card stat; both stay in the page while the top bar is hidden. Twitch changes
+ * it the moment a stream ends, before the rest of the page does.
  * @simply PlayerStatus() → string?
  *
  * @return {string?}
  */
 function PlayerStatus() {
-    let text = $('[class*="video-player"i] .tw-media-card-stat')?.textContent?.trim()?.toLowerCase() ?? '';
+    let text = $('[class*="video-player"i] :is(.tw-channel-status-text-indicator, .tw-media-card-stat)')?.textContent?.trim()?.toLowerCase() ?? '';
 
     return (/^(live|offline|rerun)$/.test(text)? text: null);
 }
@@ -4891,9 +4892,15 @@ let Initialize = async(START_OVER = false) => {
             if(SPECIAL_MODE)
                 return true;
 
-            // The player's own pill says OFFLINE: the stream ended, whatever the rest of the page still shows
-            if(PlayerStatus() == 'offline')
-                return false;
+            // The player's own pill answers first: OFFLINE means the stream ended and LIVE means it's on, whatever the rest of
+            // the page still shows
+            switch(PlayerStatus()) {
+                case 'offline':
+                    return false;
+
+                case 'live':
+                    return true;
+            }
 
             return (true
                 && $.defined(`
