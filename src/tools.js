@@ -1558,6 +1558,19 @@ const SideNav = {
 };
 
 /**
+ * The status pill on the player's top bar: `live`, `offline` or `rerun`; `null` when there's none. Twitch changes it the
+ * moment a stream ends, before the rest of the page does.
+ * @simply PlayerStatus() → string?
+ *
+ * @return {string?}
+ */
+function PlayerStatus() {
+    const text = $('[class*="video-player"i] .tw-media-card-stat')?.textContent?.trim()?.toLowerCase() ?? '';
+
+    return (/^(live|offline|rerun)$/.test(text)? text: null);
+}
+
+/**
  * Whether the open channel's stream ended on this page. Twitch can swap the LIVE pill for OFFLINE and drop the video
  * while the rest of the page still reads as live (owner report: waited 2 min, TTV still treated the channel as live).
  * After 10s with no video on the page, the channel's own page is fetched again (every 30s at most) and read the way
@@ -2455,6 +2468,10 @@ let Initialize = async(START_OVER = false) => {
             if(SPECIAL_MODE)
                 return true;
 
+            // The player's own pill says OFFLINE: the stream ended, whatever the rest of the page still shows
+            if(PlayerStatus() == 'offline')
+                return false;
+
             return (true
                 && $.defined(`
                     [class*="channel"i][class*="info"i] [class*="home"i][class*="head"i] [status="live"i]
@@ -2636,7 +2653,7 @@ let Initialize = async(START_OVER = false) => {
         },
 
         get redo() {
-            return /\brerun\b/i.test($(`[class*="video-player"i] [class*="media-card"i]`)?.textContent?.trim() ?? '');
+            return PlayerStatus() == 'rerun' || /\brerun\b/i.test($(`[class*="video-player"i] [class*="media-card"i]`)?.textContent?.trim() ?? '');
         },
 
         __shop__: [],
